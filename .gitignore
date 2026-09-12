@@ -6,3 +6,9 @@ coverage
 .env.local
 .turbo
 supabase/.temp
+
+# macOS
+.DS_Store
+
+# TypeScript build cache
+*.tsbuildinfo
