@@ -10,7 +10,7 @@ export async function listCustomers({ search, status = 'active' }: { search?: st
   const { supabase, company } = await requireStaffCompany();
   let query = supabase
     .from('customers')
-    .select('id, name, customer_number, contact_person, phone, city, is_active, cleaning_objects(count)')
+    .select('id, name, customer_number, contact_person, contact_first_name, contact_last_name, phone, city, is_active, cleaning_objects(count)')
     .eq('company_id', company.id)
     .order('name');
 
@@ -26,7 +26,7 @@ export async function getCustomer(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('customers')
-    .select('id, company_id, name, customer_number, contact_person, email, phone, billing_address, city, postal_code, notes, is_active, created_at, updated_at')
+    .select('id, company_id, name, customer_number, contact_person, contact_first_name, contact_last_name, email, phone, billing_address, city, postal_code, billing_country, billing_email, billing_recipient_name, billing_recipient_address, payment_terms_days, vat_id, notes, is_active, created_at, updated_at')
     .eq('company_id', company.id)
     .eq('id', id)
     .maybeSingle();

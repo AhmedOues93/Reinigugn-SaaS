@@ -35,22 +35,37 @@ export const customerSchema = z.object({
   name: z.string().trim().min(2, 'Der Kundenname ist zu kurz.').max(160, 'Der Kundenname ist zu lang.'),
   customer_number: optionalText(64, 'Die Kundennummer'),
   contact_person: optionalText(160, 'Die Ansprechperson'),
+  contact_first_name: optionalText(120, 'Der Vorname'),
+  contact_last_name: optionalText(120, 'Der Nachname'),
   email: optionalEmail,
   phone: optionalText(64, 'Die Telefonnummer'),
   billing_address: optionalText(500, 'Die Rechnungsadresse'),
   city: optionalText(120, 'Der Ort'),
   postal_code: optionalText(16, 'Die Postleitzahl'),
+  billing_country: optionalText(120, 'Das Land'),
+  billing_email: optionalEmail,
+  billing_recipient_name: optionalText(160, 'Der Rechnungsempfaenger'),
+  billing_recipient_address: optionalText(500, 'Die abweichende Rechnungsadresse'),
+  payment_terms_days: z.preprocess((value) => value === '' ? undefined : value, z.coerce.number().int().min(0).max(365).optional()),
+  vat_id: optionalText(64, 'Die USt-IdNr.'),
   notes: optionalText(4_000, 'Die Notizen'),
 });
 
 export const cleaningObjectSchema = z.object({
   customer_id: z.string().uuid('Bitte waehle einen gueltigen Kunden aus.'),
   name: z.string().trim().min(2, 'Der Objektname ist zu kurz.').max(160, 'Der Objektname ist zu lang.'),
+  object_number: optionalText(64, 'Die Objektnummer'),
   street: optionalText(240, 'Die Strasse'),
   postal_code: optionalText(16, 'Die Postleitzahl'),
   city: optionalText(120, 'Der Ort'),
+  country: optionalText(120, 'Das Land'),
   contact_person: optionalText(160, 'Die Ansprechperson'),
+  contact_first_name: optionalText(120, 'Der Vorname'),
+  contact_last_name: optionalText(120, 'Der Nachname'),
   contact_phone: optionalText(64, 'Die Telefonnummer'),
+  contact_email: optionalEmail,
+  area_sqm: z.preprocess((value) => value === '' ? undefined : value, z.coerce.number().positive('Die Flaeche muss positiv sein.').max(10_000_000).optional()),
+  areas_description: optionalText(500, 'Die Bereiche'),
   access_instructions: optionalText(4_000, 'Die Zugangshinweise'),
   cleaning_instructions: optionalText(4_000, 'Die Reinigungsanweisungen'),
   notes: optionalText(4_000, 'Die Notizen'),
@@ -77,10 +92,13 @@ export const employeeInvitationSchema = z.object({
   employee_number: optionalText(64, 'Die Personalnummer'),
   weekly_hours: optionalHours,
   employment_start_date: optionalDate,
+  employment_end_date: optionalDate,
+  employment_type: z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
+  preferred_language: z.enum(['de', 'en', 'fr', 'ar', 'tr', 'ro', 'pl']).default('de'),
   notes: optionalText(4_000, 'Die Notizen'),
-});
+}).refine((value) => !value.employment_end_date || !value.employment_start_date || value.employment_end_date >= value.employment_start_date, { message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.', path: ['employment_end_date'] });
 
-export const employeeUpdateSchema = employeeInvitationSchema.omit({ email: true });
+export const employeeUpdateSchema = employeeInvitationSchema;
 
 export const invitationTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/, 'Der Einladungslink ist ungueltig.');
 

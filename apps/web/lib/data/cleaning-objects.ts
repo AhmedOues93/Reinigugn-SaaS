@@ -9,7 +9,7 @@ export async function listCleaningObjects({ search, status = 'active', customerI
   const { supabase, company } = await requireStaffCompany();
   let query = supabase
     .from('cleaning_objects')
-    .select('id, name, city, is_active, customer_id, customers(name)')
+    .select('id, name, object_number, city, is_active, customer_id, customers(name)')
     .eq('company_id', company.id)
     .order('name');
 
@@ -26,7 +26,7 @@ export async function getCleaningObject(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('cleaning_objects')
-    .select('id, company_id, customer_id, name, street, postal_code, city, contact_person, contact_phone, access_instructions, cleaning_instructions, notes, is_active, created_at, updated_at, customers(id, name)')
+    .select('id, company_id, customer_id, name, object_number, street, postal_code, city, country, contact_person, contact_first_name, contact_last_name, contact_phone, contact_email, area_sqm, areas_description, access_instructions, cleaning_instructions, notes, is_active, created_at, updated_at, customers(id, name)')
     .eq('company_id', company.id)
     .eq('id', id)
     .maybeSingle();
@@ -36,7 +36,7 @@ export async function getCleaningObject(id: string) {
 
 export async function listCleaningObjectOptions() {
   const { supabase, company } = await requireStaffCompany();
-  const { data, error } = await supabase.from('cleaning_objects').select('id, customer_id, name, city, is_active').eq('company_id', company.id).order('name');
+  const { data, error } = await supabase.from('cleaning_objects').select('id, customer_id, name, object_number, city, is_active').eq('company_id', company.id).order('name');
   if (error) throw new Error('Objekte konnten nicht geladen werden.');
   return data ?? [];
 }

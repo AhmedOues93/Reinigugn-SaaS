@@ -7,7 +7,7 @@ export async function listEmployees({ search, role = 'all', status = 'all' }: { 
   const { supabase, company } = await requireStaffCompany();
   let query = supabase
     .from('company_members')
-    .select('id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone), employee_details(employee_number, weekly_hours, employment_start_date, notes, is_active)')
+    .select('id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone), employee_details(employee_number, weekly_hours, employment_start_date, employment_end_date, employment_type, preferred_language, notes, is_active)')
     .eq('company_id', company.id)
     .in('role', ['OFFICE', 'EMPLOYEE'])
     .order('created_at', { ascending: false });
@@ -28,7 +28,7 @@ export async function getEmployee(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('company_members')
-    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_url), employee_details(employee_number, weekly_hours, employment_start_date, notes, is_active), company_invitations(id, expires_at, accepted_at, revoked_at, created_at)')
+    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_url), employee_details(employee_number, weekly_hours, employment_start_date, employment_end_date, employment_type, preferred_language, notes, is_active), company_invitations(id, expires_at, accepted_at, revoked_at, created_at)')
     .eq('company_id', company.id)
     .eq('id', id)
     .in('role', ['OFFICE', 'EMPLOYEE'])
