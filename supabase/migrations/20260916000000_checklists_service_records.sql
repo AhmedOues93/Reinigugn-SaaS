@@ -1,0 +1,30 @@
+create type public.job_photo_category as enum ('BEFORE', 'AFTER', 'DOCUMENTATION');
+create table public.checklist_templates (id uuid primary key default gen_random_uuid(), company_id uuid not null references public.companies(id) on delete restrict, name text not null check(char_length(trim(name)) between 2 and 160), description text, is_active boolean not null default true, created_at timestamptz not null default now());
+create table public.checklist_template_items (id uuid primary key default gen_random_uuid(), template_id uuid not null references public.checklist_templates(id) on delete cascade, position smallint not null check(position > 0), title text not null check(char_length(trim(title)) between 1 and 300), instruction text, is_required boolean not null default true, unique(template_id, position));
+alter table public.cleaning_objects add column if not exists checklist_template_id uuid references public.checklist_templates(id) on delete set null;
+alter table public.jobs add column if not exists checklist_template_id uuid references public.checklist_templates(id) on delete set null;
+create table public.job_checklists (id uuid primary key default gen_random_uuid(), company_id uuid not null references public.companies(id) on delete restrict, job_id uuid not null unique references public.jobs(id) on delete cascade, template_id uuid references public.checklist_templates(id) on delete set null, created_at timestamptz not null default now());
+create table public.job_checklist_items (id uuid primary key default gen_random_uuid(), job_checklist_id uuid not null references public.job_checklists(id) on delete cascade, source_template_item_id uuid, position smallint not null, title text not null, instruction text, is_required boolean not null, completed_at timestamptz, completed_by uuid references public.company_members(id) on delete set null, unique(job_checklist_id, position));
+create table public.job_photos (id uuid primary key default gen_random_uuid(), company_id uuid not null references public.companies(id) on delete restrict, job_id uuid not null references public.jobs(id) on delete cascade, member_id uuid not null references public.company_members(id) on delete restrict, checklist_item_id uuid references public.job_checklist_items(id) on delete set null, storage_path text not null unique, category public.job_photo_category not null default 'DOCUMENTATION', description text, created_at timestamptz not null default now());
+alter table public.checklist_templates enable row level security; alter table public.checklist_template_items enable row level security; alter table public.job_checklists enable row level security; alter table public.job_checklist_items enable row level security; alter table public.job_photos enable row level security;
+create policy "staff checklist templates" on public.checklist_templates for all to authenticated using(public.is_company_staff(company_id)) with check(public.is_company_staff(company_id));
+create policy "staff checklist template items" on public.checklist_template_items for all to authenticated using(exists(select 1 from public.checklist_templates t where t.id=template_id and public.is_company_staff(t.company_id))) with check(exists(select 1 from public.checklist_templates t where t.id=template_id and public.is_company_staff(t.company_id)));
+create policy "staff job checklists" on public.job_checklists for all to authenticated using(public.is_company_staff(company_id)) with check(public.is_company_staff(company_id));
+create policy "staff job checklist items" on public.job_checklist_items for all to authenticated using(exists(select 1 from public.job_checklists c where c.id=job_checklist_id and public.is_company_staff(c.company_id))) with check(exists(select 1 from public.job_checklists c where c.id=job_checklist_id and public.is_company_staff(c.company_id)));
+create policy "employee job checklist read" on public.job_checklists for select to authenticated using(public.is_current_job_assignee(job_id));
+create policy "employee job checklist item read" on public.job_checklist_items for select to authenticated using(exists(select 1 from public.job_checklists c where c.id=job_checklist_id and public.is_current_job_assignee(c.job_id)));
+create policy "staff job photos" on public.job_photos for all to authenticated using(public.is_company_staff(company_id)) with check(public.is_company_staff(company_id));
+create policy "employee job photos" on public.job_photos for select to authenticated using(public.is_current_job_assignee(job_id));
+create or replace function public.complete_my_checklist_item(p_item_id uuid, p_completed boolean) returns uuid language plpgsql security definer set search_path = public as $$
+declare actor uuid; item public.job_checklist_items; checklist public.job_checklists;
+begin
+ select m.id into actor from public.company_members m join public.profiles p on p.id=m.profile_id where p.auth_user_id=auth.uid() and m.role='EMPLOYEE' and m.status='ACTIVE' limit 1;
+ if actor is null then raise exception 'Employee role required'; end if;
+ select * into item from public.job_checklist_items where id=p_item_id for update; select * into checklist from public.job_checklists where id=item.job_checklist_id;
+ if item.id is null or checklist.id is null or not public.is_current_job_assignee(checklist.job_id) then raise exception 'Checklist item is not assigned to current employee'; end if;
+ update public.job_checklist_items set completed_at=case when p_completed then now() else null end, completed_by=case when p_completed then actor else null end where id=item.id;
+ return item.id;
+end;
+$$;
+revoke all on public.job_checklist_items from anon, authenticated; grant select on public.job_checklist_items, public.job_checklists to authenticated;
+revoke all on function public.complete_my_checklist_item(uuid, boolean) from public, anon; grant execute on function public.complete_my_checklist_item(uuid, boolean) to authenticated;

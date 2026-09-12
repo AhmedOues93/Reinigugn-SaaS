@@ -30,6 +30,7 @@ const optionalEmail = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
   z.string().trim().email('Bitte gib eine gueltige E-Mail-Adresse ein.').max(254).optional(),
 );
+const optionalUuid = z.preprocess((value) => typeof value === 'string' && value.trim() === '' ? undefined : value, z.string().uuid('Bitte waehle eine gueltige Checkliste aus.').optional());
 
 export const customerSchema = z.object({
   name: z.string().trim().min(2, 'Der Kundenname ist zu kurz.').max(160, 'Der Kundenname ist zu lang.'),
@@ -69,6 +70,7 @@ export const cleaningObjectSchema = z.object({
   access_instructions: optionalText(4_000, 'Die Zugangshinweise'),
   cleaning_instructions: optionalText(4_000, 'Die Reinigungsanweisungen'),
   notes: optionalText(4_000, 'Die Notizen'),
+  checklist_template_id: optionalUuid,
 });
 
 const optionalHours = z.preprocess(
@@ -121,6 +123,7 @@ export const jobSchema = z.object({
   priority: jobPrioritySchema.default('NORMAL'),
   internal_notes: optionalText(4_000, 'Die interne Notiz'),
   employee_instructions: optionalText(4_000, 'Die Arbeitsanweisung'),
+  checklist_template_id: optionalUuid,
   member_ids: uuidArraySchema,
   confirm_conflicts: z.enum(['true']).optional(),
 }).refine((value) => value.planned_end_time > value.planned_start_time, { message: 'Das geplante Ende muss nach dem Beginn liegen.', path: ['planned_end_time'] });
@@ -140,5 +143,6 @@ export const serviceScheduleSchema = z.object({
   valid_from: dateSchema,
   valid_until: optionalDate,
   member_ids: uuidArraySchema,
+  checklist_template_id: optionalUuid,
   rules: z.array(scheduleRuleSchema).min(1, 'Bitte hinterlege mindestens einen Wochentag.').max(7),
 }).refine((value) => !value.valid_until || value.valid_until >= value.valid_from, { message: 'Das Enddatum darf nicht vor dem Startdatum liegen.', path: ['valid_until'] });

@@ -26,7 +26,7 @@ export async function getCleaningObject(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('cleaning_objects')
-    .select('id, company_id, customer_id, name, object_number, street, postal_code, city, country, contact_person, contact_first_name, contact_last_name, contact_phone, contact_email, area_sqm, areas_description, access_instructions, cleaning_instructions, notes, is_active, created_at, updated_at, customers(id, name)')
+    .select('id, company_id, customer_id, checklist_template_id, name, object_number, street, postal_code, city, country, contact_person, contact_first_name, contact_last_name, contact_phone, contact_email, area_sqm, areas_description, access_instructions, cleaning_instructions, notes, is_active, created_at, updated_at, customers(id, name)')
     .eq('company_id', company.id)
     .eq('id', id)
     .maybeSingle();

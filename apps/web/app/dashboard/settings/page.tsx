@@ -1,8 +1,6 @@
 import { Card } from '@/components/ui';
-import { requireStaffCompany } from '@/lib/auth';
+import { getCurrentCompany, requireOwnerCompany } from '@/lib/auth';
+import { CompanySettingsForm } from '@/components/company-settings-form';
+import { updateCompanySettings } from './actions';
 
-export default async function SettingsPage() {
-  const { membership, user } = await requireStaffCompany();
-  const company = membership?.companies as unknown as { name: string; slug: string | null } | null;
-  return <div className="mx-auto max-w-3xl"><div className="mb-8"><h1 className="text-2xl font-semibold tracking-tight">Einstellungen</h1><p className="mt-2 text-slate-600">Deine Unternehmens- und Kontoinformationen.</p></div><Card className="divide-y"><section className="p-5"><h2 className="font-medium">Unternehmen</h2><dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2"><div><dt className="text-slate-500">Firmenname</dt><dd className="mt-1 font-medium">{company?.name}</dd></div><div><dt className="text-slate-500">Rolle</dt><dd className="mt-1 font-medium">Inhaber</dd></div></dl></section><section className="p-5"><h2 className="font-medium">Konto</h2><p className="mt-2 text-sm text-slate-600">Angemeldet als {user.email}</p></section></Card></div>;
-}
+export default async function SettingsPage() { const { membership, supabase } = await getCurrentCompany(); if (!membership) return null; const company = membership.companies as unknown as { id: string; name: string }; if (membership.role !== 'OWNER') return <div className="mx-auto max-w-3xl"><h1 className="text-2xl font-semibold">Einstellungen</h1><Card className="mt-6 p-6"><p className="font-medium">Firmendaten</p><p className="mt-2 text-sm text-slate-600">Firmendaten duerfen nur durch den Inhaber bearbeitet werden.</p></Card></div>; await requireOwnerCompany(); const { data } = await supabase.from('companies').select('id, name, legal_form, street, postal_code, city, country, phone, email, website, tax_number, vat_id, billing_email, iban, bic, default_payment_terms_days, timezone, default_language').eq('id', company.id).single(); return <div className="mx-auto max-w-3xl"><div className="mb-8"><h1 className="text-2xl font-semibold">Firmendaten</h1><p className="mt-2 text-slate-600">Unternehmens-, Rechnungs- und Systemeinstellungen.</p></div><Card className="p-6"><CompanySettingsForm company={data ?? { name: company.name }} action={updateCompanySettings} /></Card></div>; }

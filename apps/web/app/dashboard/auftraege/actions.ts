@@ -30,7 +30,7 @@ export async function createJob(_: FormState, formData: FormData): Promise<FormS
     }
     const { data, error } = await supabase.rpc('create_single_job', {
       p_customer_id: parsed.data.customer_id, p_cleaning_object_id: parsed.data.cleaning_object_id, p_title: parsed.data.title, p_description: parsed.data.description ?? '', p_scheduled_date: parsed.data.scheduled_date,
-      p_start_time: parsed.data.planned_start_time, p_end_time: parsed.data.planned_end_time, p_status: parsed.data.status, p_priority: parsed.data.priority, p_internal_notes: parsed.data.internal_notes ?? '', p_employee_instructions: parsed.data.employee_instructions ?? '', p_member_ids: parsed.data.member_ids,
+      p_start_time: parsed.data.planned_start_time, p_end_time: parsed.data.planned_end_time, p_status: parsed.data.status, p_priority: parsed.data.priority, p_internal_notes: parsed.data.internal_notes ?? '', p_employee_instructions: parsed.data.employee_instructions ?? '', p_member_ids: parsed.data.member_ids, p_checklist_template_id: parsed.data.checklist_template_id ?? null,
     });
     if (error || !data) return failure('Der Auftrag konnte nicht erstellt werden.');
     revalidatePath('/dashboard'); revalidatePath('/dashboard/auftraege'); revalidatePath('/dashboard/planung');
@@ -48,10 +48,22 @@ export async function updateJob(jobId: string, _: FormState, formData: FormData)
     if (relevant.length && !parsed.data.confirm_conflicts) return { status: 'error', message: 'Bitte bestaetige die Konfliktwarnung, wenn du den Auftrag trotzdem speichern moechtest.', conflictWarning: 'Mindestens ein Mitarbeiter ist zu diesem Zeitpunkt bereits einem anderen Auftrag zugeordnet.' };
     const { error } = await supabase.rpc('update_job_details', {
       p_job_id: jobId, p_customer_id: parsed.data.customer_id, p_cleaning_object_id: parsed.data.cleaning_object_id, p_title: parsed.data.title, p_description: parsed.data.description ?? '', p_scheduled_date: parsed.data.scheduled_date,
-      p_start_time: parsed.data.planned_start_time, p_end_time: parsed.data.planned_end_time, p_status: parsed.data.status, p_priority: parsed.data.priority, p_internal_notes: parsed.data.internal_notes ?? '', p_employee_instructions: parsed.data.employee_instructions ?? '', p_member_ids: parsed.data.member_ids,
+      p_start_time: parsed.data.planned_start_time, p_end_time: parsed.data.planned_end_time, p_status: parsed.data.status, p_priority: parsed.data.priority, p_internal_notes: parsed.data.internal_notes ?? '', p_employee_instructions: parsed.data.employee_instructions ?? '', p_member_ids: parsed.data.member_ids, p_checklist_template_id: parsed.data.checklist_template_id ?? null,
     });
     if (error) return failure('Der Auftrag konnte nicht aktualisiert werden.');
     revalidatePath('/dashboard'); revalidatePath('/dashboard/auftraege'); revalidatePath(`/dashboard/auftraege/${jobId}`); revalidatePath('/dashboard/planung');
     return { status: 'success', id: jobId };
   } catch { return failure('Der Auftrag konnte nicht aktualisiert werden.'); }
+}
+
+export async function deleteOperationalJobPhoto(photoId: string, _: FormState, __: FormData): Promise<FormState> {
+  try {
+    const { supabase } = await requireStaffCompany();
+    const { data: path, error } = await supabase.rpc('delete_job_photo', { p_photo_id: photoId });
+    if (error || !path) return failure('Das Foto konnte nicht entfernt werden.');
+    const { error: storageError } = await supabase.storage.from('job-photos').remove([path]);
+    if (storageError) return failure('Das Foto konnte nicht entfernt werden.');
+    revalidatePath('/dashboard/auftraege');
+    return { status: 'success', message: 'Foto wurde entfernt.' };
+  } catch { return failure('Das Foto konnte nicht entfernt werden.'); }
 }

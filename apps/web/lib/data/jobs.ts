@@ -34,7 +34,7 @@ export async function getJob(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('jobs')
-    .select('id, customer_id, cleaning_object_id, service_schedule_id, title, description, scheduled_date, planned_start_at, planned_end_at, status, priority, internal_notes, employee_instructions, customers(id, name), cleaning_objects(id, name, street, postal_code, city), job_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
+    .select('id, customer_id, cleaning_object_id, checklist_template_id, service_schedule_id, title, description, scheduled_date, planned_start_at, planned_end_at, status, priority, internal_notes, employee_instructions, customers(id, name), cleaning_objects(id, name, street, postal_code, city), job_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
     .eq('company_id', company.id).eq('id', id).maybeSingle();
   if (error) throw new Error('Auftrag konnte nicht geladen werden.');
   return data;
@@ -54,7 +54,7 @@ export async function getServiceSchedule(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('service_schedules')
-    .select('id, customer_id, cleaning_object_id, name, description, valid_from, valid_until, timezone, is_active, customers(id, name), cleaning_objects(id, name), schedule_rules(id, weekday, planned_start_time, planned_end_time, is_active), service_schedule_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
+    .select('id, customer_id, cleaning_object_id, checklist_template_id, name, description, valid_from, valid_until, timezone, is_active, customers(id, name), cleaning_objects(id, name), schedule_rules(id, weekday, planned_start_time, planned_end_time, is_active), service_schedule_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
     .eq('company_id', company.id).eq('id', id).maybeSingle();
   if (error) throw new Error('Plan konnte nicht geladen werden.');
   return data;
@@ -90,7 +90,7 @@ export async function getMyAssignedJob(id: string) {
   const { supabase, membership } = await getCurrentCompany();
   if (!membership || membership.role !== 'EMPLOYEE') return null;
   const { data, error } = await supabase.from('jobs')
-    .select('id, title, scheduled_date, planned_start_at, planned_end_at, status, employee_instructions, customers(name), cleaning_objects(name, street, postal_code, city), job_time_entries(id, started_at, finished_at, duration_minutes)')
+    .select('id, title, scheduled_date, planned_start_at, planned_end_at, status, employee_instructions, customers(name), cleaning_objects(name, street, postal_code, city), job_time_entries(id, started_at, finished_at, duration_minutes), job_checklists(id, job_checklist_items(id, position, title, instruction, is_required, completed_at, completed_by))')
     .eq('id', id).maybeSingle();
   if (error) { console.error('getMyAssignedJob', error); throw new Error('Eigener Einsatz konnte nicht geladen werden.'); }
   return data;

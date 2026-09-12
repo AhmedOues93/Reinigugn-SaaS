@@ -65,6 +65,30 @@ integration('jobs, planning and RLS', () => {
     const employeeB = await inviteMember(ownerA.client, 'EMPLOYEE', 'Phase4EmployeeB');
     const jobDate = dateIn(2);
 
+    const { data: template, error: templateError } = await ownerA.client.from('checklist_templates').insert({ company_id: ownerA.companyId, name: 'Phase 6A Buero', description: 'Standardreinigung' }).select('id, is_active').single();
+    expect(templateError).toBeNull();
+    const { error: itemsError } = await ownerA.client.from('checklist_template_items').insert([
+      { template_id: template!.id, position: 1, title: 'Boden saugen', is_required: true },
+      { template_id: template!.id, position: 2, title: 'Fenster pruefen', is_required: false },
+    ]);
+    expect(itemsError).toBeNull();
+    const { data: persistedItems } = await ownerA.client.from('checklist_template_items').select('position, is_required').eq('template_id', template!.id).order('position');
+    expect(persistedItems).toEqual([{ position: 1, is_required: true }, { position: 2, is_required: false }]);
+    const { error: ownerEditError } = await ownerA.client.from('checklist_templates').update({ description: 'Vom OWNER bearbeitet' }).eq('id', template!.id);
+    expect(ownerEditError).toBeNull();
+    const { error: officeEditError } = await office.client.from('checklist_templates').update({ name: 'Phase 6A Buero bearbeitet' }).eq('id', template!.id);
+    expect(officeEditError).toBeNull();
+    const { error: archiveError } = await ownerA.client.from('checklist_templates').update({ is_active: false }).eq('id', template!.id);
+    expect(archiveError).toBeNull();
+    const { error: reactivateError } = await ownerA.client.from('checklist_templates').update({ is_active: true }).eq('id', template!.id);
+    expect(reactivateError).toBeNull();
+    const { error: objectTemplateError } = await ownerA.client.from('cleaning_objects').update({ checklist_template_id: template!.id }).eq('id', objectA);
+    expect(objectTemplateError).toBeNull();
+    const { error: employeeTemplateError } = await employeeA.client.from('checklist_templates').insert({ company_id: ownerA.companyId, name: 'Nicht erlaubt' });
+    expect(employeeTemplateError).not.toBeNull();
+    const { data: foreignTemplate } = await ownerB.client.from('checklist_templates').select('id').eq('id', template!.id);
+    expect(foreignTemplate).toEqual([]);
+
     const { data: employeeOptions, error: employeeOptionsError } = await ownerA.client
       .from('company_members')
       .select('id, profiles!company_members_profile_id_fkey(first_name, last_name)')
@@ -75,6 +99,73 @@ integration('jobs, planning and RLS', () => {
     const { data: officeJobId, error: officeJobError } = await createJob(office.client, customerA, objectA, jobDate, [employeeA.memberId]);
     expect(officeJobError).toBeNull();
     expect(officeJobId).toBeTruthy();
+    const { data: jobChecklist, error: jobChecklistError } = await ownerA.client.from('job_checklists').select('id, template_id').eq('job_id', officeJobId!).single();
+    expect(jobChecklistError).toBeNull();
+    expect(jobChecklist?.template_id).toBe(template!.id);
+    const { data: snapshotItems, error: snapshotItemsError } = await ownerA.client.from('job_checklist_items').select('id, position, title, instruction, is_required').eq('job_checklist_id', jobChecklist!.id).order('position');
+    expect(snapshotItemsError).toBeNull();
+    expect(snapshotItems).toEqual([
+      { id: expect.any(String), position: 1, title: 'Boden saugen', instruction: null, is_required: true },
+      { id: expect.any(String), position: 2, title: 'Fenster pruefen', instruction: null, is_required: false },
+    ]);
+    const { error: templateItemEditError } = await ownerA.client.from('checklist_template_items').update({ title: 'Vorlage spaeter geaendert' }).eq('template_id', template!.id).eq('position', 1);
+    expect(templateItemEditError).toBeNull();
+    const { data: stableSnapshot } = await ownerA.client.from('job_checklist_items').select('title').eq('id', snapshotItems![0]!.id).single();
+    expect(stableSnapshot?.title).toBe('Boden saugen');
+    const { data: assignedEmployeeChecklist } = await employeeA.client.from('job_checklists').select('id').eq('job_id', officeJobId!);
+    expect(assignedEmployeeChecklist).toHaveLength(1);
+    const { data: unassignedEmployeeChecklist } = await employeeB.client.from('job_checklists').select('id').eq('job_id', officeJobId!);
+    expect(unassignedEmployeeChecklist).toEqual([]);
+    const { error: completeChecklistError } = await employeeA.client.rpc('complete_my_checklist_item', { p_item_id: snapshotItems![0]!.id, p_completed: true });
+    expect(completeChecklistError).toBeNull();
+    const { data: completedItem } = await ownerA.client.from('job_checklist_items').select('completed_at, completed_by').eq('id', snapshotItems![0]!.id).single();
+    expect(completedItem?.completed_at).not.toBeNull();
+    expect(completedItem?.completed_by).toBe(employeeA.memberId);
+    const { error: employeeChecklistEditError } = await employeeA.client.from('job_checklist_items').update({ title: 'Unzulaessig', instruction: 'Unzulaessig', position: 9, is_required: false }).eq('id', snapshotItems![0]!.id);
+    expect(employeeChecklistEditError).not.toBeNull();
+    const { data: crossCompanyChecklist } = await ownerB.client.from('job_checklists').select('id').eq('job_id', officeJobId!);
+    expect(crossCompanyChecklist).toEqual([]);
+    const firstPhotoPath = `${ownerA.companyId}/${officeJobId}/${randomUUID()}.png`;
+    const image = new File([new Uint8Array([137, 80, 78, 71])], 'einsatz.png', { type: 'image/png' });
+    const { error: assignedPhotoUploadError } = await employeeA.client.storage.from('job-photos').upload(firstPhotoPath, image, { contentType: 'image/png' });
+    expect(assignedPhotoUploadError).toBeNull();
+    const { data: firstPhotoId, error: firstPhotoMetadataError } = await employeeA.client.rpc('create_my_job_photo_metadata', { p_job_id: officeJobId!, p_storage_path: firstPhotoPath, p_category: 'BEFORE', p_checklist_item_id: snapshotItems![0]!.id, p_description: 'Vor der Reinigung' });
+    expect(firstPhotoMetadataError).toBeNull();
+    expect(firstPhotoId).toBeTruthy();
+    const { data: ownerPhotos } = await ownerA.client.from('job_photos').select('id, category, checklist_item_id').eq('job_id', officeJobId!);
+    expect(ownerPhotos).toHaveLength(1);
+    expect(ownerPhotos?.[0]).toMatchObject({ id: firstPhotoId, category: 'BEFORE', checklist_item_id: snapshotItems![0]!.id });
+    const { data: ownerSignedPhoto, error: ownerSignedPhotoError } = await ownerA.client.storage.from('job-photos').createSignedUrl(firstPhotoPath, 60);
+    expect(ownerSignedPhotoError).toBeNull();
+    expect(ownerSignedPhoto?.signedUrl).toContain('/storage/v1/object/sign/');
+    const { error: foreignSignedPhotoError } = await ownerB.client.storage.from('job-photos').createSignedUrl(firstPhotoPath, 60);
+    expect(foreignSignedPhotoError).not.toBeNull();
+    const { data: officePhotos } = await office.client.from('job_photos').select('id').eq('job_id', officeJobId!);
+    expect(officePhotos).toHaveLength(1);
+    const { data: unassignedPhotos } = await employeeB.client.from('job_photos').select('id').eq('job_id', officeJobId!);
+    expect(unassignedPhotos).toEqual([]);
+    const { error: unassignedPhotoUploadError } = await employeeB.client.storage.from('job-photos').upload(`${ownerA.companyId}/${officeJobId}/${randomUUID()}.png`, image, { contentType: 'image/png' });
+    expect(unassignedPhotoUploadError).not.toBeNull();
+    const { data: crossCompanyPhotos } = await ownerB.client.from('job_photos').select('id').eq('job_id', officeJobId!);
+    expect(crossCompanyPhotos).toEqual([]);
+    const { error: employeeDeleteOtherError } = await employeeB.client.rpc('delete_job_photo', { p_photo_id: firstPhotoId! });
+    expect(employeeDeleteOtherError).not.toBeNull();
+    const { data: ownPhotoPath, error: ownPhotoDeleteError } = await employeeA.client.rpc('delete_job_photo', { p_photo_id: firstPhotoId! });
+    expect(ownPhotoDeleteError).toBeNull();
+    const { error: ownStorageDeleteError } = await employeeA.client.storage.from('job-photos').remove([ownPhotoPath!]);
+    expect(ownStorageDeleteError).toBeNull();
+    const { data: deletedPhoto } = await ownerA.client.from('job_photos').select('id').eq('id', firstPhotoId!).maybeSingle();
+    expect(deletedPhoto).toBeNull();
+    const secondPhotoPath = `${ownerA.companyId}/${officeJobId}/${randomUUID()}.jpg`;
+    const secondImage = new File([new Uint8Array([255, 216, 255])], 'abschluss.jpg', { type: 'image/jpeg' });
+    const { error: secondPhotoUploadError } = await employeeA.client.storage.from('job-photos').upload(secondPhotoPath, secondImage, { contentType: 'image/jpeg' });
+    expect(secondPhotoUploadError).toBeNull();
+    const { data: secondPhotoId, error: secondPhotoMetadataError } = await employeeA.client.rpc('create_my_job_photo_metadata', { p_job_id: officeJobId!, p_storage_path: secondPhotoPath, p_category: 'AFTER', p_checklist_item_id: null, p_description: null });
+    expect(secondPhotoMetadataError).toBeNull();
+    const { data: staffPhotoPath, error: staffPhotoDeleteError } = await office.client.rpc('delete_job_photo', { p_photo_id: secondPhotoId! });
+    expect(staffPhotoDeleteError).toBeNull();
+    const { error: staffStorageDeleteError } = await office.client.storage.from('job-photos').remove([staffPhotoPath!]);
+    expect(staffStorageDeleteError).toBeNull();
     const { data: jobsWithRelations, error: jobsWithRelationsError } = await ownerA.client
       .from('jobs')
       .select('id, customers(name), cleaning_objects(name, city), job_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
@@ -120,6 +211,26 @@ integration('jobs, planning and RLS', () => {
     expect(auditError).toBeNull();
     expect(auditLogs).toHaveLength(1);
 
+    const serviceRecordDate = dateIn(6);
+    const { data: serviceRecordJobId, error: serviceRecordJobError } = await createJob(ownerA.client, customerA, objectA, serviceRecordDate, [employeeA.memberId, employeeB.memberId]);
+    expect(serviceRecordJobError).toBeNull();
+    const { error: firstServiceStartError } = await employeeA.client.rpc('start_my_job', { p_job_id: serviceRecordJobId! });
+    expect(firstServiceStartError).toBeNull();
+    const { error: secondServiceStartError } = await employeeB.client.rpc('start_my_job', { p_job_id: serviceRecordJobId! });
+    expect(secondServiceStartError).toBeNull();
+    const { error: firstServiceStopError } = await employeeA.client.rpc('stop_my_job', { p_job_id: serviceRecordJobId! });
+    expect(firstServiceStopError).toBeNull();
+    const { error: secondServiceStopError } = await employeeB.client.rpc('stop_my_job', { p_job_id: serviceRecordJobId! });
+    expect(secondServiceStopError).toBeNull();
+    const { data: serviceRecordJob, error: serviceRecordJobQueryError } = await ownerA.client.from('jobs').select('id, title, scheduled_date, planned_start_at, planned_end_at, customers(name), cleaning_objects(name, street, postal_code, city)').eq('id', serviceRecordJobId!).single();
+    expect(serviceRecordJobQueryError).toBeNull();
+    expect(serviceRecordJob).toMatchObject({ id: serviceRecordJobId, title: 'Phase 4 Testauftrag', scheduled_date: serviceRecordDate });
+    const { data: serviceRecordTimes } = await ownerA.client.from('job_time_entries').select('member_id, started_at, finished_at, duration_minutes').eq('job_id', serviceRecordJobId!).order('started_at');
+    expect(serviceRecordTimes).toHaveLength(2);
+    expect(serviceRecordTimes?.every((entry) => entry.finished_at !== null && entry.duration_minutes !== null)).toBe(true);
+    const { data: foreignServiceRecord } = await ownerB.client.from('jobs').select('id, job_time_entries(id), job_checklists(id), job_photos(id)').eq('id', serviceRecordJobId!);
+    expect(foreignServiceRecord).toEqual([]);
+
     const { data: secondJobId, error: secondJobError } = await createJob(ownerA.client, customerA, objectA, dateIn(3), [employeeB.memberId], 'CANCELLED');
     expect(secondJobError).toBeNull();
     const { data: employeeJobs, error: employeeJobsError } = await employeeA.client.from('jobs').select('id').order('planned_start_at');
@@ -128,8 +239,9 @@ integration('jobs, planning and RLS', () => {
     expect(employeeJobs?.map((job) => job.id)).not.toContain(secondJobId);
 
     const scheduleStart = dateIn(4);
-    const { data: schedule, error: scheduleError } = await ownerA.client.from('service_schedules').insert({ company_id: ownerA.companyId, customer_id: customerA, cleaning_object_id: objectA, name: 'Phase 4 Regelreinigung', valid_from: scheduleStart }).select('id').single();
+    const { data: schedule, error: scheduleError } = await ownerA.client.from('service_schedules').insert({ company_id: ownerA.companyId, customer_id: customerA, cleaning_object_id: objectA, checklist_template_id: template!.id, name: 'Phase 4 Regelreinigung', valid_from: scheduleStart }).select('id, checklist_template_id').single();
     expect(scheduleError).toBeNull();
+    expect(schedule?.checklist_template_id).toBe(template!.id);
     const { error: ruleError } = await ownerA.client.from('schedule_rules').insert({ service_schedule_id: schedule!.id, weekday: isoWeekday(scheduleStart), planned_start_time: '07:00', planned_end_time: '08:00' });
     expect(ruleError).toBeNull();
     const { error: scheduleAssignmentError } = await ownerA.client.from('service_schedule_assignments').insert({ company_id: ownerA.companyId, service_schedule_id: schedule!.id, member_id: employeeA.memberId });
@@ -139,6 +251,9 @@ integration('jobs, planning and RLS', () => {
     expect(firstGenerationError).toBeNull();
     const { count: generatedCount } = await ownerA.client.from('jobs').select('*', { count: 'exact', head: true }).eq('service_schedule_id', schedule!.id);
     expect(generatedCount).toBeGreaterThan(0);
+    const { data: generatedJob } = await ownerA.client.from('jobs').select('id').eq('service_schedule_id', schedule!.id).order('scheduled_date').limit(1).single();
+    const { data: generatedChecklist } = await ownerA.client.from('job_checklists').select('template_id').eq('job_id', generatedJob!.id).single();
+    expect(generatedChecklist?.template_id).toBe(template!.id);
     const { error: secondGenerationError } = await ownerA.client.rpc('generate_jobs_for_schedule', { p_schedule_id: schedule!.id, p_until: horizon });
     expect(secondGenerationError).toBeNull();
     const { count: repeatedCount } = await ownerA.client.from('jobs').select('*', { count: 'exact', head: true }).eq('service_schedule_id', schedule!.id);

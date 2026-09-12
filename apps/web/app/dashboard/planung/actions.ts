@@ -20,11 +20,11 @@ async function saveSchedule(scheduleId: string | null, formData: FormData): Prom
     const { supabase, company } = await requireStaffCompany();
     let id = scheduleId;
     if (!id) {
-      const { data, error } = await supabase.from('service_schedules').insert({ company_id: company.id, customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null }).select('id').single();
+      const { data, error } = await supabase.from('service_schedules').insert({ company_id: company.id, customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null }).select('id').single();
       if (error || !data) return failure('Der wiederkehrende Plan konnte nicht erstellt werden.');
       id = data.id;
     } else {
-      const { error } = await supabase.from('service_schedules').update({ customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null }).eq('id', id).eq('company_id', company.id);
+      const { error } = await supabase.from('service_schedules').update({ customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null }).eq('id', id).eq('company_id', company.id);
       if (error) return failure('Der wiederkehrende Plan konnte nicht aktualisiert werden.');
       await supabase.from('schedule_rules').update({ is_active: false }).eq('service_schedule_id', id);
       await supabase.from('service_schedule_assignments').delete().eq('service_schedule_id', id);

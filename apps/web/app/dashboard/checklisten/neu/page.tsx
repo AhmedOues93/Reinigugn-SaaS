@@ -1,0 +1,1 @@
+import { ChecklistTemplateForm } from '@/components/checklist-template-form'; import { createChecklistTemplate } from '../actions'; export default function NewChecklist() { return <div className="mx-auto max-w-3xl"><h1 className="mb-6 text-2xl font-semibold">Checkliste erstellen</h1><ChecklistTemplateForm action={createChecklistTemplate} /></div>; }
