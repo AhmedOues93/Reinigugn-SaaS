@@ -1,0 +1,20 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ArrowLeft, Pencil, Plus } from 'lucide-react';
+import { getCustomer, listCustomerObjects } from '@/lib/data/customers';
+import { Card, Button } from '@/components/ui';
+import { StatusBadge } from '@/components/status-badge';
+import { StatusToggle } from '@/components/status-toggle';
+import { setCustomerActive } from '../actions';
+
+function Info({ label, value }: { label: string; value?: string | null }) { return <div><dt className="text-sm text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm font-medium text-slate-800">{value || '—'}</dd></div>; }
+
+export default async function CustomerDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ success?: string }> }) {
+  const { id } = await params; const { success } = await searchParams;
+  const customer = await getCustomer(id); if (!customer) notFound();
+  const objects = await listCustomerObjects(customer.id);
+  return <div className="mx-auto max-w-5xl"><Link href="/dashboard/kunden" className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-teal-700"><ArrowLeft className="size-4" />Zurueck zu Kunden</Link>{success && <p className="mb-5 rounded-md bg-teal-50 p-3 text-sm text-teal-800">{success}</p>}<div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-3"><h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1><StatusBadge isActive={customer.is_active} /></div>{customer.customer_number && <p className="mt-2 text-sm text-slate-500">Kundennummer: {customer.customer_number}</p>}</div><div className="flex flex-wrap gap-3"><Link href={`/dashboard/kunden/${customer.id}/bearbeiten`}><Button variant="outline"><Pencil className="mr-2 size-4" />Bearbeiten</Button></Link><StatusToggle id={customer.id} isActive={customer.is_active} noun="Kunde" action={setCustomerActive} /></div></div>
+    <div className="grid gap-5 lg:grid-cols-2"><Card className="p-5"><h2 className="font-semibold">Kontaktdaten</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2"><Info label="Ansprechperson" value={customer.contact_person} /><Info label="E-Mail-Adresse" value={customer.email} /><Info label="Telefon" value={customer.phone} /></dl></Card><Card className="p-5"><h2 className="font-semibold">Rechnungsadresse</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2"><Info label="Adresse" value={customer.billing_address} /><Info label="Postleitzahl" value={customer.postal_code} /><Info label="Ort" value={customer.city} /></dl></Card><Card className="p-5 lg:col-span-2"><h2 className="font-semibold">Notizen</h2><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{customer.notes || 'Keine Notizen hinterlegt.'}</p></Card></div>
+    <Card className="mt-5 overflow-hidden"><div className="flex items-center justify-between border-b p-5"><div><h2 className="font-semibold">Objekte</h2><p className="mt-1 text-sm text-slate-600">Reinigungsobjekte dieses Kunden.</p></div><Link href={`/dashboard/objekte/neu?customer=${customer.id}`}><Button><Plus className="mr-2 size-4" />Objekt hinzufügen</Button></Link></div>{objects.length === 0 ? <p className="p-6 text-sm text-slate-600">Fuer diesen Kunden sind noch keine Objekte angelegt.</p> : <div className="divide-y">{objects.map((object) => <Link key={object.id} href={`/dashboard/objekte/${object.id}`} className="flex items-center justify-between gap-4 p-5 hover:bg-slate-50"><div><p className="font-medium">{object.name}</p><p className="mt-1 text-sm text-slate-600">{[object.street, object.postal_code, object.city].filter(Boolean).join(', ') || 'Keine Adresse hinterlegt'}</p></div><StatusBadge isActive={object.is_active} /></Link>)}</div>}</Card>
+  </div>;
+}

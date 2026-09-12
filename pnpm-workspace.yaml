@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Required by Next.js and Vitest. Keeping this allowlist explicit prevents arbitrary
+# dependency lifecycle scripts from executing during installation.
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

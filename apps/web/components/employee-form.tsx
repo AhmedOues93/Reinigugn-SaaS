@@ -1,0 +1,25 @@
+'use client';
+
+import Link from 'next/link';
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { type FormState, initialFormState } from '@/lib/actions';
+import { Button, Input } from '@/components/ui';
+import { FormMessage, SubmitButton } from '@/components/form-controls';
+
+type EmployeeRecord = { id?: string; role?: 'OFFICE' | 'EMPLOYEE'; invited_first_name?: string | null; invited_last_name?: string | null; invited_phone?: string | null; invited_email?: string | null; profiles?: { first_name?: string | null; last_name?: string | null; phone?: string | null } | { first_name?: string | null; last_name?: string | null; phone?: string | null }[] | null; employee_details?: { employee_number?: string | null; weekly_hours?: number | null; employment_start_date?: string | null; notes?: string | null }[] | null; };
+type EmployeeAction = (state: FormState, formData: FormData) => Promise<FormState>;
+
+function profileFor(record?: EmployeeRecord) { return Array.isArray(record?.profiles) ? record?.profiles[0] : record?.profiles; }
+
+export function EmployeeForm({ employee, action, submitLabel, currentRole, invitation }: { employee?: EmployeeRecord; action: EmployeeAction; submitLabel: string; currentRole: 'OWNER' | 'OFFICE'; invitation: boolean }) {
+  const [state, formAction] = useActionState(action, initialFormState);
+  const router = useRouter(); const profile = profileFor(employee); const details = employee?.employee_details?.[0];
+  useEffect(() => { if (state.status === 'success' && state.id && !state.invitationUrl) router.push(`/dashboard/mitarbeiter/${state.id}?success=${encodeURIComponent(invitation ? 'Einladung wurde erstellt.' : 'Mitarbeiter wurde gespeichert.')}`); }, [router, state, invitation]);
+  return <form action={formAction} className="space-y-7"><FormMessage status={state.status} message={state.message} />
+    <section className="grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium">Vorname <span className="text-red-700">*</span><Input className="mt-1.5" name="first_name" defaultValue={profile?.first_name ?? employee?.invited_first_name ?? ''} required maxLength={120} /></label><label className="block text-sm font-medium">Nachname <span className="text-red-700">*</span><Input className="mt-1.5" name="last_name" defaultValue={profile?.last_name ?? employee?.invited_last_name ?? ''} required maxLength={120} /></label>{invitation ? <label className="block text-sm font-medium sm:col-span-2">E-Mail-Adresse <span className="text-red-700">*</span><Input className="mt-1.5" name="email" type="email" required maxLength={254} /></label> : <label className="block text-sm font-medium sm:col-span-2">E-Mail-Adresse<Input className="mt-1.5 bg-slate-50" value={employee?.invited_email ?? ''} readOnly /></label>}<label className="block text-sm font-medium">Telefon<Input className="mt-1.5" name="phone" type="tel" defaultValue={profile?.phone ?? employee?.invited_phone ?? ''} maxLength={64} /></label><label className="block text-sm font-medium">Rolle <select className="mt-1.5 flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" name="role" defaultValue={employee?.role ?? 'EMPLOYEE'}><option value="EMPLOYEE">Mitarbeiter</option>{currentRole === 'OWNER' && <option value="OFFICE">Buero</option>}</select></label></section>
+    <section className="border-t pt-6"><h2 className="font-semibold">Arbeitsdaten</h2><div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium">Personalnummer<Input className="mt-1.5" name="employee_number" defaultValue={details?.employee_number ?? ''} maxLength={64} /></label><label className="block text-sm font-medium">Wochenstunden<Input className="mt-1.5" name="weekly_hours" type="number" min="0" max="168" step="0.25" defaultValue={details?.weekly_hours ?? ''} /></label><label className="block text-sm font-medium">Eintrittsdatum<Input className="mt-1.5" name="employment_start_date" type="date" defaultValue={details?.employment_start_date ?? ''} /></label></div><label className="mt-5 block text-sm font-medium">Notizen<textarea className="mt-1.5 flex h-28 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" name="notes" defaultValue={details?.notes ?? ''} maxLength={4000} /></label></section>
+    {state.invitationUrl && <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-900"><p className="font-medium">Lokaler Einladungslink</p><a className="mt-2 block break-all text-teal-800 underline" href={state.invitationUrl}>{state.invitationUrl}</a>{state.id && <Link className="mt-3 inline-block font-medium text-teal-800 underline" href={`/dashboard/mitarbeiter/${state.id}`}>Zur Mitarbeiteransicht</Link>}</div>}
+    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.back()}>Abbrechen</Button><SubmitButton>{submitLabel}</SubmitButton></div>
+  </form>;
+}
