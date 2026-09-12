@@ -146,3 +146,30 @@ export const serviceScheduleSchema = z.object({
   checklist_template_id: optionalUuid,
   rules: z.array(scheduleRuleSchema).min(1, 'Bitte hinterlege mindestens einen Wochentag.').max(7),
 }).refine((value) => !value.valid_until || value.valid_until >= value.valid_from, { message: 'Das Enddatum darf nicht vor dem Startdatum liegen.', path: ['valid_until'] });
+
+const complaintPrioritySchema = z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']);
+const complaintStatusSchema = z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']);
+
+export const complaintSchema = z.object({
+  customer_id: z.string().uuid('Bitte waehle einen gueltigen Kunden aus.'),
+  cleaning_object_id: z.string().uuid('Bitte waehle ein gueltiges Objekt aus.'),
+  job_id: optionalUuid,
+  title: z.string().trim().min(2, 'Der Titel ist zu kurz.').max(160, 'Der Titel ist zu lang.'),
+  description: z.string().trim().min(2, 'Bitte beschreibe die Reklamation.').max(4_000, 'Die Beschreibung ist zu lang.'),
+  priority: complaintPrioritySchema.default('NORMAL'),
+  status: complaintStatusSchema.default('OPEN'),
+  assigned_member_id: optionalUuid,
+  due_date: optionalDate,
+  internal_note: optionalText(4_000, 'Die interne Notiz'),
+});
+
+export const qualityInspectionSchema = z.object({
+  cleaning_object_id: z.string().uuid('Bitte waehle ein gueltiges Objekt aus.'),
+  job_id: optionalUuid,
+  inspected_at: dateSchema,
+  result: z.enum(['PASS', 'FAIL']),
+  score: z.preprocess((value) => value === '' ? undefined : value, z.coerce.number().int().min(0).max(100).optional()),
+  criteria: optionalText(4_000, 'Die Pruefkriterien'),
+  notes: optionalText(4_000, 'Die Notizen'),
+  follow_up_required: z.preprocess((value) => value === 'true' || value === 'on', z.boolean()),
+});

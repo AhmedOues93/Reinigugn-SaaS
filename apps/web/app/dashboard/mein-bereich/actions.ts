@@ -58,3 +58,14 @@ export async function deleteMyJobPhoto(photoId: string, _: FormState, __: FormDa
   revalidatePath('/dashboard/mein-bereich'); revalidatePath('/dashboard/auftraege');
   return { status: 'success', message: 'Foto wurde entfernt.' };
 }
+
+export async function addMyComplaintUpdate(complaintId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const status = String(formData.get('status') ?? ''); const note = String(formData.get('note') ?? '').trim();
+  if (!['IN_PROGRESS', 'RESOLVED'].includes(status) || !note) return { status: 'error', message: 'Bitte Status und eine kurze operative Notiz angeben.' };
+  const { supabase, membership } = await getCurrentCompany();
+  if (!membership || membership.role !== 'EMPLOYEE') return { status: 'error', message: 'Nicht berechtigt.' };
+  const { error } = await supabase.rpc('add_my_complaint_update', { p_complaint_id: complaintId, p_status: status, p_note: note });
+  if (error) return { status: 'error', message: 'Die Reklamationsaktualisierung konnte nicht gespeichert werden.' };
+  revalidatePath('/dashboard/mein-bereich'); revalidatePath('/dashboard/reklamationen'); revalidatePath(`/dashboard/reklamationen/${complaintId}`);
+  return { status: 'success', message: 'Aktualisierung wurde gespeichert.' };
+}

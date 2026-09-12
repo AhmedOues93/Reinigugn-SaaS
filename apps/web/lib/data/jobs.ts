@@ -64,15 +64,18 @@ export async function getDashboardMetrics() {
   const { supabase, company } = await requireStaffCompany();
   const today = berlinDateKey();
   const weekEnd = addDays(today, 6);
-  const [{ count: todayJobs }, { count: plannedToday }, { data: assignments }, { count: weekJobs }, { count: activeWorkers }, { data: completedEntries }] = await Promise.all([
+  const [{ count: todayJobs }, { count: plannedToday }, { data: assignments }, { count: weekJobs }, { count: activeWorkers }, { data: completedEntries }, { count: openComplaints }, { count: overdueComplaints }, { count: recentQualityIssues }] = await Promise.all([
     supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('company_id', company.id).eq('scheduled_date', today).neq('status', 'CANCELLED'),
     supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('company_id', company.id).eq('scheduled_date', today).in('status', ['PLANNED', 'CONFIRMED']),
     supabase.from('job_assignments').select('member_id, jobs!inner(company_id, scheduled_date, status)').eq('jobs.company_id', company.id).eq('jobs.scheduled_date', today).neq('jobs.status', 'CANCELLED'),
     supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('company_id', company.id).gte('scheduled_date', today).lte('scheduled_date', weekEnd).neq('status', 'CANCELLED'),
     supabase.from('job_time_entries').select('*', { count: 'exact', head: true }).eq('company_id', company.id).is('finished_at', null),
     supabase.from('job_time_entries').select('duration_minutes').eq('company_id', company.id).gte('started_at', `${today}T00:00:00Z`).lte('started_at', `${today}T23:59:59Z`).not('duration_minutes', 'is', null),
+    supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('company_id', company.id).in('status', ['OPEN', 'IN_PROGRESS']),
+    supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('company_id', company.id).lt('due_date', today).in('status', ['OPEN', 'IN_PROGRESS']),
+    supabase.from('quality_inspections').select('*', { count: 'exact', head: true }).eq('company_id', company.id).eq('result', 'FAIL').gte('inspected_at', addDays(today, -30)),
   ]);
-  return { todayJobs: todayJobs ?? 0, plannedToday: plannedToday ?? 0, employeesScheduled: new Set((assignments ?? []).map((assignment) => assignment.member_id)).size, weekJobs: weekJobs ?? 0, activeWorkers: activeWorkers ?? 0, workedMinutes: (completedEntries ?? []).reduce((total, entry) => total + (entry.duration_minutes ?? 0), 0) };
+  return { todayJobs: todayJobs ?? 0, plannedToday: plannedToday ?? 0, employeesScheduled: new Set((assignments ?? []).map((assignment) => assignment.member_id)).size, weekJobs: weekJobs ?? 0, activeWorkers: activeWorkers ?? 0, workedMinutes: (completedEntries ?? []).reduce((total, entry) => total + (entry.duration_minutes ?? 0), 0), openComplaints: openComplaints ?? 0, overdueComplaints: overdueComplaints ?? 0, recentQualityIssues: recentQualityIssues ?? 0 };
 }
 
 export async function listMyAssignedJobs({ from, to }: { from: string; to: string }) {
