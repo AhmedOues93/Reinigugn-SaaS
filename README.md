@@ -1,6 +1,6 @@
 # SauberWerk
 
-Multi-tenant SaaS for small cleaning companies in Germany. Phase 4 adds single jobs, recurring cleaning schedules, employee assignments, weekly planning and employee read-only job views.
+Multi-tenant SaaS for small cleaning companies in Germany. Phase 5 adds stabilized planning queries, professional number generation and employee START/BEENDEN time tracking.
 
 ## Requirements
 
@@ -70,5 +70,9 @@ The RLS integration test is intentionally environment-gated. Provide `TEST_SUPAB
 Staff manage single jobs in `/dashboard/auftraege` and recurring templates in `/dashboard/planung/plaene`. A weekly plan exposes customer, object, employee and status filters. Recurring templates generate at most the next eight weeks when saved, reactivated, or when `generate_jobs_for_schedule(schedule_id, until)` is called by a future trusted scheduler.
 
 Generated jobs are unique per schedule rule and date. Re-running generation cannot duplicate them. Future `PLANNED` and `CONFIRMED` jobs may be refreshed from an edited template; `COMPLETED`, `MISSED`, and past jobs are preserved. Deactivated rules cancel only future open jobs.
+
+## Time tracking
+
+Employees can start only jobs assigned to their active membership. `start_my_job` uses database time, permits only one active entry per employee, and moves the job to `IN_PROGRESS`. `stop_my_job` closes the employee's entry with database time and completes a job only when every assigned employee has a completed entry. OWNER/OFFICE can view the working-time list; OWNER/OFFICE corrections use `correct_time_entry` and always create an immutable audit row with a reason.
 
 See [architecture.md](docs/architecture.md), [database.md](docs/database.md), and [security.md](docs/security.md) for design details.

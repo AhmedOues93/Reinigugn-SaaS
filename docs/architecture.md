@@ -24,3 +24,7 @@ Invitations create a pending `company_members` record without a profile. A rando
 `service_schedules` are weekly templates with structured `schedule_rules`; `jobs` are concrete visits. The generator is a database function so a future trusted cron can extend the rolling eight-week horizon without a browser session. It is idempotent through the schedule/rule/date unique key and preserves completed, missed, and past records when templates change.
 
 The staff dashboard exposes jobs and the weekly calendar. The employee dashboard intentionally exposes only assigned, read-only visits. Employee-facing copy remains in route components and not in database functions; a future mobile app can introduce locale dictionaries at that presentation boundary without changing operational data or authorization logic.
+
+## Phase 5 time tracking
+
+`job_time_entries` are the source of truth for actual work. START and STOP are PostgreSQL functions using `now()` rather than browser clocks. The employee app only invokes these narrow functions; it cannot directly mutate historical entries. The supported language codes (`de`, `en`, `fr`, `ar`, `tr`, `ro`, `pl`) are stored as master data, while translations remain a future presentation-layer concern.

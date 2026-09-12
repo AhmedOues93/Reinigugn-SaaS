@@ -40,3 +40,9 @@ Invitation records retain only a SHA-256 token hash. `expires_at`, `accepted_at`
 `jobs` link a customer and object to one scheduled date and UTC instants derived from the schedule timezone (`Europe/Berlin` by default). A trigger verifies that the selected customer, object, optional schedule and every assignment all belong to one company. Separate assignment triggers prevent a cross-company employee from being attached to either a job or a schedule.
 
 `generate_jobs_for_schedule(schedule_id, until)` generates only the finite rolling horizon requested by its caller. The unique tuple `(service_schedule_id, schedule_rule_id, scheduled_date)` prevents duplicate visits. Existing future `PLANNED`/`CONFIRMED` generated jobs are refreshed; completed, missed and past visits are immutable to template generation. Deactivated rules cancel future open generated jobs rather than deleting them.
+
+## Master data and time entries
+
+Customer, object and employee business numbers are company-scoped and unique. Missing numbers are generated under a transaction advisory lock as `K-0001`, `O-0001`, and `M-0001`; manual values remain supported. The Phase-5 schema also prepares billing contact data, country, payment terms, object area and employee language/employment data without collecting payroll, tax, banking or health data for employees.
+
+`job_time_entries` contains trusted `started_at`/`finished_at` timestamps, derived minutes, and source values. A partial unique index allows only one active entry per employee. `time_entry_audit_logs` stores every staff correction with old/new values, reason and actor. All timestamps are `timestamptz`; schedules retain their company-local timezone behavior.

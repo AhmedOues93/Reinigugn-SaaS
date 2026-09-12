@@ -9,9 +9,9 @@ export default async function DashboardPage() {
   const dashboardMetrics = await getDashboardMetrics();
   const metrics = [
     { label: 'Auftraege heute', value: String(dashboardMetrics.todayJobs), note: `${dashboardMetrics.plannedToday} offen oder bestaetigt` },
-    { label: 'Mitarbeiter eingeplant', value: String(dashboardMetrics.employeesScheduled), note: 'Heute mit einem Einsatz' },
+    { label: 'Mitarbeiter im Einsatz', value: String(dashboardMetrics.activeWorkers), note: `${dashboardMetrics.employeesScheduled} heute eingeplant` },
     { label: 'Auftraege diese Woche', value: String(dashboardMetrics.weekJobs), note: 'Heute bis einschliesslich Tag 7' },
-    { label: 'Wiederkehrende Planung', value: 'Aktiv', note: 'Plaene erzeugen Einsaetze im Voraus' },
+    { label: 'Arbeitszeit heute', value: `${Math.floor(dashboardMetrics.workedMinutes / 60)} h ${dashboardMetrics.workedMinutes % 60} min`, note: 'Abgeschlossene Zeitbuchungen' },
   ];
   const company = membership?.companies as unknown as { name: string } | null;
   const firstName = profile?.first_name || 'willkommen';

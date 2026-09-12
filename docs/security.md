@@ -40,6 +40,10 @@ Jobs, schedules and their assignments have RLS enabled. `is_company_staff(compan
 
 Conflict detection queries overlapping assignments server-side (`existing.start < requested.end` and `existing.end > requested.start`) and excludes cancelled, completed and missed jobs. It intentionally returns a warning rather than a hard block; the staff member must explicitly confirm the warning before the server action persists the job.
 
+## Time tracking
+
+Employees can select only their own time entries and cannot receive write privileges on the time-entry table. `start_my_job` verifies an active EMPLOYEE membership, a matching assignment, tenant identity, valid job state, and absence of another active entry. `stop_my_job` can close only the caller's active entry. Staff have company-scoped operational access; corrections require a valid interval and reason and write an audit row. RLS remains enabled on entries and audit logs.
+
 `SECURITY DEFINER` invitation functions revoke default public execution and grant only the minimal `authenticated` or preview access needed. Each validates the current active role, the target company and allowed role transition. Tokens are compared through stored hashes; no client can obtain a usable token from the database.
 
 ## Policy verification

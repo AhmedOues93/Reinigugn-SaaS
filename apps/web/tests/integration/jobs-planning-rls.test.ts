@@ -65,9 +65,22 @@ integration('jobs, planning and RLS', () => {
     const employeeB = await inviteMember(ownerA.client, 'EMPLOYEE', 'Phase4EmployeeB');
     const jobDate = dateIn(2);
 
+    const { data: employeeOptions, error: employeeOptionsError } = await ownerA.client
+      .from('company_members')
+      .select('id, profiles!company_members_profile_id_fkey(first_name, last_name)')
+      .eq('company_id', ownerA.companyId).eq('role', 'EMPLOYEE').eq('status', 'ACTIVE').order('created_at');
+    expect(employeeOptionsError).toBeNull();
+    expect(employeeOptions).toHaveLength(2);
+
     const { data: officeJobId, error: officeJobError } = await createJob(office.client, customerA, objectA, jobDate, [employeeA.memberId]);
     expect(officeJobError).toBeNull();
     expect(officeJobId).toBeTruthy();
+    const { data: jobsWithRelations, error: jobsWithRelationsError } = await ownerA.client
+      .from('jobs')
+      .select('id, customers(name), cleaning_objects(name, city), job_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
+      .eq('company_id', ownerA.companyId);
+    expect(jobsWithRelationsError).toBeNull();
+    expect(jobsWithRelations?.[0]?.job_assignments).toHaveLength(1);
 
     const { error: employeeCreateError } = await createJob(employeeA.client, customerA, objectA, jobDate, []);
     expect(employeeCreateError).not.toBeNull();
@@ -83,6 +96,29 @@ integration('jobs, planning and RLS', () => {
     });
     expect(conflictError).toBeNull();
     expect(conflicts?.some((conflict: { job_id: string }) => conflict.job_id === officeJobId)).toBe(true);
+
+    const { error: unassignedStartError } = await employeeB.client.rpc('start_my_job', { p_job_id: officeJobId! });
+    expect(unassignedStartError).not.toBeNull();
+    const { data: timeEntryId, error: startError } = await employeeA.client.rpc('start_my_job', { p_job_id: officeJobId! });
+    expect(startError).toBeNull();
+    const { error: duplicateStartError } = await employeeA.client.rpc('start_my_job', { p_job_id: officeJobId! });
+    expect(duplicateStartError).not.toBeNull();
+    const { data: ownEntries, error: ownEntriesError } = await employeeA.client.from('job_time_entries').select('id, member_id, finished_at').eq('id', timeEntryId!);
+    expect(ownEntriesError).toBeNull();
+    expect(ownEntries).toHaveLength(1);
+    const { data: foreignEntries } = await employeeB.client.from('job_time_entries').select('id').eq('id', timeEntryId!);
+    expect(foreignEntries).toEqual([]);
+    const { error: stopError } = await employeeA.client.rpc('stop_my_job', { p_job_id: officeJobId! });
+    expect(stopError).toBeNull();
+    const { data: stoppedEntry } = await ownerA.client.from('job_time_entries').select('started_at, finished_at, duration_minutes').eq('id', timeEntryId!).single();
+    expect(stoppedEntry?.finished_at).not.toBeNull();
+    expect(stoppedEntry?.duration_minutes).toBeGreaterThanOrEqual(0);
+    const correctedEnd = new Date(new Date(stoppedEntry!.started_at).getTime() + 60_000).toISOString();
+    const { error: correctionError } = await ownerA.client.rpc('correct_time_entry', { p_time_entry_id: timeEntryId!, p_started_at: stoppedEntry!.started_at, p_finished_at: correctedEnd, p_reason: 'Testkorrektur' });
+    expect(correctionError).toBeNull();
+    const { data: auditLogs, error: auditError } = await ownerA.client.from('time_entry_audit_logs').select('id').eq('time_entry_id', timeEntryId!);
+    expect(auditError).toBeNull();
+    expect(auditLogs).toHaveLength(1);
 
     const { data: secondJobId, error: secondJobError } = await createJob(ownerA.client, customerA, objectA, dateIn(3), [employeeB.memberId], 'CANCELLED');
     expect(secondJobError).toBeNull();
