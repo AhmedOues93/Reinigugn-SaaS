@@ -1,6 +1,6 @@
 # SauberWerk
 
-Multi-tenant SaaS for small cleaning companies in Germany. Phase 3 provides protected customer/object management, employee administration, expiring invitations and role-aware access control.
+Multi-tenant SaaS for small cleaning companies in Germany. Phase 4 adds single jobs, recurring cleaning schedules, employee assignments, weekly planning and employee read-only job views.
 
 ## Requirements
 
@@ -62,5 +62,13 @@ pnpm format:check
 Invitation links expire after seven days and can only be used once by the exact invited email address. In local development, the invitation action displays the link for manual testing. Production never logs invitation tokens; connect a provider by replacing `apps/web/lib/mail/invitations.ts` with a Resend, Postmark or comparable adapter.
 
 The RLS integration test is intentionally environment-gated. Provide `TEST_SUPABASE_URL`, `TEST_SUPABASE_ANON_KEY`, `TEST_USER_A_EMAIL`, `TEST_USER_A_PASSWORD`, `TEST_USER_B_EMAIL`, and `TEST_USER_B_PASSWORD` for two users with separate companies, then run `pnpm --filter @reinigung/web test:integration`.
+
+`apps/web/tests/integration/jobs-planning-rls.test.ts` self-provisions isolated local test users when only `TEST_SUPABASE_URL` and `TEST_SUPABASE_ANON_KEY` are set. It covers staff roles, tenant boundaries, job assignments, recurring generation and conflict queries.
+
+## Phase 4 operations
+
+Staff manage single jobs in `/dashboard/auftraege` and recurring templates in `/dashboard/planung/plaene`. A weekly plan exposes customer, object, employee and status filters. Recurring templates generate at most the next eight weeks when saved, reactivated, or when `generate_jobs_for_schedule(schedule_id, until)` is called by a future trusted scheduler.
+
+Generated jobs are unique per schedule rule and date. Re-running generation cannot duplicate them. Future `PLANNED` and `CONFIRMED` jobs may be refreshed from an edited template; `COMPLETED`, `MISSED`, and past jobs are preserved. Deactivated rules cancel only future open jobs.
 
 See [architecture.md](docs/architecture.md), [database.md](docs/database.md), and [security.md](docs/security.md) for design details.

@@ -4,12 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { jobSchema } from '@reinigung/validation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { berlinDateTimeToIso } from '@/lib/date';
 
 type AssignmentConflict = { job_id: string; first_name: string | null; last_name: string | null };
 
 function failure(message: string): FormState { return { status: 'error', message }; }
 function withMembers(formData: FormData) { return { ...Object.fromEntries(formData), member_ids: formData.getAll('member_ids').filter(Boolean) }; }
-function asLocalIso(date: string, time: string) { return new Date(`${date}T${time}:00`).toISOString(); }
+function asLocalIso(date: string, time: string) { return berlinDateTimeToIso(date, time); }
 
 async function conflictsForJob(companyId: string, value: ReturnType<typeof jobSchema.parse>, supabase: Awaited<ReturnType<typeof requireStaffCompany>>['supabase']) {
   if (value.member_ids.length === 0) return [];

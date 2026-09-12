@@ -26,6 +26,20 @@ The Supabase service role bypasses RLS and must only be used in trusted server-s
 | Manage EMPLOYEE | Yes | Yes | No |
 | Disable/reactivate OWNER | No | No | No |
 
+## Phase 4 access matrix
+
+| Capability | OWNER | OFFICE | EMPLOYEE |
+| --- | --- | --- | --- |
+| Create and edit single jobs | Yes | Yes | No |
+| Create, edit and activate schedules | Yes | Yes | No |
+| Assign active employees | Yes | Yes | No |
+| View company-wide planning | Yes | Yes | No |
+| View own assigned jobs | Yes | Yes | Yes, only own |
+
+Jobs, schedules and their assignments have RLS enabled. `is_company_staff(company_id)` protects staff management policies. Employee job and customer/object reads use `is_current_job_assignee(job_id)`, so direct PostgREST calls cannot expose another employee's visits. `create_single_job`, `update_job_details`, generation and conflict lookups are `SECURITY DEFINER` functions that check the current active staff membership before acting.
+
+Conflict detection queries overlapping assignments server-side (`existing.start < requested.end` and `existing.end > requested.start`) and excludes cancelled, completed and missed jobs. It intentionally returns a warning rather than a hard block; the staff member must explicitly confirm the warning before the server action persists the job.
+
 `SECURITY DEFINER` invitation functions revoke default public execution and grant only the minimal `authenticated` or preview access needed. Each validates the current active role, the target company and allowed role transition. Tokens are compared through stored hashes; no client can obtain a usable token from the database.
 
 ## Policy verification
