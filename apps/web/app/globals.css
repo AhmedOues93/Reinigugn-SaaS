@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+[dir='rtl'] input, [dir='rtl'] textarea, [dir='rtl'] select { text-align: right; }
+[dir='rtl'] .rtl-mirror { transform: scaleX(-1); }
+
 @layer base {
   :root {
     --background: 210 20% 98%;

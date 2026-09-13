@@ -9,7 +9,7 @@ function validationError(message: string): FormState { return { status: 'error',
 
 export async function createCustomer(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = customerSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte pruefe deine Eingaben.');
+  if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
     const { supabase, company } = await requireStaffCompany();
     const { data, error } = await supabase.from('customers').insert({ ...parsed.data, company_id: company.id }).select('id').single();
@@ -21,7 +21,7 @@ export async function createCustomer(_: FormState, formData: FormData): Promise<
 
 export async function updateCustomer(id: string, _: FormState, formData: FormData): Promise<FormState> {
   const parsed = customerSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte pruefe deine Eingaben.');
+  if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
     const { supabase, company } = await requireStaffCompany();
     const { error } = await supabase.from('customers').update(parsed.data).eq('id', id).eq('company_id', company.id);

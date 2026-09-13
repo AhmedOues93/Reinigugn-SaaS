@@ -46,7 +46,7 @@ export async function listQualityInspections({ objectId }: { objectId?: string }
   let query = supabase.from('quality_inspections').select('id, cleaning_object_id, job_id, inspected_at, result, score, criteria, notes, follow_up_required, created_at, cleaning_objects(id, name), jobs(id, title), company_members!quality_inspections_inspector_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))').eq('company_id', company.id).order('inspected_at', { ascending: false });
   if (objectId) query = query.eq('cleaning_object_id', objectId);
   const { data, error } = await query;
-  if (error) throw new Error('Qualitaetskontrollen konnten nicht geladen werden.');
+  if (error) throw new Error('Qualitätskontrollen konnten nicht geladen werden.');
   return data ?? [];
 }
 

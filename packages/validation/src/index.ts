@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const emailSchema = z.string().trim().email('Bitte gib eine gueltige E-Mail-Adresse ein.');
+export const emailSchema = z.string().trim().email('Bitte gib eine gültige E-Mail-Adresse ein.');
 
 export const passwordSchema = z
   .string()
@@ -28,9 +28,9 @@ const optionalText = (maxLength: number, label: string) => z.preprocess(
 
 const optionalEmail = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
-  z.string().trim().email('Bitte gib eine gueltige E-Mail-Adresse ein.').max(254).optional(),
+  z.string().trim().email('Bitte gib eine gültige E-Mail-Adresse ein.').max(254).optional(),
 );
-const optionalUuid = z.preprocess((value) => typeof value === 'string' && value.trim() === '' ? undefined : value, z.string().uuid('Bitte waehle eine gueltige Checkliste aus.').optional());
+const optionalUuid = z.preprocess((value) => typeof value === 'string' && value.trim() === '' ? undefined : value, z.string().uuid('Bitte wähle eine gültige Checkliste aus.').optional());
 
 export const customerSchema = z.object({
   name: z.string().trim().min(2, 'Der Kundenname ist zu kurz.').max(160, 'Der Kundenname ist zu lang.'),
@@ -53,10 +53,10 @@ export const customerSchema = z.object({
 });
 
 export const cleaningObjectSchema = z.object({
-  customer_id: z.string().uuid('Bitte waehle einen gueltigen Kunden aus.'),
+  customer_id: z.string().uuid('Bitte wähle einen gültigen Kunden aus.'),
   name: z.string().trim().min(2, 'Der Objektname ist zu kurz.').max(160, 'Der Objektname ist zu lang.'),
   object_number: optionalText(64, 'Die Objektnummer'),
-  street: optionalText(240, 'Die Strasse'),
+  street: optionalText(240, 'Die Straße'),
   postal_code: optionalText(16, 'Die Postleitzahl'),
   city: optionalText(120, 'Der Ort'),
   country: optionalText(120, 'Das Land'),
@@ -75,15 +75,15 @@ export const cleaningObjectSchema = z.object({
 
 const optionalHours = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
-  z.coerce.number({ invalid_type_error: 'Bitte gib eine gueltige Wochenstundenzahl ein.' }).min(0, 'Die Wochenstunden duerfen nicht negativ sein.').max(168, 'Die Wochenstunden duerfen maximal 168 betragen.').optional(),
+  z.coerce.number({ invalid_type_error: 'Bitte gib eine gültige Wochenstundenzahl ein.' }).min(0, 'Die Wochenstunden dürfen nicht negativ sein.').max(168, 'Die Wochenstunden dürfen maximal 168 betragen.').optional(),
 );
 
 const optionalDate = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
-  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gueltiges Datum ein.').optional(),
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gültiges Datum ein.').optional(),
 );
 
-export const employeeRoleSchema = z.enum(['OFFICE', 'EMPLOYEE'], { errorMap: () => ({ message: 'Bitte waehle eine gueltige Rolle.' }) });
+export const employeeRoleSchema = z.enum(['OFFICE', 'EMPLOYEE'], { errorMap: () => ({ message: 'Bitte wähle eine gültige Rolle.' }) });
 
 export const employeeInvitationSchema = z.object({
   first_name: z.string().trim().min(1, 'Bitte gib einen Vornamen ein.').max(120, 'Der Vorname ist zu lang.'),
@@ -102,18 +102,18 @@ export const employeeInvitationSchema = z.object({
 
 export const employeeUpdateSchema = employeeInvitationSchema;
 
-export const invitationTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/, 'Der Einladungslink ist ungueltig.');
+export const invitationTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/, 'Der Einladungslink ist ungültig.');
 
-const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Bitte gib eine gueltige Uhrzeit ein.');
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gueltiges Datum ein.');
-const uuidArraySchema = z.array(z.string().uuid('Eine Mitarbeiterzuweisung ist ungueltig.')).default([]);
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Bitte gib eine gültige Uhrzeit ein.');
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gültiges Datum ein.');
+const uuidArraySchema = z.array(z.string().uuid('Eine Mitarbeiterzuweisung ist ungültig.')).default([]);
 
 export const jobStatusSchema = z.enum(['PLANNED', 'CONFIRMED', 'CANCELLED']);
 export const jobPrioritySchema = z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']);
 
 export const jobSchema = z.object({
-  customer_id: z.string().uuid('Bitte waehle einen gueltigen Kunden aus.'),
-  cleaning_object_id: z.string().uuid('Bitte waehle ein gueltiges Objekt aus.'),
+  customer_id: z.string().uuid('Bitte wähle einen gültigen Kunden aus.'),
+  cleaning_object_id: z.string().uuid('Bitte wähle ein gültiges Objekt aus.'),
   title: z.string().trim().min(2, 'Der Auftragstitel ist zu kurz.').max(160, 'Der Auftragstitel ist zu lang.'),
   description: optionalText(4_000, 'Die Beschreibung'),
   scheduled_date: dateSchema,
@@ -136,8 +136,8 @@ export const scheduleRuleSchema = z.object({
 }).refine((value) => value.planned_end_time > value.planned_start_time, { message: 'Das geplante Ende muss nach dem Beginn liegen.', path: ['planned_end_time'] });
 
 export const serviceScheduleSchema = z.object({
-  customer_id: z.string().uuid('Bitte waehle einen gueltigen Kunden aus.'),
-  cleaning_object_id: z.string().uuid('Bitte waehle ein gueltiges Objekt aus.'),
+  customer_id: z.string().uuid('Bitte wähle einen gültigen Kunden aus.'),
+  cleaning_object_id: z.string().uuid('Bitte wähle ein gültiges Objekt aus.'),
   name: z.string().trim().min(2, 'Der Planname ist zu kurz.').max(160, 'Der Planname ist zu lang.'),
   description: optionalText(4_000, 'Die Beschreibung'),
   valid_from: dateSchema,
@@ -151,8 +151,8 @@ const complaintPrioritySchema = z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']);
 const complaintStatusSchema = z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']);
 
 export const complaintSchema = z.object({
-  customer_id: z.string().uuid('Bitte waehle einen gueltigen Kunden aus.'),
-  cleaning_object_id: z.string().uuid('Bitte waehle ein gueltiges Objekt aus.'),
+  customer_id: z.string().uuid('Bitte wähle einen gültigen Kunden aus.'),
+  cleaning_object_id: z.string().uuid('Bitte wähle ein gültiges Objekt aus.'),
   job_id: optionalUuid,
   title: z.string().trim().min(2, 'Der Titel ist zu kurz.').max(160, 'Der Titel ist zu lang.'),
   description: z.string().trim().min(2, 'Bitte beschreibe die Reklamation.').max(4_000, 'Die Beschreibung ist zu lang.'),
@@ -164,12 +164,12 @@ export const complaintSchema = z.object({
 });
 
 export const qualityInspectionSchema = z.object({
-  cleaning_object_id: z.string().uuid('Bitte waehle ein gueltiges Objekt aus.'),
+  cleaning_object_id: z.string().uuid('Bitte wähle ein gültiges Objekt aus.'),
   job_id: optionalUuid,
   inspected_at: dateSchema,
   result: z.enum(['PASS', 'FAIL']),
   score: z.preprocess((value) => value === '' ? undefined : value, z.coerce.number().int().min(0).max(100).optional()),
-  criteria: optionalText(4_000, 'Die Pruefkriterien'),
+  criteria: optionalText(4_000, 'Die Prüfkriterien'),
   notes: optionalText(4_000, 'Die Notizen'),
   follow_up_required: z.preprocess((value) => value === 'true' || value === 'on', z.boolean()),
 });

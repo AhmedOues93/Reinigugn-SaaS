@@ -10,7 +10,7 @@ type Action = (state: typeof initialFormState, formData: FormData) => Promise<ty
 
 function ChecklistButton({ completed }: { completed: boolean }) {
   const { pending } = useFormStatus();
-  return <button type="submit" disabled={pending} className={`min-h-12 w-full rounded-md border-2 px-4 text-left text-base font-semibold disabled:opacity-60 ${completed ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-300 bg-white text-slate-900 hover:border-teal-700'}`}>{pending ? 'Wird gespeichert...' : completed ? 'Erledigt - erneut oeffnen' : 'Als erledigt markieren'}</button>;
+  return <button type="submit" disabled={pending} className={`min-h-12 w-full rounded-md border-2 px-4 text-left text-base font-semibold disabled:opacity-60 ${completed ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-300 bg-white text-slate-900 hover:border-teal-700'}`}>{pending ? 'Wird gespeichert...' : completed ? 'Erledigt - erneut öffnen' : 'Als erledigt markieren'}</button>;
 }
 
 export function JobChecklist({ items, completeItem }: { items: Item[]; completeItem: (itemId: string, completed: boolean, state: typeof initialFormState, formData: FormData) => Promise<typeof initialFormState> }) {

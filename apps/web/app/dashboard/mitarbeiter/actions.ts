@@ -14,10 +14,10 @@ function failure(message: string): FormState { return { status: 'error', message
 
 export async function inviteEmployee(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = employeeInvitationSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte pruefe deine Eingaben.');
+  if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
     const { supabase, role, company } = await requireStaffCompany();
-    if (!canInviteMember(role, parsed.data.role)) return failure('Das Buero kann nur Mitarbeiter einladen.');
+    if (!canInviteMember(role, parsed.data.role)) return failure('Das Büro kann nur Mitarbeiter einladen.');
     const token = createInvitationToken();
     const expiresAt = invitationExpiresAt();
     const { data, error } = await supabase.rpc('create_employee_invitation', {
@@ -45,13 +45,13 @@ export async function resendEmployeeInvitation(memberId: string): Promise<FormSt
     const employee = await supabase.from('company_members').select('invited_first_name, role').eq('id', memberId).single();
     const delivery = await mailService.sendInvitation({ to: invitation.email, companyName: company.name, firstName: employee.data?.invited_first_name ?? 'Teammitglied', role: employee.data?.role ?? 'EMPLOYEE', token });
     revalidatePath(`/dashboard/mitarbeiter/${memberId}`);
-    return { status: 'success', message: delivery.developmentUrl ? 'Einladung wurde erneuert.' : 'Einladung wurde erneut versendet.', invitationUrl: delivery.developmentUrl };
+    return { status: 'success', message: delivery.developmentUrl ? 'Einladung wurde erneürt.' : 'Einladung wurde erneut versendet.', invitationUrl: delivery.developmentUrl };
   } catch { return failure('Die Einladung konnte nicht erneut versendet werden.'); }
 }
 
 export async function updateEmployee(memberId: string, _: FormState, formData: FormData): Promise<FormState> {
   const parsed = employeeUpdateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte pruefe deine Eingaben.');
+  if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
     const { supabase } = await requireStaffCompany();
     const { error } = await supabase.rpc('update_company_member', {
@@ -85,24 +85,24 @@ async function invitationTokenFromCookie() {
 export async function signUpFromInvitation(_: FormState, formData: FormData): Promise<FormState> {
   const password = passwordSchema.safeParse(formData.get('password'));
   const token = await invitationTokenFromCookie();
-  if (!password.success) return failure(password.error.issues[0]?.message ?? 'Bitte pruefe dein Passwort.');
-  if (!token) return failure('Der Einladungslink ist ungueltig oder abgelaufen.');
+  if (!password.success) return failure(password.error.issues[0]?.message ?? 'Bitte prüfe dein Passwort.');
+  if (!token) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
   const supabase = await createClient();
   const { data: previewData } = await supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle();
   const preview = previewData as InvitationPreview | null;
-  if (!preview) return failure('Der Einladungslink ist ungueltig oder abgelaufen.');
+  if (!preview) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
   const { data: signUpData, error } = await supabase.auth.signUp({ email: preview.email, password: password.data, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/callback?next=/einladung` } });
   if (error) return failure('Konto konnte nicht erstellt werden. Melde dich an, falls bereits ein Konto besteht.');
   if (signUpData.session) return completeInvitationFromCookie();
-  return { status: 'success', message: 'Bitte bestaetige deine E-Mail-Adresse. Danach kannst du die Einladung abschliessen.' };
+  return { status: 'success', message: 'Bitte bestätige deine E-Mail-Adresse. Danach kannst du die Einladung abschliessen.' };
 }
 
 async function completeInvitationFromCookie(): Promise<FormState> {
   const token = await invitationTokenFromCookie();
-  if (!token) return failure('Der Einladungslink ist ungueltig oder abgelaufen.');
+  if (!token) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return failure('Bitte melde dich zuerst an.');
+  if (!user) return failure('Bitte melde dich zürst an.');
   const { error } = await supabase.rpc('complete_company_invitation', { p_token: token });
   if (error) return failure('Die Einladung konnte nicht angenommen werden. Stelle sicher, dass du mit der eingeladenen E-Mail-Adresse angemeldet bist.');
   (await cookies()).delete(invitationCookieName);

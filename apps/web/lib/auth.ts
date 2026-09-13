@@ -33,7 +33,7 @@ export async function requireOwnerCompany() {
   const context = await getCurrentCompany();
   const company = context.membership?.companies as unknown as { id: string; name: string } | null;
   if (!company || context.membership?.role !== 'OWNER') {
-    throw new Error('Dieser Bereich steht nur Inhabern zur Verfuegung.');
+    throw new Error('Dieser Bereich steht nur Inhabern zur Verfügung.');
   }
   return { ...context, company };
 }

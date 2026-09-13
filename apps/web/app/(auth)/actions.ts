@@ -12,7 +12,7 @@ function withMessage(path: string, key: 'error' | 'message', message: string): n
 
 export async function signUp(formData: FormData) {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) withMessage('/signup', 'error', parsed.error.issues[0]?.message ?? 'Ungueltige Eingabe.');
+  if (!parsed.success) withMessage('/signup', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
@@ -21,12 +21,12 @@ export async function signUp(formData: FormData) {
     options: { emailRedirectTo: appUrl('/auth/callback') },
   });
   if (error) withMessage('/signup', 'error', error.message);
-  redirect('/login?message=Bitte bestaetige zuerst deine E-Mail-Adresse.');
+  redirect('/login?message=Bitte bestätige zürst deine E-Mail-Adresse.');
 }
 
 export async function login(formData: FormData) {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) withMessage('/login', 'error', parsed.error.issues[0]?.message ?? 'Ungueltige Eingabe.');
+  if (!parsed.success) withMessage('/login', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
@@ -43,16 +43,16 @@ export async function logout() {
 export async function requestPasswordReset(formData: FormData) {
   const email = formData.get('email');
   const parsed = loginSchema.pick({ email: true }).safeParse({ email });
-  if (!parsed.success) withMessage('/forgot-password', 'error', parsed.error.issues[0]?.message ?? 'Ungueltige Eingabe.');
+  if (!parsed.success) withMessage('/forgot-password', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: appUrl('/auth/callback?next=/reset-password') });
-  withMessage('/forgot-password', 'message', 'Falls ein Konto existiert, wurde eine E-Mail zum Zuruecksetzen versendet.');
+  withMessage('/forgot-password', 'message', 'Falls ein Konto existiert, wurde eine E-Mail zum Zurücksetzen versendet.');
 }
 
 export async function updatePassword(formData: FormData) {
   const parsed = passwordSchema.safeParse(formData.get('password'));
-  if (!parsed.success) withMessage('/reset-password', 'error', parsed.error.issues[0]?.message ?? 'Ungueltige Eingabe.');
+  if (!parsed.success) withMessage('/reset-password', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data });
   if (error) withMessage('/reset-password', 'error', 'Das Passwort konnte nicht aktualisiert werden.');
@@ -61,7 +61,7 @@ export async function updatePassword(formData: FormData) {
 
 export async function createCompany(formData: FormData) {
   const parsed = companyNameSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) withMessage('/onboarding', 'error', parsed.error.issues[0]?.message ?? 'Ungueltige Eingabe.');
+  if (!parsed.success) withMessage('/onboarding', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   const supabase = await createClient();
   const { error } = await supabase.rpc('create_company_for_current_user', { company_name: parsed.data.name });

@@ -31,11 +31,11 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
   const { supabase, membership } = await getCurrentCompany();
   if (!membership || membership.role !== 'EMPLOYEE') return { status: 'error', message: 'Nicht berechtigt.' };
   const file = formData.get('photo');
-  if (!(file instanceof File)) return { status: 'error', message: 'Bitte waehle ein Foto aus.' };
+  if (!(file instanceof File)) return { status: 'error', message: 'Bitte wähle ein Foto aus.' };
   const fileError = validateJobPhotoFile(file);
   if (fileError) return { status: 'error', message: fileError };
   const category = String(formData.get('category') ?? '');
-  if (!['BEFORE', 'AFTER', 'DOCUMENTATION'].includes(category)) return { status: 'error', message: 'Bitte waehle eine gueltige Kategorie.' };
+  if (!['BEFORE', 'AFTER', 'DOCUMENTATION'].includes(category)) return { status: 'error', message: 'Bitte wähle eine gültige Kategorie.' };
   const checklistItemId = String(formData.get('checklist_item_id') ?? '').trim() || null;
   const description = String(formData.get('description') ?? '').trim();
   if (description.length > 500) return { status: 'error', message: 'Die Notiz darf maximal 500 Zeichen lang sein.' };

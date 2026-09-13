@@ -15,7 +15,7 @@ function horizon() { return new Date(Date.now() + 56 * 86_400_000).toISOString()
 
 async function saveSchedule(scheduleId: string | null, formData: FormData): Promise<FormState> {
   const parsed = serviceScheduleSchema.safeParse(scheduleInput(formData));
-  if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte pruefe deine Eingaben.');
+  if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
     const { supabase, company } = await requireStaffCompany();
     let id = scheduleId;
@@ -37,7 +37,7 @@ async function saveSchedule(scheduleId: string | null, formData: FormData): Prom
     if (!id) return failure('Der wiederkehrende Plan konnte nicht gespeichert werden.');
     if (parsed.data.member_ids.length) await supabase.from('service_schedule_assignments').insert(parsed.data.member_ids.map((memberId) => ({ company_id: company.id, service_schedule_id: id, member_id: memberId })));
     const { error: generationError } = await supabase.rpc('generate_jobs_for_schedule', { p_schedule_id: id, p_until: horizon() });
-    if (generationError) return failure('Der Plan wurde gespeichert, aber die Auftraege konnten nicht erzeugt werden.');
+    if (generationError) return failure('Der Plan wurde gespeichert, aber die Aufträge konnten nicht erzeugt werden.');
     revalidatePath('/dashboard'); revalidatePath('/dashboard/planung'); revalidatePath('/dashboard/auftraege');
     return { status: 'success', id };
   } catch { return failure('Der wiederkehrende Plan konnte nicht gespeichert werden.'); }

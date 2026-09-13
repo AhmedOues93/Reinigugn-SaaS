@@ -9,7 +9,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   const { membership } = await getCurrentCompany();
   if (membership) redirect('/dashboard');
   const { error } = await searchParams;
-  return <AuthShell title="Dein Unternehmen" description="Lege dein Reinigungsunternehmen an. Du kannst den Namen spaeter in den Einstellungen aendern.">
+  return <AuthShell title="Dein Unternehmen" description="Lege dein Reinigungsunternehmen an. Du kannst den Namen später in den Einstellungen ändern.">
     <form action={createCompany} className="space-y-5">
       <AuthMessage error={error} />
       <label className="block text-sm font-medium">Firmenname<Input className="mt-1.5" name="name" autoComplete="organization" maxLength={120} required /></label>

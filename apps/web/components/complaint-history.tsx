@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui';
 import { listComplaints } from '@/lib/data/complaints';
 
-const status: Record<string, string> = { OPEN: 'Offen', IN_PROGRESS: 'In Bearbeitung', RESOLVED: 'Geloest', CLOSED: 'Geschlossen' };
+const status: Record<string, string> = { OPEN: 'Offen', IN_PROGRESS: 'In Bearbeitung', RESOLVED: 'Gelöst', CLOSED: 'Geschlossen' };
 const priority: Record<string, string> = { LOW: 'Niedrig', NORMAL: 'Normal', HIGH: 'Hoch', URGENT: 'Dringend' };
 export async function ComplaintHistory({ customerId, objectId }: { customerId?: string; objectId?: string }) {
   const complaints = await listComplaints({ customerId, objectId }); const recent = complaints.slice(0, 5);

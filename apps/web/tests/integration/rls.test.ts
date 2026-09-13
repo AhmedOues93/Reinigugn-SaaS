@@ -48,7 +48,7 @@ integration('tenant RLS', () => {
     const { error: invalidObjectError } = await clientB.from('cleaning_objects').insert({
       company_id: membershipB!.company_id,
       customer_id: customerA!.id,
-      name: `Ungueltiges Objekt ${suffix}`,
+      name: `Ungültiges Objekt ${suffix}`,
     });
     expect(invalidObjectError).not.toBeNull();
 
