@@ -32,7 +32,7 @@ export default async function EmployeeSchedulePage() {
               <p className="mb-2 text-sm font-medium">
                 {day === todayKey ? t(locale, 'common.today') : formatDate(locale, day, 'long')}
               </p>
-              <div className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-2">
                 {groups[day].map((job) => (
                   <EmployeeJobCard key={job.id} job={job} locale={locale} />
                 ))}

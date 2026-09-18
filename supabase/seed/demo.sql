@@ -72,7 +72,11 @@ begin
   select id into portal_member from public.company_members where company_id = demo_company and role = 'CUSTOMER';
 
   insert into public.employee_details (company_id, profile_id, employee_number, weekly_hours, employment_start_date, employment_type, preferred_language, is_active)
-  values (demo_company, employee_profile, 'M-0001', 30, current_date - 400, 'PART_TIME', 'uk', true);
+  -- German, so the demo employee app is legible to a German-speaking reviewer.
+  -- Any of the five shipped locales works here; the employee changes it in the
+  -- app under Profil, and nothing about the localisation behaviour depends on
+  -- this value.
+  values (demo_company, employee_profile, 'M-0001', 30, current_date - 400, 'PART_TIME', 'de', true);
 
   insert into public.customers (company_id, name, contact_person, email, phone, billing_address, postal_code, city)
   values

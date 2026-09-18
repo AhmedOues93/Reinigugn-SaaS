@@ -62,7 +62,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0 [&>*]:lg:mt-0">
         {/* The time control is first: it is the action a cleaner opens this for. */}
         <JobTimeControl
           action={(running ? stopMyJob : startMyJob).bind(null, job.id)}

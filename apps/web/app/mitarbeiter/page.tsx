@@ -53,14 +53,14 @@ export default async function EmployeeTodayPage() {
             title={t(locale, 'emp.today.allDone')}
             body={t(locale, 'emp.today.allDoneBody')}
           />
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {today.map((job) => (
               <EmployeeJobCard key={job.id} job={job} locale={locale} />
             ))}
           </div>
         </>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {today.map((job) => (
             <EmployeeJobCard key={job.id} job={job} locale={locale} />
           ))}
@@ -81,7 +81,7 @@ export default async function EmployeeTodayPage() {
               <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
             </Link>
           </div>
-          <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {upcoming.slice(0, 3).map((job) => (
               <EmployeeJobCard key={job.id} job={job} locale={locale} showDate />
             ))}

@@ -40,7 +40,7 @@ export function PortalShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 sm:pb-10">{children}</main>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:pb-10">{children}</main>
 
       <div className="sm:hidden">
         <PortalNav locale={locale} variant="bottom" />
