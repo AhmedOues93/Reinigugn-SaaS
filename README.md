@@ -1,6 +1,15 @@
 # SauberWerk
 
-Multi-tenant SaaS for small cleaning companies in Germany. Phase 5 adds stabilized planning queries, professional number generation and employee START/BEENDEN time tracking.
+Multi-tenant SaaS for small cleaning companies in Germany. One Next.js
+application serves three surfaces against one Supabase backend:
+
+| Surface                        | Route          | Audience          |
+| ------------------------------ | -------------- | ----------------- |
+| Dashboard                      | `/dashboard`   | `OWNER`, `OFFICE` |
+| Employee app (installable PWA) | `/mitarbeiter` | `EMPLOYEE`        |
+| Customer portal                | `/portal`      | `CUSTOMER`        |
+
+Languages: German, English, Arabic (RTL), Turkish, Ukrainian.
 
 ## Requirements
 
@@ -45,17 +54,18 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm --filter @reinigung/web test:integration
+pnpm db:verify
 pnpm build
 pnpm format:check
 ```
 
 ## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project API URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser-safe anon/publishable key |
-| `NEXT_PUBLIC_SITE_URL` | Public web URL, required for Auth email redirects |
+| Variable                               | Purpose                                           |
+| -------------------------------------- | ------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Supabase project API URL                          |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser-safe anon/publishable key                 |
+| `NEXT_PUBLIC_SITE_URL`                 | Public web URL, required for Auth email redirects |
 
 ## Invitations
 
@@ -75,4 +85,40 @@ Generated jobs are unique per schedule rule and date. Re-running generation cann
 
 Employees can start only jobs assigned to their active membership. `start_my_job` uses database time, permits only one active entry per employee, and moves the job to `IN_PROGRESS`. `stop_my_job` closes the employee's entry with database time and completes a job only when every assigned employee has a completed entry. OWNER/OFFICE can view the working-time list; OWNER/OFFICE corrections use `correct_time_entry` and always create an immutable audit row with a reason.
 
-See [architecture.md](docs/architecture.md), [database.md](docs/database.md), and [security.md](docs/security.md) for design details.
+## Verifying the database without Docker
+
+```bash
+pnpm db:verify
+```
+
+Applies every migration to a throwaway PostgreSQL 16 database and runs the SQL
+assertion suites in `supabase/test`. `harness.sql` stands in for the
+Supabase-managed `auth`, `storage` and `extensions` schemas, so migrations and
+RLS can be checked in CI without a running Supabase stack.
+
+## Demo data
+
+```bash
+psql "$(npx supabase status --output json | jq -r .DB_URL)" -f supabase/seed/demo.sql
+```
+
+One demo tenant covering master data, planning, time tracking, complaints, the
+portal and billing. Re-running it is a no-op. See
+[supabase/seed/README.md](supabase/seed/README.md) for the accounts. Local
+development only.
+
+## Billing
+
+Money is stored in integer cents and every amount on an invoice is computed by
+the database from quantity, unit price and VAT rate, so a client can never send
+a total. Invoice numbers are gapless per company and year and are assigned only
+at issue. An issued invoice is immutable: it can be marked paid or cancelled, and
+a correction is a new invoice referencing the cancelled one, never a rewrite.
+A completed visit can appear on at most one live invoice.
+
+Employees have no access to invoices at all; customers see only their own issued
+invoices in the portal.
+
+See [audit.md](docs/audit.md), [architecture.md](docs/architecture.md),
+[database.md](docs/database.md), and [security.md](docs/security.md) for design
+details.

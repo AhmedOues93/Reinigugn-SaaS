@@ -2,9 +2,13 @@
 -- applied and verified against a plain PostgreSQL 16 server in CI or locally
 -- without Docker. It is never applied to a real database: local development and
 -- production both get these schemas from Supabase itself.
-create role anon nologin;
-create role authenticated nologin;
-create role service_role nologin;
+-- Roles are cluster-wide, so create them only if this is the first run.
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
+end $$;
 
 create schema if not exists auth;
 create schema if not exists storage;
@@ -12,10 +16,20 @@ create schema if not exists extensions;
 
 create extension if not exists pgcrypto with schema extensions;
 
+-- Mirrors the columns of Supabase's auth.users that this repository actually
+-- writes or reads, so the demo seed can be verified here too.
 create table auth.users (
   id uuid primary key default gen_random_uuid(),
+  instance_id uuid,
+  aud text,
+  role text,
   email text,
-  raw_user_meta_data jsonb not null default '{}'::jsonb
+  encrypted_password text,
+  email_confirmed_at timestamptz,
+  raw_app_meta_data jsonb not null default '{}'::jsonb,
+  raw_user_meta_data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 -- Tests set this to impersonate a signed-in user.

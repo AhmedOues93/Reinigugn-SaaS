@@ -11,20 +11,20 @@ existing dashboard flows; the defects below are gaps and inconsistencies, not cr
 
 ## What is actually implemented
 
-| Area | State |
-| --- | --- |
-| Tenant foundation, profiles, memberships | complete |
-| Customers, cleaning objects, numbering | complete |
-| Employees, master data, invitations | complete |
-| Planning, schedules, recurring job generation | complete |
-| Jobs, assignments, conflicts | complete |
-| Time tracking (`start_my_job` / `stop_my_job`, corrections, audit log) | complete |
-| Checklists, snapshots, service records | complete |
-| Job photos, operational photos (private buckets, signed access) | complete |
-| Complaints, complaint updates, quality inspections | complete |
-| Absences, replacements, in-app notifications | complete |
-| Employee area (`/dashboard/mein-bereich`) | partial — renders in the desktop dashboard shell |
-| Localisation | partial — `de`, `en`, `ar` only, small dictionary, most UI hardcoded German |
+| Area                                                                   | State                                                                       |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Tenant foundation, profiles, memberships                               | complete                                                                    |
+| Customers, cleaning objects, numbering                                 | complete                                                                    |
+| Employees, master data, invitations                                    | complete                                                                    |
+| Planning, schedules, recurring job generation                          | complete                                                                    |
+| Jobs, assignments, conflicts                                           | complete                                                                    |
+| Time tracking (`start_my_job` / `stop_my_job`, corrections, audit log) | complete                                                                    |
+| Checklists, snapshots, service records                                 | complete                                                                    |
+| Job photos, operational photos (private buckets, signed access)        | complete                                                                    |
+| Complaints, complaint updates, quality inspections                     | complete                                                                    |
+| Absences, replacements, in-app notifications                           | complete                                                                    |
+| Employee area (`/dashboard/mein-bereich`)                              | partial — renders in the desktop dashboard shell                            |
+| Localisation                                                           | partial — `de`, `en`, `ar` only, small dictionary, most UI hardcoded German |
 
 ## What the phase labels claimed but does not exist
 
@@ -55,6 +55,11 @@ Nothing in the repository implements these, in code or in migrations:
    no profile view and no PWA installability.
 6. `docs/architecture.md` still describes phase 1 and lists a language set the code does
    not use.
+7. `pnpm format:check` fails on 162 files at the audited commit: Prettier is configured
+   and scripted, but the repository has never been formatted with it, and no pipeline
+   runs the check. Reformatting 162 files would bury every real change in review noise,
+   so this phase leaves it alone and records it instead. It should be done as its own
+   commit, with the check then added to CI so it cannot drift again.
 
 ## Security review of the audited code
 
@@ -70,3 +75,22 @@ No violation was found in the audited surfaces:
 
 These properties are preserved by the work that follows; RLS is never relaxed to make a
 feature work.
+
+## What this phase delivered
+
+The gaps listed above were closed in three commits: the locale set, branding and
+the employee PWA; the customer portal and role-aware routing; and billing.
+
+`apps/mobile` is still a placeholder and is now documented as such — the employee
+application lives inside `apps/web`, because a second Next.js app would have
+duplicated the auth, tenant and RLS layer for no benefit.
+
+Not implemented, and not attempted: Besichtigung, Kalkulation, Angebote, and a
+Trash/soft-delete system. They were listed as already complete in the brief but
+exist nowhere in the code, and each is a product phase of its own rather than a
+gap in the work described here.
+
+The demo seed was described in the brief as something to extend. There was none:
+`supabase/seed/README.md` stated that phase 1 intentionally shipped no sample
+tenants. `supabase/seed/demo.sql` is therefore a first seed covering the whole
+product including billing, not a second demo company beside an existing one.
