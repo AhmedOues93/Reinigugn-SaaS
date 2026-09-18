@@ -35,6 +35,7 @@ declare
   object_alster uuid; object_hafen uuid; object_sued uuid;
   schedule_weekly uuid;
   draft_invoice uuid; open_invoice uuid; paid_invoice uuid;
+  won_lead uuid; open_lead uuid; won_survey uuid; open_survey uuid; won_quote uuid; open_quote uuid;
   job_row record;
   billed integer := 0;
 begin
@@ -56,6 +57,7 @@ begin
   insert into public.companies (name, slug, legal_form, street, postal_code, city, phone, email, website, tax_number, vat_id, iban, bic, default_payment_terms_days, default_language)
   values ('SauberWerk Demo GmbH', 'demo-sauberwerk', 'GmbH', 'Reeperbahn 42', '20359', 'Hamburg', '+49 40 1234567', 'kontakt@demo.test', 'https://demo.test', '22/815/01234', 'DE123456789', 'DE02120300000000202051', 'BYLADEM1001', 14, 'de')
   returning id into demo_company;
+  update public.companies set default_hourly_rate_cents = 3900 where id = demo_company;
 
   insert into public.company_members (company_id, profile_id, role, status, invited_email, joined_at)
   values
@@ -165,6 +167,33 @@ begin
   draft_invoice := public.create_draft_invoice(customer_sued, current_date - 30, current_date, 30::smallint, null);
   perform public.add_invoice_line(draft_invoice, 'Praxisreinigung nach Hygieneplan', 8, 'Std', 4800, 1900, null, null, object_sued);
   perform public.add_invoice_line(draft_invoice, 'Desinfektionsmittel', 4, 'Stk', 1250, 1900, null, null, object_sued);
+
+  -- ---------------------------------------------------------------------
+  -- Sales pipeline, walked through the real functions: a won deal that
+  -- became a customer, and an open one still awaiting a decision.
+  -- ---------------------------------------------------------------------
+  won_lead := public.create_lead('Steuerkanzlei Lindemann', 'Herr Lindemann', 'lindemann@demo.test', '+49 40 998877',
+                                 'Ballindamm 17', '20095', 'Hamburg', 'Empfehlung', 'Zwei Etagen, wöchentlich.');
+  won_survey := public.schedule_site_survey(won_lead, null, 'Kanzlei Ballindamm', now() - interval '10 days', owner_member,
+                                            'Ballindamm 17', '20095', 'Hamburg', 'Schlüsselkasten im Eingang, Code auf Anfrage.');
+  perform public.add_survey_area(won_survey, 'Büroetage 3. OG', 180, 'Teppich', 2, 105, null, null);
+  perform public.add_survey_area(won_survey, 'Sanitärbereiche', 24, 'Fliesen', 2, 40, 4300, null);
+  perform public.complete_site_survey(won_survey, 'Aufzug vorhanden, Reinigung ab 18:00 Uhr möglich.');
+  won_quote := public.create_quote_from_survey(won_survey, 'Unterhaltsreinigung Kanzlei Ballindamm', 30);
+  perform public.send_quote(won_quote);
+  perform public.accept_quote(won_quote, array[2, 5]::smallint[], '18:00', '20:00');
+
+  open_lead := public.create_lead('Autohaus Wendt', 'Frau Wendt', 'wendt@demo.test', '+49 40 445566',
+                                  'Stresemannstraße 200', '22769', 'Hamburg', 'Website', 'Showroom und Werkstatt.');
+  perform public.set_lead_status(open_lead, 'CONTACTED');
+  open_survey := public.schedule_site_survey(open_lead, null, 'Autohaus Showroom', now() - interval '2 days', office_member,
+                                             'Stresemannstraße 200', '22769', 'Hamburg', 'Anmeldung an der Rezeption.');
+  perform public.add_survey_area(open_survey, 'Showroom', 420, 'Feinsteinzeug', 3, 150, null, null);
+  perform public.add_survey_area(open_survey, 'Kundenbereich und WC', 60, 'Fliesen', 3, 50, null, null);
+  perform public.complete_site_survey(open_survey, 'Glasflächen sehr großflächig, Hubwagen erforderlich.');
+  open_quote := public.create_quote_from_survey(open_survey, 'Showroom-Reinigung Autohaus Wendt', 21);
+  -- Sent and awaiting a decision, so the demo shows a live pipeline.
+  perform public.send_quote(open_quote);
 
   perform set_config('request.jwt.claim.sub', '', true);
 

@@ -42,6 +42,20 @@ describe('routing surface', () => {
     }
   });
 
+  it('exposes the sales pipeline from lead to quote', () => {
+    for (const route of [
+      '/dashboard/vertrieb/anfragen',
+      '/dashboard/vertrieb/anfragen/neu',
+      '/dashboard/vertrieb/anfragen/[id]',
+      '/dashboard/vertrieb/besichtigungen',
+      '/dashboard/vertrieb/besichtigungen/[id]',
+      '/dashboard/vertrieb/angebote',
+      '/dashboard/vertrieb/angebote/[id]',
+    ]) {
+      expect(routes, `missing ${route}`).toContain(route);
+    }
+  });
+
   it('keeps a single employee surface instead of two parallel ones', () => {
     expect(routes.some((route) => route.includes('mein-bereich'))).toBe(false);
   });

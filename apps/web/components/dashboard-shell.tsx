@@ -4,13 +4,16 @@ import {
   Building2,
   CalendarDays,
   ClipboardCheck,
+  ClipboardList,
   Clock3,
+  FileSignature,
   FileText,
   LayoutDashboard,
   MessageSquare,
   Receipt,
   Settings,
   ShieldCheck,
+  Sparkles,
   UserRoundCheck,
   Users,
 } from 'lucide-react';
@@ -29,6 +32,14 @@ export type NavGroup = { label: TranslationKey; items: { href: string; label: Tr
  */
 export const navGroups: NavGroup[] = [
   { label: 'nav.groupOverview', items: [{ href: '/dashboard', label: 'nav.dashboard', icon: 'dashboard' }] },
+  {
+    label: 'nav.groupSales',
+    items: [
+      { href: '/dashboard/vertrieb/anfragen', label: 'nav.leads', icon: 'leads' },
+      { href: '/dashboard/vertrieb/besichtigungen', label: 'nav.surveys', icon: 'surveys' },
+      { href: '/dashboard/vertrieb/angebote', label: 'nav.quotes', icon: 'quotes' },
+    ],
+  },
   {
     label: 'nav.groupCustomers',
     items: [
@@ -75,6 +86,9 @@ export const navIcons = {
   complaints: Bell,
   quality: ShieldCheck,
   billing: Receipt,
+  leads: Sparkles,
+  surveys: ClipboardList,
+  quotes: FileSignature,
   messages: MessageSquare,
   settings: Settings,
 } as const;

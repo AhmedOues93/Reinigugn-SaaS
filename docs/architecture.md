@@ -71,6 +71,15 @@ the active membership. Acceptance branches on the invited role: an employee gets
 an `employee_details` record, a portal customer gets a `customer_contacts` link.
 The mail service is provider-neutral.
 
+## Sales pipeline
+
+Lead → Besichtigung → Kalkulation → Angebot → acceptance. Acceptance converts
+into the existing `customers`, `cleaning_objects` and `service_schedules` tables
+rather than introducing a parallel contract model, so a won quote lands directly
+in the planning the rest of the product already runs on. See
+[database.md](database.md) for the conversion and [security.md](security.md) for
+who may see a price.
+
 ## Operational planning
 
 `service_schedules` are weekly templates with structured `schedule_rules`; `jobs`

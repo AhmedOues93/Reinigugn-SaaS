@@ -91,3 +91,41 @@ Design decisions worth knowing before changing anything here:
 - **Snapshots.** Issuing stores the customer and company master data as JSON on
   the invoice. The document renders from those snapshots, so renaming a customer
   never rewrites an invoice that was already sent.
+
+## Sales pipeline (phase 12)
+
+| Table | Purpose | Tenant relation |
+| --- | --- | --- |
+| `leads` | An enquiry, from first contact to won or lost | `company_id` |
+| `site_surveys` | Besichtigung, for a lead or an existing customer | `company_id` plus exactly one of `lead_id`/`customer_id` |
+| `survey_areas` | The Kalkulation: one measured area | `company_id`, `site_survey_id` |
+| `quotes` | Angebot | `company_id`, at least one of `lead_id`/`customer_id` |
+| `quote_lines` | One offered position | `company_id`, `quote_id`, optional `survey_area_id` |
+| `quote_number_counters` | Per company and year quote numbering | `company_id` |
+
+The same rules as billing apply, deliberately: integer minor units, amounts
+computed by trigger from quantity, unit price and VAT rate, gapless per-company
+numbering assigned only when the quote is sent, and immutability afterwards
+(`guard_sent_quote`). A quote that is out with a customer is a committed price.
+
+Two things are specific to this phase:
+
+- **The calculation is derived, not typed twice.** `create_quote_from_survey`
+  turns each measured area into a line priced from `minutes_per_service` and the
+  hourly rate (the area's own, else `companies.default_hourly_rate_cents`), and
+  refuses rather than silently pricing at zero when neither exists. Each line
+  keeps `survey_area_id`, so a price can always be traced back to what was
+  measured. `lib/sales-calc.ts` mirrors that arithmetic for the on-screen
+  preview and is covered by `tests/sales-calc.test.ts`.
+- **`accept_quote` is the conversion.** In one transaction it creates the
+  customer (from the lead, unless the quote already had one), the cleaning object
+  (from the survey, access notes included) and — only when the quote contains
+  recurring lines — a `service_schedules` row with one `schedule_rules` row per
+  chosen weekday, carrying the agreed rate into `billing_unit_price_cents` so the
+  first invoice does not re-derive what was sold. The quote records what it
+  created, so the pipeline is traceable end to end. A lead can only reach `WON`
+  this way; `set_lead_status` refuses the shortcut.
+
+`quotes` has two foreign keys to `customers` (the recipient, and the one
+acceptance created), so PostgREST embeds must name the constraint explicitly:
+`customers!quotes_customer_id_fkey(name)`.

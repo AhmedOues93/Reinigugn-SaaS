@@ -85,7 +85,10 @@ the employee PWA; the customer portal and role-aware routing; and billing.
 application lives inside `apps/web`, because a second Next.js app would have
 duplicated the auth, tenant and RLS layer for no benefit.
 
-Not implemented, and not attempted: Besichtigung, Kalkulation, Angebote, and a
+Besichtigung, Kalkulation and Angebote were later implemented as phase 12; see
+architecture.md. Still not implemented: a Trash/soft-delete system.
+
+Originally recorded here as not attempted: Besichtigung, Kalkulation, Angebote, and a
 Trash/soft-delete system. They were listed as already complete in the brief but
 exist nowhere in the code, and each is a product phase of its own rather than a
 gap in the work described here.

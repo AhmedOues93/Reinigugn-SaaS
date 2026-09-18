@@ -127,3 +127,28 @@ set can be checked without a running Supabase stack. The suites impersonate user
 by setting `request.jwt.claim.sub` **and** switching to the `authenticated` role,
 because the owning superuser bypasses RLS entirely and would make the assertions
 pass without proving anything.
+
+## Sales access (phase 12)
+
+| Capability | OWNER | OFFICE | EMPLOYEE | CUSTOMER |
+| --- | --- | --- | --- | --- |
+| See a lead, survey, calculation or quote | Yes | Yes | **No** | **No** |
+| See an hourly rate or a quoted price | Yes | Yes | **No** | **No** |
+| Create or edit any of them | Yes | Yes | No | No |
+| Accept or decline a quote | Yes | Yes | No | No |
+
+No policy on `leads`, `site_surveys`, `survey_areas`, `quotes` or `quote_lines`
+mentions `EMPLOYEE` or `CUSTOMER`, so neither role reads a single row: a cleaner
+cannot see a margin and a portal customer cannot see the pipeline behind their
+own contract. Every write goes through `sales_actor()`, which requires an active
+`OWNER`/`OFFICE` membership, and each function re-scopes its target by
+`company_id`, so an owner of another tenant gets "not found" rather than access.
+
+`companies.default_hourly_rate_cents` is owner-only master data. `companies`
+grants `UPDATE` on `name` and `slug` only, so it is written through
+`set_company_default_hourly_rate` rather than by widening the column grant.
+
+`supabase/test/sales.test.sql` asserts all of this against a real database with
+RLS in force, including employee denial, cross-tenant denial, immutability of a
+sent quote, and that acceptance creates exactly the customer, object and
+schedule it claims to.
