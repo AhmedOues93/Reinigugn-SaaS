@@ -7,7 +7,7 @@ import { currentLocale } from '@/lib/i18n-server';
 
 export default async function DashboardPage() {
   const { membership, profile } = await getCurrentCompany();
-  if (membership?.role === 'EMPLOYEE') redirect('/dashboard/mein-bereich');
+  if (membership?.role === 'EMPLOYEE') redirect('/mitarbeiter');
   const [dashboardMetrics, locale] = await Promise.all([getDashboardMetrics(), currentLocale()]);
   const metrics = [
     { label: t(locale, 'dashboard.todayJobs'), value: String(dashboardMetrics.todayJobs), note: `${dashboardMetrics.plannedToday} ${t(locale, 'status.OPEN').toLocaleLowerCase()}` },

@@ -42,7 +42,7 @@ export async function requireStaffCompany() {
   const context = await getCurrentCompany();
   const company = context.membership?.companies as unknown as { id: string; name: string } | null;
   if (!company || !['OWNER', 'OFFICE'].includes(context.membership?.role ?? '')) {
-    redirect('/dashboard/mein-bereich');
+    redirect('/mitarbeiter');
   }
   return { ...context, company, role: context.membership!.role as 'OWNER' | 'OFFICE' };
 }
