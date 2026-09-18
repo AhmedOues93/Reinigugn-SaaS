@@ -41,7 +41,7 @@ export function CompanyBrandingForm({
           <form action={removeFormAction}>
             <button
               type="submit"
-              className="min-h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="min-h-touch rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Logo entfernen
             </button>

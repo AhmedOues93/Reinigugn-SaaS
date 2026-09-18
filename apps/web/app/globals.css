@@ -2,22 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
-[dir='rtl'] input, [dir='rtl'] textarea, [dir='rtl'] select { text-align: right; }
-[dir='rtl'] .rtl-mirror { transform: scaleX(-1); }
-
 @layer base {
   :root {
+    /* Neutral ramp: one family of slate-derived greys so surfaces, borders and
+       text never drift apart between the three product surfaces. */
     --background: 210 20% 98%;
-    --foreground: 215 28% 17%;
+    --foreground: 215 30% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
-    --primary: 178 58% 27%;
+    --card-foreground: 215 30% 15%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 44%;
+    --border: 214 20% 90%;
+    --input: 214 20% 86%;
+
+    --primary: 178 62% 25%;
     --primary-foreground: 0 0% 100%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 17% 91%;
-    --radius: 0.65rem;
+    --primary-soft: 178 45% 96%;
+
+    --success: 152 58% 28%;
+    --success-soft: 152 50% 95%;
+    --warning: 33 85% 38%;
+    --warning-soft: 38 92% 95%;
+    --danger: 0 65% 45%;
+    --danger-soft: 0 80% 97%;
+    --info: 214 70% 40%;
+    --info-soft: 214 90% 96%;
+
+    --ring: 178 62% 32%;
+    --radius: 0.7rem;
   }
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground antialiased; }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* One visible focus treatment for the whole product. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Headings keep their optical size without every page restating it. */
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+}
+
+@layer components {
+  /* Long prose and user-entered text must never widen a mobile layout. */
+  .break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+/* Arabic and any future RTL locale. Logical properties cover layout; these are
+   the few cases that need an explicit rule. */
+[dir='rtl'] input,
+[dir='rtl'] textarea,
+[dir='rtl'] select {
+  text-align: right;
+}
+
+[dir='rtl'] .rtl-mirror {
+  transform: scaleX(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

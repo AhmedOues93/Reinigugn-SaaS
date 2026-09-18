@@ -1,19 +1,45 @@
 import Link from 'next/link';
 import { login } from '../actions';
 import { AuthMessage } from '@/components/auth-message';
-import { AuthShell } from '@/components/auth-shell';
-import { Button, Input } from '@/components/ui';
+import { AuthFooterLink, AuthShell } from '@/components/auth-shell';
+import { Button, Field, Input } from '@/components/ui';
+import { t } from '@/lib/i18n';
+import { currentLocale } from '@/lib/i18n-server';
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
-  const { error, message } = await searchParams;
-  return <AuthShell title="Anmelden" description="Melde dich bei deinem Unternehmenskonto an.">
-    <form action={login} className="space-y-5">
-      <AuthMessage error={error} message={message} />
-      <label className="block text-sm font-medium">E-Mail-Adresse<Input className="mt-1.5" name="email" type="email" autoComplete="email" required /></label>
-      <label className="block text-sm font-medium">Passwort<Input className="mt-1.5" name="password" type="password" autoComplete="current-password" required /></label>
-      <div className="flex justify-end"><Link href="/forgot-password" className="text-sm text-teal-700 hover:underline">Passwort vergessen?</Link></div>
-      <Button className="w-full" type="submit">Anmelden</Button>
-    </form>
-    <p className="mt-6 text-center text-sm text-slate-600">Noch kein Konto? <Link href="/signup" className="font-medium text-teal-700 hover:underline">Jetzt registrieren</Link></p>
-  </AuthShell>;
+  const [{ error, message }, locale] = await Promise.all([searchParams, currentLocale()]);
+
+  return (
+    <AuthShell
+      locale={locale}
+      title={t(locale, 'auth.signInTitle')}
+      description={t(locale, 'auth.signInSubtitle')}
+      footer={
+        <>
+          {t(locale, 'auth.noAccount')} <AuthFooterLink href="/signup">{t(locale, 'auth.signUp')}</AuthFooterLink>
+        </>
+      }
+    >
+      <form action={login} className="space-y-5">
+        <AuthMessage error={error} message={message} />
+        <Field label={t(locale, 'auth.email')} htmlFor="email">
+          <Input id="email" name="email" type="email" autoComplete="email" required />
+        </Field>
+        <Field label={t(locale, 'auth.password')} htmlFor="password">
+          <Input id="password" name="password" type="password" autoComplete="current-password" required />
+        </Field>
+        <div className="flex justify-end">
+          <Link
+            href="/forgot-password"
+            className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {t(locale, 'auth.forgotLink')}
+          </Link>
+        </div>
+        <Button size="block" type="submit">
+          {t(locale, 'auth.signIn')}
+        </Button>
+      </form>
+    </AuthShell>
+  );
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MessageSquareWarning, Plus } from 'lucide-react';
-import { PortalEmptyState, PortalPageHeader } from '@/components/portal/portal-shell';
+import { PortalPageHeader } from '@/components/portal/portal-shell';
+import { EmptyState } from '@/components/ui';
 import { listPortalComplaints, portalLocale } from '@/lib/data/portal';
 import { formatDateTime } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -9,7 +10,7 @@ const statusTone: Record<string, string> = {
   OPEN: 'bg-amber-100 text-amber-900',
   IN_PROGRESS: 'bg-blue-50 text-blue-700',
   RESOLVED: 'bg-primary/10 text-primary',
-  CLOSED: 'bg-slate-100 text-slate-600',
+  CLOSED: 'bg-slate-100 text-muted-foreground',
 };
 
 export default async function PortalComplaintsPage() {
@@ -29,15 +30,15 @@ export default async function PortalComplaintsPage() {
       </div>
 
       {complaints.length === 0 ? (
-        <PortalEmptyState icon={<MessageSquareWarning className="size-5" />} title={t(locale, 'portal.complaints.empty')} />
+        <EmptyState icon={<MessageSquareWarning className="size-5" />} title={t(locale, 'portal.complaints.empty')} />
       ) : (
         <ul className="space-y-3">
           {complaints.map((complaint) => (
-            <li key={complaint.id} className="rounded-lg border bg-white p-4">
+            <li key={complaint.id} className="rounded-lg border bg-card p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium text-slate-900">{complaint.title}</p>
-                  <p className="mt-0.5 text-sm text-slate-600">
+                  <p className="font-medium text-foreground">{complaint.title}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
                     {complaint.object_name} · {formatDateTime(locale, complaint.created_at)}
                   </p>
                 </div>
@@ -51,7 +52,7 @@ export default async function PortalComplaintsPage() {
                   {complaint.updates.map((update, index) => (
                     <li key={index} className="text-sm">
                       <p className="text-slate-700">{update.note}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{formatDateTime(locale, update.created_at)}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(locale, update.created_at)}</p>
                     </li>
                   ))}
                 </ol>

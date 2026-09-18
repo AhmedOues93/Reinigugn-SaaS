@@ -17,23 +17,23 @@ export default async function PortalServiceRecordPage({ params }: { params: Prom
 
   return (
     <>
-      <Link href="/portal/leistungen" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-slate-600">
+      <Link href="/portal/leistungen" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground">
         <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         {t(locale, 'common.back')}
       </Link>
 
       <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{record.objectName}</h1>
-      <p className="mt-1 text-sm text-slate-600">{formatDate(locale, record.scheduledDate, 'long')}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{formatDate(locale, record.scheduledDate, 'long')}</p>
 
       <Card className="mt-5 p-5">
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-slate-500">{t(locale, 'common.status')}</dt>
+            <dt className="text-muted-foreground">{t(locale, 'common.status')}</dt>
             <dd className="mt-1 font-medium">{t(locale, `status.${record.status}`)}</dd>
           </div>
           {record.durationMinutes > 0 && (
             <div>
-              <dt className="text-slate-500">{t(locale, 'emp.job.plannedTime')}</dt>
+              <dt className="text-muted-foreground">{t(locale, 'emp.job.plannedTime')}</dt>
               <dd className="mt-1 font-medium tabular-nums">
                 {hours} h {minutes} min
               </dd>
@@ -55,7 +55,7 @@ export default async function PortalServiceRecordPage({ params }: { params: Prom
                 >
                   {item.completed ? <Check className="size-3.5" aria-hidden="true" /> : <Minus className="size-3.5" aria-hidden="true" />}
                 </span>
-                <span className={item.completed ? 'text-slate-900' : 'text-slate-500'}>{item.title}</span>
+                <span className={item.completed ? 'text-foreground' : 'text-muted-foreground'}>{item.title}</span>
               </li>
             ))}
           </ul>
@@ -74,7 +74,7 @@ export default async function PortalServiceRecordPage({ params }: { params: Prom
                   className="aspect-video w-full rounded-md object-cover"
                   loading="lazy"
                 />
-                {photo.description && <p className="mt-1.5 text-sm text-slate-600">{photo.description}</p>}
+                {photo.description && <p className="mt-1.5 text-sm text-muted-foreground">{photo.description}</p>}
               </li>
             ))}
           </ul>

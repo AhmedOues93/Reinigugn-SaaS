@@ -63,7 +63,7 @@ export function JobPhotoUpload({
         {preview && <img src={preview} alt={t(locale, 'emp.photo.file')} className="max-h-72 w-full rounded-md object-cover" />}
         <label className="block text-sm font-medium">
           {t(locale, 'emp.photo.category')}
-          <select className="mt-1.5 min-h-11 w-full rounded-md border bg-white px-3" name="category" defaultValue="DOCUMENTATION">
+          <select className="mt-1.5 min-h-touch w-full rounded-md border bg-white px-3" name="category" defaultValue="DOCUMENTATION">
             <option value="BEFORE">{t(locale, 'emp.photo.before')}</option>
             <option value="AFTER">{t(locale, 'emp.photo.after')}</option>
             <option value="DOCUMENTATION">{t(locale, 'emp.photo.documentation')}</option>
@@ -72,7 +72,7 @@ export function JobPhotoUpload({
         {checklistItems.length > 0 && (
           <label className="block text-sm font-medium">
             {t(locale, 'emp.photo.linkItem')}
-            <select className="mt-1.5 min-h-11 w-full rounded-md border bg-white px-3" name="checklist_item_id" defaultValue="">
+            <select className="mt-1.5 min-h-touch w-full rounded-md border bg-white px-3" name="checklist_item_id" defaultValue="">
               <option value="">{t(locale, 'emp.photo.noItem')}</option>
               {checklistItems.map((item) => (
                 <option key={item.id} value={item.id}>

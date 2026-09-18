@@ -15,16 +15,16 @@ const tabs: { href: string; label: TranslationKey; icon: typeof Home }[] = [
 ];
 
 /**
- * Persistent bottom navigation, the primary wayfinding of the employee app.
- * Every target is a full-width touch target of at least 56px and stays clear of
- * the home indicator through the safe-area inset.
+ * Primary wayfinding. Each tab is a full-height 60px target with the label always
+ * visible — cleaners use this with gloves on and in a hurry, so nothing here is
+ * icon-only or hidden behind a menu.
  */
 export function EmployeeBottomNav({ locale, unread }: { locale: Locale; unread: number }) {
   const pathname = usePathname();
   return (
     <nav
       aria-label={t(locale, 'common.menu')}
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
       <ul className="mx-auto flex max-w-lg">
         {tabs.map(({ href, label, icon: Icon }) => {
@@ -36,14 +36,14 @@ export function EmployeeBottomNav({ locale, unread }: { locale: Locale; unread: 
                 href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium transition-colors',
-                  active ? 'text-primary' : 'text-slate-500 hover:text-slate-800',
+                  'flex min-h-[3.75rem] flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-medium transition-colors',
+                  active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >
                 <span className="relative">
-                  <Icon className="size-5" aria-hidden="true" />
+                  <Icon className={cn('size-6', active && 'stroke-[2.25]')} aria-hidden="true" />
                   {showBadge && (
-                    <span className="absolute -end-2 -top-1 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] leading-4 text-white">
+                    <span className="absolute -end-2 -top-1 grid min-w-[1.1rem] place-items-center rounded-full bg-danger px-1 text-[10px] font-semibold leading-4 text-white">
                       {unread > 9 ? '9+' : unread}
                     </span>
                   )}

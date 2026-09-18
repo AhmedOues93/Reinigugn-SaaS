@@ -26,7 +26,7 @@ export function AuUploadForm({
         />
       </label>
       <button
-        className="min-h-11 w-full rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-60 sm:w-auto"
+        className="min-h-touch w-full rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-60 sm:w-auto"
         disabled={pending}
       >
         {pending ? t(locale, 'common.saving') : t(locale, 'emp.absence.auUpload')}

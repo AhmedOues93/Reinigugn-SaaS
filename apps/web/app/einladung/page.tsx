@@ -1,21 +1,66 @@
-import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { invitationCookieName, type InvitationPreview } from '@/lib/invitations';
 import { createClient } from '@/lib/supabase/server';
 import { InvitationAcceptButton, InvitationSignUp } from '@/components/invitation-acceptance';
-import { ProductBrand } from '@/components/company-brand';
+import { AuthFooterLink, AuthShell } from '@/components/auth-shell';
+import { Card } from '@/components/ui';
+import { t, type TranslationKey } from '@/lib/i18n';
+import { currentLocale } from '@/lib/i18n-server';
 
-const roleLabels: Record<string, string> = { OFFICE: 'Büro', EMPLOYEE: 'Mitarbeiter', CUSTOMER: 'Kundenzugang' };
+const roleKeys: Record<string, TranslationKey> = {
+  OFFICE: 'role.OFFICE',
+  EMPLOYEE: 'role.EMPLOYEE',
+  CUSTOMER: 'role.CUSTOMER',
+};
 
 export default async function InvitationPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
+  const [{ error }, locale] = await Promise.all([searchParams, currentLocale()]);
   const token = (await cookies()).get(invitationCookieName)?.value;
-  if (!token || error) return <main className="grid min-h-screen place-items-center bg-slate-50 p-4"><section className="w-full max-w-md rounded-xl border bg-white p-7 shadow-sm"><h1 className="text-xl font-semibold">Einladung nicht verfügbar</h1><p className="mt-3 text-sm leading-6 text-slate-600">Der Einladungslink ist ungültig, abgelaufen oder wurde bereits verwendet.</p><Link className="mt-6 inline-block text-sm font-medium text-teal-700 hover:underline" href="/login">Zur Anmeldung</Link></section></main>;
+
+  const unavailable = (
+    <AuthShell
+      locale={locale}
+      title={t(locale, 'auth.inviteUnavailable')}
+      description={t(locale, 'auth.inviteUnavailableBody')}
+      footer={<AuthFooterLink href="/login">{t(locale, 'auth.toSignIn')}</AuthFooterLink>}
+    >
+      <div />
+    </AuthShell>
+  );
+  if (!token || error) return unavailable;
+
   const supabase = await createClient();
-  const [{ data }, { data: { user } }] = await Promise.all([supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle(), supabase.auth.getUser()]);
+  const [{ data }, { data: { user } }] = await Promise.all([
+    supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
   const preview = data as InvitationPreview | null;
-  if (!preview) return <main className="grid min-h-screen place-items-center bg-slate-50 p-4"><section className="w-full max-w-md rounded-xl border bg-white p-7 shadow-sm"><h1 className="text-xl font-semibold">Einladung nicht verfügbar</h1><p className="mt-3 text-sm leading-6 text-slate-600">Der Einladungslink ist ungültig, abgelaufen oder wurde bereits verwendet.</p></section></main>;
-  const name = `${preview.first_name} ${preview.last_name}`;
+  if (!preview) return unavailable;
+
+  const name = `${preview.first_name} ${preview.last_name}`.trim();
+  const roleLabel = t(locale, roleKeys[preview.role] ?? 'role.EMPLOYEE');
   const emailMatches = user?.email?.toLocaleLowerCase() === preview.email.toLocaleLowerCase();
-  return <main className="grid min-h-screen place-items-center bg-slate-50 p-4"><section className="w-full max-w-md rounded-xl border bg-white p-7 shadow-sm"><ProductBrand /><h1 className="mt-7 text-2xl font-semibold">Willkommen, {name}</h1><p className="mt-2 text-sm leading-6 text-slate-600">Du wurdest als {roleLabels[preview.role] ?? preview.role} zu <strong>{preview.company_name}</strong> eingeladen.</p><div className="mt-6 rounded-md bg-slate-50 p-4 text-sm"><p className="text-slate-500">Eingeladene E-Mail-Adresse</p><p className="mt-1 font-medium">{preview.email}</p></div><div className="mt-6">{user && emailMatches ? <InvitationAcceptButton /> : user ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">Du bist mit einer anderen E-Mail-Adresse angemeldet. Bitte melde dich mit {preview.email} an.</p> : <InvitationSignUp />}</div></section></main>;
+
+  return (
+    <AuthShell
+      locale={locale}
+      title={t(locale, 'auth.inviteWelcome', { name })}
+      description={t(locale, 'auth.inviteBody', { role: roleLabel, company: preview.company_name })}
+    >
+      <Card className="mb-6 bg-muted/60 p-4 shadow-none">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{t(locale, 'auth.inviteEmailLabel')}</p>
+        <p className="break-anywhere mt-1 font-medium">{preview.email}</p>
+      </Card>
+
+      {user && emailMatches ? (
+        <InvitationAcceptButton locale={locale} />
+      ) : user ? (
+        <p role="alert" className="rounded-md bg-danger-soft p-3 text-sm leading-6 text-danger">
+          {t(locale, 'auth.inviteWrongUser', { email: preview.email })}
+        </p>
+      ) : (
+        <InvitationSignUp locale={locale} />
+      )}
+    </AuthShell>
+  );
 }

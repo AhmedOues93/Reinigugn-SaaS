@@ -1,4 +1,21 @@
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+
 export function AuthMessage({ error, message }: { error?: string; message?: string }) {
   if (!error && !message) return null;
-  return <p className={error ? 'rounded-md bg-red-50 p-3 text-sm text-red-700' : 'rounded-md bg-teal-50 p-3 text-sm text-teal-800'}>{error ?? message}</p>;
+  const isError = Boolean(error);
+  return (
+    <p
+      role={isError ? 'alert' : 'status'}
+      className={`flex items-start gap-2.5 rounded-md p-3 text-sm leading-6 ${
+        isError ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
+      }`}
+    >
+      {isError ? (
+        <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      ) : (
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      )}
+      <span className="break-anywhere">{error ?? message}</span>
+    </p>
+  );
 }

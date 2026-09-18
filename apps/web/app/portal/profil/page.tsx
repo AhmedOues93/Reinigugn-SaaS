@@ -15,17 +15,17 @@ export default async function PortalProfilePage() {
       <Card className="p-5">
         <dl className="space-y-4 text-sm">
           <div>
-            <dt className="text-slate-500">{t(locale, 'role.CUSTOMER')}</dt>
+            <dt className="text-muted-foreground">{t(locale, 'role.CUSTOMER')}</dt>
             <dd className="mt-1 font-medium">{overview?.customerName}</dd>
           </div>
           {overview?.customerNumber && (
             <div>
-              <dt className="text-slate-500">{t(locale, 'emp.profile.employeeNumber')}</dt>
+              <dt className="text-muted-foreground">{t(locale, 'emp.profile.employeeNumber')}</dt>
               <dd className="mt-1 font-medium">{overview.customerNumber}</dd>
             </div>
           )}
           <div>
-            <dt className="text-slate-500">{t(locale, 'common.customerAccess')}</dt>
+            <dt className="text-muted-foreground">{t(locale, 'common.customerAccess')}</dt>
             <dd className="mt-1 font-medium">{name || user.email}</dd>
           </div>
         </dl>
@@ -41,7 +41,7 @@ export default async function PortalProfilePage() {
       <form action={logout} className="mt-6">
         <button
           type="submit"
-          className="min-h-12 w-full rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto sm:px-6"
+          className="min-h-12 w-full rounded-md border border-border bg-card text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto sm:px-6"
         >
           {t(locale, 'common.logout')}
         </button>

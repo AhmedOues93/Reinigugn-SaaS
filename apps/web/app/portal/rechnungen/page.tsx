@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, Receipt } from 'lucide-react';
-import { PortalEmptyState, PortalPageHeader } from '@/components/portal/portal-shell';
+import { PortalPageHeader } from '@/components/portal/portal-shell';
+import { EmptyState } from '@/components/ui';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
 import { listPortalInvoices } from '@/lib/data/portal-invoices';
 import { portalLocale } from '@/lib/data/portal';
@@ -14,7 +15,7 @@ export default async function PortalInvoicesPage() {
     <>
       <PortalPageHeader title={t(locale, 'billing.invoices')} />
       {invoices.length === 0 ? (
-        <PortalEmptyState
+        <EmptyState
           icon={<Receipt className="size-5" />}
           title={t(locale, 'billing.empty')}
         />
@@ -24,11 +25,11 @@ export default async function PortalInvoicesPage() {
             <li key={invoice.id}>
               <Link
                 href={`/portal/rechnungen/${invoice.id}`}
-                className="flex items-center gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-primary"
+                className="flex items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:border-primary"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-slate-900">{invoice.invoice_number}</p>
-                  <p className="mt-0.5 text-sm text-slate-600">
+                  <p className="font-medium text-foreground">{invoice.invoice_number}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
                     {formatDate(locale, invoice.issue_date)}
                     {invoice.due_date &&
                       ` · ${t(locale, 'billing.dueDate')} ${formatDate(locale, invoice.due_date)}`}

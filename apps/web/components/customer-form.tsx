@@ -8,7 +8,7 @@ import { FormMessage, SubmitButton } from '@/components/form-controls';
 
 type CustomerRecord = { id?: string; name?: string | null; customer_number?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; email?: string | null; phone?: string | null; billing_address?: string | null; city?: string | null; postal_code?: string | null; billing_country?: string | null; billing_email?: string | null; payment_terms_days?: number | null; vat_id?: string | null; notes?: string | null; };
 type CustomerAction = (state: FormState, formData: FormData) => Promise<FormState>;
-const fieldClass = 'mt-1.5 flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary';
+const fieldClass = 'mt-1.5 flex min-h-touch w-full rounded-md border bg-white px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary';
 
 export function CustomerForm({ customer, action, submitLabel }: { customer?: CustomerRecord; action: CustomerAction; submitLabel: string }) {
   const [state, formAction] = useActionState(action, initialFormState);

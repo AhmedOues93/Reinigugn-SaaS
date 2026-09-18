@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { CalendarCheck2, ChevronRight } from 'lucide-react';
+import { CalendarCheck2, CheckCircle2, ChevronRight } from 'lucide-react';
 import { EmployeeJobCard } from '@/components/employee/job-card';
-import { EmployeePageHeader, EmptyState } from '@/components/employee/employee-shell';
+import { EmployeePageHeader } from '@/components/employee/employee-shell';
+import { EmptyState } from '@/components/ui';
 import { employeeLocale, listMyTodayAndUpcoming, requireEmployee } from '@/lib/data/employee';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -13,7 +14,8 @@ export default async function EmployeeTodayPage() {
     listMyTodayAndUpcoming(),
   ]);
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
-  const openToday = today.filter((job) => job.status !== 'COMPLETED').length;
+  const done = today.filter((job) => job.status === 'COMPLETED').length;
+  const allDone = today.length > 0 && done === today.length;
 
   return (
     <>
@@ -23,7 +25,18 @@ export default async function EmployeeTodayPage() {
       />
 
       {today.length > 0 && (
-        <p className="mb-3 text-sm font-medium text-slate-700">{t(locale, 'emp.today.openJobs', { count: openToday })}</p>
+        <div className="mb-4 rounded-lg border border-border bg-card p-4 shadow-card">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">{t(locale, 'emp.today.progress', { done, total: today.length })}</p>
+            {allDone && <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />}
+          </div>
+          <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted" role="presentation">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.round((done / today.length) * 100)}%` }}
+            />
+          </div>
+        </div>
       )}
 
       {today.length === 0 ? (
@@ -32,6 +45,20 @@ export default async function EmployeeTodayPage() {
           title={t(locale, 'emp.today.noJobs')}
           body={t(locale, 'emp.today.noJobsBody')}
         />
+      ) : allDone ? (
+        <>
+          <EmptyState
+            className="mb-4"
+            icon={<CheckCircle2 className="size-5 text-success" />}
+            title={t(locale, 'emp.today.allDone')}
+            body={t(locale, 'emp.today.allDoneBody')}
+          />
+          <div className="space-y-3">
+            {today.map((job) => (
+              <EmployeeJobCard key={job.id} job={job} locale={locale} />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="space-y-3">
           {today.map((job) => (
@@ -43,10 +70,12 @@ export default async function EmployeeTodayPage() {
       {upcoming.length > 0 && (
         <section className="mt-8">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">{t(locale, 'emp.today.nextUp')}</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t(locale, 'emp.today.nextUp')}
+            </h2>
             <Link
               href="/mitarbeiter/einsaetze"
-              className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary"
+              className="inline-flex min-h-touch items-center gap-1 text-sm font-medium text-primary"
             >
               {t(locale, 'emp.tab.schedule')}
               <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />

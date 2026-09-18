@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FormMessage } from '@/components/form-controls';
 import { initialFormState, type FormState } from '@/lib/actions';
+import { Select } from '@/components/ui';
 import { direction, localeLabelKeys, supportedLocales, t, type Locale } from '@/lib/i18n';
 
 /**
@@ -20,9 +21,8 @@ export function EmployeeLanguagePicker({ locale, action }: { locale: Locale; act
       <FormMessage status={state.status} message={state.message} />
       <label className="block">
         <span className="sr-only">{t(locale, 'common.language')}</span>
-        <select
+        <Select
           aria-label={t(locale, 'common.language')}
-          className="min-h-11 w-full rounded-md border bg-white px-3 text-sm"
           defaultValue={locale}
           disabled={pending}
           onChange={(event) => {
@@ -43,7 +43,7 @@ export function EmployeeLanguagePicker({ locale, action }: { locale: Locale; act
               {t(locale, localeLabelKeys[value])}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
     </div>
   );

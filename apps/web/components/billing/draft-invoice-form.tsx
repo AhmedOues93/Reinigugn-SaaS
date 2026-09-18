@@ -27,7 +27,7 @@ export function DraftInvoiceForm({
       <label className="block text-sm font-medium">
         {t(locale, 'role.CUSTOMER')}
         <select
-          className="mt-1.5 min-h-11 w-full rounded-md border bg-white px-3 text-sm"
+          className="mt-1.5 min-h-touch w-full rounded-md border bg-white px-3 text-sm"
           name="customer_id"
           required
           defaultValue=""

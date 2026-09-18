@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
+import { Field, Input, Select, Textarea } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
@@ -21,11 +22,10 @@ export function PortalComplaintForm({
   const [state, formAction] = useActionState(action, initialFormState);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
-      <label className="block text-sm font-medium">
-        {t(locale, 'portal.tab.objects')}
-        <select className="mt-1.5 min-h-11 w-full rounded-md border bg-white px-3" name="cleaning_object_id" required defaultValue="">
+      <Field label={t(locale, 'portal.tab.objects')} htmlFor="complaint-object">
+        <Select id="complaint-object" name="cleaning_object_id" required defaultValue="">
           <option value="" disabled>
             {t(locale, 'common.none')}
           </option>
@@ -34,23 +34,15 @@ export function PortalComplaintForm({
               {object.name}
             </option>
           ))}
-        </select>
-      </label>
-      <label className="block text-sm font-medium">
-        {t(locale, 'portal.complaints.title')}
-        <input className="mt-1.5 min-h-11 w-full rounded-md border px-3" name="title" required minLength={2} maxLength={160} />
-      </label>
-      <label className="block text-sm font-medium">
-        {t(locale, 'common.note')}
-        <textarea
-          className="mt-1.5 min-h-32 w-full rounded-md border p-3 text-sm"
-          name="description"
-          required
-          minLength={2}
-          maxLength={4000}
-        />
-      </label>
-      <SubmitButton locale={locale} className="w-full sm:w-auto">
+        </Select>
+      </Field>
+      <Field label={t(locale, 'portal.complaints.title')} htmlFor="complaint-title">
+        <Input id="complaint-title" name="title" required minLength={2} maxLength={160} />
+      </Field>
+      <Field label={t(locale, 'common.note')} htmlFor="complaint-description">
+        <Textarea id="complaint-description" name="description" className="min-h-32" required minLength={2} maxLength={4000} />
+      </Field>
+      <SubmitButton locale={locale} size="block">
         {t(locale, 'portal.complaints.new')}
       </SubmitButton>
     </form>

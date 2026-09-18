@@ -52,7 +52,7 @@ export function CancelInvoiceAction({ action, locale }: { action: Action; locale
       <label className="block text-sm font-medium">
         Stornierungsgrund
         <input
-          className="mt-1.5 min-h-11 w-full rounded-md border px-3 text-sm"
+          className="mt-1.5 min-h-touch w-full rounded-md border px-3 text-sm"
           name="reason"
           required
           minLength={3}

@@ -5,9 +5,10 @@ import type { CompanyBranding } from '@/lib/data/branding';
 import { direction, type Locale } from '@/lib/i18n';
 
 /**
- * Mobile-first application frame: a compact branded header, a scrolling content
- * column capped at phone width, and the bottom tab bar. The dashboard sidebar is
- * deliberately absent — this is an app, not a dashboard on a small screen.
+ * Mobile application frame. A compact branded header, a single content column
+ * capped at phone width, and a persistent tab bar. `pb-28` reserves room for the
+ * fixed bar so the last card is never hidden behind it, and safe-area insets keep
+ * it clear of the notch and the home indicator.
  */
 export function EmployeeShell({
   children,
@@ -21,36 +22,28 @@ export function EmployeeShell({
   unread: number;
 }) {
   return (
-    <div dir={direction(locale)} className="flex min-h-[100dvh] flex-col bg-slate-50">
+    <div dir={direction(locale)} className="flex min-h-[100dvh] flex-col bg-background">
       <SyncDocumentLocale locale={locale} />
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white pt-[env(safe-area-inset-top)]">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-lg items-center gap-3 px-4">
           <CompanyBrand branding={branding} href="/mitarbeiter" size="sm" />
         </div>
       </header>
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-24 pt-4">{children}</main>
+
+      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-28 pt-4">{children}</main>
+
       <EmployeeBottomNav locale={locale} unread={unread} />
     </div>
   );
 }
 
-/** Page heading used by every employee screen so spacing stays consistent. */
 export function EmployeePageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-4">
-      <h1 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h1>
-      {subtitle && <p className="mt-1 text-sm text-slate-600">{subtitle}</p>}
+      <h1 className="text-balance text-xl font-semibold tracking-tight">{title}</h1>
+      {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
     </div>
   );
 }
 
-/** Shared empty state so "nothing here" never looks like a failed page. */
-export function EmptyState({ title, body, icon }: { title: string; body?: string; icon?: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-      {icon && <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-slate-100 text-slate-500">{icon}</div>}
-      <p className="font-medium text-slate-900">{title}</p>
-      {body && <p className="mx-auto mt-1 max-w-xs text-sm text-slate-600">{body}</p>}
-    </div>
-  );
-}
+export { EmptyState } from '@/components/ui';

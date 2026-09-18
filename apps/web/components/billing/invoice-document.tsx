@@ -61,7 +61,7 @@ export function InvoiceDocument({
   }, {});
 
   return (
-    <article className="invoice-sheet mx-auto w-full max-w-[210mm] bg-white p-8 text-[13px] leading-relaxed text-slate-900 shadow-sm sm:p-12 print:max-w-none print:p-0 print:shadow-none">
+    <article className="invoice-sheet mx-auto w-full max-w-[210mm] overflow-hidden bg-white p-5 text-[13px] leading-relaxed text-slate-900 shadow-sm sm:p-12 print:max-w-none print:p-0 print:shadow-none">
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0">
           {logoUrl ? (
@@ -137,7 +137,38 @@ export function InvoiceDocument({
         {formatDate(locale, data.servicePeriodEnd)}
       </p>
 
-      <table className="mt-7 w-full text-sm">
+      {/* Line items. A real table from `sm` upwards and in print; a stacked list
+          on a phone, because six numeric columns cannot fit 390px without
+          forcing the whole page to scroll sideways. */}
+      <ul className="mt-7 space-y-3 sm:hidden print:hidden">
+        {data.lines.map((line) => (
+          <li key={line.position} className="rounded-md border border-border p-3">
+            <p className="break-anywhere text-sm font-medium">{line.description}</p>
+            <dl className="mt-2 space-y-1 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">{t(locale, 'billing.quantity')}</dt>
+                <dd className="tabular-nums">
+                  {line.quantity} {line.unit}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">{t(locale, 'billing.unitPrice')}</dt>
+                <dd className="tabular-nums">{formatMoney(locale, line.unit_price_cents, data.currency)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">{t(locale, 'billing.vatRate')}</dt>
+                <dd className="tabular-nums">{formatPercent(locale, line.vat_rate_basis_points)}</dd>
+              </div>
+              <div className="flex justify-between gap-3 border-t border-border pt-1 font-medium">
+                <dt>{t(locale, 'billing.net')}</dt>
+                <dd className="tabular-nums">{formatMoney(locale, line.net_amount_cents, data.currency)}</dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      <table className="mt-7 hidden w-full text-sm sm:table print:table">
         <thead>
           <tr className="border-b-2 border-slate-800 text-xs uppercase tracking-wide text-slate-600">
             <th className="py-2 text-start font-medium">Pos.</th>
@@ -180,9 +211,8 @@ export function InvoiceDocument({
           </div>
           {Object.entries(vatGroups).map(([rate, group]) => (
             <div key={rate} className="flex justify-between gap-6">
-              <dt className="text-slate-600">
-                {t(locale, 'billing.vat')} {formatPercent(locale, Number(rate))} auf{' '}
-                {formatMoney(locale, group.net, data.currency)}
+              <dt className="break-anywhere text-slate-600">
+                {t(locale, 'billing.vat')} {formatPercent(locale, Number(rate))} · {formatMoney(locale, group.net, data.currency)}
               </dt>
               <dd className="tabular-nums">
                 {formatMoney(locale, Math.round((group.net * Number(rate)) / 10000), data.currency)}

@@ -11,6 +11,10 @@ import {
   translations,
 } from '@/lib/i18n';
 
+/** Stems that only occur when an umlaut or ß was transliterated away. */
+const transliterationPattern =
+  /(fuer|ueber|koenn|muess|oeffn|waehl|aender|auftraeg|qualitaet|tuerkisch|franzoesisch|rumaenisch|gebaeud|groess|hoech|zurueck|naechst|moegl|duerf|laeng|staerk|strasse|grosse)/i;
+
 const germanUmlautKeys = ['nav.jobs', 'nav.quality', 'common.menu', 'emp.photo.hint'] as const;
 
 describe('i18n', () => {
@@ -56,9 +60,15 @@ describe('i18n', () => {
     for (const key of germanUmlautKeys) {
       expect(translations.de[key]).toMatch(/[äöüÄÖÜß]/);
     }
-    for (const value of Object.values(translations.de)) {
-      expect(value).not.toMatch(/\b(ae|oe|ue)\b/);
-      expect(value).not.toContain('?');
+    for (const [key, value] of Object.entries(translations.de)) {
+      // Transliterations such as "Tuerkisch" or "Franzoesisch" instead of umlauts.
+      // A blocklist of real stems, because a bare /ae|oe|ue/ also matches
+      // correctly spelled words like "aktuellen".
+      expect(value, key).not.toMatch(transliterationPattern);
+      // Mojibake: a replacement character, or a '?' sitting inside a word rather
+      // than ending a question.
+      expect(value, key).not.toContain('\uFFFD');
+      expect(value, key).not.toMatch(/\p{L}\?\p{L}/u);
     }
   });
 

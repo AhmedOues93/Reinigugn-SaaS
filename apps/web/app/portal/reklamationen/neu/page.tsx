@@ -11,7 +11,7 @@ export default async function NewPortalComplaintPage() {
 
   return (
     <>
-      <Link href="/portal/reklamationen" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-slate-600">
+      <Link href="/portal/reklamationen" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground">
         <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         {t(locale, 'common.back')}
       </Link>
