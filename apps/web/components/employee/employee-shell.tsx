@@ -1,4 +1,5 @@
 import { CompanyBrand } from '@/components/company-brand';
+import { SyncDocumentLocale } from '@/components/sync-document-locale';
 import { EmployeeBottomNav } from '@/components/employee/bottom-nav';
 import type { CompanyBranding } from '@/lib/data/branding';
 import { direction, type Locale } from '@/lib/i18n';
@@ -21,6 +22,7 @@ export function EmployeeShell({
 }) {
   return (
     <div dir={direction(locale)} className="flex min-h-[100dvh] flex-col bg-slate-50">
+      <SyncDocumentLocale locale={locale} />
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-14 w-full max-w-lg items-center gap-3 px-4">
           <CompanyBrand branding={branding} href="/mitarbeiter" size="sm" />
