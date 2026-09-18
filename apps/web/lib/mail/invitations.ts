@@ -1,6 +1,6 @@
 import { appUrl } from '@/lib/utils';
 
-export type InvitationEmail = { to: string; companyName: string; firstName: string; role: 'OFFICE' | 'EMPLOYEE'; token: string };
+export type InvitationEmail = { to: string; companyName: string; firstName: string; role: 'OFFICE' | 'EMPLOYEE' | 'CUSTOMER'; token: string };
 export type InvitationDelivery = { delivered: boolean; developmentUrl?: string };
 
 export interface TransactionalMailService {

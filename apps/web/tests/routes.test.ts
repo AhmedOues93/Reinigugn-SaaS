@@ -35,6 +35,13 @@ describe('routing surface', () => {
     }
   });
 
+  it('exposes the customer portal as its own surface', () => {
+    expect(routes).toContain('/portal');
+    for (const route of ['/portal/objekte', '/portal/leistungen', '/portal/reklamationen', '/portal/profil']) {
+      expect(routes, `missing ${route}`).toContain(route);
+    }
+  });
+
   it('keeps a single employee surface instead of two parallel ones', () => {
     expect(routes.some((route) => route.includes('mein-bereich'))).toBe(false);
   });

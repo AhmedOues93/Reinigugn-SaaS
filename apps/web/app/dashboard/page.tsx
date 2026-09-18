@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { landingPathForRole } from '@/lib/landing';
 import { Card } from '@/components/ui';
 import { getCurrentCompany } from '@/lib/auth';
 import { getDashboardMetrics } from '@/lib/data/jobs';
@@ -7,7 +8,7 @@ import { currentLocale } from '@/lib/i18n-server';
 
 export default async function DashboardPage() {
   const { membership, profile } = await getCurrentCompany();
-  if (membership?.role === 'EMPLOYEE') redirect('/mitarbeiter');
+  if (membership && membership.role !== 'OWNER' && membership.role !== 'OFFICE') redirect(landingPathForRole(membership.role));
   const [dashboardMetrics, locale] = await Promise.all([getDashboardMetrics(), currentLocale()]);
   const metrics = [
     { label: t(locale, 'dashboard.todayJobs'), value: String(dashboardMetrics.todayJobs), note: `${dashboardMetrics.plannedToday} ${t(locale, 'status.OPEN').toLocaleLowerCase()}` },

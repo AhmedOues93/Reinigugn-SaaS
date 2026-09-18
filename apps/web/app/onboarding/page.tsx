@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation';
 import { createCompany } from '../(auth)/actions';
 import { getCurrentCompany } from '@/lib/auth';
+import { landingPathForRole } from '@/lib/landing';
 import { AuthMessage } from '@/components/auth-message';
 import { AuthShell } from '@/components/auth-shell';
 import { Button, Input } from '@/components/ui';
 
 export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { membership } = await getCurrentCompany();
-  if (membership) redirect('/dashboard');
+  if (membership) redirect(landingPathForRole(membership.role));
   const { error } = await searchParams;
   return <AuthShell title="Dein Unternehmen" description="Lege dein Reinigungsunternehmen an. Du kannst den Namen später in den Einstellungen ändern.">
     <form action={createCompany} className="space-y-5">

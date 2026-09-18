@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import { invitationCookieName, type InvitationPreview } from '@/lib/invitations';
 import { createClient } from '@/lib/supabase/server';
 import { InvitationAcceptButton, InvitationSignUp } from '@/components/invitation-acceptance';
+import { ProductBrand } from '@/components/company-brand';
+
+const roleLabels: Record<string, string> = { OFFICE: 'Büro', EMPLOYEE: 'Mitarbeiter', CUSTOMER: 'Kundenzugang' };
 
 export default async function InvitationPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
@@ -14,5 +17,5 @@ export default async function InvitationPage({ searchParams }: { searchParams: P
   if (!preview) return <main className="grid min-h-screen place-items-center bg-slate-50 p-4"><section className="w-full max-w-md rounded-xl border bg-white p-7 shadow-sm"><h1 className="text-xl font-semibold">Einladung nicht verfügbar</h1><p className="mt-3 text-sm leading-6 text-slate-600">Der Einladungslink ist ungültig, abgelaufen oder wurde bereits verwendet.</p></section></main>;
   const name = `${preview.first_name} ${preview.last_name}`;
   const emailMatches = user?.email?.toLocaleLowerCase() === preview.email.toLocaleLowerCase();
-  return <main className="grid min-h-screen place-items-center bg-slate-50 p-4"><section className="w-full max-w-md rounded-xl border bg-white p-7 shadow-sm"><p className="text-lg font-semibold tracking-tight">Sauber<span className="text-teal-700">Werk</span></p><h1 className="mt-7 text-2xl font-semibold">Willkommen, {name}</h1><p className="mt-2 text-sm leading-6 text-slate-600">Du wurdest als {preview.role === 'OFFICE' ? 'Büro' : 'Mitarbeiter'} zu <strong>{preview.company_name}</strong> eingeladen.</p><div className="mt-6 rounded-md bg-slate-50 p-4 text-sm"><p className="text-slate-500">Eingeladene E-Mail-Adresse</p><p className="mt-1 font-medium">{preview.email}</p></div><div className="mt-6">{user && emailMatches ? <InvitationAcceptButton /> : user ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">Du bist mit einer anderen E-Mail-Adresse angemeldet. Bitte melde dich mit {preview.email} an.</p> : <InvitationSignUp />}</div></section></main>;
+  return <main className="grid min-h-screen place-items-center bg-slate-50 p-4"><section className="w-full max-w-md rounded-xl border bg-white p-7 shadow-sm"><ProductBrand /><h1 className="mt-7 text-2xl font-semibold">Willkommen, {name}</h1><p className="mt-2 text-sm leading-6 text-slate-600">Du wurdest als {roleLabels[preview.role] ?? preview.role} zu <strong>{preview.company_name}</strong> eingeladen.</p><div className="mt-6 rounded-md bg-slate-50 p-4 text-sm"><p className="text-slate-500">Eingeladene E-Mail-Adresse</p><p className="mt-1 font-medium">{preview.email}</p></div><div className="mt-6">{user && emailMatches ? <InvitationAcceptButton /> : user ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">Du bist mit einer anderen E-Mail-Adresse angemeldet. Bitte melde dich mit {preview.email} an.</p> : <InvitationSignUp />}</div></section></main>;
 }

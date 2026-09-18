@@ -11,7 +11,7 @@ import { setEmployeeActive } from '../actions';
 import { canManageMember } from '@/lib/member-permissions';
 
 function Info({ label, value }: { label: string; value?: string | number | null }) { return <div><dt className="text-sm text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm font-medium text-slate-800">{value ?? '—'}</dd></div>; }
-const languages: Record<string, string> = { de: 'Deutsch', en: 'Englisch', fr: 'Franzoesisch', ar: 'Arabisch', tr: 'Tuerkisch', ro: 'Rumaenisch', pl: 'Polnisch' };
+const languages: Record<string, string> = { de: 'Deutsch', en: 'Englisch', ar: 'Arabisch', tr: 'Türkisch', uk: 'Ukrainisch' };
 
 export default async function EmployeeDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ success?: string }> }) {
   const { id } = await params; const { success } = await searchParams;
