@@ -41,7 +41,7 @@ export function QuoteFromSurveyForm({
         <Field label={t(locale, 'sales.quote.title')} htmlFor="quote-title">
           <Input id="quote-title" name="title" defaultValue={defaultTitle} required minLength={2} maxLength={160} />
         </Field>
-        <Field label={t(locale, 'sales.quote.validUntil')} htmlFor="valid-days">
+        <Field label={t(locale, 'sales.quote.validDays')} htmlFor="valid-days">
           <Input id="valid-days" name="valid_days" type="number" min={1} max={365} defaultValue={30} />
         </Field>
       </div>

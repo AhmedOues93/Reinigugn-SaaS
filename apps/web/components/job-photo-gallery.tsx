@@ -1,22 +1,118 @@
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element -- signed, short-lived storage URLs */
 'use client';
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { FormMessage } from '@/components/form-controls';
+import { Card, EmptyState } from '@/components/ui';
 import { initialFormState } from '@/lib/actions';
 import type { JobPhoto } from '@/lib/data/job-photos';
+import { formatDateTime } from '@/lib/format';
+import { t, type Locale } from '@/lib/i18n';
 
-const categoryLabel = { BEFORE: 'Vorher', AFTER: 'Nachher', DOCUMENTATION: 'Dokumentation' } as const;
 type DeleteAction = (state: typeof initialFormState, formData: FormData) => Promise<typeof initialFormState>;
+type BoundDeleteAction = (photoId: string, state: typeof initialFormState, formData: FormData) => Promise<typeof initialFormState>;
 
-function DeleteButton() { const { pending } = useFormStatus(); return <button type="submit" disabled={pending} className="mt-3 text-sm font-medium text-red-700 disabled:opacity-60">{pending ? 'Wird entfernt...' : 'Foto entfernen'}</button>; }
+const categoryKeys = {
+  BEFORE: 'emp.photo.before',
+  AFTER: 'emp.photo.after',
+  DOCUMENTATION: 'emp.photo.documentation',
+} as const;
 
-function PhotoCard({ photo, canDelete, deleteAction }: { photo: JobPhoto; canDelete: boolean; deleteAction: (photoId: string, state: typeof initialFormState, formData: FormData) => Promise<typeof initialFormState> }) {
-  const [state, formAction] = useActionState(deleteAction.bind(null, photo.id) as DeleteAction, initialFormState);
-  return <article className="overflow-hidden rounded-lg border bg-white"><div className="aspect-[4/3] bg-slate-100">{photo.url ? <img src={photo.url} alt={`${categoryLabel[photo.category]}: ${photo.description ?? 'Einsatzfoto'}`} className="size-full object-cover" /> : <p className="p-4 text-sm text-slate-600">Foto kann nicht geladen werden.</p>}</div><div className="p-4"><p className="text-sm font-semibold">{categoryLabel[photo.category]}</p><p className="mt-1 text-xs text-slate-500">{photo.uploader} · {new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(photo.created_at))}</p>{photo.checklist_item && <p className="mt-2 text-sm text-slate-700">Checklistenpunkt: {photo.checklist_item.title}</p>}{photo.description && <p className="mt-2 text-sm text-slate-700">{photo.description}</p>}{canDelete && <form action={formAction}><DeleteButton /></form>}<FormMessage status={state.status} message={state.message} /></div></article>;
+function DeleteButton({ locale }: { locale: Locale }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="mt-3 inline-flex min-h-touch items-center text-sm font-medium text-danger disabled:opacity-60"
+    >
+      {pending ? t(locale, 'common.saving') : t(locale, 'common.cancel')}
+    </button>
+  );
 }
 
-export function JobPhotoGallery({ photos, canDelete, deleteAction }: { photos: JobPhoto[]; canDelete: (photo: JobPhoto) => boolean; deleteAction: (photoId: string, state: typeof initialFormState, formData: FormData) => Promise<typeof initialFormState> }) {
-  return <section className="mt-6"><div className="mb-3"><h2 className="text-lg font-semibold">Fotodokumentation</h2><p className="mt-1 text-sm text-slate-600">{photos.length === 0 ? 'Noch keine Fotos dokumentiert.' : `${photos.length} Foto${photos.length === 1 ? '' : 's'} dokumentiert.`}</p></div>{photos.length > 0 && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{photos.map((photo) => <PhotoCard key={photo.id} photo={photo} canDelete={canDelete(photo)} deleteAction={deleteAction} />)}</div>}</section>;
+function PhotoCard({
+  photo,
+  canDelete,
+  deleteAction,
+  locale,
+}: {
+  photo: JobPhoto;
+  canDelete: boolean;
+  deleteAction: BoundDeleteAction;
+  locale: Locale;
+}) {
+  const [state, formAction] = useActionState(deleteAction.bind(null, photo.id) as DeleteAction, initialFormState);
+  const category = t(locale, categoryKeys[photo.category]);
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="aspect-[4/3] bg-muted">
+        {photo.url ? (
+          <img src={photo.url} alt={`${category}: ${photo.description ?? ''}`} className="size-full object-cover" loading="lazy" />
+        ) : (
+          <p className="p-4 text-sm text-muted-foreground">{t(locale, 'common.errorBody')}</p>
+        )}
+      </div>
+      <div className="p-4">
+        <p className="text-sm font-semibold">{category}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {photo.uploader} · {formatDateTime(locale, photo.created_at)}
+        </p>
+        {photo.checklist_item && <p className="mt-2 text-sm">{photo.checklist_item.title}</p>}
+        {photo.description && <p className="break-anywhere mt-2 text-sm">{photo.description}</p>}
+        {canDelete && (
+          <form action={formAction}>
+            <DeleteButton locale={locale} />
+          </form>
+        )}
+        <FormMessage status={state.status} message={state.message} />
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * Photo documentation.
+ *
+ * `deletablePhotoIds` is a plain array rather than a `(photo) => boolean`
+ * predicate: this is a client component, and React cannot serialise a function
+ * prop across the server boundary — passing one threw
+ * "Functions cannot be passed directly to Client Components" at render time.
+ * The decision is made on the server, where the membership is known anyway.
+ */
+export function JobPhotoGallery({
+  photos,
+  deletablePhotoIds,
+  deleteAction,
+  locale = 'de',
+}: {
+  photos: JobPhoto[];
+  deletablePhotoIds: string[];
+  deleteAction: BoundDeleteAction;
+  locale?: Locale;
+}) {
+  const deletable = new Set(deletablePhotoIds);
+
+  return (
+    <section className="mt-6">
+      <h2 className="mb-3 text-lg font-semibold">{t(locale, 'emp.job.photos')}</h2>
+      {photos.length === 0 ? (
+        <EmptyState title={t(locale, 'emp.job.photos')} body={t(locale, 'emp.job.photosHint')} />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {photos.map((photo) => (
+            <PhotoCard
+              key={photo.id}
+              photo={photo}
+              canDelete={deletable.has(photo.id)}
+              deleteAction={deleteAction}
+              locale={locale}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }

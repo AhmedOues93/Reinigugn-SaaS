@@ -117,8 +117,9 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
 
         <JobPhotoGallery
           photos={photos}
-          canDelete={(photo) => photo.member_id === membership.id && editable}
+          deletablePhotoIds={editable ? photos.filter((photo) => photo.member_id === membership.id).map((photo) => photo.id) : []}
           deleteAction={deleteMyJobPhoto}
+          locale={locale}
         />
       </div>
     </>
