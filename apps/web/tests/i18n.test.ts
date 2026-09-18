@@ -18,13 +18,14 @@ const transliterationPattern =
 const germanUmlautKeys = ['nav.jobs', 'nav.quality', 'common.menu', 'emp.photo.hint'] as const;
 
 describe('i18n', () => {
-  it('supports exactly the five product locales', () => {
-    expect([...supportedLocales]).toEqual(['de', 'en', 'ar', 'tr', 'uk']);
+  it('supports exactly the six product locales', () => {
+    expect([...supportedLocales]).toEqual(['de', 'en', 'ar', 'tr', 'uk', 'ru']);
   });
 
   it('accepts only supported locale codes', () => {
     expect(isLocale('de')).toBe(true);
     expect(isLocale('uk')).toBe(true);
+    expect(isLocale('ru')).toBe(true);
     expect(isLocale('fr')).toBe(false);
     expect(isLocale(null)).toBe(false);
   });

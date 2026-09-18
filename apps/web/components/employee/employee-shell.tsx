@@ -1,6 +1,9 @@
 import { CompanyBrand } from '@/components/company-brand';
 import { SyncDocumentLocale } from '@/components/sync-document-locale';
 import { EmployeeBottomNav, EmployeeTopNav } from '@/components/employee/bottom-nav';
+import { OfflineProvider } from '@/components/employee/offline-provider';
+import { SyncBanner, SyncStatus } from '@/components/employee/sync-status';
+import type { CachedSnapshot } from '@/lib/offline/store';
 import type { CompanyBranding } from '@/lib/data/branding';
 import { direction, type Locale } from '@/lib/i18n';
 
@@ -21,29 +24,39 @@ export function EmployeeShell({
   branding,
   locale,
   unread,
+  userId,
+  snapshot,
 }: {
   children: React.ReactNode;
   branding: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
   locale: Locale;
   unread: number;
+  userId: string;
+  snapshot: CachedSnapshot | null;
 }) {
   return (
-    <div dir={direction(locale)} className="flex min-h-[100dvh] flex-col bg-background">
-      <SyncDocumentLocale locale={locale} />
+    <OfflineProvider userId={userId} snapshot={snapshot}>
+      <div dir={direction(locale)} className="flex min-h-[100dvh] flex-col bg-background">
+        <SyncDocumentLocale locale={locale} />
 
-      <header className="sticky top-0 z-20 border-b border-border bg-card/95 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-lg items-center gap-6 px-4 md:h-16 md:max-w-3xl lg:max-w-5xl">
-          <CompanyBrand branding={branding} href="/mitarbeiter" size="sm" />
-          <EmployeeTopNav locale={locale} unread={unread} />
-        </div>
-      </header>
+        <header className="sticky top-0 z-20 border-b border-border bg-card/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+          <div className="mx-auto flex h-14 w-full max-w-lg items-center gap-4 px-4 md:h-16 md:gap-6 md:max-w-3xl lg:max-w-5xl">
+            <CompanyBrand branding={branding} href="/mitarbeiter" size="sm" />
+            <EmployeeTopNav locale={locale} unread={unread} />
+            <div className="ms-auto md:ms-0">
+              <SyncStatus locale={locale} />
+            </div>
+          </div>
+        </header>
 
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4 md:max-w-3xl md:pb-10 md:pt-6 lg:max-w-5xl">
-        {children}
-      </main>
+        <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4 md:max-w-3xl md:pb-10 md:pt-6 lg:max-w-5xl">
+          <SyncBanner locale={locale} />
+          {children}
+        </main>
 
-      <EmployeeBottomNav locale={locale} unread={unread} />
-    </div>
+        <EmployeeBottomNav locale={locale} unread={unread} />
+      </div>
+    </OfflineProvider>
   );
 }
 

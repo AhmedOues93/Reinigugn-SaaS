@@ -2,6 +2,7 @@
 
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { getCurrentCompany } from '@/lib/auth';
 import { employeeLocale } from '@/lib/data/employee';
@@ -14,9 +15,9 @@ import { jobPhotoExtension, validateJobPhotoFile } from '@/lib/photo-validation'
  * other role. `company_id` and `role` are never read from the submitted form.
  */
 async function employeeContext() {
-  const { supabase, membership } = await getCurrentCompany();
+  const { supabase, membership, profile } = await getCurrentCompany();
   if (!membership || membership.role !== 'EMPLOYEE') return null;
-  return { supabase, membership };
+  return { supabase, membership, profile };
 }
 
 function revalidateEmployee(jobId?: string) {
@@ -189,3 +190,122 @@ export async function setMyAppLanguage(value: string): Promise<FormState> {
   revalidatePath('/mitarbeiter', 'layout');
   return { status: 'success', message: t(value, 'common.save') };
 }
+
+// ---------------------------------------------------------------------------
+// Profile: avatar and contact details
+// ---------------------------------------------------------------------------
+
+const avatarTypes: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+const avatarMaxBytes = 2 * 1024 * 1024;
+
+/**
+ * The employee replaces their own avatar. The object path is built from the
+ * profile id resolved server-side from the session, and `set_my_avatar` checks
+ * that same ownership again in the database — so a crafted path cannot touch a
+ * colleague's image even if this code were bypassed.
+ */
+export async function uploadMyAvatar(_: FormState, formData: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const file = formData.get('avatar');
+  if (!(file instanceof File) || file.size === 0) return { status: 'error', message: t(locale, 'emp.profile.avatarHint') };
+  const extension = avatarTypes[file.type];
+  if (!extension || file.size > avatarMaxBytes) return { status: 'error', message: t(locale, 'emp.profile.avatarHint') };
+
+  const profile = context.profile;
+  if (!profile) return denied();
+  const path = `${profile.id}/${randomUUID()}.${extension}`;
+  const { error: uploadError } = await context.supabase.storage
+    .from('avatars')
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+  const { error } = await context.supabase.rpc('set_my_avatar', { p_storage_path: path });
+  if (error) {
+    await context.supabase.storage.from('avatars').remove([path]);
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+  revalidatePath('/mitarbeiter', 'layout');
+  return { status: 'success', message: t(locale, 'emp.profile.avatarSaved') };
+}
+
+export async function removeMyAvatar(_: FormState, __: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const { error } = await context.supabase.rpc('set_my_avatar', { p_storage_path: null });
+  if (error) return { status: 'error', message: t(locale, 'common.errorBody') };
+  revalidatePath('/mitarbeiter', 'layout');
+  return { status: 'success', message: t(locale, 'emp.profile.avatarSaved') };
+}
+
+/**
+ * Name and phone only. The email address is the Supabase Auth identity and is
+ * deliberately not writable here: changing it belongs to the Auth email-change
+ * flow, and writing it to the profile row alone would leave the two disagreeing.
+ */
+export async function updateMyContactDetails(_: FormState, formData: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const firstName = String(formData.get('first_name') ?? '').trim();
+  const lastName = String(formData.get('last_name') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim();
+  if (!firstName || !lastName || firstName.length > 120 || lastName.length > 120 || phone.length > 64) {
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+  const { error } = await context.supabase.rpc('update_my_contact_details', {
+    p_first_name: firstName,
+    p_last_name: lastName,
+    p_phone: phone || null,
+  });
+  if (error) return { status: 'error', message: t(locale, 'common.errorBody') };
+  revalidatePath('/mitarbeiter', 'layout');
+  revalidatePath('/dashboard/mitarbeiter');
+  return { status: 'success', message: t(locale, 'emp.profile.saved') };
+}
+
+// ---------------------------------------------------------------------------
+// Messaging (online only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Messages are never queued offline: a cleaner must not walk away believing the
+ * office was told something that is still sitting on their phone. The client
+ * blocks the form while offline and this action simply fails if the request
+ * cannot reach the server.
+ */
+export async function startMyThread(_: FormState, formData: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const subject = String(formData.get('subject') ?? '').trim();
+  const body = String(formData.get('body') ?? '').trim();
+  if (!subject || subject.length > 200 || !body || body.length > 4000) {
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+  const { data, error } = await context.supabase.rpc('start_message_thread', {
+    p_employee_member_id: context.membership.id,
+    p_subject: subject,
+    p_body: body,
+  });
+  if (error || !data) return { status: 'error', message: t(locale, 'common.errorBody') };
+  revalidatePath('/mitarbeiter/nachrichten');
+  revalidatePath('/dashboard/nachrichten');
+  redirect(`/mitarbeiter/nachrichten/${data as string}`);
+}
+
+export async function sendMyMessage(threadId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const body = String(formData.get('body') ?? '').trim();
+  if (!body || body.length > 4000) return { status: 'error', message: t(locale, 'common.errorBody') };
+  const { error } = await context.supabase.rpc('send_message', { p_thread_id: threadId, p_body: body });
+  if (error) return { status: 'error', message: t(locale, 'common.errorBody') };
+  revalidatePath('/mitarbeiter/nachrichten');
+  revalidatePath(`/mitarbeiter/nachrichten/${threadId}`);
+  revalidatePath('/dashboard/nachrichten');
+  return { status: 'success', message: t(locale, 'emp.messages.sent') };
+}
+

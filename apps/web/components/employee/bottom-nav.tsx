@@ -71,7 +71,7 @@ export function EmployeeBottomNav({ locale, unread }: { locale: Locale; unread: 
 export function EmployeeTopNav({ locale, unread }: { locale: Locale; unread: number }) {
   const isActive = useActive();
   return (
-    <nav aria-label={t(locale, 'common.menu')} className="hidden md:block">
+    <nav aria-label={t(locale, 'common.menu')} className="hidden flex-1 md:block">
       <ul className="flex gap-1">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);

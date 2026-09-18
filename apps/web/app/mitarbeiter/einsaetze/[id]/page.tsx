@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, MapPin, Navigation } from 'lucide-react';
 import { Badge, Card, EmptyState } from '@/components/ui';
-import { JobChecklist } from '@/components/job-checklist';
+import { OfflineJobChecklist } from '@/components/employee/offline-checklist';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
 import { JobPhotoUpload } from '@/components/job-photo-upload';
 import { JobTimeControl } from '@/components/job-time-control';
@@ -102,7 +102,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
         {object && <SiteDetails site={object} locale={locale} />}
 
         {items.length > 0 ? (
-          <JobChecklist items={items} completeItem={completeMyChecklistItem} locale={locale} />
+          <OfflineJobChecklist items={items} completeItem={completeMyChecklistItem} locale={locale} />
         ) : (
           <EmptyState title={t(locale, 'emp.job.noChecklist')} />
         )}

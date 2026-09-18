@@ -97,3 +97,46 @@ The demo seed was described in the brief as something to extend. There was none:
 `supabase/seed/README.md` stated that phase 1 intentionally shipped no sample
 tenants. `supabase/seed/demo.sql` is therefore a first seed covering the whole
 product including billing, not a second demo company beside an existing one.
+
+## Phase 13 — the employee field app
+
+The employee surface already existed (jobs, checklist, time tracking, photos,
+absences, language) and was not rebuilt. Phase 13 closed the gaps that stopped it
+from being usable as a real field application.
+
+**Reused rather than reinvented.** `profiles.avatar_url` had existed since the
+first migration and was never populated; it was renamed to `avatar_storage_path`
+instead of adding a second column, because a private bucket stores a path, not a
+URL. `in_app_notifications` stays the single notification system: messaging adds
+threads and messages, which notifications cannot express, and then raises an
+ordinary notification so the badge that was already there keeps working. Russian
+joined the existing locale set rather than a parallel mechanism.
+
+**Messaging is online only, deliberately.** A queued message would sit on the
+phone while the cleaner believed the office had been told. For a sick call or a
+locked door that is worse than a clear refusal, so the composer disables itself
+and says why when the device reports no connection, and nothing about messaging
+touches the offline queue.
+
+**Offline scope.** Only the signed-in employee's own assigned visits for today and
+the next four weeks are stored, built server-side from the same RLS-checked
+queries the online screens use. The record is keyed by user id and a read for a
+different id returns nothing; a different user on the same device drops the whole
+database before anything is read, and so does signing out. The service worker
+caches the application shell and one offline screen that renders purely from
+IndexedDB — never an API response, because a cache keyed only by URL could not
+tell one user's data from another's.
+
+**Conflict rule.** A queued checklist write carries the moment the cleaner tapped.
+`sync_my_checklist_item` sets an absolute state rather than toggling, so a replay
+after a dropped connection cannot double-apply, and it answers `SERVER_NEWER` when
+the row changed after that moment — the newer server state is kept and the queued
+write is dropped rather than silently overwriting the office. Authorisation is
+unchanged: it delegates to `complete_my_checklist_item`, so the offline path is
+not a way around the assignment check.
+
+**Not verifiable in this environment.** The scratch backend used for interactive
+verification has no Supabase Storage, so avatar upload and the signed-URL round
+trip could not be exercised end to end here. The authorisation rules behind them —
+path shape, ownership, same-company read, cross-tenant denial — are covered by
+`supabase/test/employee-field.test.sql` with RLS in force.

@@ -36,6 +36,7 @@ declare
   schedule_weekly uuid;
   draft_invoice uuid; open_invoice uuid; paid_invoice uuid;
   won_lead uuid; open_lead uuid; won_survey uuid; open_survey uuid; won_quote uuid; open_quote uuid;
+  demo_thread uuid; checklist_template uuid;
   job_row record;
   billed integer := 0;
 begin
@@ -95,6 +96,23 @@ begin
   select id into object_alster from public.cleaning_objects where company_id = demo_company and name = 'Bürohaus Alster';
   select id into object_hafen from public.cleaning_objects where company_id = demo_company and name = 'Lagerhalle Hafen';
   select id into object_sued from public.cleaning_objects where company_id = demo_company and name = 'Praxisräume Süderstraße';
+
+  -- A checklist the cleaner actually works through. It is attached to the
+  -- objects, so every job created below snapshots it through the existing
+  -- trigger rather than the seed writing job rows by hand.
+  insert into public.checklist_templates (company_id, name, description)
+  values (demo_company, 'Unterhaltsreinigung Büro', 'Standardablauf für Büroflächen.')
+  returning id into checklist_template;
+  insert into public.checklist_template_items (template_id, position, title, instruction, is_required)
+  values
+    (checklist_template, 1, 'Eingangsbereich und Foyer reinigen', 'Glastüren streifenfrei, Fußmatten aufnehmen.', true),
+    (checklist_template, 2, 'Büroflächen saugen und wischen', 'Unter den Schreibtischen nicht vergessen.', true),
+    (checklist_template, 3, 'Sanitärbereiche reinigen und auffüllen', 'Seife, Papier und Handtücher prüfen.', true),
+    (checklist_template, 4, 'Teeküche reinigen', null, true),
+    (checklist_template, 5, 'Abfallbehälter leeren', null, true),
+    (checklist_template, 6, 'Fensterbänke abstauben', 'Nur bei Bedarf.', false);
+  update public.cleaning_objects set checklist_template_id = checklist_template
+  where company_id = demo_company and id in (object_alster, object_sued);
 
   -- A recurring agreement that carries the rate it was sold at, so a draft
   -- invoice can take its price from the agreement rather than from guesswork.
@@ -198,6 +216,21 @@ begin
   open_quote := public.create_quote_from_survey(open_survey, 'Showroom-Reinigung Autohaus Wendt', 21);
   -- Sent and awaiting a decision, so the demo shows a live pipeline.
   perform public.send_quote(open_quote);
+
+  -- ---------------------------------------------------------------------
+  -- One conversation between the cleaner and the office, opened and answered
+  -- through the real messaging functions so the read marks, the unread count
+  -- and the notification all come out as they would in production.
+  -- ---------------------------------------------------------------------
+  perform set_config('request.jwt.claim.sub', employee_user::text, true);
+  -- The cleaner maintains their own contact details in the app; the office view
+  -- reads the same profile row rather than keeping a second copy.
+  perform public.update_my_contact_details('Olena', 'Kovalenko', '+49 151 22334455');
+  demo_thread := public.start_message_thread(employee_member, 'Schlüssel Objekt Alsterpalais',
+                                             'Guten Morgen, der Schlüssel für den Hintereingang klemmt. Können Sie das bitte prüfen?');
+  perform set_config('request.jwt.claim.sub', office_user::text, true);
+  perform public.send_message(demo_thread,
+    'Guten Morgen Olena, danke für die Info. Der Hausmeister schaut sich das heute Nachmittag an.');
 
   perform set_config('request.jwt.claim.sub', '', true);
 

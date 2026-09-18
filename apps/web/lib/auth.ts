@@ -13,7 +13,7 @@ export async function getCurrentCompany() {
   const { supabase, user } = await requireUser();
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, phone, avatar_storage_path')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
