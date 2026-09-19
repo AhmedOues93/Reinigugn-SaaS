@@ -5,9 +5,9 @@ import { buttonVariants } from '@/components/ui';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
 import {
   InvoiceDocument,
-  InvoicePrintStyles,
   type InvoiceDocumentData,
 } from '@/components/billing/invoice-document';
+import { DocumentPrintStyles } from '@/components/document-print-styles';
 import { portalBranding, portalLocale } from '@/lib/data/portal';
 import { getPortalInvoice } from '@/lib/data/portal-invoices';
 import { t } from '@/lib/i18n';
@@ -42,7 +42,7 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
 
   return (
     <>
-      <InvoicePrintStyles />
+      <DocumentPrintStyles />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href="/portal/rechnungen"

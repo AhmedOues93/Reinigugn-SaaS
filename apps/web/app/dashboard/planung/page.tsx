@@ -1,39 +1,364 @@
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { CalendarRange, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
+import { cn } from '@reinigung/ui';
 import { listActiveEmployeeOptions, listJobs, type JobStatusFilter } from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
-import { Button, Card, Select, ButtonLink } from '@/components/ui';
-import { JobStatusBadge, formatJobTime } from '@/components/job-badges';
 import { listAffectedAssignments } from '@/lib/data/absences';
+import { Button, ButtonLink, Notice, PageHeader, Select } from '@/components/ui';
+import { FilterBar } from '@/components/data-table';
+import { addDays, berlinDateKey } from '@/lib/date';
+import { formatTimeRange } from '@/lib/format';
 
-type Qüry = { week?: string; customer?: string; object?: string; employee?: string; status?: string };
+type Query = {
+  week?: string;
+  customer?: string;
+  object?: string;
+  employee?: string;
+  status?: string;
+};
 
-function monday(value?: string) { const date = value ? new Date(`${value}T12:00:00`) : new Date(); const day = date.getDay() || 7; date.setDate(date.getDate() - day + 1); return date; }
-function dateKey(date: Date) { return date.toISOString().slice(0, 10); }
-function status(value?: string): JobStatusFilter { return value === 'PLANNED' || value === 'CONFIRMED' || value === 'CANCELLED' ? value : 'all'; }
-function search(query: Qüry, week: string) { const params = new URLSearchParams(); params.set('week', week); if (query.customer) params.set('customer', query.customer); if (query.object) params.set('object', query.object); if (query.employee) params.set('employee', query.employee); if (query.status && query.status !== 'all') params.set('status', query.status); return params.toString(); }
+/** Monday of the week a date key falls in, as a date key. Never leaves string maths. */
+function mondayOf(dateKey: string) {
+  const day = new Date(`${dateKey}T12:00:00Z`).getUTCDay() || 7;
+  return addDays(dateKey, 1 - day);
+}
 
-export default async function PlanningPage({ searchParams }: { searchParams: Promise<Qüry> }) {
+function isoWeek(dateKey: string) {
+  const target = new Date(`${dateKey}T12:00:00Z`);
+  target.setUTCDate(target.getUTCDate() + 4 - (target.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil(((target.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+}
+
+function statusFilter(value?: string): JobStatusFilter {
+  return value === 'PLANNED' || value === 'CONFIRMED' || value === 'CANCELLED' ? value : 'all';
+}
+
+function weekHref(query: Query, week: string) {
+  const params = new URLSearchParams({ week });
+  if (query.customer) params.set('customer', query.customer);
+  if (query.object) params.set('object', query.object);
+  if (query.employee) params.set('employee', query.employee);
+  if (query.status && query.status !== 'all') params.set('status', query.status);
+  return `/dashboard/planung?${params.toString()}`;
+}
+
+const weekdayLong = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: 'UTC' });
+const weekdayShort = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' });
+const dayMonth = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'UTC',
+});
+const dayMonthLong = new Intl.DateTimeFormat('de-DE', {
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
+function one<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
+
+export default async function PlanningPage({ searchParams }: { searchParams: Promise<Query> }) {
   const query = await searchParams;
-  const currentStatus = status(query.status);
-  const start = monday(query.week);
-  const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return date; });
+  const currentStatus = statusFilter(query.status);
+  const today = berlinDateKey();
+  const start = mondayOf(query.week && /^\d{4}-\d{2}-\d{2}$/.test(query.week) ? query.week : today);
+  const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
   const end = days[6]!;
+
   const [jobs, customers, objects, employees, affectedAssignments] = await Promise.all([
-    listJobs({ from: dateKey(start), to: dateKey(end), customerId: query.customer, objectId: query.object, memberId: query.employee, status: currentStatus }),
+    listJobs({
+      from: start,
+      to: end,
+      customerId: query.customer,
+      objectId: query.object,
+      memberId: query.employee,
+      status: currentStatus,
+    }),
     listCustomerOptions(),
     listCleaningObjectOptions(),
     listActiveEmployeeOptions(),
-    listAffectedAssignments(dateKey(start), dateKey(end)),
+    listAffectedAssignments(start, end),
   ]);
-  const previous = new Date(start); previous.setDate(start.getDate() - 7);
-  const next = new Date(start); next.setDate(start.getDate() + 7);
-  return <div className="mx-auto max-w-7xl">
-    <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-[1.75rem] font-semibold leading-tight">Planung</h1><p className="mt-2 text-muted-foreground">Wochenansicht aller geplanten Reinigungseinsätze.</p></div><div className="flex gap-2"><ButtonLink href="/dashboard/planung/plaene" variant="outline">Wiederkehrende Pläne</ButtonLink><ButtonLink href="/dashboard/auftraege/neu"><Plus className="size-4" aria-hidden="true" />Auftrag</ButtonLink></div></div>
-    {affectedAssignments.length > 0 && <Card className="mb-5 border-warning/30 bg-warning-soft p-4 text-sm text-warning"><p className="font-medium">{affectedAssignments.length} Einsatz{affectedAssignments.length === 1 ? '' : 'e'} sind durch Urlaub oder Krankheit betroffen.</p><p className="mt-1">Die Zuweisungen wurden nicht entfernt. Legen Sie bei Bedarf unter „Urlaub & Krankheit“ eine Vertretung fest.</p></Card>}
-    <Card className="mb-5 p-4"><form className="grid gap-3 md:grid-cols-2 xl:grid-cols-5"><input type="hidden" name="week" value={dateKey(start)} /><Select name="customer" defaultValue={query.customer ?? ''}><option value="">Alle Kunden</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="object" defaultValue={query.object ?? ''}><option value="">Alle Objekte</option>{objects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Select name="employee" defaultValue={query.employee ?? ''}><option value="">Alle Mitarbeiter</option>{employees.map((item) => { const profile = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles; return <option key={item.id} value={item.id}>{[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}</option>; })}</Select><Select name="status" defaultValue={currentStatus}><option value="all">Alle Status</option><option value="PLANNED">Geplant</option><option value="CONFIRMED">Bestätigt</option><option value="CANCELLED">Storniert</option></Select><Button type="submit" variant="outline">Filtern</Button></form></Card>
-    <div className="mb-5 flex items-center justify-between"><ButtonLink href={`/dashboard/planung?${search(query, dateKey(previous))}`} variant="outline"><ChevronLeft className="size-4" /></ButtonLink><ButtonLink href="/dashboard/planung" variant="outline">Heute</ButtonLink><ButtonLink href={`/dashboard/planung?${search(query, dateKey(next))}`} variant="outline"><ChevronRight className="size-4" /></ButtonLink></div>
-    <div className="grid gap-3 lg:grid-cols-7">{days.map((day) => { const key = dateKey(day); const dayJobs = jobs.filter((job) => job.scheduled_date === key); return <Card key={key} className="min-h-44 p-3"><p className="text-sm font-semibold">{new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }).format(day)}</p><div className="mt-3 space-y-2">{dayJobs.length === 0 ? <p className="text-xs text-muted-foreground">Keine Einsätze</p> : dayJobs.map((job) => { const object = Array.isArray(job.cleaning_objects) ? job.cleaning_objects[0] : job.cleaning_objects; const customer = Array.isArray(job.customers) ? job.customers[0] : job.customers; const affected = affectedAssignments.some((assignment) => assignment.jobId === job.id); return <Link key={job.id} href={`/dashboard/auftraege/${job.id}`} className={`block rounded border-l-2 p-2 hover:bg-primary-soft ${affected ? 'border-warning bg-warning-soft' : 'border-primary bg-muted'}`}><p className="text-xs font-medium">{formatJobTime(job.planned_start_at, job.planned_end_at)}</p><p className="mt-1 text-sm font-semibold">{object?.name || job.title}</p><p className="mt-1 text-xs text-muted-foreground">{customer?.name}</p>{affected && <p className="mt-1 text-xs font-medium text-warning">Abwesenheit beachten</p>}<div className="mt-2"><JobStatusBadge status={job.status} /></div></Link>; })}</div></Card>; })}</div>
-  </div>;
+
+  const affectedJobIds = new Set(affectedAssignments.map((assignment) => assignment.jobId));
+  const byDay = new Map(days.map((day) => [day, jobs.filter((job) => job.scheduled_date === day)]));
+  const thisWeek = mondayOf(today) === start;
+
+  /** One visit on the board. The status spine is the only colour it carries. */
+  const visit = (job: (typeof jobs)[number]) => {
+    const object = one(job.cleaning_objects);
+    const customer = one(job.customers);
+    const affected = affectedJobIds.has(job.id);
+    const cancelled = job.status === 'CANCELLED';
+    const team = job.job_assignments
+      .map((assignment) => {
+        const profile = one(one(assignment.company_members)?.profiles);
+        return [profile?.first_name, profile?.last_name?.slice(0, 1)].filter(Boolean).join(' ');
+      })
+      .filter(Boolean);
+
+    return (
+      <Link
+        key={job.id}
+        href={`/dashboard/auftraege/${job.id}`}
+        className={cn(
+          'block border-s-[3px] bg-subtle px-2.5 py-2 transition-colors hover:bg-primary-soft',
+          'rounded-e-md rounded-s-sm',
+          cancelled
+            ? 'border-s-muted-foreground/40 opacity-60'
+            : affected
+              ? 'border-s-warning bg-warning-soft'
+              : job.status === 'CONFIRMED'
+                ? 'border-s-info'
+                : 'border-s-primary',
+        )}
+      >
+        <span className="block text-xs font-semibold tabular-nums text-foreground">
+          {formatTimeRange('de', job.planned_start_at, job.planned_end_at)}
+        </span>
+        <span
+          className={cn(
+            'mt-0.5 block truncate text-[13px] font-medium text-foreground',
+            cancelled && 'line-through',
+          )}
+        >
+          {object?.name || job.title}
+        </span>
+        {customer?.name && (
+          <span className="block truncate text-xs text-muted-foreground">{customer.name}</span>
+        )}
+        <span
+          className={cn(
+            'mt-1 block truncate text-xs',
+            team.length ? 'text-muted-foreground' : 'font-medium text-danger',
+          )}
+        >
+          {team.length ? team.join(', ') : 'Nicht eingeteilt'}
+        </span>
+        {affected && (
+          <span className="mt-1 block text-xs font-medium text-warning">Abwesenheit beachten</span>
+        )}
+      </Link>
+    );
+  };
+
+  return (
+    <div className="mx-auto max-w-[1400px]">
+      <PageHeader
+        title="Planung"
+        description="Die Woche als Einsatzplan – jede Spalte ein Tag, jede Kachel ein Besuch."
+        meta={
+          <>
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <CalendarRange className="size-4 text-muted-foreground" aria-hidden="true" />
+              KW {isoWeek(start)}
+            </span>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {dayMonthLong.format(new Date(`${start}T12:00:00Z`))} –{' '}
+              {dayMonthLong.format(new Date(`${end}T12:00:00Z`))}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {jobs.length} {jobs.length === 1 ? 'Einsatz' : 'Einsätze'}
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <ButtonLink href="/dashboard/planung/plaene" variant="outline">
+              <Repeat className="size-4" aria-hidden="true" />
+              Wiederkehrende Pläne
+            </ButtonLink>
+            <ButtonLink href="/dashboard/auftraege/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Auftrag
+            </ButtonLink>
+          </>
+        }
+      />
+
+      {affectedAssignments.length > 0 && (
+        <Notice
+          tone="warning"
+          className="mb-5"
+          title={`${affectedAssignments.length} ${affectedAssignments.length === 1 ? 'Einsatz ist' : 'Einsätze sind'} durch Urlaub oder Krankheit betroffen`}
+        >
+          Die Zuweisungen bleiben bestehen. Eine Vertretung legen Sie unter{' '}
+          <Link
+            href="/dashboard/urlaub-krankheit"
+            className="font-medium text-warning underline underline-offset-4"
+          >
+            Urlaub &amp; Krankheit
+          </Link>{' '}
+          fest.
+        </Notice>
+      )}
+
+      <FilterBar>
+        <input type="hidden" name="week" value={start} />
+        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+          <option value="">Alle Kunden</option>
+          {customers.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
+          <option value="">Alle Objekte</option>
+          {objects.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
+          <option value="">Alle Mitarbeiter</option>
+          {employees.map((item) => {
+            const profile = one(item.profiles);
+            return (
+              <option key={item.id} value={item.id}>
+                {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+              </option>
+            );
+          })}
+        </Select>
+        <Select name="status" defaultValue={currentStatus} aria-label="Status">
+          <option value="all">Alle Status</option>
+          <option value="PLANNED">Geplant</option>
+          <option value="CONFIRMED">Bestätigt</option>
+          <option value="CANCELLED">Storniert</option>
+        </Select>
+        <Button type="submit" variant="outline">
+          Filtern
+        </Button>
+      </FilterBar>
+
+      {/* Week navigation sits on the workspace, not in a box: it steers the board below. */}
+      <nav aria-label="Woche wechseln" className="mb-3 flex items-center gap-2">
+        <ButtonLink
+          href={weekHref(query, addDays(start, -7))}
+          variant="outline"
+          size="sm"
+          aria-label="Vorherige Woche"
+        >
+          <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
+        </ButtonLink>
+        <ButtonLink
+          href={weekHref(query, mondayOf(today))}
+          variant={thisWeek ? 'subtle' : 'outline'}
+          size="sm"
+          aria-current={thisWeek ? 'page' : undefined}
+        >
+          Diese Woche
+        </ButtonLink>
+        <ButtonLink
+          href={weekHref(query, addDays(start, 7))}
+          variant="outline"
+          size="sm"
+          aria-label="Nächste Woche"
+        >
+          <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+        </ButtonLink>
+      </nav>
+
+      {/* Desktop: one continuous board, seven columns divided by hairlines. */}
+      <div className="hidden overflow-hidden rounded-xl border border-border/80 bg-card shadow-card lg:block">
+        <div className="grid grid-cols-7 divide-x divide-border/70 border-b border-border/80">
+          {days.map((day) => {
+            const isToday = day === today;
+            const isWeekend = [5, 6].includes((new Date(`${day}T12:00:00Z`).getUTCDay() + 6) % 7);
+            const count = byDay.get(day)!.length;
+            return (
+              <div
+                key={day}
+                className={cn(
+                  'px-3 py-2.5',
+                  isWeekend && 'bg-subtle',
+                  isToday && 'bg-primary-soft',
+                )}
+              >
+                <p
+                  className={cn(
+                    'text-[13px] font-semibold',
+                    isToday ? 'text-primary' : 'text-foreground',
+                  )}
+                >
+                  {weekdayShort.format(new Date(`${day}T12:00:00Z`))}
+                  <span className="ms-1.5 font-normal tabular-nums text-muted-foreground">
+                    {dayMonth.format(new Date(`${day}T12:00:00Z`))}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                  {count === 0 ? 'frei' : `${count} ${count === 1 ? 'Einsatz' : 'Einsätze'}`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="grid min-h-[22rem] grid-cols-7 divide-x divide-border/70">
+          {days.map((day) => {
+            const dayJobs = byDay.get(day)!;
+            const isWeekend = [5, 6].includes((new Date(`${day}T12:00:00Z`).getUTCDay() + 6) % 7);
+            return (
+              <div key={day} className={cn('space-y-1.5 p-2', isWeekend && 'bg-subtle/60')}>
+                {dayJobs.length === 0 ? (
+                  <p className="px-1 pt-1 text-xs text-muted-foreground/70">
+                    <span className="sr-only">
+                      {weekdayLong.format(new Date(`${day}T12:00:00Z`))}:{' '}
+                    </span>
+                    Keine Einsätze
+                  </p>
+                ) : (
+                  dayJobs.map(visit)
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Phone and tablet: the same week read top to bottom, one day at a time. */}
+      <div className="space-y-5 lg:hidden">
+        {days.map((day) => {
+          const dayJobs = byDay.get(day)!;
+          const isToday = day === today;
+          return (
+            <section key={day} aria-labelledby={`day-${day}`}>
+              <div className="mb-2 flex items-baseline gap-2">
+                <h2
+                  id={`day-${day}`}
+                  className={cn(
+                    'text-[15px] font-semibold',
+                    isToday ? 'text-primary' : 'text-foreground',
+                  )}
+                >
+                  {weekdayLong.format(new Date(`${day}T12:00:00Z`))}
+                </h2>
+                <span className="text-sm tabular-nums text-muted-foreground">
+                  {dayMonth.format(new Date(`${day}T12:00:00Z`))}
+                </span>
+                {isToday && <span className="text-xs font-medium text-primary">heute</span>}
+                <span className="ms-auto text-xs tabular-nums text-muted-foreground">
+                  {dayJobs.length === 0 ? 'frei' : dayJobs.length}
+                </span>
+              </div>
+              {dayJobs.length === 0 ? (
+                <p className="border-t border-border/70 pt-2 text-sm text-muted-foreground/70">
+                  Keine Einsätze
+                </p>
+              ) : (
+                <div className="space-y-2 rounded-xl border border-border/80 bg-card p-2 shadow-card">
+                  {dayJobs.map(visit)}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

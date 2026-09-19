@@ -1,15 +1,157 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { KeyRound, MapPin, Pencil, Phone, SprayCan, StickyNote, User } from 'lucide-react';
 import { getCleaningObject } from '@/lib/data/cleaning-objects';
-import { Button, Card, ButtonLink } from '@/components/ui';
+import { BackLink, ButtonLink, Notice, PageHeader } from '@/components/ui';
 import { ComplaintHistory } from '@/components/complaint-history';
 import { StatusBadge } from '@/components/status-badge';
 import { StatusToggle } from '@/components/status-toggle';
 import { setCleaningObjectActive } from '../actions';
 
-function Info({ label, value }: { label: string; value?: string | null }) { return <div><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm font-medium text-foreground">{value || '—'}</dd></div>; }
-export default async function ObjectDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ success?: string }> }) {
-  const { id } = await params; const { success } = await searchParams; const object = await getCleaningObject(id); if (!object) notFound(); const customer = object.customers as unknown as { id: string; name: string } | null;
-  return <div className="mx-auto max-w-5xl"><Link href="/dashboard/objekte" className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" />Zurück zu Objekten</Link>{success && <p className="mb-5 rounded-md bg-primary-soft p-3 text-sm text-primary">{success}</p>}<div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex items-center gap-3"><h1 className="text-[1.75rem] font-semibold leading-tight">{object.name}</h1><StatusBadge isActive={object.is_active} /></div><p className="mt-2 text-sm text-muted-foreground">Kunde: {customer ? <Link className="inline-flex min-h-touch items-center font-medium text-primary hover:underline" href={`/dashboard/kunden/${customer.id}`}>{customer.name}</Link> : '—'}</p></div><div className="flex flex-wrap gap-3"><ButtonLink href={`/dashboard/objekte/${object.id}/bearbeiten`} variant="outline"><Pencil className="size-4" aria-hidden="true" />Bearbeiten</ButtonLink><StatusToggle id={object.id} isActive={object.is_active} noun="Objekt" action={setCleaningObjectActive} /></div></div><div className="grid gap-5 lg:grid-cols-2"><Card className="p-5"><h2 className="font-semibold">Adresse</h2><dl className="mt-5 grid gap-5"><Info label="Straße und Hausnummer" value={object.street} /><div className="grid gap-5 sm:grid-cols-2"><Info label="Postleitzahl" value={object.postal_code} /><Info label="Ort" value={object.city} /></div></dl></Card><Card className="p-5"><h2 className="font-semibold">Kontakt vor Ort</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2"><Info label="Ansprechperson" value={object.contact_person} /><Info label="Telefon" value={object.contact_phone} /></dl></Card><Card className="p-5"><h2 className="font-semibold">Zugangshinweise</h2><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{object.access_instructions || 'Keine Zugangshinweise hinterlegt.'}</p></Card><Card className="p-5"><h2 className="font-semibold">Reinigungsanweisungen</h2><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{object.cleaning_instructions || 'Keine Reinigungsanweisungen hinterlegt.'}</p></Card><Card className="p-5 lg:col-span-2"><h2 className="font-semibold">Notizen</h2><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{object.notes || 'Keine Notizen hinterlegt.'}</p></Card></div><ComplaintHistory objectId={object.id} /></div>;
+/** A block of instructions the cleaner depends on. Prose, not a data row. */
+function Instructions({
+  title,
+  icon: Icon,
+  body,
+  empty,
+}: {
+  title: string;
+  icon: typeof KeyRound;
+  body: string | null;
+  empty: string;
+}) {
+  return (
+    <section>
+      <h2 className="mb-2 flex items-center gap-2 text-[15px] font-semibold">
+        <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+        {title}
+      </h2>
+      <p className="break-anywhere whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+        {body || <span className="text-muted-foreground/70">{empty}</span>}
+      </p>
+    </section>
+  );
+}
+
+export default async function ObjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ success?: string }>;
+}) {
+  const { id } = await params;
+  const { success } = await searchParams;
+  const object = await getCleaningObject(id);
+  if (!object) notFound();
+  const customer = object.customers as unknown as { id: string; name: string } | null;
+  const address = [object.street, [object.postal_code, object.city].filter(Boolean).join(' ')]
+    .filter(Boolean)
+    .join(', ');
+
+  return (
+    <div className="mx-auto max-w-6xl">
+      <BackLink href="/dashboard/objekte">Objekte</BackLink>
+      {success && (
+        <Notice tone="success" className="mb-5">
+          {success}
+        </Notice>
+      )}
+
+      <PageHeader
+        title={object.name}
+        meta={
+          <>
+            <StatusBadge isActive={object.is_active} />
+            {customer && (
+              <Link
+                href={`/dashboard/kunden/${customer.id}`}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                {customer.name}
+              </Link>
+            )}
+          </>
+        }
+        actions={
+          <>
+            <ButtonLink href={`/dashboard/objekte/${object.id}/bearbeiten`} variant="outline">
+              <Pencil className="size-4" aria-hidden="true" />
+              Bearbeiten
+            </ButtonLink>
+            <StatusToggle
+              id={object.id}
+              isActive={object.is_active}
+              noun="Objekt"
+              action={setCleaningObjectActive}
+            />
+          </>
+        }
+      />
+
+      <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="space-y-6">
+          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+            <h2 className="mb-4 text-[15px] font-semibold">Adresse &amp; Kontakt vor Ort</h2>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3 text-sm">
+                <MapPin
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="break-anywhere min-w-0">
+                  {address || <span className="text-warning">Keine Adresse hinterlegt</span>}
+                </span>
+              </li>
+              <li className="flex items-start gap-3 text-sm">
+                <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="break-anywhere min-w-0">
+                  {object.contact_person || (
+                    <span className="text-muted-foreground">Keine Ansprechperson</span>
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-3 text-sm">
+                <Phone
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="break-anywhere min-w-0">
+                  {object.contact_phone || <span className="text-muted-foreground">—</span>}
+                </span>
+              </li>
+            </ul>
+          </section>
+        </aside>
+
+        <div className="min-w-0 space-y-8">
+          {/* What someone standing at the door needs, in the order they need it. */}
+          <div className="space-y-7 rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+            <Instructions
+              title="Zugang"
+              icon={KeyRound}
+              body={object.access_instructions}
+              empty="Keine Zugangshinweise hinterlegt."
+            />
+            <Instructions
+              title="Reinigung"
+              icon={SprayCan}
+              body={object.cleaning_instructions}
+              empty="Keine Reinigungsanweisungen hinterlegt."
+            />
+            {object.notes && (
+              <Instructions
+                title="Interne Notizen"
+                icon={StickyNote}
+                body={object.notes}
+                empty=""
+              />
+            )}
+          </div>
+
+          <ComplaintHistory objectId={object.id} />
+        </div>
+      </div>
+    </div>
+  );
 }

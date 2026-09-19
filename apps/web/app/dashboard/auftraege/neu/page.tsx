@@ -1,8 +1,33 @@
 import { JobForm } from '@/components/job-form';
-import { Card } from '@/components/ui';
+import { FormPage } from '@/components/ui';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
 import { listActiveEmployeeOptions } from '@/lib/data/jobs';
 import { createJob } from '../actions';
-export default async function NewJobPage() { const [customers, objects, employees, templates] = await Promise.all([listCustomerOptions(), listCleaningObjectOptions(), listActiveEmployeeOptions(), listActiveChecklistTemplateOptions()]); return <div className="mx-auto max-w-5xl"><h1 className="text-[1.75rem] font-semibold leading-tight">Auftrag erstellen</h1><p className="mt-2 text-muted-foreground">Plane einen einzelnen Reinigungseinsatz.</p><Card className="mt-7 p-5 sm:p-7"><JobForm customers={customers} objects={objects} employees={employees} templates={templates} action={createJob} submitLabel="Auftrag erstellen" /></Card></div>; }
+
+export default async function NewJobPage() {
+  const [customers, objects, employees, templates] = await Promise.all([
+    listCustomerOptions(),
+    listCleaningObjectOptions(),
+    listActiveEmployeeOptions(),
+    listActiveChecklistTemplateOptions(),
+  ]);
+
+  return (
+    <FormPage
+      back={{ href: '/dashboard/auftraege', label: 'Aufträge' }}
+      title="Auftrag erstellen"
+      description="Ein einzelner Reinigungseinsatz. Wiederkehrende Einsätze laufen über einen Plan."
+    >
+      <JobForm
+        customers={customers}
+        objects={objects}
+        employees={employees}
+        templates={templates}
+        action={createJob}
+        submitLabel="Auftrag erstellen"
+      />
+    </FormPage>
+  );
+}

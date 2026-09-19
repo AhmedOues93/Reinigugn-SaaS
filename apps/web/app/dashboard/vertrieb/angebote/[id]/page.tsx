@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Building2, CalendarDays, Users } from 'lucide-react';
-import { Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
+import { Building2, CalendarDays, Users } from 'lucide-react';
+import { BackLink, Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
 import { QuoteLineEditor } from '@/components/sales/quote-line-editor';
 import { AcceptQuoteForm, DeclineQuoteForm, SendQuoteForm } from '@/components/sales/quote-actions';
 import { getQuote, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
@@ -25,18 +25,16 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link
-        href="/dashboard/vertrieb/angebote"
-        className="mb-5 inline-flex min-h-touch items-center gap-2 text-sm font-medium text-muted-foreground"
-      >
-        <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-        {t(locale, 'sales.quotes.title')}
-      </Link>
+      <BackLink href="/dashboard/vertrieb/angebote">{t(locale, 'sales.quotes.title')}</BackLink>
 
       <PageHeader
         title={quote.quote_number ?? t(locale, 'billing.draft')}
         description={`${owner} · ${quote.title}`}
-        actions={<Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>{t(locale, `sales.quote.status.${quote.status}`)}</Badge>}
+        actions={
+          <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
+            {t(locale, `sales.quote.status.${quote.status}`)}
+          </Badge>
+        }
       />
 
       {quote.decline_reason && (
@@ -85,13 +83,33 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       <Card className="p-5">
         <dl className="divide-y divide-border">
-          {quote.sent_at && <DataRow label={t(locale, 'sales.quote.status.SENT')} value={formatDateTime(locale, quote.sent_at)} />}
-          {quote.valid_until && <DataRow label={t(locale, 'sales.quote.validUntil')} value={formatDate(locale, quote.valid_until)} />}
-          <DataRow label={t(locale, 'billing.net')} value={formatMoney(locale, quote.net_total_cents, quote.currency)} />
-          <DataRow label={t(locale, 'billing.vat')} value={formatMoney(locale, quote.vat_total_cents, quote.currency)} />
+          {quote.sent_at && (
+            <DataRow
+              label={t(locale, 'sales.quote.status.SENT')}
+              value={formatDateTime(locale, quote.sent_at)}
+            />
+          )}
+          {quote.valid_until && (
+            <DataRow
+              label={t(locale, 'sales.quote.validUntil')}
+              value={formatDate(locale, quote.valid_until)}
+            />
+          )}
+          <DataRow
+            label={t(locale, 'billing.net')}
+            value={formatMoney(locale, quote.net_total_cents, quote.currency)}
+          />
+          <DataRow
+            label={t(locale, 'billing.vat')}
+            value={formatMoney(locale, quote.vat_total_cents, quote.currency)}
+          />
           <DataRow
             label={t(locale, 'billing.gross')}
-            value={<span className="text-base">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</span>}
+            value={
+              <span className="text-base">
+                {formatMoney(locale, quote.gross_total_cents, quote.currency)}
+              </span>
+            }
           />
           {quote.recurring_net_monthly_cents > 0 && (
             <DataRow
@@ -117,10 +135,20 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </Card>
 
       <Card className="mt-5 p-5">
-        {isDraft && <SendQuoteForm action={sendQuote.bind(null, quote.id)} locale={locale} disabled={quote.lines.length === 0} />}
+        {isDraft && (
+          <SendQuoteForm
+            action={sendQuote.bind(null, quote.id)}
+            locale={locale}
+            disabled={quote.lines.length === 0}
+          />
+        )}
         {quote.status === 'SENT' && (
           <div className="space-y-8">
-            <AcceptQuoteForm action={acceptQuote.bind(null, quote.id)} locale={locale} showSchedule={hasRecurring} />
+            <AcceptQuoteForm
+              action={acceptQuote.bind(null, quote.id)}
+              locale={locale}
+              showSchedule={hasRecurring}
+            />
             <div className="border-t border-border pt-6">
               <DeclineQuoteForm action={declineQuote.bind(null, quote.id)} locale={locale} />
             </div>

@@ -1,12 +1,8 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import {
-  InvoiceDocument,
-  InvoicePrintStyles,
-  type InvoiceDocumentData,
-} from '@/components/billing/invoice-document';
+import { InvoiceDocument, type InvoiceDocumentData } from '@/components/billing/invoice-document';
+import { DocumentPrintStyles } from '@/components/document-print-styles';
 import { PrintButton } from '@/components/billing/print-button';
+import { BackLink } from '@/components/ui';
 import { requireStaffCompany } from '@/lib/auth';
 import { getCompanyBranding } from '@/lib/data/branding';
 import { getInvoice } from '@/lib/data/billing';
@@ -44,15 +40,11 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
 
   return (
     <div className="mx-auto max-w-[210mm]">
-      <InvoicePrintStyles />
+      <DocumentPrintStyles />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link
-          href={`/dashboard/abrechnung/${invoice.id}`}
-          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted-foreground"
-        >
-          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
+        <BackLink href={`/dashboard/abrechnung/${invoice.id}`}>
           {t(locale, 'billing.invoice')}
-        </Link>
+        </BackLink>
         <PrintButton locale={locale} />
       </div>
       <InvoiceDocument data={data} locale={locale} logoUrl={branding?.logoUrl ?? null} />

@@ -18,10 +18,12 @@ const buttonVariants = cva(
       variant: {
         default:
           'bg-primary text-primary-foreground shadow-[inset_0_1px_0_0_rgb(255_255_255/0.14),0_1px_2px_0_rgb(11_42_51/0.2)] hover:bg-[hsl(189_80%_23%)]',
-        outline: 'border border-input bg-card text-foreground shadow-card hover:border-foreground/25 hover:bg-subtle',
+        outline:
+          'border border-input bg-card text-foreground shadow-card hover:border-foreground/25 hover:bg-subtle',
         ghost: 'text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground',
         subtle: 'bg-muted text-foreground hover:bg-border',
-        danger: 'bg-danger text-white shadow-[inset_0_1px_0_0_rgb(255_255_255/0.14)] hover:bg-danger/90',
+        danger:
+          'bg-danger text-white shadow-[inset_0_1px_0_0_rgb(255_255_255/0.14)] hover:bg-danger/90',
         ink: 'bg-ink text-ink-foreground hover:bg-ink/90',
         link: 'min-h-0 px-0 text-primary underline-offset-4 hover:underline',
       },
@@ -54,7 +56,9 @@ export function ButtonLink({
   size,
   children,
   ...props
-}: { href: string; className?: string; children: React.ReactNode } & VariantProps<typeof buttonVariants> &
+}: { href: string; className?: string; children: React.ReactNode } & VariantProps<
+  typeof buttonVariants
+> &
   Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>) {
   return (
     <Link href={href} className={cn(buttonVariants({ variant, size }), className)} {...props}>
@@ -73,7 +77,9 @@ export function Input({ className, ...props }: React.ComponentProps<'input'>) {
 }
 
 export function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
-  return <textarea className={cn(fieldBase, 'min-h-28 px-3 py-2.5 leading-6', className)} {...props} />;
+  return (
+    <textarea className={cn(fieldBase, 'min-h-28 px-3 py-2.5 leading-6', className)} {...props} />
+  );
 }
 
 export function Select({ className, ...props }: React.ComponentProps<'select'>) {
@@ -121,9 +127,16 @@ export function Field({
       <div className="flex min-h-5 items-center gap-1.5">
         <label className="text-sm font-medium text-foreground" htmlFor={htmlFor}>
           {label}
-          {optional && <span className="ms-1.5 text-xs font-normal text-muted-foreground">optional</span>}
+          {optional && (
+            <span className="ms-1.5 text-xs font-normal text-muted-foreground">optional</span>
+          )}
         </label>
-        {info && <InfoTooltip content={info} label={typeof label === 'string' ? `Info: ${label}` : undefined} />}
+        {info && (
+          <InfoTooltip
+            content={info}
+            label={typeof label === 'string' ? `Info: ${label}` : undefined}
+          />
+        )}
       </div>
       {children}
       {error ? (
@@ -139,7 +152,13 @@ export function Field({
 
 export function Card({ className, children, ...props }: HTMLAttributes<HTMLElement>) {
   return (
-    <section className={cn('rounded-xl border border-border/80 bg-card text-card-foreground shadow-card', className)} {...props}>
+    <section
+      className={cn(
+        'rounded-xl border border-border/80 bg-card text-card-foreground shadow-card',
+        className,
+      )}
+      {...props}
+    >
       {children}
     </section>
   );
@@ -157,10 +176,17 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-wrap items-start justify-between gap-3 border-b border-border/80 px-5 py-4', className)}>
+    <div
+      className={cn(
+        'flex flex-wrap items-start justify-between gap-3 border-b border-border/80 px-5 py-4',
+        className,
+      )}
+    >
       <div className="min-w-0">
         <h2 className="text-[15px] font-semibold">{title}</h2>
-        {description && <p className="mt-0.5 text-sm leading-6 text-muted-foreground">{description}</p>}
+        {description && (
+          <p className="mt-0.5 text-sm leading-6 text-muted-foreground">{description}</p>
+        )}
       </div>
       {action}
     </div>
@@ -225,13 +251,18 @@ export function Badge({
   return <span className={cn(badgeVariants({ tone }), className)}>{children}</span>;
 }
 
-/** Page title block. `actions` wraps below the title on narrow screens. */
+/**
+ * Page title block. `actions` wraps below the title on narrow screens, and
+ * `media` is a leading avatar or emblem for pages that are about one person or
+ * thing rather than a list.
+ */
 export function PageHeader({
   title,
   description,
   actions,
   breadcrumb,
   meta,
+  media,
   className,
 }: {
   title: React.ReactNode;
@@ -239,16 +270,24 @@ export function PageHeader({
   actions?: React.ReactNode;
   breadcrumb?: React.ReactNode;
   meta?: React.ReactNode;
+  media?: React.ReactNode;
   className?: string;
 }) {
   return (
     <header className={cn('mb-6 lg:mb-8', className)}>
       {breadcrumb}
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div className="min-w-0">
-          <h1 className="text-[1.6rem] font-semibold leading-tight sm:text-[1.85rem]">{title}</h1>
-          {description && <p className="mt-1.5 max-w-2xl text-[15px] leading-6 text-muted-foreground">{description}</p>}
-          {meta && <div className="mt-3 flex flex-wrap items-center gap-2">{meta}</div>}
+        <div className="flex min-w-0 items-start gap-4">
+          {media && <div className="shrink-0">{media}</div>}
+          <div className="min-w-0">
+            <h1 className="text-[1.6rem] font-semibold leading-tight sm:text-[1.85rem]">{title}</h1>
+            {description && (
+              <p className="mt-1.5 max-w-2xl text-[15px] leading-6 text-muted-foreground">
+                {description}
+              </p>
+            )}
+            {meta && <div className="mt-3 flex flex-wrap items-center gap-2">{meta}</div>}
+          </div>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
@@ -263,8 +302,19 @@ export function BackLink({ href, children }: { href: string; children: React.Rea
       href={href}
       className="group mb-3 inline-flex min-h-touch items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground md:min-h-9"
     >
-      <svg viewBox="0 0 16 16" className="size-4 transition-transform group-hover:-translate-x-0.5 rtl:rotate-180" aria-hidden="true">
-        <path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <svg
+        viewBox="0 0 16 16"
+        className="size-4 transition-transform group-hover:-translate-x-0.5 rtl:rotate-180"
+        aria-hidden="true"
+      >
+        <path
+          d="M10 3 5 8l5 5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
       {children}
     </Link>
@@ -298,7 +348,9 @@ export function EmptyState({
         </div>
       )}
       <p className="font-semibold text-foreground">{title}</p>
-      {body && <p className="mx-auto mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">{body}</p>}
+      {body && (
+        <p className="mx-auto mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">{body}</p>
+      )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>
   );
@@ -326,7 +378,13 @@ export function StatBand({
   items,
   className,
 }: {
-  items: { label: string; value: React.ReactNode; note?: React.ReactNode; href?: string; tone?: 'danger' | 'warning' | 'success' }[];
+  items: {
+    label: string;
+    value: React.ReactNode;
+    note?: React.ReactNode;
+    href?: string;
+    tone?: 'danger' | 'warning' | 'success';
+  }[];
   className?: string;
 }) {
   return (
@@ -357,7 +415,10 @@ export function StatBand({
         return (
           <div key={item.label} className="-mb-px -me-px border-b border-e border-border/80">
             {item.href ? (
-              <Link href={item.href} className="block h-full p-4 transition-colors hover:bg-subtle sm:p-5">
+              <Link
+                href={item.href}
+                className="block h-full p-4 transition-colors hover:bg-subtle sm:p-5"
+              >
                 {body}
               </Link>
             ) : (
@@ -384,7 +445,10 @@ export function FilterTabs({
   className?: string;
 }) {
   return (
-    <nav aria-label={label} className={cn('no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0', className)}>
+    <nav
+      aria-label={label}
+      className={cn('no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0', className)}
+    >
       <ul className="inline-flex min-w-max gap-1 rounded-xl bg-foreground/[0.05] p-1">
         {items.map((item) => (
           <li key={item.href}>
@@ -439,7 +503,9 @@ export function Notice({
     neutral: 'border-border bg-subtle text-muted-foreground',
   } as const;
   return (
-    <div className={cn('flex gap-3 rounded-xl border p-3.5 text-sm leading-6', tones[tone], className)}>
+    <div
+      className={cn('flex gap-3 rounded-xl border p-3.5 text-sm leading-6', tones[tone], className)}
+    >
       {icon && <span className="mt-0.5 shrink-0 [&_svg]:size-4">{icon}</span>}
       <div className="min-w-0">
         {title && <p className="font-semibold">{title}</p>}
@@ -465,13 +531,59 @@ export function FormSection({
   className?: string;
 }) {
   return (
-    <section className={cn('grid gap-x-10 gap-y-4 border-t border-border/80 py-7 first:border-t-0 first:pt-0 lg:grid-cols-[220px_minmax(0,1fr)]', className)}>
+    <section
+      className={cn(
+        'grid gap-x-10 gap-y-4 border-t border-border/80 py-7 first:border-t-0 first:pt-0 lg:grid-cols-[220px_minmax(0,1fr)]',
+        className,
+      )}
+    >
       <div>
         <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
-        {description && <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>}
+        {description && (
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+        )}
       </div>
       <div className="grid min-w-0 gap-5 sm:grid-cols-2">{children}</div>
     </section>
+  );
+}
+
+/**
+ * The frame every create/edit screen uses: a way back, the page title and one
+ * form surface. Having it in one place is what stops thirteen form pages from
+ * each inventing their own heading size, width and padding.
+ *
+ * `stickyActions` matches the surface padding to `FormActions`, which bleeds to
+ * the surface edge; forms carrying their own button row take the plain padding.
+ */
+export function FormPage({
+  back,
+  title,
+  description,
+  children,
+  stickyActions = false,
+  width = 'default',
+}: {
+  back?: { href: string; label: string };
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  stickyActions?: boolean;
+  width?: 'default' | 'narrow';
+}) {
+  return (
+    <div className={cn('mx-auto', width === 'narrow' ? 'max-w-3xl' : 'max-w-5xl')}>
+      {back && <BackLink href={back.href}>{back.label}</BackLink>}
+      <PageHeader title={title} description={description} />
+      <div
+        className={cn(
+          'rounded-xl border border-border/80 bg-card text-card-foreground shadow-card',
+          stickyActions ? 'px-5 pt-6 sm:px-6' : 'p-5 sm:p-6',
+        )}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 

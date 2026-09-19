@@ -1,14 +1,32 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Ruler } from 'lucide-react';
-import { Badge, Card, CardHeader, DataRow, EmptyState, PageHeader } from '@/components/ui';
+import { Ruler } from 'lucide-react';
+import {
+  BackLink,
+  Badge,
+  Card,
+  CardHeader,
+  DataRow,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { SurveyAreaEditor } from '@/components/sales/survey-area-editor';
 import { CompleteSurveyForm, QuoteFromSurveyForm } from '@/components/sales/survey-actions';
-import { getCompanyHourlyRate, getSurvey, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
+import {
+  getCompanyHourlyRate,
+  getSurvey,
+  quoteStatusTone,
+  type QuoteStatus,
+} from '@/lib/data/sales';
 import { formatDateTime, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
-import { addSurveyArea, completeSurvey, createQuoteFromSurvey, removeSurveyArea } from '../../actions';
+import {
+  addSurveyArea,
+  completeSurvey,
+  createQuoteFromSurvey,
+  removeSurveyArea,
+} from '../../actions';
 
 function first<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -16,7 +34,11 @@ function first<T>(value: T | T[] | null) {
 
 export default async function SurveyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [locale, survey, hourlyRate] = await Promise.all([currentLocale(), getSurvey(id), getCompanyHourlyRate()]);
+  const [locale, survey, hourlyRate] = await Promise.all([
+    currentLocale(),
+    getSurvey(id),
+    getCompanyHourlyRate(),
+  ]);
   if (!survey) notFound();
 
   const lead = first(survey.leads);
@@ -26,19 +48,29 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link
-        href={survey.lead_id ? `/dashboard/vertrieb/anfragen/${survey.lead_id}` : '/dashboard/vertrieb/besichtigungen'}
-        className="mb-5 inline-flex min-h-touch items-center gap-2 text-sm font-medium text-muted-foreground"
+      <BackLink
+        href={
+          survey.lead_id
+            ? `/dashboard/vertrieb/anfragen/${survey.lead_id}`
+            : '/dashboard/vertrieb/besichtigungen'
+        }
       >
-        <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         {survey.lead_id ? t(locale, 'sales.leads.title') : t(locale, 'sales.surveys.title')}
-      </Link>
+      </BackLink>
 
       <PageHeader
         title={survey.site_name}
         description={owner}
         actions={
-          <Badge tone={survey.status === 'COMPLETED' ? 'success' : survey.status === 'CANCELLED' ? 'danger' : 'warning'}>
+          <Badge
+            tone={
+              survey.status === 'COMPLETED'
+                ? 'success'
+                : survey.status === 'CANCELLED'
+                  ? 'danger'
+                  : 'warning'
+            }
+          >
             {t(locale, `sales.survey.status.${survey.status}`)}
           </Badge>
         }
@@ -46,18 +78,32 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
 
       <Card className="p-5">
         <dl className="divide-y divide-border">
-          <DataRow label={t(locale, 'sales.survey.scheduledAt')} value={formatDateTime(locale, survey.scheduled_at)} />
+          <DataRow
+            label={t(locale, 'sales.survey.scheduledAt')}
+            value={formatDateTime(locale, survey.scheduled_at)}
+          />
           <DataRow
             label={t(locale, 'common.address')}
-            value={[survey.street, [survey.postal_code, survey.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—'}
+            value={
+              [survey.street, [survey.postal_code, survey.city].filter(Boolean).join(' ')]
+                .filter(Boolean)
+                .join(', ') || '—'
+            }
           />
-          {survey.access_notes && <DataRow label={t(locale, 'sales.survey.accessNotes')} value={survey.access_notes} />}
-          {survey.findings && <DataRow label={t(locale, 'sales.survey.findings')} value={survey.findings} />}
+          {survey.access_notes && (
+            <DataRow label={t(locale, 'sales.survey.accessNotes')} value={survey.access_notes} />
+          )}
+          {survey.findings && (
+            <DataRow label={t(locale, 'sales.survey.findings')} value={survey.findings} />
+          )}
         </dl>
       </Card>
 
       <Card className="mt-5 overflow-hidden">
-        <CardHeader title={t(locale, 'sales.area.title')} description={t(locale, 'sales.area.emptyBody')} />
+        <CardHeader
+          title={t(locale, 'sales.area.title')}
+          description={t(locale, 'sales.area.emptyBody')}
+        />
         <div className="p-5">
           {survey.areas.length === 0 && !planned ? (
             <EmptyState icon={<Ruler className="size-5" />} title={t(locale, 'sales.area.empty')} />
@@ -104,9 +150,13 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
                   href={`/dashboard/vertrieb/angebote/${quote.id}`}
                   className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
                 >
-                  <p className="min-w-0 truncate font-medium">{quote.quote_number ?? quote.title}</p>
+                  <p className="min-w-0 truncate font-medium">
+                    {quote.quote_number ?? quote.title}
+                  </p>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold tabular-nums">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatMoney(locale, quote.gross_total_cents, quote.currency)}
+                    </span>
                     <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
                       {t(locale, `sales.quote.status.${quote.status}`)}
                     </Badge>

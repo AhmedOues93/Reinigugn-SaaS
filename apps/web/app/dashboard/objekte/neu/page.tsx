@@ -1,10 +1,34 @@
 import { CleaningObjectForm } from '@/components/cleaning-object-form';
-import { Card } from '@/components/ui';
+import { FormPage } from '@/components/ui';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
 import { createCleaningObject } from '../actions';
 
-export default async function NewObjectPage({ searchParams }: { searchParams: Promise<{ customer?: string }> }) {
-  const { customer } = await searchParams; const [customers, templates] = await Promise.all([listCustomerOptions(), listActiveChecklistTemplateOptions()]);
-  return <div className="mx-auto max-w-5xl"><div className="mb-7"><h1 className="text-[1.75rem] font-semibold leading-tight">Objekt anlegen</h1><p className="mt-2 text-muted-foreground">Ordne ein Reinigungsobjekt einem Kunden zu.</p></div><Card className="px-5 pb-0 pt-6 sm:px-6"><CleaningObjectForm object={{ customer_id: customer }} customers={customers} templates={templates} action={createCleaningObject} submitLabel="Objekt anlegen" /></Card></div>;
+export default async function NewObjectPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customer?: string }>;
+}) {
+  const { customer } = await searchParams;
+  const [customers, templates] = await Promise.all([
+    listCustomerOptions(),
+    listActiveChecklistTemplateOptions(),
+  ]);
+
+  return (
+    <FormPage
+      back={{ href: '/dashboard/objekte', label: 'Objekte' }}
+      title="Objekt anlegen"
+      description="Ein Reinigungsobjekt gehört immer zu einem Kunden."
+      stickyActions
+    >
+      <CleaningObjectForm
+        object={{ customer_id: customer }}
+        customers={customers}
+        templates={templates}
+        action={createCleaningObject}
+        submitLabel="Objekt anlegen"
+      />
+    </FormPage>
+  );
 }
