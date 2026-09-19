@@ -104,10 +104,44 @@ Amounts are computed in the database from quantity, unit price and VAT rate;
 issued invoices are immutable; corrections are new invoices that reference the
 cancelled original. See [database.md](database.md) and [security.md](security.md).
 
-The invoice document renders from the snapshots taken at issue time and is laid
-out for A4, so it prints — and therefore saves as PDF — from the browser with the
-tenant's logo. That keeps branding correct without adding a server-side PDF
-renderer.
+The invoice document renders from the snapshots taken at issue time. There are
+two renderings of the same snapshot: an HTML preview (`/dashboard/abrechnung/[id]/dokument`)
+and a real PDF generated on the server with `pdf-lib`
+(`lib/billing/invoice-pdf.ts`), served at `/dashboard/abrechnung/[id]/pdf` for
+staff and `/portal/rechnungen/[id]/pdf` for the customer. The portal route reads
+only through `get_my_portal_invoice`, so a customer can never obtain another
+customer's document or a draft. Per-rate VAT on both renderings is the sum of the
+stored per-line VAT, so rate lines always add up to the stored totals.
+
+**Lifecycle.** Draft → issued (number, snapshots, dates fixed; visible in the
+portal) → delivered → paid, with cancellation and correction invoices as before.
+Delivery is a separate, logged fact (`invoice_deliveries`, written only by
+`record_invoice_delivery`): e-mail with the PDF attached, or a manual delivery the
+office records. `sent_at` is set only by a successful or manual delivery, never by
+a failed or impossible one. Payment reminders use the same log and are only
+possible for open, overdue invoices. OVERDUE stays derived from the due date.
+
+**E-mail.** `lib/mail/transport.ts` sends through any SMTP provider configured via
+`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`MAIL_FROM`. Without that
+configuration nothing is claimed: the attempt is logged as `NOT_CONFIGURED` and
+the UI tells the office to send the PDF itself and record the delivery.
+
+**Not implemented: e-invoicing.** There is no ZUGFeRD or XRechnung (EN 16931)
+output. The PDF is a conventional invoice document, not a structured e-invoice.
+See docs/audit.md for what that requires.
+
+## Design system
+
+"Tiefsee & Nebel": a deep petrol ink (`--ink`) reserved for navigation and the one
+key moment per surface (office rail, the field worker's clock and next job, the
+customer's amount due), a cool mist workspace (`--background`) instead of white,
+petrol primary actions, and an aqua highlight used only on ink. Type is Onest
+(Latin + Cyrillic) with IBM Plex Sans Arabic for Arabic. Shared primitives live in
+`components/ui.tsx` (buttons, fields with `info`/`hint`/`error`, `StatBand`,
+`FilterTabs`, `FormSection`, `Notice`, `BackLink`), `components/data-table.tsx`
+(a real table from `md`, structured records below it — no horizontal scrolling on
+phones) and `components/info-tooltip.tsx` (the one accessible toggletip for
+optional explanations; never for errors, legal text or destructive warnings).
 
 ## Local development
 

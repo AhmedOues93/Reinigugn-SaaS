@@ -65,7 +65,7 @@ export default async function EmployeeMessagesPage() {
 
       {systemNotifications.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             <Bell className="size-4" aria-hidden="true" />
             {t(locale, 'nav.messages')}
           </h2>

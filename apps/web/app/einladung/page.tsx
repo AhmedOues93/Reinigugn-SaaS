@@ -48,7 +48,7 @@ export default async function InvitationPage({ searchParams }: { searchParams: P
       description={t(locale, 'auth.inviteBody', { role: roleLabel, company: preview.company_name })}
     >
       <Card className="mb-6 bg-muted/60 p-4 shadow-none">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{t(locale, 'auth.inviteEmailLabel')}</p>
+        <p className="text-xs text-muted-foreground">{t(locale, 'auth.inviteEmailLabel')}</p>
         <p className="break-anywhere mt-1 font-medium">{preview.email}</p>
       </Card>
 

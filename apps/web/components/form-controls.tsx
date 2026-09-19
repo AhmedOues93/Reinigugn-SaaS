@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { t, type Locale } from '@/lib/i18n';
 import type { ComponentProps } from 'react';
@@ -19,8 +19,15 @@ export function SubmitButton({
 } & Pick<ComponentProps<typeof Button>, 'variant' | 'size'>) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} className={className} variant={variant} size={size}>
-      {pending ? t(locale, 'common.saving') : children}
+    <Button type="submit" disabled={pending} aria-busy={pending} className={className} variant={variant} size={size}>
+      {pending ? (
+        <>
+          <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+          {t(locale, 'common.saving')}
+        </>
+      ) : (
+        children
+      )}
     </Button>
   );
 }
@@ -31,8 +38,8 @@ export function FormMessage({ message, status }: { message?: string; status: 'id
   return (
     <p
       role={isError ? 'alert' : 'status'}
-      className={`flex items-start gap-2.5 rounded-md p-3 text-sm leading-6 ${
-        isError ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
+      className={`flex animate-fade-in items-start gap-2.5 rounded-lg border p-3 text-sm leading-6 ${
+        isError ? 'border-danger/20 bg-danger-soft text-danger' : 'border-success/20 bg-success-soft text-success'
       }`}
     >
       {isError ? (

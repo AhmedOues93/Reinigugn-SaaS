@@ -42,7 +42,7 @@ export async function employeeBranding() {
 }
 
 const jobSelection =
-  'id, title, scheduled_date, planned_start_at, planned_end_at, status, employee_instructions, customers(name), cleaning_objects(name, street, postal_code, city), job_time_entries(id, started_at, finished_at, duration_minutes), job_checklists(id, job_checklist_items(id, completed_at, is_required))';
+  'id, title, scheduled_date, planned_start_at, planned_end_at, status, employee_instructions, customers(name), cleaning_objects(name, street, postal_code, city), job_time_entries(id, started_at, finished_at, duration_minutes, job_time_breaks(ended_at)), job_checklists(id, job_checklist_items(id, completed_at, is_required))';
 
 /**
  * Assigned visits in a date range. The `!inner` join on the employee's own

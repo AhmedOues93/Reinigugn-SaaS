@@ -1,7 +1,7 @@
 import { signUp } from '../actions';
 import { AuthMessage } from '@/components/auth-message';
 import { AuthFooterLink, AuthShell } from '@/components/auth-shell';
-import { Button, Field, Input } from '@/components/ui';
+import { AuthField, AuthForm, AuthSubmit } from '@/components/auth-form';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
 
@@ -19,18 +19,20 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
         </>
       }
     >
-      <form action={signUp} className="space-y-5">
+      <AuthForm action={signUp} locale={locale}>
         <AuthMessage error={error} />
-        <Field label={t(locale, 'auth.email')} htmlFor="email">
-          <Input id="email" name="email" type="email" autoComplete="email" required />
-        </Field>
-        <Field label={t(locale, 'auth.password')} hint={t(locale, 'auth.passwordHint')} htmlFor="password">
-          <Input id="password" name="password" type="password" autoComplete="new-password" minLength={12} required />
-        </Field>
-        <Button size="block" type="submit">
-          {t(locale, 'auth.signUp')}
-        </Button>
-      </form>
+        <AuthField name="email" type="email" rule="email" autoComplete="email" label={t(locale, 'auth.email')} locale={locale} />
+        <AuthField
+          name="password"
+          type="password"
+          rule="newPassword"
+          autoComplete="new-password"
+          label={t(locale, 'auth.password')}
+          locale={locale}
+          labelAction={<span className="text-xs text-muted-foreground">{t(locale, 'auth.passwordHint')}</span>}
+        />
+        <AuthSubmit pendingLabel={t(locale, 'auth.working')}>{t(locale, 'auth.signUp')}</AuthSubmit>
+      </AuthForm>
     </AuthShell>
   );
 }

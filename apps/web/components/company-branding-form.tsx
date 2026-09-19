@@ -30,21 +30,16 @@ export function CompanyBrandingForm({
       <FormMessage status={removeState.status} message={removeState.message} />
 
       <div className="flex flex-wrap items-center gap-4">
-        <div className="grid h-20 w-40 place-items-center rounded-md border bg-slate-50 p-2">
+        <div className="grid h-20 w-40 place-items-center rounded-md border bg-muted p-2">
           {logoUrl ? (
             <img src={logoUrl} alt="Firmenlogo" className="max-h-16 max-w-full object-contain" />
           ) : (
-            <span className="text-xs text-slate-500">Kein Logo</span>
+            <span className="text-xs text-muted-foreground">Kein Logo</span>
           )}
         </div>
         {logoUrl && (
           <form action={removeFormAction}>
-            <button
-              type="submit"
-              className="min-h-touch rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Logo entfernen
-            </button>
+            <SubmitButton variant="outline">Logo entfernen</SubmitButton>
           </form>
         )}
       </div>
@@ -53,19 +48,16 @@ export function CompanyBrandingForm({
         <label className="block text-sm font-medium">
           Logo (PNG, JPG, WebP oder SVG, max. 2 MB)
           <input
-            className="mt-1.5 block w-full text-sm file:min-h-11 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-medium"
+            className="mt-1.5 block w-full text-sm file:min-h-11 file:rounded-md file:border-0 file:bg-muted file:px-4 file:text-sm file:font-medium"
             type="file"
             name="logo"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
           />
-          <span className="mt-1 block text-xs font-normal text-slate-500">
-            Das Logo erscheint im Dashboard, in der Mitarbeiter-App, im Kundenportal und auf Rechnungen.
-          </span>
         </label>
         <label className="block text-sm font-medium">
           Akzentfarbe
           <input
-            className="mt-1.5 h-11 w-24 rounded-md border bg-white px-2"
+            className="mt-1.5 h-11 w-24 rounded-md border bg-card px-2"
             type="color"
             name="brand_color"
             defaultValue={brandColor ?? '#0f766e'}

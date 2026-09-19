@@ -1,16 +1,16 @@
 import Link from 'next/link';
 import { MessageSquareWarning, Plus } from 'lucide-react';
 import { PortalPageHeader } from '@/components/portal/portal-shell';
-import { EmptyState } from '@/components/ui';
+import { Badge, EmptyState } from '@/components/ui';
 import { listPortalComplaints, portalLocale } from '@/lib/data/portal';
 import { formatDateTime } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
-const statusTone: Record<string, string> = {
-  OPEN: 'bg-amber-100 text-amber-900',
-  IN_PROGRESS: 'bg-blue-50 text-blue-700',
-  RESOLVED: 'bg-primary/10 text-primary',
-  CLOSED: 'bg-slate-100 text-muted-foreground',
+const statusTone: Record<string, 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  OPEN: 'info',
+  IN_PROGRESS: 'warning',
+  RESOLVED: 'success',
+  CLOSED: 'neutral',
 };
 
 export default async function PortalComplaintsPage() {
@@ -42,16 +42,14 @@ export default async function PortalComplaintsPage() {
                     {complaint.object_name} · {formatDateTime(locale, complaint.created_at)}
                   </p>
                 </div>
-                <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${statusTone[complaint.status]}`}>
-                  {t(locale, `status.${complaint.status}`)}
-                </span>
+                <Badge tone={statusTone[complaint.status]}>{t(locale, `status.${complaint.status}`)}</Badge>
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{complaint.description}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">{complaint.description}</p>
               {complaint.updates.length > 0 && (
                 <ol className="mt-4 space-y-2 border-t pt-3">
                   {complaint.updates.map((update, index) => (
                     <li key={index} className="text-sm">
-                      <p className="text-slate-700">{update.note}</p>
+                      <p className="text-foreground">{update.note}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(locale, update.created_at)}</p>
                     </li>
                   ))}

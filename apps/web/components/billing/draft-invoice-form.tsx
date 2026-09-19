@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Input } from '@/components/ui';
+import { Field, Input, Select, Textarea } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
@@ -12,12 +12,14 @@ export function DraftInvoiceForm({
   customers,
   defaultPeriodStart,
   defaultPeriodEnd,
+  defaultCustomerId,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   locale: Locale;
   customers: { id: string; name: string; customer_number: string | null }[];
   defaultPeriodStart: string;
   defaultPeriodEnd: string;
+  defaultCustomerId?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
 
@@ -26,11 +28,11 @@ export function DraftInvoiceForm({
       <FormMessage status={state.status} message={state.message} />
       <label className="block text-sm font-medium">
         {t(locale, 'role.CUSTOMER')}
-        <select
-          className="mt-1.5 min-h-touch w-full rounded-md border bg-white px-3 text-sm"
+        <Select
+          className="mt-1.5 w-full"
           name="customer_id"
           required
-          defaultValue=""
+          defaultValue={defaultCustomerId ?? ''}
         >
           <option value="" disabled>
             {t(locale, 'common.none')}
@@ -42,7 +44,7 @@ export function DraftInvoiceForm({
                 : customer.name}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
@@ -63,30 +65,18 @@ export function DraftInvoiceForm({
         />
       </fieldset>
 
-      <label className="block text-sm font-medium">
-        {t(locale, 'billing.dueDate')}
-        <Input
-          className="mt-1.5"
-          name="payment_terms_days"
-          type="number"
-          min={0}
-          max={365}
-          placeholder="14"
-        />
-        <span className="mt-1 block text-xs font-normal text-slate-500">
-          Tage nach Rechnungsdatum. Leer lassen, um das Standard-Zahlungsziel der Firma zu
-          verwenden.
-        </span>
-      </label>
+      <Field
+        label="Zahlungsziel in Tagen"
+        htmlFor="payment_terms_days"
+        optional
+        info="Tage nach Rechnungsdatum. Leer lassen, um das Standard-Zahlungsziel der Firma zu verwenden."
+      >
+        <Input id="payment_terms_days" name="payment_terms_days" type="number" min={0} max={365} placeholder="14" />
+      </Field>
 
-      <label className="block text-sm font-medium">
-        {t(locale, 'common.note')}
-        <textarea
-          className="mt-1.5 min-h-24 w-full rounded-md border p-3 text-sm"
-          name="customer_note"
-          maxLength={2000}
-        />
-      </label>
+      <Field label="Hinweis auf der Rechnung" htmlFor="customer_note" optional info="Erscheint für den Kunden auf dem Dokument, z. B. ein Dank oder eine Bestellnummer.">
+        <Textarea id="customer_note" name="customer_note" maxLength={2000} />
+      </Field>
 
       <SubmitButton locale={locale}>{t(locale, 'billing.new')}</SubmitButton>
     </form>

@@ -25,11 +25,11 @@ export default async function EmployeeSchedulePage() {
   const section = (label: string, dayKeys: string[]) =>
     dayKeys.length === 0 ? null : (
       <section key={label} className="mt-6 first:mt-0">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</h2>
+        <h2 className="mb-3 text-lg font-semibold">{label}</h2>
         <div className="space-y-5">
           {dayKeys.map((day) => (
             <div key={day}>
-              <p className="mb-2 text-sm font-medium">
+              <p className="mb-2 px-1 text-sm font-medium text-muted-foreground">
                 {day === todayKey ? t(locale, 'common.today') : formatDate(locale, day, 'long')}
               </p>
               <div className="grid gap-3 md:grid-cols-2">

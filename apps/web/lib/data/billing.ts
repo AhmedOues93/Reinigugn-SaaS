@@ -14,9 +14,9 @@ export function displayInvoiceStatus(
 }
 
 const listSelection =
-  'id, invoice_number, status, issue_date, due_date, service_period_start, service_period_end, currency, net_total_cents, vat_total_cents, gross_total_cents, customer_id, customers(name)';
+  'id, invoice_number, status, issue_date, due_date, service_period_start, service_period_end, currency, net_total_cents, vat_total_cents, gross_total_cents, customer_id, sent_at, last_reminder_at, reminder_count, paid_at, customers(name)';
 
-export async function listInvoices({ status }: { status?: DisplayInvoiceStatus | 'all' } = {}) {
+export async function listInvoices({ status, customerId }: { status?: DisplayInvoiceStatus | 'all'; customerId?: string } = {}) {
   const { supabase, company } = await requireStaffCompany();
   let query = supabase
     .from('invoices')
@@ -24,6 +24,7 @@ export async function listInvoices({ status }: { status?: DisplayInvoiceStatus |
     .eq('company_id', company.id)
     .order('created_at', { ascending: false });
   if (status && status !== 'all' && status !== 'OVERDUE') query = query.eq('status', status);
+  if (customerId) query = query.eq('customer_id', customerId);
 
   const { data, error } = await query;
   if (error) throw new Error('Rechnungen konnten nicht geladen werden.');
@@ -45,7 +46,7 @@ export async function getInvoice(id: string) {
   const { data, error } = await supabase
     .from('invoices')
     .select(
-      `${listSelection}, payment_terms_days, customer_note, internal_note, customer_snapshot, company_snapshot, cancelled_at, cancellation_reason, corrects_invoice_id, paid_at,
+      `${listSelection}, payment_terms_days, customer_note, internal_note, customer_snapshot, company_snapshot, cancelled_at, cancellation_reason, corrects_invoice_id,
        invoice_lines(id, position, description, quantity, unit, unit_price_cents, vat_rate_basis_points, net_amount_cents, vat_amount_cents, gross_amount_cents, job_id, cleaning_object_id)`,
     )
     .eq('company_id', company.id)
@@ -114,10 +115,41 @@ export async function getBillingSummary() {
     invoices.filter(predicate).reduce((total, invoice) => total + invoice.gross_total_cents, 0);
   return {
     draftCount: invoices.filter((invoice) => invoice.displayStatus === 'DRAFT').length,
+    overdueCount: invoices.filter((invoice) => invoice.displayStatus === 'OVERDUE').length,
     openCents: sum(
       (invoice) => invoice.displayStatus === 'ISSUED' || invoice.displayStatus === 'OVERDUE',
     ),
     overdueCents: sum((invoice) => invoice.displayStatus === 'OVERDUE'),
     paidCents: sum((invoice) => invoice.displayStatus === 'PAID'),
   };
+}
+
+export type InvoiceDelivery = {
+  id: string;
+  kind: 'INVOICE' | 'REMINDER';
+  channel: 'EMAIL' | 'MANUAL';
+  recipient: string | null;
+  status: 'SENT' | 'FAILED' | 'NOT_CONFIGURED' | 'MANUAL';
+  detail: string | null;
+  created_at: string;
+};
+
+/** Every delivery attempt for one invoice, newest first. */
+export async function listInvoiceDeliveries(invoiceId: string): Promise<InvoiceDelivery[]> {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase
+    .from('invoice_deliveries')
+    .select('id, kind, channel, recipient, status, detail, created_at')
+    .eq('company_id', company.id)
+    .eq('invoice_id', invoiceId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error('Versandverlauf konnte nicht geladen werden.');
+  return (data ?? []) as InvoiceDelivery[];
+}
+
+/** The customer's billing e-mail on file right now (used as the default recipient). */
+export async function getCustomerBillingEmail(customerId: string) {
+  const { supabase, company } = await requireStaffCompany();
+  const { data } = await supabase.from('customers').select('email').eq('company_id', company.id).eq('id', customerId).maybeSingle();
+  return data?.email ?? null;
 }

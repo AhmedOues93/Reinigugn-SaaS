@@ -21,10 +21,33 @@ export function StatusToggle({ id, isActive, noun, action }: { id: string; isAct
     });
   }
 
+  function close() {
+    if (pending) return;
+    setOpen(false);
+    setError(null);
+  }
+
   return <>
     <Button type="button" variant={isActive ? 'outline' : 'default'} onClick={() => setOpen(true)}>{isActive ? 'Archivieren' : 'Reaktivieren'}</Button>
-    {open && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30 p-4" role="dialog" aria-modal="true" aria-label={`${noun} ${verb}`}>
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"><h2 className="text-lg font-semibold">{noun} {verb}?</h2><p className="mt-2 text-sm leading-6 text-slate-600">{isActive ? `Der ${noun.toLowerCase()} wird nicht geloescht und kann jederzeit wieder aktiviert werden.` : `Der ${noun.toLowerCase()} wird wieder als aktiv gefuehrt.`}</p>{error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700">{error}</p>}<div className="mt-6 flex justify-end gap-3"><Button type="button" variant="outline" disabled={pending} onClick={() => setOpen(false)}>Abbrechen</Button><Button type="button" disabled={pending} onClick={confirm}>{pending ? 'Wird gespeichert ...' : isActive ? 'Archivieren' : 'Reaktivieren'}</Button></div></div>
-    </div>}
+    {open && (
+      <div
+        className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${noun} ${verb}`}
+        onKeyDown={(event) => event.key === 'Escape' && close()}
+      >
+        <button type="button" aria-label="Abbrechen" className="absolute inset-0 cursor-default" onClick={close} />
+        <div className="relative w-full max-w-md rounded-lg bg-card p-6 shadow-popover">
+          <h2 className="text-lg font-semibold text-foreground">{noun} {verb}?</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{isActive ? `Der ${noun.toLowerCase()} wird nicht gelöscht und kann jederzeit wieder aktiviert werden.` : `Der ${noun.toLowerCase()} wird wieder als aktiv gefuehrt.`}</p>
+          {error && <p className="mt-4 rounded-md bg-danger-soft p-3 text-sm text-danger">{error}</p>}
+          <div className="mt-6 flex justify-end gap-3">
+            <Button type="button" variant="outline" disabled={pending} onClick={close}>Abbrechen</Button>
+            <Button type="button" disabled={pending} onClick={confirm}>{pending ? 'Wird gespeichert ...' : isActive ? 'Archivieren' : 'Reaktivieren'}</Button>
+          </div>
+        </div>
+      </div>
+    )}
   </>;
 }

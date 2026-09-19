@@ -1,7 +1,7 @@
 import { Plane } from 'lucide-react';
 import { AbsenceForm } from '@/components/absence-form';
 import { AuUploadForm } from '@/components/au-upload-form';
-import { Card } from '@/components/ui';
+import { Badge, Card } from '@/components/ui';
 import { EmployeePageHeader, EmptyState } from '@/components/employee/employee-shell';
 import { employeeLocale, listMyAbsences } from '@/lib/data/employee';
 import { formatDate } from '@/lib/format';
@@ -9,10 +9,10 @@ import { t } from '@/lib/i18n';
 import { createClient } from '@/lib/supabase/server';
 import { submitMyAbsence, uploadMyAuDocument } from '../actions';
 
-const statusTone: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-900',
-  APPROVED: 'bg-primary/10 text-primary',
-  REJECTED: 'bg-red-50 text-red-700',
+const statusTone: Record<string, 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  PENDING: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'danger',
 };
 
 export default async function EmployeeAbsencePage() {
@@ -43,19 +43,17 @@ export default async function EmployeeAbsencePage() {
         ) : (
           <ul className="space-y-3">
             {absences.map((absence) => (
-              <li key={absence.id} className="rounded-lg border bg-white p-4">
+              <li key={absence.id} className="rounded-lg border bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <p className="font-medium">
                     {t(locale, absence.absence_type === 'VACATION' ? 'emp.absence.vacation' : 'emp.absence.sickness')}
                   </p>
-                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusTone[absence.status]}`}>
-                    {t(locale, `emp.absence.${absence.status}`)}
-                  </span>
+                  <Badge tone={statusTone[absence.status]}>{t(locale, `emp.absence.${absence.status}`)}</Badge>
                 </div>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {formatDate(locale, absence.start_date)} – {formatDate(locale, absence.end_date)}
                 </p>
-                {absence.note && <p className="mt-2 text-sm text-slate-600">{absence.note}</p>}
+                {absence.note && <p className="mt-2 text-sm text-muted-foreground">{absence.note}</p>}
                 {documentUrls.has(absence.id) && (
                   <a
                     className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-primary underline"

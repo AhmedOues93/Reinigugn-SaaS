@@ -43,8 +43,8 @@ export function EmployeeJobCard({ job, locale, showDate = false }: { job: JobLik
     <Link
       href={`/mitarbeiter/einsaetze/${job.id}`}
       className={cn(
-        'block rounded-lg border bg-card p-4 shadow-card transition-colors hover:border-primary',
-        running ? 'border-primary ring-1 ring-primary/30' : 'border-border',
+        'block rounded-2xl border bg-card p-4 shadow-card transition-[border-color,transform] hover:border-primary/40 active:scale-[0.995]',
+        running ? 'border-primary ring-2 ring-primary/15' : 'border-border/80',
       )}
     >
       {showDate && <p className="mb-1 text-xs font-medium text-primary">{formatDate(locale, job.scheduled_date, 'long')}</p>}
@@ -72,7 +72,7 @@ export function EmployeeJobCard({ job, locale, showDate = false }: { job: JobLik
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {running ? (
-          <Badge tone="warning">{t(locale, 'emp.job.running')}</Badge>
+          <Badge tone="primary">{t(locale, 'emp.job.running')}</Badge>
         ) : complete ? (
           <Badge tone="success">{t(locale, 'emp.job.done')}</Badge>
         ) : (

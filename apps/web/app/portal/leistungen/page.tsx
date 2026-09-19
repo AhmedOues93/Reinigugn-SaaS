@@ -31,7 +31,7 @@ export default async function PortalServicesPage() {
                     </p>
                   )}
                 </div>
-                <ChevronRight className="size-5 shrink-0 text-slate-400 rtl:rotate-180" aria-hidden="true" />
+                <ChevronRight className="size-5 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />
               </Link>
             </li>
           ))}

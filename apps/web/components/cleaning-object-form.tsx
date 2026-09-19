@@ -3,24 +3,127 @@
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { type FormState, initialFormState } from '@/lib/actions';
-import { Button, Input } from '@/components/ui';
+import { Button, Field, FormActions, FormSection, Input, Select, Textarea } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
-type ObjectRecord = { id?: string; customer_id?: string | null; name?: string | null; object_number?: string | null; street?: string | null; postal_code?: string | null; city?: string | null; country?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; contact_phone?: string | null; contact_email?: string | null; area_sqm?: number | null; areas_description?: string | null; access_instructions?: string | null; cleaning_instructions?: string | null; notes?: string | null; checklist_template_id?: string | null; };
+type ObjectRecord = { id?: string; customer_id?: string | null; name?: string | null; object_number?: string | null; street?: string | null; postal_code?: string | null; city?: string | null; country?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; contact_phone?: string | null; contact_email?: string | null; area_sqm?: number | null; areas_description?: string | null; access_instructions?: string | null; cleaning_instructions?: string | null; notes?: string | null; checklist_template_id?: string | null };
 type CustomerOption = { id: string; name: string; customer_number: string | null; is_active: boolean };
 type ObjectAction = (state: FormState, formData: FormData) => Promise<FormState>;
-const textareaClass = 'mt-1.5 flex h-28 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary';
 
-export function CleaningObjectForm({ object, customers, templates, action, submitLabel }: { object?: ObjectRecord; customers: CustomerOption[]; templates: { id: string; name: string }[]; action: ObjectAction; submitLabel: string }) {
+export function CleaningObjectForm({
+  object,
+  customers,
+  templates,
+  action,
+  submitLabel,
+}: {
+  object?: ObjectRecord;
+  customers: CustomerOption[];
+  templates: { id: string; name: string }[];
+  action: ObjectAction;
+  submitLabel: string;
+}) {
   const [state, formAction] = useActionState(action, initialFormState);
   const router = useRouter();
-  useEffect(() => { if (state.status === 'success' && state.id) router.push(`/dashboard/objekte/${state.id}?success=${encodeURIComponent('Objekt wurde gespeichert.')}`); }, [router, state]);
-  return <form action={formAction} className="space-y-7"><FormMessage status={state.status} message={state.message} />
-    <section className="grid gap-5 sm:grid-cols-2"><h2 className="font-semibold sm:col-span-2">Allgemein</h2><label className="block text-sm font-medium sm:col-span-2">Kunde <span className="text-red-700">*</span><select className="mt-1.5 flex min-h-touch w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" name="customer_id" defaultValue={object?.customer_id ?? ''} required><option value="" disabled>Kunde auswählen</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.customer_number ? ` (${customer.customer_number})` : ''}</option>)}</select></label><label className="block text-sm font-medium">Objektname <span className="text-red-700">*</span><Input className="mt-1.5" name="name" defaultValue={object?.name ?? ''} maxLength={160} required /></label><label className="block text-sm font-medium">Objektnummer<Input className="mt-1.5" name="object_number" defaultValue={object?.object_number ?? ''} placeholder="Automatisch, z. B. O-0001" maxLength={64} /><span className="mt-1 block text-xs text-slate-500">Optional – wird automatisch vergeben, wenn leer.</span></label></section>
-    <section className="border-t pt-6"><h2 className="font-semibold">Standardcheckliste</h2><label className="mt-5 block text-sm font-medium">Checkliste für neue Aufträge<select className="mt-1.5 min-h-touch w-full rounded-md border bg-white px-3 text-sm" name="checklist_template_id" defaultValue={object?.checklist_template_id ?? ''}><option value="">Keine Standardcheckliste</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label><p className="mt-2 text-sm text-slate-600">Wird beim Erstellen neuer Aufträge als unveraenderliche Einsatzcheckliste kopiert.</p></section>
-    <section className="border-t pt-6"><h2 className="font-semibold">Adresse</h2><div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium sm:col-span-2">Straße und Hausnummer<Input className="mt-1.5" name="street" defaultValue={object?.street ?? ''} maxLength={240} /></label><label className="block text-sm font-medium">Postleitzahl<Input className="mt-1.5" name="postal_code" defaultValue={object?.postal_code ?? ''} maxLength={16} /></label><label className="block text-sm font-medium">Ort<Input className="mt-1.5" name="city" defaultValue={object?.city ?? ''} maxLength={120} /></label><label className="block text-sm font-medium">Land<Input className="mt-1.5" name="country" defaultValue={object?.country ?? 'Deutschland'} maxLength={120} /></label></div></section>
-    <section className="border-t pt-6"><h2 className="font-semibold">Kontakt vor Ort</h2><div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium">Vorname<Input className="mt-1.5" name="contact_first_name" defaultValue={object?.contact_first_name ?? ''} maxLength={120} /></label><label className="block text-sm font-medium">Nachname<Input className="mt-1.5" name="contact_last_name" defaultValue={object?.contact_last_name ?? ''} maxLength={120} /></label><label className="block text-sm font-medium">Telefon<Input className="mt-1.5" name="contact_phone" type="tel" defaultValue={object?.contact_phone ?? ''} maxLength={64} /></label><label className="block text-sm font-medium">E-Mail<Input className="mt-1.5" name="contact_email" type="email" defaultValue={object?.contact_email ?? ''} maxLength={254} /></label></div></section>
-    <section className="grid gap-5 border-t pt-6"><h2 className="font-semibold">Objektinformationen</h2><div className="grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium">Flaeche in m2<Input className="mt-1.5" name="area_sqm" type="number" min="0.01" step="0.01" defaultValue={object?.area_sqm ?? ''} /></label><label className="block text-sm font-medium">Etagen / Bereiche<Input className="mt-1.5" name="areas_description" defaultValue={object?.areas_description ?? ''} maxLength={500} /></label></div><label className="block text-sm font-medium">Zugangshinweise<textarea className={textareaClass} name="access_instructions" defaultValue={object?.access_instructions ?? ''} maxLength={4000} /><span className="mt-1 block text-xs text-slate-500">Keine Alarmcodes, Passwoerter oder PINs speichern.</span></label><label className="block text-sm font-medium">Reinigungsanweisungen<textarea className={textareaClass} name="cleaning_instructions" defaultValue={object?.cleaning_instructions ?? ''} maxLength={4000} /></label><label className="block text-sm font-medium">Interne Notizen<textarea className={textareaClass} name="notes" defaultValue={object?.notes ?? ''} maxLength={4000} /></label></section>
-    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.back()}>Abbrechen</Button><SubmitButton>{submitLabel}</SubmitButton></div>
-  </form>;
+  useEffect(() => {
+    if (state.status === 'success' && state.id) router.push(`/dashboard/objekte/${state.id}?success=${encodeURIComponent('Objekt wurde gespeichert.')}`);
+  }, [router, state]);
+
+  return (
+    <form action={formAction}>
+      <FormMessage status={state.status} message={state.message} />
+      <FormSection title="Allgemein">
+        <Field label="Kunde" htmlFor="customer_id" className="sm:col-span-2">
+          <Select id="customer_id" name="customer_id" defaultValue={object?.customer_id ?? ''} required>
+            <option value="" disabled>
+              Kunde auswählen
+            </option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+                {customer.customer_number ? ` (${customer.customer_number})` : ''}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Objektname" htmlFor="name">
+          <Input id="name" name="name" defaultValue={object?.name ?? ''} maxLength={160} required />
+        </Field>
+        <Field label="Objektnummer" htmlFor="object_number" optional info="Wird automatisch fortlaufend vergeben (z. B. O-0001), wenn Sie das Feld leer lassen.">
+          <Input id="object_number" name="object_number" defaultValue={object?.object_number ?? ''} placeholder="Automatisch" maxLength={64} />
+        </Field>
+        <Field
+          label="Standardcheckliste"
+          htmlFor="checklist_template_id"
+          className="sm:col-span-2"
+          optional
+          info="Neue Aufträge für dieses Objekt erhalten eine Kopie dieser Checkliste. Spätere Änderungen an der Vorlage verändern bereits erstellte Aufträge nicht."
+        >
+          <Select id="checklist_template_id" name="checklist_template_id" defaultValue={object?.checklist_template_id ?? ''}>
+            <option value="">Keine Standardcheckliste</option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </FormSection>
+
+      <FormSection title="Adresse">
+        <Field label="Straße und Hausnummer" htmlFor="street" className="sm:col-span-2">
+          <Input id="street" name="street" defaultValue={object?.street ?? ''} maxLength={240} />
+        </Field>
+        <Field label="Postleitzahl" htmlFor="postal_code">
+          <Input id="postal_code" name="postal_code" defaultValue={object?.postal_code ?? ''} maxLength={16} inputMode="numeric" />
+        </Field>
+        <Field label="Ort" htmlFor="city">
+          <Input id="city" name="city" defaultValue={object?.city ?? ''} maxLength={120} />
+        </Field>
+        <Field label="Land" htmlFor="country">
+          <Input id="country" name="country" defaultValue={object?.country ?? 'Deutschland'} maxLength={120} />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Kontakt vor Ort" description="Sieht das Reinigungsteam im Einsatz.">
+        <Field label="Vorname" htmlFor="contact_first_name">
+          <Input id="contact_first_name" name="contact_first_name" defaultValue={object?.contact_first_name ?? ''} maxLength={120} />
+        </Field>
+        <Field label="Nachname" htmlFor="contact_last_name">
+          <Input id="contact_last_name" name="contact_last_name" defaultValue={object?.contact_last_name ?? ''} maxLength={120} />
+        </Field>
+        <Field label="Telefon" htmlFor="contact_phone">
+          <Input id="contact_phone" name="contact_phone" type="tel" defaultValue={object?.contact_phone ?? ''} maxLength={64} />
+        </Field>
+        <Field label="E-Mail" htmlFor="contact_email">
+          <Input id="contact_email" name="contact_email" type="email" defaultValue={object?.contact_email ?? ''} maxLength={254} />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Vor Ort" description="Was das Team für den Einsatz wissen muss.">
+        <Field label="Fläche in m²" htmlFor="area_sqm" optional>
+          <Input id="area_sqm" name="area_sqm" type="number" min="0.01" step="0.01" defaultValue={object?.area_sqm ?? ''} />
+        </Field>
+        <Field label="Etagen / Bereiche" htmlFor="areas_description" optional>
+          <Input id="areas_description" name="areas_description" defaultValue={object?.areas_description ?? ''} maxLength={500} />
+        </Field>
+        <Field label="Zugangshinweise" htmlFor="access_instructions" className="sm:col-span-2" hint="Keine Alarmcodes, Passwörter oder PINs speichern.">
+          <Textarea id="access_instructions" name="access_instructions" defaultValue={object?.access_instructions ?? ''} maxLength={4000} placeholder="z. B. Schlüssel beim Hausmeister, Eingang Hofseite" />
+        </Field>
+        <Field label="Reinigungsanweisungen" htmlFor="cleaning_instructions" className="sm:col-span-2" optional>
+          <Textarea id="cleaning_instructions" name="cleaning_instructions" defaultValue={object?.cleaning_instructions ?? ''} maxLength={4000} />
+        </Field>
+        <Field label="Interne Notizen" htmlFor="notes" className="sm:col-span-2" optional info="Nur für das Büro sichtbar – nicht in der Mitarbeiter-App und nicht im Kundenportal.">
+          <Textarea id="notes" name="notes" defaultValue={object?.notes ?? ''} maxLength={4000} />
+        </Field>
+      </FormSection>
+
+      <FormActions>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Abbrechen
+        </Button>
+        <SubmitButton>{submitLabel}</SubmitButton>
+      </FormActions>
+    </form>
+  );
 }

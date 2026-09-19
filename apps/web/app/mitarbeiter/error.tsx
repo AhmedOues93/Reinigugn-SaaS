@@ -11,12 +11,12 @@ import { t } from '@/lib/i18n';
 export default function EmployeeError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const locale = useDocumentLocale();
   return (
-    <div className="rounded-lg border border-red-200 bg-white p-8 text-center" role="alert">
-      <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-red-50 text-red-600">
+    <div className="rounded-lg border border-danger/20 bg-card p-8 text-center" role="alert">
+      <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-danger-soft text-danger">
         <AlertTriangle className="size-5" aria-hidden="true" />
       </div>
-      <p className="font-medium text-slate-900">{t(locale, 'common.errorTitle')}</p>
-      <p className="mx-auto mt-1 max-w-xs text-sm text-slate-600">{t(locale, 'common.errorBody')}</p>
+      <p className="font-medium text-foreground">{t(locale, 'common.errorTitle')}</p>
+      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">{t(locale, 'common.errorBody')}</p>
       <button
         type="button"
         onClick={reset}

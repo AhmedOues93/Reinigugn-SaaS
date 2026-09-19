@@ -1,15 +1,181 @@
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
-import { listJobs, type JobStatusFilter } from '@/lib/data/jobs';
+import { ClipboardCheck, Plus, Repeat } from 'lucide-react';
+import { listJobs, listActiveEmployeeOptions, type JobStatusFilter } from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
-import { listActiveEmployeeOptions } from '@/lib/data/jobs';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
+import { DataTable, FilterBar } from '@/components/data-table';
 import { JobStatusBadge, formatJobTime } from '@/components/job-badges';
+import { formatDate } from '@/lib/format';
 
-function status(value?: string): JobStatusFilter { return value === 'PLANNED' || value === 'CONFIRMED' || value === 'CANCELLED' ? value : 'all'; }
-export default async function JobsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; customer?: string; object?: string; employee?: string; status?: string }> }) {
-  const query = await searchParams; const currentStatus = status(query.status);
-  const [jobs, customers, objects, employees] = await Promise.all([listJobs({ from: query.from, to: query.to, customerId: query.customer, objectId: query.object, memberId: query.employee, status: currentStatus }), listCustomerOptions(), listCleaningObjectOptions(), listActiveEmployeeOptions()]);
-  return <div className="mx-auto max-w-6xl"><div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl font-semibold tracking-tight">Aufträge</h1><p className="mt-2 text-slate-600">Plane Einzelaufträge und behalte kommende Einsätze im Blick.</p></div><Link href="/dashboard/auftraege/neu"><Button><Plus className="mr-2 size-4" />Auftrag erstellen</Button></Link></div><Card className="overflow-hidden"><form className="grid gap-3 border-b p-4 md:grid-cols-3 xl:grid-cols-6"><Input name="from" type="date" defaultValue={query.from ?? ''} /><Input name="to" type="date" defaultValue={query.to ?? ''} /><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="customer" defaultValue={query.customer ?? ''}><option value="">Alle Kunden</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="object" defaultValue={query.object ?? ''}><option value="">Alle Objekte</option>{objects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="employee" defaultValue={query.employee ?? ''}><option value="">Alle Mitarbeiter</option>{employees.map((item) => { const p = Array.isArray(item.profiles) ? item.profiles[0] : item.profiles; return <option key={item.id} value={item.id}>{[p?.first_name, p?.last_name].filter(Boolean).join(' ')}</option>; })}</select><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="status" defaultValue={currentStatus}><option value="all">Alle Status</option><option value="PLANNED">Geplant</option><option value="CONFIRMED">Bestätigt</option><option value="CANCELLED">Storniert</option></select><Button type="submit" variant="outline">Filtern</Button></form>{jobs.length === 0 ? <div className="p-10 text-center"><p className="font-medium">Sie haben noch keine Aufträge angelegt.</p><Link className="mt-5 inline-flex" href="/dashboard/auftraege/neu"><Button>Auftrag erstellen</Button></Link></div> : <div className="overflow-x-auto"><table className="w-full min-w-[780px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-5 py-3">Datum</th><th className="px-5 py-3">Auftrag</th><th className="px-5 py-3">Kunde / Objekt</th><th className="px-5 py-3">Mitarbeiter</th><th className="px-5 py-3">Status</th></tr></thead><tbody className="divide-y">{jobs.map((job) => { const customer = Array.isArray(job.customers) ? job.customers[0] : job.customers; const object = Array.isArray(job.cleaning_objects) ? job.cleaning_objects[0] : job.cleaning_objects; return <tr key={job.id} className="hover:bg-slate-50"><td className="px-5 py-4"><p>{new Intl.DateTimeFormat('de-DE').format(new Date(`${job.scheduled_date}T12:00:00`))}</p><p className="text-xs text-slate-500">{formatJobTime(job.planned_start_at, job.planned_end_at)}</p></td><td className="px-5 py-4"><Link className="inline-flex min-h-touch items-center font-medium hover:text-primary" href={`/dashboard/auftraege/${job.id}`}>{job.title}</Link>{job.service_schedule_id && <p className="text-xs text-slate-500">Wiederkehrend</p>}</td><td className="px-5 py-4 text-slate-600">{customer?.name}<br /><span className="text-xs">{object?.name}</span></td><td className="px-5 py-4 text-slate-600">{job.job_assignments.map((assignment) => { const member = Array.isArray(assignment.company_members) ? assignment.company_members[0] : assignment.company_members; const p = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles; return [p?.first_name, p?.last_name].filter(Boolean).join(' '); }).filter(Boolean).join(', ') || '—'}</td><td className="px-5 py-4"><JobStatusBadge status={job.status} /></td></tr>; })}</tbody></table></div>}</Card></div>;
+const statuses: { value: JobStatusFilter; label: string }[] = [
+  { value: 'all', label: 'Alle Status' },
+  { value: 'PLANNED', label: 'Geplant' },
+  { value: 'CONFIRMED', label: 'Bestätigt' },
+  { value: 'IN_PROGRESS', label: 'In Arbeit' },
+  { value: 'COMPLETED', label: 'Erledigt' },
+  { value: 'CANCELLED', label: 'Storniert' },
+];
+
+function status(value?: string): JobStatusFilter {
+  return statuses.some((entry) => entry.value === value) ? (value as JobStatusFilter) : 'all';
+}
+
+type Job = Awaited<ReturnType<typeof listJobs>>[number];
+
+function first<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
+
+function teamOf(job: Job) {
+  return (
+    job.job_assignments
+      .map((assignment) => {
+        const profile = first(first(assignment.company_members)?.profiles);
+        return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
+      })
+      .filter(Boolean)
+      .join(', ') || null
+  );
+}
+
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string; customer?: string; object?: string; employee?: string; status?: string }>;
+}) {
+  const query = await searchParams;
+  const currentStatus = status(query.status);
+  const [jobs, customers, objects, employees] = await Promise.all([
+    listJobs({ from: query.from, to: query.to, customerId: query.customer, objectId: query.object, memberId: query.employee, status: currentStatus }),
+    listCustomerOptions(),
+    listCleaningObjectOptions(),
+    listActiveEmployeeOptions(),
+  ]);
+  const filtered = Boolean(query.from || query.to || query.customer || query.object || query.employee) || currentStatus !== 'all';
+
+  return (
+    <>
+      <PageHeader
+        title="Aufträge"
+        description="Alle Einsätze – einzeln geplant oder aus Reinigungsplänen erzeugt."
+        actions={
+          <>
+            <ButtonLink href="/dashboard/planung" variant="outline">
+              <Repeat className="size-4" aria-hidden="true" />
+              Reinigungspläne
+            </ButtonLink>
+            <ButtonLink href="/dashboard/auftraege/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Auftrag erstellen
+            </ButtonLink>
+          </>
+        }
+      />
+
+      <FilterBar>
+        <Input name="from" type="date" defaultValue={query.from ?? ''} aria-label="Von" />
+        <Input name="to" type="date" defaultValue={query.to ?? ''} aria-label="Bis" />
+        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+          <option value="">Alle Kunden</option>
+          {customers.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
+          <option value="">Alle Objekte</option>
+          {objects.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
+          <option value="">Alle Mitarbeiter</option>
+          {employees.map((item) => {
+            const profile = first(item.profiles);
+            return (
+              <option key={item.id} value={item.id}>
+                {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+              </option>
+            );
+          })}
+        </Select>
+        <Select name="status" defaultValue={currentStatus} aria-label="Status">
+          {statuses.map((entry) => (
+            <option key={entry.value} value={entry.value}>
+              {entry.label}
+            </option>
+          ))}
+        </Select>
+        <Button type="submit" variant="outline">
+          Anwenden
+        </Button>
+      </FilterBar>
+
+      <DataTable<Job>
+        caption="Aufträge"
+        rows={jobs}
+        rowKey={(job) => job.id}
+        rowHref={(job) => `/dashboard/auftraege/${job.id}`}
+        columns={[
+          {
+            key: 'date',
+            header: 'Termin',
+            mobile: 'subtitle',
+            cell: (job) => (
+              <span className="tabular-nums">
+                <span className="text-foreground">{formatDate('de', job.scheduled_date)}</span>
+                <span className="ms-2 text-xs text-muted-foreground">{job.planned_start_at ? formatJobTime(job.planned_start_at, job.planned_end_at ?? undefined) : ''}</span>
+              </span>
+            ),
+          },
+          {
+            key: 'title',
+            header: 'Auftrag',
+            mobile: 'title',
+            cell: (job) => (
+              <span className="inline-flex items-center gap-2">
+                {job.title}
+                {job.service_schedule_id && <Repeat className="size-3.5 shrink-0 text-muted-foreground" aria-label="Wiederkehrend" />}
+              </span>
+            ),
+          },
+          {
+            key: 'site',
+            header: 'Kunde / Objekt',
+            cell: (job) => (
+              <span className="block min-w-0">
+                <span className="block text-foreground">{first(job.customers)?.name}</span>
+                <span className="block text-xs">{first(job.cleaning_objects)?.name}</span>
+              </span>
+            ),
+          },
+          {
+            key: 'team',
+            header: 'Team',
+            hideBelow: 'lg',
+            cell: (job) => teamOf(job) ?? <span className="font-medium text-danger">Nicht besetzt</span>,
+          },
+          { key: 'status', header: 'Status', mobile: 'status', cell: (job) => <JobStatusBadge status={job.status} /> },
+        ]}
+        empty={
+          <EmptyState
+            icon={<ClipboardCheck />}
+            title={filtered ? 'Keine passenden Aufträge' : 'Noch keine Aufträge'}
+            body={filtered ? 'Passen Sie Zeitraum oder Filter an.' : 'Planen Sie einen Einzelauftrag oder legen Sie einen wiederkehrenden Reinigungsplan an.'}
+            action={
+              !filtered && (
+                <ButtonLink href="/dashboard/auftraege/neu">
+                  <Plus className="size-4" aria-hidden="true" />
+                  Auftrag erstellen
+                </ButtonLink>
+              )
+            }
+          />
+        }
+      />
+    </>
+  );
 }

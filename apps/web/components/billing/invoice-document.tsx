@@ -25,6 +25,7 @@ export type InvoiceDocumentData = {
     unit_price_cents: number;
     vat_rate_basis_points: number;
     net_amount_cents: number;
+    vat_amount_cents?: number;
   }[];
 };
 
@@ -54,9 +55,11 @@ export function InvoiceDocument({
     .join(' · ');
 
   // VAT is summarised per rate, as a German invoice requires.
-  const vatGroups = data.lines.reduce<Record<number, { net: number }>>((groups, line) => {
-    const group = (groups[line.vat_rate_basis_points] ??= { net: 0 });
+  // Summed from the stored line amounts so the rate lines always match the totals.
+  const vatGroups = data.lines.reduce<Record<number, { net: number; vat: number }>>((groups, line) => {
+    const group = (groups[line.vat_rate_basis_points] ??= { net: 0, vat: 0 });
     group.net += line.net_amount_cents;
+    group.vat += line.vat_amount_cents ?? Math.round((line.net_amount_cents * line.vat_rate_basis_points) / 10000);
     return groups;
   }, {});
 
@@ -215,7 +218,7 @@ export function InvoiceDocument({
                 {t(locale, 'billing.vat')} {formatPercent(locale, Number(rate))} · {formatMoney(locale, group.net, data.currency)}
               </dt>
               <dd className="tabular-nums">
-                {formatMoney(locale, Math.round((group.net * Number(rate)) / 10000), data.currency)}
+                {formatMoney(locale, group.vat, data.currency)}
               </dd>
             </div>
           ))}

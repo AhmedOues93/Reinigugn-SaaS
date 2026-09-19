@@ -48,7 +48,7 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href={`/dashboard/abrechnung/${invoice.id}`}
-          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-slate-600"
+          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted-foreground"
         >
           <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
           {t(locale, 'billing.invoice')}

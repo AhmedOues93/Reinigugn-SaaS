@@ -50,7 +50,7 @@ export default async function PortalServiceRecordPage({ params }: { params: Prom
               <li key={`${item.title}-${index}`} className="flex items-start gap-2.5 text-sm">
                 <span
                   className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full ${
-                    item.completed ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400'
+                    item.completed ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {item.completed ? <Check className="size-3.5" aria-hidden="true" /> : <Minus className="size-3.5" aria-hidden="true" />}

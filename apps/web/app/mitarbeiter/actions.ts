@@ -38,7 +38,10 @@ async function employeeLocaleSafe() {
   }
 }
 
-async function runTimeAction(jobId: string, operation: 'start_my_job' | 'stop_my_job'): Promise<FormState> {
+type TimeOperation = 'start_my_job' | 'stop_my_job' | 'pause_my_job' | 'resume_my_job';
+const timeMessages = { start_my_job: 'emp.job.started', stop_my_job: 'emp.job.stopped', pause_my_job: 'emp.job.pauseStarted', resume_my_job: 'emp.job.resumed' } as const;
+
+async function runTimeAction(jobId: string, operation: TimeOperation): Promise<FormState> {
   const context = await employeeContext();
   if (!context) return denied();
   const locale = await employeeLocaleSafe();
@@ -47,7 +50,7 @@ async function runTimeAction(jobId: string, operation: 'start_my_job' | 'stop_my
   revalidateEmployee(jobId);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/arbeitszeiten');
-  return { status: 'success', message: t(locale, operation === 'start_my_job' ? 'emp.job.started' : 'emp.job.stopped') };
+  return { status: 'success', message: t(locale, timeMessages[operation]) };
 }
 
 export async function startMyJob(jobId: string, _: FormState, __: FormData) {
@@ -56,6 +59,14 @@ export async function startMyJob(jobId: string, _: FormState, __: FormData) {
 
 export async function stopMyJob(jobId: string, _: FormState, __: FormData) {
   return runTimeAction(jobId, 'stop_my_job');
+}
+
+export async function pauseMyJob(jobId: string, _: FormState, __: FormData) {
+  return runTimeAction(jobId, 'pause_my_job');
+}
+
+export async function resumeMyJob(jobId: string, _: FormState, __: FormData) {
+  return runTimeAction(jobId, 'resume_my_job');
 }
 
 export async function completeMyChecklistItem(itemId: string, completed: boolean, _: FormState, __: FormData): Promise<FormState> {

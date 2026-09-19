@@ -2,34 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * SauberWerk visual system — "Tiefsee & Nebel".
+ *
+ * Tiefsee (a deep petrol ink) is reserved for navigation and for the one moment
+ * on each surface that matters most: the rail in the office app, the next job in
+ * the field app, the amount due in the portal. Everything else sits on Nebel, a
+ * cool mist workspace, so white surfaces read as deliberate rather than default.
+ */
 @layer base {
   :root {
-    /* Neutral ramp: one family of slate-derived greys so surfaces, borders and
-       text never drift apart between the three product surfaces. */
-    --background: 210 20% 98%;
-    --foreground: 215 30% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 215 30% 15%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 44%;
-    --border: 214 20% 90%;
-    --input: 214 20% 86%;
+    --background: 195 14% 94.5%; /* Nebel  #EEF2F3 — workspace */
+    --foreground: 196 27% 13%; /* Graphit #17262B */
+    --card: 0 0% 100%; /* Kreide — raised surface */
+    --card-foreground: 196 27% 13%;
+    --muted: 195 16% 91%; /* sunken surface / quiet fills */
+    --muted-foreground: 196 11% 40%;
+    --subtle: 195 20% 97%; /* table headers, inset panels on white */
+    --border: 195 14% 86%;
+    --input: 195 12% 80%;
 
-    --primary: 178 62% 25%;
+    --primary: 189 80% 27%; /* Petrol #0D6E7C */
     --primary-foreground: 0 0% 100%;
-    --primary-soft: 178 45% 96%;
+    --primary-soft: 189 45% 93%;
 
-    --success: 152 58% 28%;
-    --success-soft: 152 50% 95%;
-    --warning: 33 85% 38%;
-    --warning-soft: 38 92% 95%;
-    --danger: 0 65% 45%;
-    --danger-soft: 0 80% 97%;
-    --info: 214 70% 40%;
-    --info-soft: 214 90% 96%;
+    --ink: 193 65% 12%; /* Tiefsee #0B2A33 */
+    --ink-foreground: 190 30% 96%;
+    --ink-muted: 191 18% 68%;
+    --ink-line: 192 40% 20%;
+    --highlight: 185 64% 62%; /* Gischt #5FD4DE — accent on ink only */
 
-    --ring: 178 62% 32%;
-    --radius: 0.7rem;
+    --success: 152 60% 27%;
+    --success-soft: 150 45% 92%;
+    --warning: 30 88% 36%;
+    --warning-soft: 40 90% 92%;
+    --danger: 4 63% 46%;
+    --danger-soft: 4 80% 95%;
+    --info: 210 70% 42%;
+    --info-soft: 210 80% 94%;
+
+    --ring: 189 80% 34%;
+    --radius: 0.75rem;
   }
 
   * {
@@ -38,11 +51,13 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: 'ss01', 'cv01';
+    text-rendering: optimizeLegibility;
   }
 
   /* One visible focus treatment for the whole product. */
@@ -50,11 +65,21 @@
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Headings keep their optical size without every page restating it. */
   h1,
   h2,
   h3 {
     @apply text-balance;
+    letter-spacing: -0.015em;
+  }
+
+  /* Money, times and counts line up in every list without restating it. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
   }
 }
 
@@ -63,6 +88,45 @@
   .break-anywhere {
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+
+  /*
+   * The squeegee streak: one diagonal band of light across a dark surface, the
+   * way a pass of the wiper leaves glass. Used on ink surfaces only, sparingly.
+   */
+  .surface-ink {
+    background-color: hsl(var(--ink));
+    background-image:
+      linear-gradient(115deg, transparent 0%, transparent 38%, hsl(185 64% 62% / 0.08) 38.5%, hsl(185 64% 62% / 0.02) 52%, transparent 52.5%),
+      radial-gradient(120% 90% at 100% 0%, hsl(189 80% 27% / 0.55) 0%, transparent 60%);
+    color: hsl(var(--ink-foreground));
+  }
+
+  /* Hairline grid used behind the auth composition — facade/tile rhythm. */
+  .grid-lines {
+    background-image:
+      linear-gradient(hsl(0 0% 100% / 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  /* Fine film grain so large gradients never band on cheap displays. */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Hide scrollbars on horizontal chip rows while keeping them scrollable. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 

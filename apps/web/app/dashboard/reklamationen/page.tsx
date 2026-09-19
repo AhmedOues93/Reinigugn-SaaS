@@ -1,12 +1,76 @@
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
-import { Button, Card } from '@/components/ui';
+import { MessageSquareWarning, Plus } from 'lucide-react';
+import { Badge, ButtonLink, EmptyState, PageHeader, type Tone } from '@/components/ui';
+import { DataTable } from '@/components/data-table';
 import { listComplaints } from '@/lib/data/complaints';
+import { berlinDateKey } from '@/lib/date';
+import { formatDate } from '@/lib/format';
 
 const status: Record<string, string> = { OPEN: 'Offen', IN_PROGRESS: 'In Bearbeitung', RESOLVED: 'Gelöst', CLOSED: 'Geschlossen' };
+const statusTone: Record<string, Tone> = { OPEN: 'info', IN_PROGRESS: 'warning', RESOLVED: 'success', CLOSED: 'neutral' };
 const priority: Record<string, string> = { LOW: 'Niedrig', NORMAL: 'Normal', HIGH: 'Hoch', URGENT: 'Dringend' };
-function first<T>(value: T | T[] | null) { return Array.isArray(value) ? value[0] ?? null : value; }
+const priorityTone: Record<string, Tone> = { LOW: 'neutral', NORMAL: 'neutral', HIGH: 'warning', URGENT: 'danger' };
+
+function first<T>(value: T | T[] | null) {
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+type Complaint = Awaited<ReturnType<typeof listComplaints>>[number];
+
 export default async function ComplaintsPage() {
-  const complaints = await listComplaints(); const today = new Date().toISOString().slice(0, 10);
-  return <div className="mx-auto max-w-6xl"><div className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-medium text-primary">Qualität</p><h1 className="mt-1 text-2xl font-semibold">Reklamationen</h1><p className="mt-2 text-sm text-slate-600">Offene Vorgänge strukturiert bearbeiten und nachverfolgen.</p></div><Link href="/dashboard/reklamationen/neu"><Button><Plus className="mr-2 size-4" />Reklamation erfassen</Button></Link></div><Card className="overflow-hidden">{complaints.length === 0 ? <div className="p-8 text-center"><p className="font-medium">Keine Reklamationen vorhanden.</p><p className="mt-2 text-sm text-slate-600">Neue Vorgänge können hier direkt erfasst werden.</p></div> : <div className="divide-y">{complaints.map((complaint) => { const customer = first(complaint.customers as never); const object = first(complaint.cleaning_objects as never); const overdue = complaint.due_date && complaint.due_date < today && !['RESOLVED', 'CLOSED'].includes(complaint.status); return <Link key={complaint.id} href={`/dashboard/reklamationen/${complaint.id}`} className="block p-5 hover:bg-slate-50"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-medium">{complaint.title}</p><p className="mt-1 text-sm text-slate-600">{(customer as { name?: string } | null)?.name ?? 'Kunde'} · {(object as { name?: string } | null)?.name ?? 'Objekt'}</p></div><div className="flex gap-2 text-xs font-medium"><span className="rounded bg-slate-100 px-2 py-1">{priority[complaint.priority]}</span><span className={`rounded px-2 py-1 ${overdue ? 'bg-red-100 text-red-800' : 'bg-primary-soft text-primary'}`}>{overdue ? 'Überfällig' : status[complaint.status]}</span></div></div>{complaint.due_date && <p className="mt-3 text-xs text-slate-500">Fällig: {new Intl.DateTimeFormat('de-DE').format(new Date(`${complaint.due_date}T12:00:00`))}</p>}</Link>; })}</div>}</Card></div>;
+  const complaints = await listComplaints();
+  const today = berlinDateKey();
+  const overdue = (complaint: Complaint) => Boolean(complaint.due_date && complaint.due_date < today && !['RESOLVED', 'CLOSED'].includes(complaint.status));
+
+  return (
+    <>
+      <PageHeader
+        title="Reklamationen"
+        description="Beschwerden von Kunden und aus dem Portal – mit Frist, Priorität und Verlauf."
+        actions={
+          <ButtonLink href="/dashboard/reklamationen/neu">
+            <Plus className="size-4" aria-hidden="true" />
+            Reklamation erfassen
+          </ButtonLink>
+        }
+      />
+      <DataTable<Complaint>
+        caption="Reklamationen"
+        rows={complaints}
+        rowKey={(complaint) => complaint.id}
+        rowHref={(complaint) => `/dashboard/reklamationen/${complaint.id}`}
+        columns={[
+          { key: 'title', header: 'Vorgang', mobile: 'title', cell: (complaint) => complaint.title },
+          {
+            key: 'site',
+            header: 'Kunde / Objekt',
+            mobile: 'subtitle',
+            cell: (complaint) => {
+              const customer = first(complaint.customers as never) as { name?: string } | null;
+              const object = first(complaint.cleaning_objects as never) as { name?: string } | null;
+              return [customer?.name, object?.name].filter(Boolean).join(' – ') || '—';
+            },
+          },
+          { key: 'priority', header: 'Priorität', cell: (complaint) => <Badge tone={priorityTone[complaint.priority]}>{priority[complaint.priority]}</Badge> },
+          {
+            key: 'due',
+            header: 'Frist',
+            cell: (complaint) =>
+              complaint.due_date ? (
+                <span className={overdue(complaint) ? 'font-semibold tabular-nums text-danger' : 'tabular-nums'}>{formatDate('de', complaint.due_date)}</span>
+              ) : (
+                '—'
+              ),
+          },
+          {
+            key: 'status',
+            header: 'Status',
+            mobile: 'status',
+            cell: (complaint) =>
+              overdue(complaint) ? <Badge tone="danger">Überfällig</Badge> : <Badge tone={statusTone[complaint.status]}>{status[complaint.status]}</Badge>,
+          },
+        ]}
+        empty={<EmptyState icon={<MessageSquareWarning />} title="Keine Reklamationen" body="Neue Vorgänge erfassen Sie hier oder Ihre Kunden über das Portal." />}
+      />
+    </>
+  );
 }

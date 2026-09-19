@@ -47,7 +47,7 @@ function PhotoCard({
   const category = t(locale, categoryKeys[photo.category]);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-2xl">
       <div className="aspect-[4/3] bg-muted">
         {photo.url ? (
           <img src={photo.url} alt={`${category}: ${photo.description ?? ''}`} className="size-full object-cover" loading="lazy" />

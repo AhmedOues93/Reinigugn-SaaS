@@ -4,6 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
+import { getInvoice, listBillableJobs } from '@/lib/data/billing';
+import { sendMail } from '@/lib/mail/transport';
+import { formatDate, formatMoney } from '@/lib/format';
 
 function failure(message: string): FormState {
   return { status: 'error', message };
@@ -144,11 +148,17 @@ export async function issueInvoice(
 export async function markInvoicePaid(
   invoiceId: string,
   _: FormState,
-  __: FormData,
+  formData: FormData,
 ): Promise<FormState> {
+  const paidOn = String(formData.get('paid_on') ?? '').trim();
+  if (paidOn && !/^\d{4}-\d{2}-\d{2}$/.test(paidOn)) return failure('Bitte gib ein gültiges Zahlungsdatum an.');
+  if (paidOn && paidOn > new Date().toISOString().slice(0, 10)) return failure('Das Zahlungsdatum darf nicht in der Zukunft liegen.');
   try {
     const { supabase } = await requireStaffCompany();
-    const { error } = await supabase.rpc('mark_invoice_paid', { p_invoice_id: invoiceId });
+    const { error } = await supabase.rpc('mark_invoice_paid', {
+      p_invoice_id: invoiceId,
+      p_paid_at: paidOn ? `${paidOn}T12:00:00Z` : new Date().toISOString(),
+    });
     if (error) return failure('Die Rechnung konnte nicht als bezahlt markiert werden.');
     revalidateBilling(invoiceId);
     return { status: 'success', message: 'Rechnung als bezahlt markiert.' };
@@ -205,4 +215,141 @@ export async function deleteDraftInvoice(invoiceId: string): Promise<void> {
   if (error) throw new Error('Der Entwurf konnte nicht gelöscht werden.');
   revalidateBilling();
   redirect('/dashboard/abrechnung');
+}
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function recordDelivery(
+  invoiceId: string,
+  kind: 'INVOICE' | 'REMINDER',
+  channel: 'EMAIL' | 'MANUAL',
+  recipient: string | null,
+  status: 'SENT' | 'FAILED' | 'NOT_CONFIGURED' | 'MANUAL',
+  detail: string | null,
+) {
+  const { supabase } = await requireStaffCompany();
+  const { error } = await supabase.rpc('record_invoice_delivery', {
+    p_invoice_id: invoiceId,
+    p_kind: kind,
+    p_channel: channel,
+    p_recipient: recipient,
+    p_status: status,
+    p_detail: detail,
+  });
+  return error;
+}
+
+/**
+ * Sends the issued invoice as a PDF attachment and logs the real outcome.
+ * If no mail provider is configured, nothing is claimed: the attempt is logged
+ * as NOT_CONFIGURED and the invoice is not marked as sent.
+ */
+export async function sendInvoiceEmail(invoiceId: string, _: FormState, formData: FormData): Promise<FormState> {
+  return deliverByEmail(invoiceId, 'INVOICE', formData);
+}
+
+export async function sendPaymentReminder(invoiceId: string, _: FormState, formData: FormData): Promise<FormState> {
+  return deliverByEmail(invoiceId, 'REMINDER', formData);
+}
+
+async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', formData: FormData): Promise<FormState> {
+  const recipient = String(formData.get('recipient') ?? '').trim();
+  if (!emailPattern.test(recipient) || recipient.length > 320) return failure('Bitte gib eine gültige E-Mail-Adresse an.');
+
+  const invoice = await getInvoice(invoiceId);
+  if (!invoice || invoice.status === 'DRAFT' || invoice.status === 'CANCELLED' || !invoice.invoice_number) {
+    return failure('Nur festgeschriebene, nicht stornierte Rechnungen können versendet werden.');
+  }
+  if (kind === 'REMINDER' && invoice.displayStatus !== 'OVERDUE') return failure('Eine Zahlungserinnerung ist erst nach Fälligkeit möglich.');
+
+  const rendered = await renderStaffInvoicePdf(invoiceId);
+  if (!rendered) return failure('Das PDF konnte nicht erzeugt werden.');
+
+  const company = (invoice.company_snapshot ?? {}) as Record<string, string | null>;
+  const amount = formatMoney('de', invoice.gross_total_cents, invoice.currency);
+  const due = invoice.due_date ? formatDate('de', invoice.due_date) : '';
+  const subject =
+    kind === 'INVOICE'
+      ? `Rechnung ${invoice.invoice_number} von ${company.name ?? ''}`.trim()
+      : `Zahlungserinnerung zu Rechnung ${invoice.invoice_number}`;
+  const text =
+    kind === 'INVOICE'
+      ? `Guten Tag,\n\nanbei erhalten Sie die Rechnung ${invoice.invoice_number} über ${amount}, zahlbar bis ${due}.\nSie finden die Rechnung außerdem jederzeit in Ihrem Kundenportal.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`
+      : `Guten Tag,\n\nsicher ist es Ihrer Aufmerksamkeit entgangen: Die Rechnung ${invoice.invoice_number} über ${amount} war am ${due} fällig und ist bei uns noch nicht eingegangen.\nBitte überweisen Sie den Betrag in den nächsten Tagen. Sollte sich Ihre Zahlung mit dieser Erinnerung überschnitten haben, betrachten Sie sie bitte als gegenstandslos.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`;
+
+  const result = await sendMail({
+    to: recipient,
+    subject,
+    text,
+    replyTo: company.email,
+    attachments: [{ filename: rendered.fileName, content: rendered.bytes, contentType: 'application/pdf' }],
+  });
+
+  const error = await recordDelivery(invoiceId, kind, 'EMAIL', recipient, result.status, result.detail);
+  revalidateBilling(invoiceId);
+  if (error) return failure('Der Versand konnte nicht protokolliert werden.');
+  if (result.status === 'SENT') return { status: 'success', message: kind === 'INVOICE' ? `Rechnung an ${recipient} gesendet.` : `Zahlungserinnerung an ${recipient} gesendet.` };
+  if (result.status === 'NOT_CONFIGURED') {
+    return failure('Nicht gesendet: Es ist kein E-Mail-Versand eingerichtet. Laden Sie das PDF herunter und vermerken Sie den Versand manuell.');
+  }
+  return failure('Nicht gesendet: Der Mailserver hat die Nachricht abgelehnt. Details stehen im Versandverlauf.');
+}
+
+/** Records a delivery made outside the app (post, own mail client, handed over). */
+export async function recordManualDelivery(invoiceId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const kind = String(formData.get('kind') ?? 'INVOICE') === 'REMINDER' ? 'REMINDER' : 'INVOICE';
+  const note = String(formData.get('note') ?? '').trim().slice(0, 500);
+  if (note.length < 2) return failure('Bitte vermerke kurz, wie versendet wurde (z. B. „per Post“).');
+  const error = await recordDelivery(invoiceId, kind, 'MANUAL', null, 'MANUAL', note);
+  revalidateBilling(invoiceId);
+  if (error) {
+    return failure(
+      error.message.includes('overdue')
+        ? 'Eine Zahlungserinnerung ist erst nach Fälligkeit möglich.'
+        : 'Der Versand konnte nicht vermerkt werden.',
+    );
+  }
+  return { status: 'success', message: kind === 'INVOICE' ? 'Versand vermerkt.' : 'Zahlungserinnerung vermerkt.' };
+}
+
+/**
+ * Adds every completed, not yet billed visit in the service period as one line
+ * each — the normal month-end case — using the agreed plan rate where known.
+ */
+export async function addAllBillableJobs(invoiceId: string, _: FormState, __: FormData): Promise<FormState> {
+  const invoice = await getInvoice(invoiceId);
+  if (!invoice || invoice.status !== 'DRAFT') return failure('Positionen können nur einem Entwurf hinzugefügt werden.');
+  const jobs = await listBillableJobs(invoice.customer_id, invoice.service_period_start, invoice.service_period_end);
+  const priced = jobs.filter((job) => job.suggested_unit_price_cents != null);
+  if (jobs.length === 0) return failure('Im Leistungszeitraum gibt es keine abrechenbaren Einsätze.');
+  if (priced.length === 0) {
+    return failure('Für diese Einsätze ist kein Preis im Reinigungsplan hinterlegt. Bitte Positionen einzeln mit Preis erfassen.');
+  }
+
+  const { supabase } = await requireStaffCompany();
+  let added = 0;
+  for (const job of priced) {
+    const hours = job.duration_minutes > 0 ? Math.round((job.duration_minutes / 60) * 1000) / 1000 : 1;
+    const { error } = await supabase.rpc('add_invoice_line', {
+      p_invoice_id: invoiceId,
+      p_description: [job.title, job.title.includes(job.object_name) ? null : job.object_name, formatDate('de', job.scheduled_date)].filter(Boolean).join(' · ').slice(0, 500),
+      p_quantity: hours,
+      p_unit: job.duration_minutes > 0 ? 'Std' : 'Einsatz',
+      p_unit_price_cents: job.suggested_unit_price_cents!,
+      p_vat_rate_basis_points: job.suggested_vat_rate_basis_points ?? 1900,
+      p_job_id: job.job_id,
+      p_service_schedule_id: job.service_schedule_id,
+      p_cleaning_object_id: job.object_id,
+    });
+    if (!error) added += 1;
+  }
+  revalidateBilling(invoiceId);
+  const skipped = jobs.length - added;
+  return {
+    status: added > 0 ? 'success' : 'error',
+    message:
+      added > 0
+        ? `${added} Einsätze übernommen${skipped ? `, ${skipped} ohne hinterlegten Preis bitte einzeln erfassen` : ''}.`
+        : 'Es konnten keine Einsätze übernommen werden.',
+  };
 }

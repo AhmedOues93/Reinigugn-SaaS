@@ -26,7 +26,7 @@ export function PortalAccessPanel({
   return (
     <Card className="mt-5 p-5">
       <h2 className="font-semibold">Kundenportal-Zugang</h2>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-muted-foreground">
         Eingeladene Ansprechpersonen sehen ausschließlich die Objekte, Termine, Leistungsnachweise und Rechnungen dieses Kunden.
       </p>
 
@@ -36,15 +36,15 @@ export function PortalAccessPanel({
             <li key={contact.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
               <div className="min-w-0">
                 <p className="truncate font-medium">{[contact.firstName, contact.lastName].filter(Boolean).join(' ') || contact.email}</p>
-                <p className="mt-0.5 truncate text-sm text-slate-600">{contact.email}</p>
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">{contact.email}</p>
               </div>
               <span className="inline-flex shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">Aktiv</span>
             </li>
           ))}
           {invitations.map((invitation) => (
             <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
-              <p className="min-w-0 truncate text-sm text-slate-700">{invitation.email}</p>
-              <span className="inline-flex shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900">
+              <p className="min-w-0 truncate text-sm text-muted-foreground">{invitation.email}</p>
+              <span className="inline-flex shrink-0 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning">
                 Eingeladen
               </span>
             </li>
@@ -55,7 +55,7 @@ export function PortalAccessPanel({
       <form action={formAction} className="mt-5 space-y-4">
         <FormMessage status={state.status} message={state.message} />
         {state.invitationUrl && (
-          <p className="break-all rounded-md bg-slate-50 p-3 text-xs text-slate-700">{state.invitationUrl}</p>
+          <p className="break-all rounded-md bg-muted p-3 text-xs text-muted-foreground">{state.invitationUrl}</p>
         )}
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="text-sm font-medium">

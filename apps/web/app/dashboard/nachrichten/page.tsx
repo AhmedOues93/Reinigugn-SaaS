@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Bell, ChevronRight, MessagesSquare } from 'lucide-react';
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui';
+import { SubmitButton } from '@/components/form-controls';
 import { getCurrentCompany } from '@/lib/auth';
 import { listMyThreads } from '@/lib/data/employee';
 import { markNotificationRead } from './actions';
@@ -77,9 +78,9 @@ export default async function StaffMessagesPage() {
                 <p className="mt-2 text-xs text-muted-foreground">{formatTime(item.created_at)}</p>
                 {!item.read_at && (
                   <form className="mt-3" action={markNotificationRead.bind(null, item.id)}>
-                    <button className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline">
+                    <SubmitButton variant="ghost" size="sm">
                       Als gelesen markieren
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
               </article>

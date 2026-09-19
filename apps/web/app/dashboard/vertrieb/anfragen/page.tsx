@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { Plus, Sparkles } from 'lucide-react';
-import { Badge, Button, Card, EmptyState, PageHeader } from '@/components/ui';
+import { Inbox, Plus } from 'lucide-react';
+import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
+import { DataTable } from '@/components/data-table';
 import { leadStatusTone, listLeads, type LeadStatus } from '@/lib/data/sales';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -8,10 +8,13 @@ import { currentLocale } from '@/lib/i18n-server';
 
 const filters: (LeadStatus | 'all')[] = ['all', 'NEW', 'CONTACTED', 'SURVEY_BOOKED', 'QUOTED', 'WON', 'LOST'];
 
+type Lead = Awaited<ReturnType<typeof listLeads>>[number];
+
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { status } = await searchParams;
   const active = (filters as string[]).includes(status ?? '') ? (status as LeadStatus | 'all') : 'all';
-  const [locale, leads] = await Promise.all([currentLocale(), listLeads(active)]);
+  const [locale, all] = await Promise.all([currentLocale(), listLeads('all')]);
+  const leads = active === 'all' ? all : all.filter((lead) => lead.status === active);
 
   return (
     <>
@@ -19,61 +22,42 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         title={t(locale, 'sales.leads.title')}
         description={t(locale, 'sales.leads.subtitle')}
         actions={
-          <Link href="/dashboard/vertrieb/anfragen/neu">
-            <Button>
-              <Plus className="size-4" aria-hidden="true" />
-              {t(locale, 'sales.leads.new')}
-            </Button>
-          </Link>
+          <ButtonLink href="/dashboard/vertrieb/anfragen/neu">
+            <Plus className="size-4" aria-hidden="true" />
+            {t(locale, 'sales.leads.new')}
+          </ButtonLink>
         }
       />
-
-      <nav className="mb-5 flex flex-wrap gap-2" aria-label={t(locale, 'common.status')}>
-        {filters.map((filter) => (
-          <Link
-            key={filter}
-            href={filter === 'all' ? '/dashboard/vertrieb/anfragen' : `/dashboard/vertrieb/anfragen?status=${filter}`}
-            aria-current={active === filter ? 'page' : undefined}
-            className={`inline-flex min-h-touch items-center rounded-md border px-3 text-sm font-medium transition-colors ${
-              active === filter ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card hover:bg-muted'
-            }`}
-          >
-            {filter === 'all' ? t(locale, 'sales.leads.title') : t(locale, `sales.status.${filter}`)}
-          </Link>
-        ))}
-      </nav>
-
-      {leads.length === 0 ? (
-        <EmptyState
-          icon={<Sparkles className="size-5" />}
-          title={t(locale, 'sales.leads.empty')}
-          body={t(locale, 'sales.leads.emptyBody')}
-        />
-      ) : (
-        <Card className="overflow-hidden">
-          <ul className="divide-y divide-border">
-            {leads.map((lead) => (
-              <li key={lead.id}>
-                <Link
-                  href={`/dashboard/vertrieb/anfragen/${lead.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{lead.organisation}</p>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {[lead.contact_person, lead.city, lead.source].filter(Boolean).join(' · ') || '—'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">{formatDate(locale, lead.created_at)}</span>
-                    <Badge tone={leadStatusTone[lead.status as LeadStatus]}>{t(locale, `sales.status.${lead.status}`)}</Badge>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      <FilterTabs
+        className="mb-4"
+        label={t(locale, 'common.status')}
+        items={filters.map((filter) => ({
+          href: filter === 'all' ? '/dashboard/vertrieb/anfragen' : `/dashboard/vertrieb/anfragen?status=${filter}`,
+          label: filter === 'all' ? 'Alle' : t(locale, `sales.status.${filter}`),
+          active: active === filter,
+          count: filter === 'all' ? all.length : all.filter((lead) => lead.status === filter).length,
+        }))}
+      />
+      <DataTable<Lead>
+        caption={t(locale, 'sales.leads.title')}
+        rows={leads}
+        rowKey={(lead) => lead.id}
+        rowHref={(lead) => `/dashboard/vertrieb/anfragen/${lead.id}`}
+        columns={[
+          { key: 'org', header: 'Organisation', mobile: 'title', cell: (lead) => lead.organisation },
+          { key: 'contact', header: 'Ansprechperson', mobile: 'subtitle', cell: (lead) => lead.contact_person || '—' },
+          { key: 'city', header: 'Ort', cell: (lead) => lead.city || '—' },
+          { key: 'source', header: 'Quelle', hideBelow: 'lg', cell: (lead) => lead.source || '—' },
+          { key: 'created', header: 'Eingang', cell: (lead) => <span className="tabular-nums">{formatDate(locale, lead.created_at)}</span> },
+          {
+            key: 'status',
+            header: 'Status',
+            mobile: 'status',
+            cell: (lead) => <Badge tone={leadStatusTone[lead.status as LeadStatus]}>{t(locale, `sales.status.${lead.status}`)}</Badge>,
+          },
+        ]}
+        empty={<EmptyState icon={<Inbox />} title={t(locale, 'sales.leads.empty')} body={t(locale, 'sales.leads.emptyBody')} />}
+      />
     </>
   );
 }

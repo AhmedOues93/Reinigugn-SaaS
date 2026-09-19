@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { FileSignature } from 'lucide-react';
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
+import { FileSignature, Plus } from 'lucide-react';
+import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
+import { DataTable } from '@/components/data-table';
 import { listQuotes, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
 import { formatDate, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -12,76 +12,86 @@ function first<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
+type Quote = Awaited<ReturnType<typeof listQuotes>>[number];
+
 export default async function QuotesPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { status } = await searchParams;
   const active = (filters as string[]).includes(status ?? '') ? (status as QuoteStatus | 'all') : 'all';
-  const [locale, quotes] = await Promise.all([currentLocale(), listQuotes(active)]);
+  const [locale, all] = await Promise.all([currentLocale(), listQuotes('all')]);
+  const quotes = active === 'all' ? all : all.filter((quote) => quote.status === active);
 
   return (
     <>
-      <PageHeader title={t(locale, 'sales.quotes.title')} />
-
-      <nav className="mb-5 flex flex-wrap gap-2" aria-label={t(locale, 'common.status')}>
-        {filters.map((filter) => (
-          <Link
-            key={filter}
-            href={filter === 'all' ? '/dashboard/vertrieb/angebote' : `/dashboard/vertrieb/angebote?status=${filter}`}
-            aria-current={active === filter ? 'page' : undefined}
-            className={`inline-flex min-h-touch items-center rounded-md border px-3 text-sm font-medium transition-colors ${
-              active === filter ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card hover:bg-muted'
-            }`}
-          >
-            {filter === 'all' ? t(locale, 'sales.quotes.title') : t(locale, `sales.quote.status.${filter}`)}
-          </Link>
-        ))}
-      </nav>
-
-      {quotes.length === 0 ? (
-        <EmptyState
-          icon={<FileSignature className="size-5" />}
-          title={t(locale, 'sales.quote.empty')}
-          body={t(locale, 'sales.quote.emptyBody')}
-        />
-      ) : (
-        <Card className="overflow-hidden">
-          <ul className="divide-y divide-border">
-            {quotes.map((quote) => {
-              const owner = first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—';
-              return (
-                <li key={quote.id}>
-                  <Link
-                    href={`/dashboard/vertrieb/angebote/${quote.id}`}
-                    className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">
-                        {quote.quote_number ?? t(locale, 'billing.draft')} · {owner}
-                      </p>
-                      <p className="mt-1 truncate text-sm text-muted-foreground">
-                        {quote.title}
-                        {quote.valid_until && ` · ${t(locale, 'sales.quote.validUntil')} ${formatDate(locale, quote.valid_until)}`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-end">
-                        <p className="font-semibold tabular-nums">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</p>
-                        {quote.recurring_net_monthly_cents > 0 && (
-                          <p className="text-xs text-muted-foreground tabular-nums">
-                            {formatMoney(locale, quote.recurring_net_monthly_cents, quote.currency)} / {t(locale, 'sales.quote.monthly')}
-                          </p>
-                        )}
-                      </div>
-                      <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
-                        {t(locale, `sales.quote.status.${quote.status}`)}
-                      </Badge>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      )}
+      <PageHeader
+        title={t(locale, 'sales.quotes.title')}
+        description="Angebote entstehen aus einer Besichtigung. Ein angenommenes Angebot legt Kunde, Objekt und Reinigungsplan an."
+        actions={
+          <ButtonLink href="/dashboard/vertrieb/besichtigungen" variant="outline">
+            <Plus className="size-4" aria-hidden="true" />
+            Aus Besichtigung erstellen
+          </ButtonLink>
+        }
+      />
+      <FilterTabs
+        className="mb-4"
+        label={t(locale, 'common.status')}
+        items={filters.map((filter) => ({
+          href: filter === 'all' ? '/dashboard/vertrieb/angebote' : `/dashboard/vertrieb/angebote?status=${filter}`,
+          label: filter === 'all' ? 'Alle' : t(locale, `sales.quote.status.${filter}`),
+          active: active === filter,
+          count: filter === 'all' ? all.length : all.filter((quote) => quote.status === filter).length,
+        }))}
+      />
+      <DataTable<Quote>
+        caption={t(locale, 'sales.quotes.title')}
+        rows={quotes}
+        rowKey={(quote) => quote.id}
+        rowHref={(quote) => `/dashboard/vertrieb/angebote/${quote.id}`}
+        columns={[
+          {
+            key: 'owner',
+            header: 'Kunde / Interessent',
+            mobile: 'title',
+            cell: (quote) => first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—',
+          },
+          {
+            key: 'title',
+            header: 'Angebot',
+            mobile: 'subtitle',
+            cell: (quote) => (
+              <span className="block min-w-0">
+                <span className="block truncate">{quote.title}</span>
+                <span className="block text-xs tabular-nums">{quote.quote_number ?? 'Entwurf'}</span>
+              </span>
+            ),
+          },
+          {
+            key: 'valid',
+            header: t(locale, 'sales.quote.validUntil'),
+            hideBelow: 'lg',
+            cell: (quote) => (quote.valid_until ? <span className="tabular-nums">{formatDate(locale, quote.valid_until)}</span> : '—'),
+          },
+          {
+            key: 'monthly',
+            header: 'Monatlich netto',
+            align: 'end',
+            cell: (quote) => (quote.recurring_net_monthly_cents > 0 ? formatMoney(locale, quote.recurring_net_monthly_cents, quote.currency) : '—'),
+          },
+          {
+            key: 'gross',
+            header: 'Brutto',
+            align: 'end',
+            cell: (quote) => <span className="font-semibold text-foreground">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</span>,
+          },
+          {
+            key: 'status',
+            header: 'Status',
+            mobile: 'status',
+            cell: (quote) => <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>{t(locale, `sales.quote.status.${quote.status}`)}</Badge>,
+          },
+        ]}
+        empty={<EmptyState icon={<FileSignature />} title={t(locale, 'sales.quote.empty')} body={t(locale, 'sales.quote.emptyBody')} />}
+      />
     </>
   );
 }

@@ -1,17 +1,94 @@
-import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Users } from 'lucide-react';
 import { listCustomers, type StatusFilter } from '@/lib/data/customers';
-import { Button, Card, Input } from '@/components/ui';
+import { ButtonLink, Button, EmptyState, Input, PageHeader, Select } from '@/components/ui';
+import { DataTable, FilterBar } from '@/components/data-table';
 import { StatusBadge } from '@/components/status-badge';
 
-function statusFilter(value?: string): StatusFilter { return value === 'all' || value === 'inactive' ? value : 'active'; }
+function statusFilter(value?: string): StatusFilter {
+  return value === 'all' || value === 'inactive' ? value : 'active';
+}
+
+type Customer = Awaited<ReturnType<typeof listCustomers>>[number];
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string }> }) {
   const query = await searchParams;
   const status = statusFilter(query.status);
   const customers = await listCustomers({ search: query.search, status });
-  return <div className="mx-auto max-w-6xl"><div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl font-semibold tracking-tight">Kunden</h1><p className="mt-2 text-slate-600">Verwalte deine Kunden und ihre Reinigungsobjekte.</p></div><Link href="/dashboard/kunden/neu"><Button><Plus className="mr-2 size-4" />Kunde anlegen</Button></Link></div>
-    <Card className="overflow-hidden"><form className="flex flex-col gap-3 border-b p-4 sm:flex-row"><div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-slate-400" /><Input className="pl-9" name="search" defaultValue={query.search ?? ''} placeholder="Name, Ort oder Ansprechperson suchen" /></div><select name="status" defaultValue={status} className="min-h-touch rounded-md border bg-white px-3 text-sm"><option value="active">Aktive Kunden</option><option value="inactive">Archivierte Kunden</option><option value="all">Alle Kunden</option></select><Button type="submit" variant="outline">Filtern</Button></form>
-      {customers.length === 0 ? <div className="p-10 text-center"><p className="font-medium">Sie haben noch keine Kunden angelegt.</p><p className="mt-2 text-sm text-slate-600">Lege deinen ersten Kunden an, um Reinigungsobjekte zuzuordnen.</p><Link className="mt-5 inline-flex" href="/dashboard/kunden/neu"><Button>Kunde anlegen</Button></Link></div> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3 font-medium">Kunde</th><th className="px-5 py-3 font-medium">Ansprechperson</th><th className="px-5 py-3 font-medium">Telefon</th><th className="px-5 py-3 font-medium">Ort</th><th className="px-5 py-3 font-medium">Objekte</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3" /></tr></thead><tbody className="divide-y">{customers.map((customer) => <tr key={customer.id} className="hover:bg-slate-50"><td className="px-5 py-4"><Link className="inline-flex min-h-touch items-center font-medium text-foreground hover:text-primary" href={`/dashboard/kunden/${customer.id}`}>{customer.name}</Link>{customer.customer_number && <p className="mt-0.5 text-xs text-slate-500">{customer.customer_number}</p>}</td><td className="px-5 py-4 text-slate-600">{customer.contact_person || '—'}</td><td className="px-5 py-4 text-slate-600">{customer.phone || '—'}</td><td className="px-5 py-4 text-slate-600">{customer.city || '—'}</td><td className="px-5 py-4 text-slate-600">{customer.cleaning_objects?.[0]?.count ?? 0}</td><td className="px-5 py-4"><StatusBadge isActive={customer.is_active} /></td><td className="px-5 py-4 text-right"><Link className="inline-flex min-h-touch items-center font-medium text-primary hover:underline" href={`/dashboard/kunden/${customer.id}/bearbeiten`}>Bearbeiten</Link></td></tr>)}</tbody></table></div>}</Card>
-  </div>;
+  const filtered = Boolean(query.search) || status !== 'active';
+
+  return (
+    <>
+      <PageHeader
+        title="Kunden"
+        description="Auftraggeber mit ihren Objekten, Ansprechpersonen und Rechnungsdaten."
+        actions={
+          <ButtonLink href="/dashboard/kunden/neu">
+            <Plus className="size-4" aria-hidden="true" />
+            Kunde anlegen
+          </ButtonLink>
+        }
+      />
+
+      <FilterBar>
+        <div className="relative sm:col-span-2 md:min-w-[18rem]">
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input className="ps-9" name="search" defaultValue={query.search ?? ''} placeholder="Name, Ort oder Ansprechperson" aria-label="Kunden durchsuchen" />
+        </div>
+        <Select name="status" defaultValue={status} aria-label="Status" className="md:max-w-[12rem]">
+          <option value="active">Aktive Kunden</option>
+          <option value="inactive">Archivierte Kunden</option>
+          <option value="all">Alle Kunden</option>
+        </Select>
+        <Button type="submit" variant="outline">
+          Anwenden
+        </Button>
+      </FilterBar>
+
+      <DataTable<Customer>
+        caption="Kunden"
+        rows={customers}
+        rowKey={(customer) => customer.id}
+        rowHref={(customer) => `/dashboard/kunden/${customer.id}`}
+        columns={[
+          {
+            key: 'name',
+            header: 'Kunde',
+            mobile: 'title',
+            cell: (customer) => (
+              <span className="block min-w-0">
+                <span className="block">{customer.name}</span>
+                {customer.customer_number && (
+                  <span className="block text-xs font-normal tabular-nums text-muted-foreground">{customer.customer_number}</span>
+                )}
+              </span>
+            ),
+          },
+          { key: 'contact', header: 'Ansprechperson', cell: (customer) => customer.contact_person || '—' },
+          { key: 'phone', header: 'Telefon', hideBelow: 'lg', cell: (customer) => customer.phone || '—' },
+          { key: 'city', header: 'Ort', mobile: 'subtitle', cell: (customer) => customer.city || '—' },
+          { key: 'objects', header: 'Objekte', align: 'end', cell: (customer) => customer.cleaning_objects?.[0]?.count ?? 0 },
+          { key: 'status', header: 'Status', mobile: 'status', cell: (customer) => <StatusBadge isActive={customer.is_active} /> },
+        ]}
+        empty={
+          <EmptyState
+            icon={<Users />}
+            title={filtered ? 'Keine passenden Kunden' : 'Noch keine Kunden'}
+            body={
+              filtered
+                ? 'Passen Sie Suche oder Status an.'
+                : 'Kunden entstehen automatisch aus angenommenen Angeboten – oder Sie legen sie direkt an.'
+            }
+            action={
+              !filtered && (
+                <ButtonLink href="/dashboard/kunden/neu">
+                  <Plus className="size-4" aria-hidden="true" />
+                  Kunde anlegen
+                </ButtonLink>
+              )
+            }
+          />
+        }
+      />
+    </>
+  );
 }

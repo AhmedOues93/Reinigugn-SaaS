@@ -4,7 +4,7 @@ import { getCurrentCompany } from '@/lib/auth';
 import { landingPathForRole } from '@/lib/landing';
 import { AuthMessage } from '@/components/auth-message';
 import { AuthShell } from '@/components/auth-shell';
-import { Button, Field, Input } from '@/components/ui';
+import { AuthField, AuthForm, AuthSubmit } from '@/components/auth-form';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
 
@@ -15,15 +15,11 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
 
   return (
     <AuthShell locale={locale} title={t(locale, 'auth.onboardingTitle')} description={t(locale, 'auth.onboardingSubtitle')}>
-      <form action={createCompany} className="space-y-5">
+      <AuthForm action={createCompany} locale={locale}>
         <AuthMessage error={error} />
-        <Field label={t(locale, 'auth.companyName')} htmlFor="name">
-          <Input id="name" name="name" autoComplete="organization" maxLength={120} required />
-        </Field>
-        <Button size="block" type="submit">
-          {t(locale, 'auth.createCompany')}
-        </Button>
-      </form>
+        <AuthField name="name" rule="required" autoComplete="organization" label={t(locale, 'auth.companyName')} locale={locale} />
+        <AuthSubmit pendingLabel={t(locale, 'auth.working')}>{t(locale, 'auth.createCompany')}</AuthSubmit>
+      </AuthForm>
     </AuthShell>
   );
 }

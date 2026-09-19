@@ -11,6 +11,7 @@ export type PortalInvoice = {
   currency: string;
   gross_total_cents: number;
   is_overdue: boolean;
+  paid_at: string | null;
 };
 
 export async function listPortalInvoices(): Promise<PortalInvoice[]> {

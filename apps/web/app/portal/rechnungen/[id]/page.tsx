@@ -1,15 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Download } from 'lucide-react';
+import { buttonVariants } from '@/components/ui';
+import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
 import {
   InvoiceDocument,
   InvoicePrintStyles,
   type InvoiceDocumentData,
 } from '@/components/billing/invoice-document';
-import { PrintButton } from '@/components/billing/print-button';
 import { portalBranding, portalLocale } from '@/lib/data/portal';
 import { getPortalInvoice } from '@/lib/data/portal-invoices';
 import { t } from '@/lib/i18n';
+import { berlinDateKey } from '@/lib/date';
 
 export default async function PortalInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,15 +43,21 @@ export default async function PortalInvoicePage({ params }: { params: Promise<{ 
   return (
     <>
       <InvoicePrintStyles />
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href="/portal/rechnungen"
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-slate-600"
+          className="-ms-2 inline-flex min-h-touch items-center gap-1 rounded-lg px-2 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-          {t(locale, 'common.back')}
+          {t(locale, 'portal.invoice.allTitle')}
         </Link>
-        <PrintButton locale={locale} />
+        <div className="flex flex-wrap items-center gap-2">
+          <InvoiceStatusBadge status={invoice.status === 'ISSUED' && invoice.due_date < berlinDateKey() ? 'OVERDUE' : invoice.status} locale={locale} />
+          <a href={`/portal/rechnungen/${invoice.id}/pdf`} className={buttonVariants()}>
+            <Download className="size-4" aria-hidden="true" />
+            {t(locale, 'portal.invoice.download')}
+          </a>
+        </div>
       </div>
       <InvoiceDocument data={data} locale={locale} logoUrl={branding?.logoUrl ?? null} />
     </>

@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Input } from '@/components/ui';
+import { Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { formatMoney, formatPercent } from '@/lib/format';
 import { t, type Locale } from '@/lib/i18n';
@@ -56,66 +56,50 @@ export function InvoiceLineEditor({
 
   return (
     <div className="space-y-6">
-      {lines.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-sm">
-            <caption className="sr-only">{t(locale, 'billing.lines')}</caption>
-            <thead>
-              <tr className="border-b text-start text-xs uppercase tracking-wide text-slate-500">
-                <th className="py-2 text-start font-medium">{t(locale, 'common.note')}</th>
-                <th className="py-2 text-end font-medium">{t(locale, 'billing.quantity')}</th>
-                <th className="py-2 text-end font-medium">{t(locale, 'billing.unitPrice')}</th>
-                <th className="py-2 text-end font-medium">{t(locale, 'billing.vatRate')}</th>
-                <th className="py-2 text-end font-medium">{t(locale, 'billing.net')}</th>
-                <th className="py-2" />
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {lines.map((line) => (
-                <tr key={line.id}>
-                  <td className="py-3 pe-3">{line.description}</td>
-                  <td className="py-3 text-end tabular-nums">
-                    {line.quantity} {line.unit}
-                  </td>
-                  <td className="py-3 text-end tabular-nums">
-                    {formatMoney(locale, line.unit_price_cents, currency)}
-                  </td>
-                  <td className="py-3 text-end tabular-nums">
-                    {formatPercent(locale, line.vat_rate_basis_points)}
-                  </td>
-                  <td className="py-3 text-end font-medium tabular-nums">
-                    {formatMoney(locale, line.net_amount_cents, currency)}
-                  </td>
-                  <td className="py-3 ps-3 text-end">
-                    <form
-                      action={async () => {
-                        await removeAction(line.id);
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        className="grid min-h-11 min-w-11 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-red-600"
-                        aria-label={`${t(locale, 'common.cancel')}: ${line.description}`}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ul className={lines.length ? 'space-y-2' : 'hidden'}>
+        {lines.map((line) => (
+          <li key={line.id} className="rounded-lg border border-border/80 bg-card p-3.5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-anywhere font-medium">{line.description}</p>
+                <span className="mt-1.5 block text-sm text-muted-foreground tabular-nums">
+                  {line.quantity} {line.unit} × {formatMoney(locale, line.unit_price_cents, currency)} ·{' '}
+                  {formatPercent(locale, line.vat_rate_basis_points)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-semibold tabular-nums">{formatMoney(locale, line.net_amount_cents, currency)}</span>
+                <form
+                  action={async () => {
+                    await removeAction(line.id);
+                  }}
+                >
+                  <button
+                    type="submit"
+                    aria-label={`Position entfernen: ${line.description}`}
+                    className="grid min-h-touch min-w-touch place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </button>
+                </form>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
 
-      <form action={formAction} className="space-y-4 rounded-md border bg-slate-50 p-4">
+      <form action={formAction} className="space-y-4 rounded-xl border border-dashed border-foreground/15 bg-subtle p-4">
         <FormMessage status={state.status} message={state.message} />
 
         {billableJobs.length > 0 && (
-          <label className="block text-sm font-medium">
-            {t(locale, 'emp.tab.schedule')}
-            <select
-              className="mt-1.5 min-h-touch w-full rounded-md border bg-white px-3 text-sm"
+          <Field
+            label="Einsatz übernehmen"
+            htmlFor="line-job"
+            optional
+            info="Nur abgeschlossene, noch nicht abgerechnete Einsätze im Leistungszeitraum. Beschreibung, Stunden und vereinbarter Preis werden vorausgefüllt."
+          >
+            <Select
+              id="line-job"
               name="job_id"
               defaultValue=""
               onChange={(event) => {
@@ -127,7 +111,7 @@ export function InvoiceLineEditor({
                   if (field instanceof HTMLInputElement) field.value = value;
                 };
                 if (!job) return;
-                set('description', `${job.title} · ${job.object_name}`);
+                set('description', job.title.includes(job.object_name) ? `${job.title} · ${job.scheduled_date}` : `${job.title} · ${job.object_name}`);
                 if (job.duration_minutes > 0)
                   set('quantity', (job.duration_minutes / 60).toFixed(2));
                 if (job.suggested_unit_price_cents)
@@ -147,26 +131,21 @@ export function InvoiceLineEditor({
                   {job.scheduled_date} · {job.object_name} · {job.title}
                 </option>
               ))}
-            </select>
-            <span className="mt-1 block text-xs font-normal text-slate-500">
-              Nur abgeschlossene, noch nicht abgerechnete Einsätze im Leistungszeitraum.
-            </span>
-          </label>
+            </Select>
+          </Field>
         )}
 
         <input type="hidden" name="cleaning_object_id" />
         <input type="hidden" name="service_schedule_id" />
 
-        <label className="block text-sm font-medium">
-          {t(locale, 'common.note')}
-          <Input className="mt-1.5" name="description" maxLength={500} required />
-        </label>
+        <Field label="Beschreibung" htmlFor="line-description">
+          <Input id="line-description" name="description" maxLength={500} required />
+        </Field>
 
         <div className="grid gap-4 sm:grid-cols-4">
-          <label className="text-sm font-medium">
-            {t(locale, 'billing.quantity')}
+          <Field label={t(locale, 'billing.quantity')} htmlFor="line-quantity">
             <Input
-              className="mt-1.5"
+              id="line-quantity"
               name="quantity"
               type="number"
               step="0.001"
@@ -174,26 +153,16 @@ export function InvoiceLineEditor({
               defaultValue="1"
               required
             />
-          </label>
-          <label className="text-sm font-medium">
-            Einheit
-            <Input className="mt-1.5" name="unit" defaultValue="Std" maxLength={20} />
-          </label>
-          <label className="text-sm font-medium">
-            {t(locale, 'billing.unitPrice')}
+          </Field>
+          <Field label="Einheit" htmlFor="line-unit">
+            <Input id="line-unit" name="unit" defaultValue="Std" maxLength={20} />
+          </Field>
+          <Field label={t(locale, 'billing.unitPrice')} htmlFor="line-price">
+            <Input id="line-price" name="unit_price" type="number" step="0.01" min="0" required />
+          </Field>
+          <Field label={`${t(locale, 'billing.vatRate')} %`} htmlFor="line-vat" info="Regelsatz 19 %. Für steuerfreie oder abweichende Leistungen den Satz anpassen; die Beträge berechnet die Datenbank.">
             <Input
-              className="mt-1.5"
-              name="unit_price"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-            />
-          </label>
-          <label className="text-sm font-medium">
-            {t(locale, 'billing.vatRate')} %
-            <Input
-              className="mt-1.5"
+              id="line-vat"
               name="vat_rate"
               type="number"
               step="0.01"
@@ -202,10 +171,12 @@ export function InvoiceLineEditor({
               defaultValue="19"
               required
             />
-          </label>
+          </Field>
         </div>
 
-        <SubmitButton locale={locale}>{t(locale, 'billing.lines')}</SubmitButton>
+        <SubmitButton locale={locale} variant="outline">
+          Position hinzufügen
+        </SubmitButton>
       </form>
     </div>
   );

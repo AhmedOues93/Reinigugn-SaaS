@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { type FormState, initialFormState } from '@/lib/actions';
-import { Button, Input } from '@/components/ui';
+import { Button, Field, Input, Select } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
 type EmployeeRecord = { id?: string; role?: 'OFFICE' | 'EMPLOYEE'; invited_first_name?: string | null; invited_last_name?: string | null; invited_phone?: string | null; invited_email?: string | null; profiles?: { first_name?: string | null; last_name?: string | null; phone?: string | null } | { first_name?: string | null; last_name?: string | null; phone?: string | null }[] | null; employee_details?: { employee_number?: string | null; weekly_hours?: number | null; employment_start_date?: string | null; employment_end_date?: string | null; employment_type?: string | null; preferred_language?: string | null; notes?: string | null }[] | null; };
@@ -17,9 +17,82 @@ export function EmployeeForm({ employee, action, submitLabel, currentRole, invit
   const router = useRouter(); const profile = profileFor(employee); const details = employee?.employee_details?.[0];
   useEffect(() => { if (state.status === 'success' && state.id && !state.invitationUrl) router.push(`/dashboard/mitarbeiter/${state.id}?success=${encodeURIComponent(invitation ? 'Einladung wurde erstellt.' : 'Mitarbeiter wurde gespeichert.')}`); }, [router, state, invitation]);
   return <form action={formAction} className="space-y-7"><FormMessage status={state.status} message={state.message} />
-    <section className="grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium">Vorname <span className="text-red-700">*</span><Input className="mt-1.5" name="first_name" defaultValue={profile?.first_name ?? employee?.invited_first_name ?? ''} required maxLength={120} /></label><label className="block text-sm font-medium">Nachname <span className="text-red-700">*</span><Input className="mt-1.5" name="last_name" defaultValue={profile?.last_name ?? employee?.invited_last_name ?? ''} required maxLength={120} /></label>{invitation ? <label className="block text-sm font-medium sm:col-span-2">E-Mail-Adresse <span className="text-red-700">*</span><Input className="mt-1.5" name="email" type="email" required maxLength={254} /></label> : <label className="block text-sm font-medium sm:col-span-2">E-Mail-Adresse<Input className="mt-1.5 bg-slate-50" value={employee?.invited_email ?? ''} readOnly /></label>}<label className="block text-sm font-medium">Telefon<Input className="mt-1.5" name="phone" type="tel" defaultValue={profile?.phone ?? employee?.invited_phone ?? ''} maxLength={64} /></label><label className="block text-sm font-medium">Rolle <select className="mt-1.5 flex min-h-touch w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" name="role" defaultValue={employee?.role ?? 'EMPLOYEE'}><option value="EMPLOYEE">Mitarbeiter</option>{currentRole === 'OWNER' && <option value="OFFICE">Büro</option>}</select></label></section>
-    <section className="border-t pt-6"><h2 className="font-semibold">Beschäftigung</h2><div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="block text-sm font-medium">Personalnummer<Input className="mt-1.5" name="employee_number" defaultValue={details?.employee_number ?? ''} placeholder="Automatisch, z. B. M-0001" maxLength={64} /><span className="mt-1 block text-xs text-slate-500">Optional – wird automatisch vergeben, wenn leer.</span></label><label className="block text-sm font-medium">Wochen-Sollstunden<Input className="mt-1.5" name="weekly_hours" type="number" min="0" max="168" step="0.25" defaultValue={details?.weekly_hours ?? ''} /></label><label className="block text-sm font-medium">Beschäftigungsart<select className="mt-1.5 flex min-h-touch w-full rounded-md border bg-white px-3 py-2 text-sm" name="employment_type" defaultValue={details?.employment_type ?? ''}><option value="">Nicht angegeben</option><option value="FULL_TIME">Vollzeit</option><option value="PART_TIME">Teilzeit</option><option value="MINIJOB">Minijob</option><option value="OTHER">Sonstige</option></select></label><label className="block text-sm font-medium">Bevorzugte Sprache<select className="mt-1.5 flex min-h-touch w-full rounded-md border bg-white px-3 py-2 text-sm" name="preferred_language" defaultValue={details?.preferred_language ?? 'de'}><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ar">Arabisch</option><option value="tr">Türkisch</option><option value="uk">Ukrainisch</option></select></label><label className="block text-sm font-medium">Eintrittsdatum<Input className="mt-1.5" name="employment_start_date" type="date" defaultValue={details?.employment_start_date ?? ''} /></label><label className="block text-sm font-medium">Austrittsdatum<Input className="mt-1.5" name="employment_end_date" type="date" defaultValue={details?.employment_end_date ?? ''} /></label></div><label className="mt-5 block text-sm font-medium">Interne Notiz<textarea className="mt-1.5 flex h-28 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary" name="notes" defaultValue={details?.notes ?? ''} maxLength={4000} /></label></section>
-    {state.invitationUrl && <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-900"><p className="font-medium">Lokaler Einladungslink</p><a className="mt-2 block break-all text-primary underline" href={state.invitationUrl}>{state.invitationUrl}</a>{state.id && <Link className="mt-3 inline-block font-medium text-primary underline" href={`/dashboard/mitarbeiter/${state.id}`}>Zur Mitarbeiteransicht</Link>}</div>}
+    <section className="grid gap-5 sm:grid-cols-2">
+      <Field label={<>Vorname <span className="text-danger">*</span></>} htmlFor="first_name">
+        <Input id="first_name" name="first_name" defaultValue={profile?.first_name ?? employee?.invited_first_name ?? ''} required maxLength={120} />
+      </Field>
+      <Field label={<>Nachname <span className="text-danger">*</span></>} htmlFor="last_name">
+        <Input id="last_name" name="last_name" defaultValue={profile?.last_name ?? employee?.invited_last_name ?? ''} required maxLength={120} />
+      </Field>
+      {invitation ? (
+        <Field label={<>E-Mail-Adresse <span className="text-danger">*</span></>} htmlFor="email" className="sm:col-span-2">
+          <Input id="email" name="email" type="email" required maxLength={254} />
+        </Field>
+      ) : (
+        <Field label="E-Mail-Adresse" htmlFor="email-readonly" className="sm:col-span-2">
+          <Input id="email-readonly" className="bg-muted" value={employee?.invited_email ?? ''} readOnly />
+        </Field>
+      )}
+      <Field label="Telefon" htmlFor="phone">
+        <Input id="phone" name="phone" type="tel" defaultValue={profile?.phone ?? employee?.invited_phone ?? ''} maxLength={64} />
+      </Field>
+      <Field label="Rolle" htmlFor="role">
+        <Select id="role" name="role" defaultValue={employee?.role ?? 'EMPLOYEE'}>
+          <option value="EMPLOYEE">Mitarbeiter</option>
+          {currentRole === 'OWNER' && <option value="OFFICE">Büro</option>}
+        </Select>
+      </Field>
+    </section>
+    <section className="border-t pt-6">
+      <h2 className="font-semibold">Beschäftigung</h2>
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <Field
+          label="Personalnummer"
+          htmlFor="employee_number"
+          optional info="Wird automatisch vergeben, wenn Sie das Feld leer lassen."
+        >
+          <Input id="employee_number" name="employee_number" defaultValue={details?.employee_number ?? ''} placeholder="Automatisch, z. B. M-0001" maxLength={64} />
+        </Field>
+        <Field label="Wochen-Sollstunden" htmlFor="weekly_hours">
+          <Input id="weekly_hours" name="weekly_hours" type="number" min="0" max="168" step="0.25" defaultValue={details?.weekly_hours ?? ''} />
+        </Field>
+        <Field label="Beschäftigungsart" htmlFor="employment_type">
+          <Select id="employment_type" name="employment_type" defaultValue={details?.employment_type ?? ''}>
+            <option value="">Nicht angegeben</option>
+            <option value="FULL_TIME">Vollzeit</option>
+            <option value="PART_TIME">Teilzeit</option>
+            <option value="MINIJOB">Minijob</option>
+            <option value="OTHER">Sonstige</option>
+          </Select>
+        </Field>
+        <Field label="Bevorzugte Sprache" htmlFor="preferred_language">
+          <Select id="preferred_language" name="preferred_language" defaultValue={details?.preferred_language ?? 'de'}>
+            <option value="de">Deutsch</option>
+            <option value="en">Englisch</option>
+            <option value="ar">Arabisch</option>
+            <option value="tr">Türkisch</option>
+            <option value="uk">Ukrainisch</option>
+            <option value="ru">Russisch</option>
+          </Select>
+        </Field>
+        <Field label="Eintrittsdatum" htmlFor="employment_start_date">
+          <Input id="employment_start_date" name="employment_start_date" type="date" defaultValue={details?.employment_start_date ?? ''} />
+        </Field>
+        <Field label="Austrittsdatum" htmlFor="employment_end_date">
+          <Input id="employment_end_date" name="employment_end_date" type="date" defaultValue={details?.employment_end_date ?? ''} />
+        </Field>
+      </div>
+      <Field label="Interne Notiz" htmlFor="notes" className="mt-5">
+        <textarea
+          id="notes"
+          className="mt-1.5 flex h-28 w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          name="notes"
+          defaultValue={details?.notes ?? ''}
+          maxLength={4000}
+        />
+      </Field>
+    </section>
+    {state.invitationUrl && <div className="rounded-md bg-warning-soft p-4 text-sm text-warning"><p className="font-medium">Lokaler Einladungslink</p><a className="mt-2 block break-all text-primary underline" href={state.invitationUrl}>{state.invitationUrl}</a>{state.id && <Link className="mt-3 inline-block font-medium text-primary underline" href={`/dashboard/mitarbeiter/${state.id}`}>Zur Mitarbeiteransicht</Link>}</div>}
     <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.back()}>Abbrechen</Button><SubmitButton>{submitLabel}</SubmitButton></div>
   </form>;
 }

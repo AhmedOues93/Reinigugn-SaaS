@@ -1,14 +1,167 @@
-import Link from 'next/link';
-import { Card, Input } from '@/components/ui';
+import { Clock3 } from 'lucide-react';
+import { Badge, Button, EmptyState, Input, PageHeader, Select, StatBand } from '@/components/ui';
+import { DataTable, FilterBar } from '@/components/data-table';
 import { listTimeEntries } from '@/lib/data/time-entries';
 import { listActiveEmployeeOptions } from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { berlinDateKey, addDays } from '@/lib/date';
+import { formatDate, formatTime } from '@/lib/format';
 
-const time = (value: string | null) => value ? new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(new Date(value)) : 'Läuft';
-export default async function TimeEntriesPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; employee?: string; customer?: string; object?: string }> }) {
-  const query = await searchParams; const from = query.from || berlinDateKey(); const to = query.to || addDays(from, 6);
-  const [entries, employees, customers, objects] = await Promise.all([listTimeEntries({ from, to, memberId: query.employee, customerId: query.customer, objectId: query.object }), listActiveEmployeeOptions(), listCustomerOptions(), listCleaningObjectOptions()]);
-  return <div className="mx-auto max-w-7xl"><div className="mb-7"><h1 className="text-2xl font-semibold">Arbeitszeiten</h1><p className="mt-2 text-slate-600">Erfasste Einsatzzeiten und aktuell laufende Arbeiten.</p></div><Card className="overflow-hidden"><form className="grid gap-3 border-b p-4 md:grid-cols-3 xl:grid-cols-6"><Input name="from" type="date" defaultValue={from} /><Input name="to" type="date" defaultValue={to} /><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="employee" defaultValue={query.employee ?? ''}><option value="">Alle Mitarbeiter</option>{employees.map((employee) => { const profile = Array.isArray(employee.profiles) ? employee.profiles[0] : employee.profiles; return <option key={employee.id} value={employee.id}>{profile?.first_name} {profile?.last_name}</option>; })}</select><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="customer" defaultValue={query.customer ?? ''}><option value="">Alle Kunden</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select><select className="min-h-touch rounded-md border bg-white px-3 text-sm" name="object" defaultValue={query.object ?? ''}><option value="">Alle Objekte</option>{objects.map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}</select><button className="inline-flex min-h-touch items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-muted" type="submit">Filtern</button></form>{entries.length === 0 ? <div className="p-10 text-center"><p className="font-medium">Für diesen Zeitraum sind keine Arbeitszeiten erfasst.</p></div> : <div className="overflow-x-auto"><table className="w-full min-w-[1200px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Datum</th><th className="px-4 py-3">Mitarbeiter</th><th className="px-4 py-3">Kunde / Objekt</th><th className="px-4 py-3">Auftrag</th><th className="px-4 py-3">Geplant</th><th className="px-4 py-3">Start</th><th className="px-4 py-3">Ende</th><th className="px-4 py-3">Dauer</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Korrektur</th></tr></thead><tbody className="divide-y">{entries.map((entry) => { const job = Array.isArray(entry.jobs) ? entry.jobs[0] : entry.jobs; const member = Array.isArray(entry.company_members) ? entry.company_members[0] : entry.company_members; const profile = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles; const customer = Array.isArray(job?.customers) ? job.customers[0] : job?.customers; const object = Array.isArray(job?.cleaning_objects) ? job.cleaning_objects[0] : job?.cleaning_objects; const corrected = (entry.time_entry_audit_logs?.[0]?.count ?? 0) > 0; return <tr key={entry.id} className="hover:bg-slate-50"><td className="px-4 py-4">{new Intl.DateTimeFormat('de-DE').format(new Date(entry.started_at))}</td><td className="px-4 py-4">{profile?.first_name} {profile?.last_name}</td><td className="px-4 py-4">{customer?.name}<br /><span className="text-xs text-slate-500">{object?.name}</span></td><td className="px-4 py-4"><Link className="inline-flex min-h-touch items-center font-medium text-primary hover:underline" href={`/dashboard/arbeitszeiten/${entry.id}`}>{job?.title}</Link></td><td className="px-4 py-4">{time(job?.planned_start_at ?? null)}–{time(job?.planned_end_at ?? null)}</td><td className="px-4 py-4">{time(entry.started_at)}</td><td className="px-4 py-4">{time(entry.finished_at)}</td><td className="px-4 py-4">{entry.duration_minutes == null ? 'Läuft' : `${Math.floor(entry.duration_minutes / 60)} h ${entry.duration_minutes % 60} min`}</td><td className="px-4 py-4">{entry.finished_at ? 'Beendet' : 'Läuft'}</td><td className="px-4 py-4">{corrected ? 'Korrigiert' : 'Original'}</td></tr>; })}</tbody></table></div>}</Card></div>;
+type Entry = Awaited<ReturnType<typeof listTimeEntries>>[number];
+
+function first<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
+const minutes = (value: number) => `${Math.floor(value / 60)} h ${String(value % 60).padStart(2, '0')}`;
+
+export default async function TimeEntriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string; employee?: string; customer?: string; object?: string }>;
+}) {
+  const query = await searchParams;
+  const from = query.from || addDays(berlinDateKey(), -6);
+  const to = query.to || berlinDateKey();
+  const [entries, employees, customers, objects] = await Promise.all([
+    listTimeEntries({ from, to, memberId: query.employee, customerId: query.customer, objectId: query.object }),
+    listActiveEmployeeOptions(),
+    listCustomerOptions(),
+    listCleaningObjectOptions(),
+  ]);
+
+  const finished = entries.filter((entry) => entry.duration_minutes != null);
+  const net = finished.reduce((total, entry) => total + (entry.duration_minutes ?? 0), 0);
+  const breaks = entries.reduce((total, entry) => total + (entry.break_minutes ?? 0), 0);
+  const running = entries.length - finished.length;
+  const corrected = entries.filter((entry) => (entry.time_entry_audit_logs?.[0]?.count ?? 0) > 0).length;
+
+  return (
+    <>
+      <PageHeader title="Arbeitszeiten" description="Erfasste Einsatzzeiten aus der Mitarbeiter-App – netto, nach Abzug der Pausen." />
+
+      <FilterBar>
+        <Input name="from" type="date" defaultValue={from} aria-label="Von" />
+        <Input name="to" type="date" defaultValue={to} aria-label="Bis" />
+        <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
+          <option value="">Alle Mitarbeiter</option>
+          {employees.map((employee) => {
+            const profile = first(employee.profiles);
+            return (
+              <option key={employee.id} value={employee.id}>
+                {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+              </option>
+            );
+          })}
+        </Select>
+        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+          <option value="">Alle Kunden</option>
+          {customers.map((customer) => (
+            <option key={customer.id} value={customer.id}>
+              {customer.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
+          <option value="">Alle Objekte</option>
+          {objects.map((object) => (
+            <option key={object.id} value={object.id}>
+              {object.name}
+            </option>
+          ))}
+        </Select>
+        <Button type="submit" variant="outline">
+          Anwenden
+        </Button>
+      </FilterBar>
+
+      <StatBand
+        className="mb-5"
+        items={[
+          { label: 'Arbeitszeit netto', value: minutes(net) },
+          { label: 'Pausen', value: minutes(breaks) },
+          { label: 'Läuft gerade', value: running, tone: running ? 'success' : undefined },
+          { label: 'Nachträglich korrigiert', value: corrected, tone: corrected ? 'warning' : undefined },
+        ]}
+      />
+
+      <DataTable<Entry>
+        caption="Arbeitszeiten"
+        rows={entries}
+        rowKey={(entry) => entry.id}
+        rowHref={(entry) => `/dashboard/arbeitszeiten/${entry.id}`}
+        columns={[
+          {
+            key: 'employee',
+            header: 'Mitarbeiter',
+            mobile: 'title',
+            cell: (entry) => {
+              const profile = first(first(entry.company_members)?.profiles);
+              return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || '—';
+            },
+          },
+          {
+            key: 'site',
+            header: 'Einsatz',
+            mobile: 'subtitle',
+            cell: (entry) => {
+              const job = first(entry.jobs);
+              return (
+                <span className="block min-w-0">
+                  <span className="block truncate text-foreground">{first(job?.cleaning_objects)?.name ?? job?.title}</span>
+                  <span className="block truncate text-xs">{first(job?.customers)?.name}</span>
+                </span>
+              );
+            },
+          },
+          { key: 'date', header: 'Datum', cell: (entry) => <span className="tabular-nums">{formatDate('de', entry.started_at)}</span> },
+          {
+            key: 'planned',
+            header: 'Geplant',
+            hideBelow: 'xl',
+            cell: (entry) => {
+              const job = first(entry.jobs);
+              return job?.planned_start_at ? (
+                <span className="tabular-nums">
+                  {formatTime('de', job.planned_start_at)}–{job.planned_end_at ? formatTime('de', job.planned_end_at) : ''}
+                </span>
+              ) : (
+                '—'
+              );
+            },
+          },
+          {
+            key: 'actual',
+            header: 'Tatsächlich',
+            cell: (entry) => (
+              <span className="tabular-nums text-foreground">
+                {formatTime('de', entry.started_at)}–{entry.finished_at ? formatTime('de', entry.finished_at) : '…'}
+              </span>
+            ),
+          },
+          { key: 'break', header: 'Pause', align: 'end', hideBelow: 'lg', cell: (entry) => (entry.break_minutes ? `${entry.break_minutes} min` : '—') },
+          {
+            key: 'net',
+            header: 'Netto',
+            align: 'end',
+            cell: (entry) => (
+              <span className="font-semibold text-foreground">{entry.duration_minutes == null ? '—' : minutes(entry.duration_minutes)}</span>
+            ),
+          },
+          {
+            key: 'status',
+            header: 'Status',
+            mobile: 'status',
+            cell: (entry) => (
+              <span className="inline-flex flex-wrap justify-end gap-1">
+                {entry.finished_at ? <Badge tone="neutral">Beendet</Badge> : <Badge tone="success">Läuft</Badge>}
+                {(entry.time_entry_audit_logs?.[0]?.count ?? 0) > 0 && <Badge tone="warning">Korrigiert</Badge>}
+              </span>
+            ),
+          },
+        ]}
+        empty={<EmptyState icon={<Clock3 />} title="Keine Arbeitszeiten" body="Im gewählten Zeitraum wurde nichts erfasst." />}
+      />
+    </>
+  );
 }

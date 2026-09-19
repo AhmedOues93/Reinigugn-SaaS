@@ -140,3 +140,46 @@ verification has no Supabase Storage, so avatar upload and the signed-URL round
 trip could not be exercised end to end here. The authorisation rules behind them —
 path shape, ownership, same-company read, cross-tenant denial — are covered by
 `supabase/test/employee-field.test.sql` with RLS in force.
+
+## Phase 14 — redesign, invoice delivery, breaks (2026-09-19)
+
+**Fixed defects found while verifying.**
+- `/dashboard/reklamationen` failed to load: `complaints` has two foreign keys to
+  `jobs` (`job_id`, `follow_up_job_id`), so the unqualified `jobs(...)` embed was
+  ambiguous (PGRST201). Now `jobs!complaints_job_id_fkey`.
+- `/dashboard/urlaub-krankheit` failed the same way (`company_members` has two
+  foreign keys to `profiles`). Now fully qualified.
+- The invoice document recomputed per-rate VAT from the net sum while the stored
+  total sums per-line VAT, so a document could show 89,38 € VAT beside a total that
+  contains 89,36 €. Both renderings now sum the stored line VAT.
+
+**Workflow connections added.** Customer page → create invoice (customer
+preselected) and lists the customer's invoices and open balance; "Leistungsnachweise"
+is now a real list of completed visits showing which are still unbilled, with a
+hand-off to billing; a draft offers "take over all unbilled visits" at the plan
+rate; the service-record page links to its invoice or to billing.
+
+**Breaks.** `pause_my_job` / `resume_my_job` record breaks as their own rows;
+`duration_minutes` is now net of breaks and `break_minutes` is stored beside it.
+Time actions stay online-only; the checklist remains the only offline-queued write.
+
+## Production gaps (not solved here)
+
+- **E-invoicing (XRechnung / ZUGFeRD, EN 16931).** Not implemented. B2B e-invoice
+  *receipt* has been mandatory in Germany since 1 January 2025 and *issuing* becomes
+  mandatory for most B2B senders in 2027/2028. This needs a structured XML
+  generator (CII/UBL), mandatory-field validation (e.g. Leitweg-ID for public
+  customers, seller/buyer tax data), PDF/A-3 embedding for ZUGFeRD, and validation
+  against the official schematron. The current PDF is not an e-invoice.
+- **Legal review of invoice content.** The PDF carries the § 14 UStG elements the
+  data model has, but completeness depends on tenant master data (tax number or
+  VAT ID, addresses); nothing enforces that before issuing. Not legally verified.
+- **Outbound e-mail** needs a real SMTP provider (`SMTP_*`, `MAIL_FROM`), plus SPF/
+  DKIM/DMARC for the sending domain. Bounces are not tracked; "SENT" means accepted
+  by the SMTP server, not delivered to the inbox.
+- **PDF fonts.** Standard Helvetica (WinAnsi). Names in Cyrillic or Arabic script are
+  replaced with "?" in the PDF. Embedding a Unicode font (fontkit) fixes this.
+- **Dunning.** Payment reminders are logged and sendable; there are no dunning
+  levels, fees, interest or automatic scheduling.
+- **Partial / instalment invoices** and **QR/NFC check-in** and **customer
+  signatures** on service records are not implemented.

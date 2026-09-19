@@ -43,13 +43,37 @@ begin
   if exists (select 1 from public.companies where slug like 'demo-sauberwerk%') then return; end if;
 
   -- Auth users. `crypt` comes from pgcrypto, which the initial migration installs.
-  insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  --
+  -- The token columns (confirmation_token, recovery_token, email_change*,
+  -- reauthentication_token) are NOT NULL-by-convention as far as GoTrue is
+  -- concerned: its Go code scans them into `string`, and a NULL fails that scan
+  -- with "converting NULL to string is unsupported" on the very first password
+  -- grant, even though the column itself is nullable in the schema. Every
+  -- token column is therefore seeded as '' rather than left to default to NULL.
+  insert into auth.users (
+    id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change, email_change_token_new,
+    email_change_token_current, reauthentication_token
+  )
   values
-    (owner_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'inhaber@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Miriam","last_name":"Kessler"}', now(), now()),
-    (office_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'buero@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Tobias","last_name":"Renner"}', now(), now()),
-    (employee_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'mitarbeiter@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Olena","last_name":"Kovalenko"}', now(), now()),
-    (portal_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'kunde@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Sabine","last_name":"Lorenz"}', now(), now())
+    (owner_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'inhaber@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Miriam","last_name":"Kessler"}', now(), now(), '', '', '', '', '', ''),
+    (office_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'buero@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Tobias","last_name":"Renner"}', now(), now(), '', '', '', '', '', ''),
+    (employee_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'mitarbeiter@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Olena","last_name":"Kovalenko"}', now(), now(), '', '', '', '', '', ''),
+    (portal_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'kunde@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Sabine","last_name":"Lorenz"}', now(), now(), '', '', '', '', '', '')
   on conflict (id) do nothing;
+
+  -- GoTrue links an email/password account through `auth.identities`; without a
+  -- matching row here the account exists but has no provider identity, which
+  -- breaks account linking and the Studio/Admin view of the user even though
+  -- the token-column fix above already makes password sign-in itself work.
+  insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
+  values
+    (gen_random_uuid(), owner_user, owner_user::text, jsonb_build_object('sub', owner_user::text, 'email', 'inhaber@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), office_user, office_user::text, jsonb_build_object('sub', office_user::text, 'email', 'buero@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee_user, employee_user::text, jsonb_build_object('sub', employee_user::text, 'email', 'mitarbeiter@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), portal_user, portal_user::text, jsonb_build_object('sub', portal_user::text, 'email', 'kunde@demo.test', 'email_verified', true), 'email', now(), now(), now())
+  on conflict (provider_id, provider) do nothing;
 
   select id into owner_profile from public.profiles where auth_user_id = owner_user;
   select id into employee_profile from public.profiles where auth_user_id = employee_user;
