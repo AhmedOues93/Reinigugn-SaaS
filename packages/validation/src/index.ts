@@ -148,6 +148,28 @@ export const scheduleRuleSchema = z.object({
   planned_end_time: timeSchema,
 }).refine((value) => value.planned_end_time > value.planned_start_time, { message: 'Das geplante Ende muss nach dem Beginn liegen.', path: ['planned_end_time'] });
 
+/**
+ * Whether a visit under this contract needs a Kundenabnahme, and how. It is a
+ * commercial arrangement, so it is agreed once on the Leistungsplan — the
+ * employee in the field is never asked to decide it.
+ */
+export const acceptancePolicySchema = z.enum([
+  'KEINE_ABNAHME_ERFORDERLICH',
+  'VOR_ORT_UNTERSCHRIFT',
+  'PORTAL_ABNAHME',
+]);
+
+/**
+ * How the agreed price is meant. Only STUNDENSATZ lets the working time the
+ * cleaners record decide what the customer is charged; everything else is a
+ * price that was agreed regardless of the clock.
+ */
+export const billingModeSchema = z.enum([
+  'PAUSCHALE_PRO_EINSATZ',
+  'STUNDENSATZ',
+  'MONATSPAUSCHALE',
+]);
+
 export const serviceScheduleSchema = z.object({
   customer_id: z.string().uuid('Bitte wähle einen gültigen Kunden aus.'),
   cleaning_object_id: z.string().uuid('Bitte wähle ein gültiges Objekt aus.'),
@@ -157,6 +179,8 @@ export const serviceScheduleSchema = z.object({
   valid_until: optionalDate,
   member_ids: uuidArraySchema,
   checklist_template_id: optionalUuid,
+  acceptance_policy: acceptancePolicySchema.default('KEINE_ABNAHME_ERFORDERLICH'),
+  billing_mode: billingModeSchema.default('PAUSCHALE_PRO_EINSATZ'),
   rules: z.array(scheduleRuleSchema).min(1, 'Bitte hinterlege mindestens einen Wochentag.').max(7),
 }).refine((value) => !value.valid_until || value.valid_until >= value.valid_from, { message: 'Das Enddatum darf nicht vor dem Startdatum liegen.', path: ['valid_until'] });
 

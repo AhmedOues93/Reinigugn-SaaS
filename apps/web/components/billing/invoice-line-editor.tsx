@@ -31,6 +31,9 @@ type BillableJob = {
   service_schedule_id: string | null;
   suggested_unit_price_cents: number | null;
   suggested_vat_rate_basis_points: number | null;
+  /** From the contract's billing mode, not from the stopwatch. */
+  suggested_quantity: number;
+  suggested_unit: string;
 };
 
 /**
@@ -112,8 +115,11 @@ export function InvoiceLineEditor({
                 };
                 if (!job) return;
                 set('description', job.title.includes(job.object_name) ? `${job.title} · ${job.scheduled_date}` : `${job.title} · ${job.object_name}`);
-                if (job.duration_minutes > 0)
-                  set('quantity', (job.duration_minutes / 60).toFixed(2));
+                // The contract decides the quantity. Prefilling recorded hours
+                // against a fixed price per visit is how a 48 € visit became a
+                // 120 € invoice line.
+                set('quantity', String(job.suggested_quantity));
+                set('unit', job.suggested_unit);
                 if (job.suggested_unit_price_cents)
                   set('unit_price', (job.suggested_unit_price_cents / 100).toFixed(2));
                 if (job.suggested_vat_rate_basis_points)

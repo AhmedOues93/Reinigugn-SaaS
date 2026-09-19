@@ -105,6 +105,31 @@ export async function listMyAbsences() {
   return data ?? [];
 }
 
+export type JobAcceptance = {
+  service_record_id: string;
+  company_id: string;
+  status: 'ERFASST' | 'ABNAHME_AUSSTEHEND' | 'ABGENOMMEN' | 'PROBLEM_GEMELDET';
+  acceptance_policy: 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME';
+  accepted_at: string | null;
+  accepted_by_name: string | null;
+  signature_required: boolean;
+};
+
+/**
+ * Whether this visit needs somebody to accept it, and whether anyone already
+ * has. The contract decides; the field app only asks the question.
+ *
+ * Null until the visit is finished, because there is no Leistungsnachweis
+ * before then.
+ */
+export async function getMyJobAcceptance(jobId: string): Promise<JobAcceptance | null> {
+  const { supabase } = await requireEmployee();
+  const { data, error } = await supabase.rpc('get_my_job_acceptance', { p_job_id: jobId });
+  if (error) return null;
+  const rows = (data ?? []) as JobAcceptance[];
+  return rows[0] ?? null;
+}
+
 /**
  * Profile data an employee may see about themselves. Deliberately excludes any
  * other member's HR data, internal notes and every financial field.

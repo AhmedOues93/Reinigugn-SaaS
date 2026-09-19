@@ -418,12 +418,17 @@ export async function addAllBillableJobs(invoiceId: string, _: FormState, __: Fo
   const { supabase } = await requireStaffCompany();
   let added = 0;
   for (const job of priced) {
-    const hours = job.duration_minutes > 0 ? Math.round((job.duration_minutes / 60) * 1000) / 1000 : 1;
+    // Quantity and unit come from the contract's billing mode, decided in the
+    // database. This used to multiply the agreed price by the hours the
+    // cleaners recorded, always — so a plan sold at 48 € per visit invoiced
+    // 120 € whenever the visit ran two and a half hours. Recorded time is
+    // operational and payroll evidence; only an explicitly hourly contract
+    // lets it set what the customer is charged.
     const { error } = await supabase.rpc('add_invoice_line', {
       p_invoice_id: invoiceId,
       p_description: [job.title, job.title.includes(job.object_name) ? null : job.object_name, formatDate('de', job.scheduled_date)].filter(Boolean).join(' · ').slice(0, 500),
-      p_quantity: hours,
-      p_unit: job.duration_minutes > 0 ? 'Std' : 'Einsatz',
+      p_quantity: job.suggested_quantity,
+      p_unit: job.suggested_unit,
       p_unit_price_cents: job.suggested_unit_price_cents!,
       p_vat_rate_basis_points: job.suggested_vat_rate_basis_points ?? 1900,
       p_job_id: job.job_id,

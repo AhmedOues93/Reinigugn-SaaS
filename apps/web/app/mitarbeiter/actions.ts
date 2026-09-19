@@ -178,6 +178,67 @@ export async function uploadMyAuDocument(absenceId: string, _: FormState, formDa
   return { status: 'success', message: t(locale, 'emp.absence.auUploaded') };
 }
 
+/**
+ * The Kundenabnahme on site.
+ *
+ * Only reached when the contract asks for a signature — the employee is never
+ * offered a choice of acceptance method, because that is a commercial
+ * arrangement, not a decision for the doorway.
+ *
+ * The signature image goes to a private bucket first and the record is only
+ * marked accepted afterwards, so a failed upload cannot leave an acceptance
+ * claiming evidence that was never stored. A failed acceptance takes the
+ * orphaned file back out.
+ *
+ * This is business evidence and audit documentation. It is not a claim about
+ * legal signature equivalence.
+ */
+export async function confirmOnSiteAcceptance(
+  jobId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+
+  const signerName = String(formData.get('signer_name') ?? '').trim();
+  if (signerName.length < 2 || signerName.length > 160) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.nameRequired') };
+  }
+
+  const signature = String(formData.get('signature') ?? '');
+  let path: string | null = null;
+  if (signature) {
+    const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(signature);
+    if (!match) return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+    const bytes = Buffer.from(match[1], 'base64');
+    // A handwritten scribble is a few kilobytes; anything larger is not one.
+    if (bytes.byteLength === 0 || bytes.byteLength > 512 * 1024) {
+      return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+    }
+    path = `${context.membership.company_id}/service/${jobId}/${randomUUID()}.png`;
+    const { error: uploadError } = await context.supabase.storage
+      .from('service-signatures')
+      .upload(path, bytes, { contentType: 'image/png', upsert: false });
+    if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+
+  const { error } = await context.supabase.rpc('sign_service_record_on_site', {
+    p_job_id: jobId,
+    p_signer_name: signerName,
+    p_signature_path: path,
+  });
+  if (error) {
+    if (path) await context.supabase.storage.from('service-signatures').remove([path]);
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+
+  revalidateEmployee(jobId);
+  revalidatePath('/dashboard/leistungsnachweise');
+  return { status: 'success', message: t(locale, 'emp.acceptance.confirmed') };
+}
+
 export async function markMyNotificationRead(notificationId: string): Promise<void> {
   const context = await employeeContext();
   if (!context) return;

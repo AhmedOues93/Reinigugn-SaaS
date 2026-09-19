@@ -54,7 +54,7 @@ export async function getServiceSchedule(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('service_schedules')
-    .select('id, customer_id, cleaning_object_id, checklist_template_id, name, description, valid_from, valid_until, timezone, is_active, customers(id, name), cleaning_objects(id, name), schedule_rules(id, weekday, planned_start_time, planned_end_time, is_active), service_schedule_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
+    .select('id, customer_id, cleaning_object_id, checklist_template_id, name, description, valid_from, valid_until, timezone, is_active, acceptance_policy, billing_mode, billing_unit_price_cents, billing_vat_rate_basis_points, customers(id, name), cleaning_objects(id, name), schedule_rules(id, weekday, planned_start_time, planned_end_time, is_active), service_schedule_assignments(member_id, company_members(profiles!company_members_profile_id_fkey(first_name, last_name)))')
     .eq('company_id', company.id).eq('id', id).maybeSingle();
   if (error) throw new Error('Plan konnte nicht geladen werden.');
   return data;

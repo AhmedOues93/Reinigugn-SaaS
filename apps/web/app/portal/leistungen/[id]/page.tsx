@@ -3,9 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Check, ChevronLeft, Minus } from 'lucide-react';
 import { Card } from '@/components/ui';
+import { PortalAcceptancePanel, PortalAcceptanceStatus } from '@/components/portal/service-acceptance';
 import { getPortalServiceRecord, portalLocale } from '@/lib/data/portal';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
+import { confirmPortalService, disputePortalService } from '../../actions';
 
 export default async function PortalServiceRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,6 +26,30 @@ export default async function PortalServiceRecordPage({ params }: { params: Prom
 
       <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{record.objectName}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{formatDate(locale, record.scheduledDate, 'long')}</p>
+
+      {/*
+        The Abnahme comes first on the page, because when there is something to
+        decide it is the reason the customer opened this at all. Everything
+        below is the evidence they are deciding on.
+      */}
+      {record.acceptance?.acceptance_policy === 'PORTAL_ABNAHME' &&
+      record.acceptance.status === 'ABNAHME_AUSSTEHEND' ? (
+        <PortalAcceptancePanel
+          confirmAction={confirmPortalService.bind(null, record.jobId)}
+          disputeAction={disputePortalService.bind(null, record.jobId)}
+          locale={locale}
+        />
+      ) : (
+        record.acceptance && (
+          <PortalAcceptanceStatus
+            locale={locale}
+            status={record.acceptance.status}
+            method={record.acceptance.acceptance_method}
+            acceptedAt={record.acceptance.accepted_at}
+            acceptedByName={record.acceptance.accepted_by_name}
+          />
+        )
+      )}
 
       <Card className="mt-5 p-5">
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
