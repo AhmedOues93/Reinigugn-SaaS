@@ -162,6 +162,29 @@ again — the same failure, just harder to notice.
 
 Needed: alert if `generate_due_jobs` has not succeeded in 48 hours.
 
+### 13. Payment reconciliation is manual — **deliberate, for now**
+
+An invoice becomes paid because somebody read a bank statement and recorded
+what they saw: date, method, reference, amount. Nothing detects a transfer, and
+the interface does not suggest otherwise.
+
+That is the right choice for a beta — an automatic match that is wrong is worse
+than no automatic match — but it is worth knowing what it costs and what it
+does not cost. Payments are their own table, so the step after this one does
+not touch the invoice at all:
+
+- a bank-statement import inserts rows with `source = 'BANK_IMPORT'` and the
+  bank's own reference;
+- a Stripe webhook inserts `source = 'STRIPE'` with the payment intent as
+  `external_reference`, which is uniquely indexed so a redelivered webhook
+  cannot book twice;
+- an invoice reaches PAID by the same rule in every case — when the payments
+  reach the gross total.
+
+Partial payments already work. What is missing before any of that is switched
+on is the matching itself, and a decision about what happens when a transfer
+matches nothing.
+
 ## Not blockers, but worth knowing
 
 - **Load**: untested. Fine for a handful of tenants; unknown beyond.

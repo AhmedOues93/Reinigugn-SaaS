@@ -64,6 +64,34 @@ export async function getInvoice(id: string) {
   };
 }
 
+export type PaymentMethod = 'BANK_TRANSFER' | 'CASH' | 'CARD' | 'DIRECT_DEBIT' | 'OTHER';
+
+export type InvoicePayment = {
+  id: string;
+  amount_cents: number;
+  currency: string;
+  paid_on: string;
+  method: PaymentMethod;
+  reference: string | null;
+  note: string | null;
+  /** MANUAL today. A bank import or a provider would set its own value here. */
+  source: 'MANUAL' | 'BANK_IMPORT' | 'STRIPE';
+  recorded_by_name: string;
+  created_at: string;
+};
+
+/**
+ * The audit trail behind a paid invoice: what arrived, when, how, and who said
+ * so. Read through the function rather than the table so one query answers
+ * "which colleague booked this" without a join the caller has to get right.
+ */
+export async function listInvoicePayments(invoiceId: string): Promise<InvoicePayment[]> {
+  const { supabase } = await requireStaffCompany();
+  const { data, error } = await supabase.rpc('list_invoice_payments', { p_invoice_id: invoiceId });
+  if (error) throw new Error('Die Zahlungen konnten nicht geladen werden.');
+  return (data ?? []) as InvoicePayment[];
+}
+
 export type BillableJob = {
   job_id: string;
   scheduled_date: string;

@@ -7,7 +7,15 @@ import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
 import { InvoiceLineEditor } from '@/components/billing/invoice-line-editor';
 import { CancelInvoiceAction, CorrectionInvoiceAction, IssueInvoiceAction } from '@/components/billing/invoice-actions';
 import { AddAllBillableAction, MarkPaidForm, SendInvoicePanel } from '@/components/billing/invoice-delivery';
-import { getCustomerBillingEmail, getInvoice, listBillableJobs, listInvoiceDeliveries, type InvoiceDelivery } from '@/lib/data/billing';
+import {
+  getCustomerBillingEmail,
+  getInvoice,
+  listBillableJobs,
+  listInvoiceDeliveries,
+  listInvoicePayments,
+  type InvoiceDelivery,
+  type InvoicePayment,
+} from '@/lib/data/billing';
 import { mailConfigured } from '@/lib/mail/transport';
 import { berlinDateKey } from '@/lib/date';
 import { formatDate, formatDateTime, formatMoney, formatPercent } from '@/lib/format';
@@ -26,6 +34,14 @@ import {
   sendPaymentReminder,
 } from '../actions';
 
+const paymentMethodLabel: Record<InvoicePayment['method'], string> = {
+  BANK_TRANSFER: 'Überweisung',
+  CASH: 'Bar',
+  CARD: 'Karte',
+  DIRECT_DEBIT: 'Lastschrift',
+  OTHER: 'Sonstiges',
+};
+
 const deliveryLabel: Record<InvoiceDelivery['status'], { text: string; tone: string }> = {
   SENT: { text: 'E-Mail zugestellt an Mailserver', tone: 'text-success' },
   MANUAL: { text: 'Manuell versendet', tone: 'text-success' },
@@ -39,11 +55,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   if (!invoice) notFound();
 
   const isDraft = invoice.status === 'DRAFT';
-  const [billableJobs, deliveries, customerEmail] = await Promise.all([
+  const [billableJobs, deliveries, customerEmail, payments] = await Promise.all([
     isDraft ? listBillableJobs(invoice.customer_id, invoice.service_period_start, invoice.service_period_end) : Promise.resolve([]),
     isDraft ? Promise.resolve([]) : listInvoiceDeliveries(invoice.id),
     getCustomerBillingEmail(invoice.customer_id),
+    isDraft ? Promise.resolve([]) : listInvoicePayments(invoice.id),
   ]);
+  const paidSoFar = payments.reduce((sum, payment) => sum + payment.amount_cents, 0);
+  const outstandingCents = invoice.gross_total_cents - paidSoFar;
   const snapshotEmail = (invoice.customer_snapshot as Record<string, string | null> | null)?.email ?? null;
   const recipient = customerEmail ?? snapshotEmail;
   const canMail = mailConfigured();
@@ -246,16 +265,41 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <IssueInvoiceAction action={issueInvoice.bind(null, invoice.id)} locale={locale} disabled={invoice.lines.length === 0} />
             )}
             {invoice.status === 'ISSUED' && !invoice.sent_at && (
-              <SendInvoicePanel
-                sendAction={sendInvoiceEmail.bind(null, invoice.id)}
-                manualAction={recordManualDelivery.bind(null, invoice.id)}
-                defaultRecipient={recipient}
-                mailConfigured={canMail}
-              />
+              <div className="space-y-4">
+                <SendInvoicePanel
+                  sendAction={sendInvoiceEmail.bind(null, invoice.id)}
+                  manualAction={recordManualDelivery.bind(null, invoice.id)}
+                  defaultRecipient={recipient}
+                  mailConfigured={canMail}
+                />
+                {/*
+                  An invoice handed over in person can be paid before anyone
+                  records it as sent. Tucked away, because sending first is the
+                  normal order.
+                */}
+                <details className="border-t border-border pt-4">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-primary underline-offset-4 hover:underline">
+                    Zahlung bereits eingegangen?
+                  </summary>
+                  <div className="pt-3">
+                    <MarkPaidForm
+                      action={markInvoicePaid.bind(null, invoice.id)}
+                      today={today}
+                      outstanding={formatMoney(locale, outstandingCents, invoice.currency)}
+                      partiallyPaid={paidSoFar > 0}
+                    />
+                  </div>
+                </details>
+              </div>
             )}
             {invoice.status === 'ISSUED' && invoice.sent_at && (
               <div className="space-y-5">
-                <MarkPaidForm action={markInvoicePaid.bind(null, invoice.id)} today={today} />
+                <MarkPaidForm
+                  action={markInvoicePaid.bind(null, invoice.id)}
+                  today={today}
+                  outstanding={formatMoney(locale, outstandingCents, invoice.currency)}
+                  partiallyPaid={paidSoFar > 0}
+                />
                 {invoice.displayStatus === 'OVERDUE' && (
                   <div className="border-t border-border pt-5">
                     <p className="mb-3 text-sm font-medium text-danger">
@@ -277,6 +321,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <p className="flex items-center gap-2 text-sm text-success">
                 <Check className="size-4" aria-hidden="true" />
                 Zahlungseingang am {formatDate(locale, invoice.paid_at!)}
+              </p>
+            )}
+            {invoice.status === 'ISSUED' && paidSoFar > 0 && (
+              <p className="mt-4 rounded-lg border border-warning/25 bg-warning-soft px-3.5 py-3 text-sm leading-6 text-warning">
+                Teilzahlung von {formatMoney(locale, paidSoFar, invoice.currency)} verbucht.
+                Offen: <span className="font-semibold tabular-nums">{formatMoney(locale, outstandingCents, invoice.currency)}</span>
               </p>
             )}
             {invoice.status === 'CANCELLED' && (
@@ -308,6 +358,36 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 />
               </div>
             </details>
+          )}
+
+          {/*
+            The audit trail behind the green badge: what arrived, when, how, and
+            who booked it. Without this, "why is this marked paid?" has no
+            answer and a mistake cannot be traced.
+          */}
+          {payments.length > 0 && (
+            <Card className="p-5">
+              <h2 className="mb-3 text-[15px] font-semibold">Zahlungseingänge</h2>
+              <ol className="space-y-3">
+                {payments.map((payment) => (
+                  <li key={payment.id} className="border-l-2 border-success/40 pl-3 text-sm leading-6">
+                    <p className="font-semibold tabular-nums">
+                      {formatMoney(locale, payment.amount_cents, payment.currency)}
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        am {formatDate(locale, payment.paid_on)}
+                      </span>
+                    </p>
+                    <p className="text-muted-foreground">
+                      {paymentMethodLabel[payment.method]}
+                      {payment.reference && ` · ${payment.reference}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Erfasst von {payment.recorded_by_name} am {formatDateTime(locale, payment.created_at)}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </Card>
           )}
 
           {(invoice.status === 'ISSUED' || invoice.status === 'PAID') && (

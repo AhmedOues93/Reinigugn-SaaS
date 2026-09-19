@@ -3,7 +3,7 @@
 import { useActionState, useId, useState } from 'react';
 import { BellRing, Mail, PackageCheck } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input } from '@/components/ui';
+import { Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
@@ -81,15 +81,83 @@ export function SendInvoicePanel({
   );
 }
 
-export function MarkPaidForm({ action, today }: { action: Action; today: string }) {
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  BANK_TRANSFER: 'Überweisung',
+  CASH: 'Bar',
+  CARD: 'Karte',
+  DIRECT_DEBIT: 'Lastschrift',
+  OTHER: 'Sonstiges',
+};
+
+/**
+ * Manual payment reconciliation: somebody looked at a bank statement and is
+ * recording what they saw. The date is the date the money arrived, which is
+ * usually not today, so it is asked for rather than assumed.
+ *
+ * Method and reference are optional but worth having — the reference is what
+ * ties the row back to a bank line when a payment is later questioned.
+ */
+export function MarkPaidForm({
+  action,
+  today,
+  outstanding,
+  partiallyPaid = false,
+}: {
+  action: Action;
+  today: string;
+  /** What is still owed, formatted for display, used as the amount placeholder. */
+  outstanding: string;
+  partiallyPaid?: boolean;
+}) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const [showDetail, setShowDetail] = useState(partiallyPaid);
+  // Stable for the life of this form. A double-click or a resubmitted form
+  // reuses it, so the database returns the payment already recorded instead of
+  // booking a second one. Reloading the page mints a new key, which is what a
+  // deliberate second payment is.
+  const confirmKey = `pay-${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
+
   return (
     <form action={formAction} className="space-y-3">
+      <input type="hidden" name="idempotency_key" value={confirmKey} />
       <FormMessage status={state.status} message={state.message} />
-      <Field label="Zahlungseingang am" htmlFor="paid-on">
+      <Field
+        label="Zahlungseingang am"
+        htmlFor="paid-on"
+        info="Das Datum, an dem das Geld eingegangen ist — laut Kontoauszug, nicht das heutige Datum."
+      >
         <Input id="paid-on" name="paid_on" type="date" defaultValue={today} max={today} required />
       </Field>
-      <SubmitButton>Als bezahlt verbuchen</SubmitButton>
+
+      {showDetail ? (
+        <div className="space-y-3 rounded-lg border border-border/80 bg-subtle p-3.5">
+          <Field label="Zahlungsart" htmlFor="paid-method">
+            <Select id="paid-method" name="method" defaultValue="BANK_TRANSFER">
+              {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Verwendungszweck / Referenz" htmlFor="paid-reference" info="Optional. Was diese Zahlung einer Zeile im Kontoauszug zuordnet.">
+            <Input id="paid-reference" name="reference" maxLength={200} placeholder="z. B. Kontoauszug 47" autoComplete="off" />
+          </Field>
+          <Field label="Betrag" htmlFor="paid-amount" info={`Leer lassen für den offenen Betrag von ${outstanding}. Für eine Teilzahlung den tatsächlich eingegangenen Betrag eintragen.`}>
+            <Input id="paid-amount" name="amount" inputMode="decimal" placeholder={outstanding} autoComplete="off" />
+          </Field>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowDetail(true)}
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Zahlungsart, Referenz oder Teilbetrag erfassen
+        </button>
+      )}
+
+      <SubmitButton>Zahlungseingang bestätigen</SubmitButton>
     </form>
   );
 }

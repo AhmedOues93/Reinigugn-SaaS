@@ -9,7 +9,14 @@ import { t } from '@/lib/i18n';
 import { createClient } from '@/lib/supabase/server';
 import { submitMyAbsence, uploadMyAuDocument } from '../actions';
 
-const statusTone: Record<string, 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+/*
+ * What the office did, not the raw status. A reported sickness is APPROVED in
+ * the database so planning treats the day as unavailable, but telling the
+ * employee their illness was "genehmigt" is both odd and, when they have also
+ * submitted a holiday, actively misleading.
+ */
+const decisionTone: Record<string, 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+  REPORTED: 'info',
   PENDING: 'warning',
   APPROVED: 'success',
   REJECTED: 'danger',
@@ -48,7 +55,7 @@ export default async function EmployeeAbsencePage() {
                   <p className="font-medium">
                     {t(locale, absence.absence_type === 'VACATION' ? 'emp.absence.vacation' : 'emp.absence.sickness')}
                   </p>
-                  <Badge tone={statusTone[absence.status]}>{t(locale, `emp.absence.${absence.status}`)}</Badge>
+                  <Badge tone={decisionTone[absence.decision]}>{t(locale, `emp.absence.decision.${absence.decision}`)}</Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {formatDate(locale, absence.start_date)} – {formatDate(locale, absence.end_date)}

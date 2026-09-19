@@ -146,25 +146,83 @@ export async function issueInvoice(
   }
 }
 
+const PAYMENT_METHODS = ['BANK_TRANSFER', 'CASH', 'CARD', 'DIRECT_DEBIT', 'OTHER'] as const;
+
+/**
+ * Records a payment against an issued invoice, which settles it once the
+ * payments reach the total. Reconciliation is manual and says so: somebody read
+ * a bank statement and is entering what they saw. Nothing here detects a
+ * transfer, and nothing pretends to.
+ *
+ * The amount is optional and defaults, in the database, to whatever is still
+ * outstanding — so the ordinary case, one transfer for the whole invoice, is a
+ * date and a button.
+ */
 export async function markInvoicePaid(
   invoiceId: string,
   _: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const paidOn = String(formData.get('paid_on') ?? '').trim();
-  if (paidOn && !/^\d{4}-\d{2}-\d{2}$/.test(paidOn)) return failure('Bitte gib ein gültiges Zahlungsdatum an.');
-  if (paidOn && paidOn > new Date().toISOString().slice(0, 10)) return failure('Das Zahlungsdatum darf nicht in der Zukunft liegen.');
+  const method = String(formData.get('method') ?? 'BANK_TRANSFER').trim();
+  const reference = String(formData.get('reference') ?? '').trim();
+  const amountRaw = String(formData.get('amount') ?? '').trim();
+  const idempotencyKey = String(formData.get('idempotency_key') ?? '').trim() || null;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(paidOn)) return failure('Bitte gib ein gültiges Zahlungsdatum an.');
+  if (paidOn > new Date().toISOString().slice(0, 10)) {
+    return failure('Das Zahlungsdatum darf nicht in der Zukunft liegen.');
+  }
+  if (!(PAYMENT_METHODS as readonly string[]).includes(method)) {
+    return failure('Bitte wähle eine gültige Zahlungsart.');
+  }
+  if (reference.length > 200) return failure('Der Verwendungszweck ist zu lang.');
+
+  // Entered in euro, sent in cents. Parsing here keeps a comma-formatted
+  // amount from arriving at the database as something it cannot read.
+  let amountCents: number | null = null;
+  if (amountRaw) {
+    const normalised = amountRaw.replace(/\s/g, '').replace(',', '.');
+    if (!/^\d+(\.\d{1,2})?$/.test(normalised)) return failure('Bitte gib einen gültigen Betrag an.');
+    amountCents = Math.round(Number(normalised) * 100);
+    if (amountCents <= 0) return failure('Der Betrag muss größer als 0 sein.');
+  }
+
   try {
     const { supabase } = await requireStaffCompany();
-    const { error } = await supabase.rpc('mark_invoice_paid', {
+    const { error } = await supabase.rpc('record_invoice_payment', {
       p_invoice_id: invoiceId,
-      p_paid_at: paidOn ? `${paidOn}T12:00:00Z` : new Date().toISOString(),
+      p_paid_on: paidOn,
+      p_method: method,
+      p_reference: reference || null,
+      p_amount_cents: amountCents,
+      p_note: null,
+      p_idempotency_key: idempotencyKey,
     });
-    if (error) return failure('Die Rechnung konnte nicht als bezahlt markiert werden.');
+    if (error) {
+      // The database's refusals are the authoritative ones; say what it said
+      // rather than a generic failure the office cannot act on.
+      if (error.message.includes('already settled')) {
+        return failure('Diese Rechnung ist bereits vollständig bezahlt.');
+      }
+      if (error.message.includes('remaining on this invoice')) {
+        return failure('Der Betrag ist höher als der offene Restbetrag dieser Rechnung.');
+      }
+      if (error.message.includes('predate the invoice')) {
+        return failure('Das Zahlungsdatum liegt vor dem Rechnungsdatum.');
+      }
+      if (error.message.includes('cancelled invoice')) {
+        return failure('Eine stornierte Rechnung kann nicht bezahlt werden.');
+      }
+      if (error.message.includes('draft invoice')) {
+        return failure('Ein Entwurf muss erst festgeschrieben werden.');
+      }
+      return failure('Die Zahlung konnte nicht verbucht werden.');
+    }
     revalidateBilling(invoiceId);
-    return { status: 'success', message: 'Rechnung als bezahlt markiert.' };
+    return { status: 'success', message: 'Zahlungseingang verbucht.' };
   } catch {
-    return failure('Die Rechnung konnte nicht als bezahlt markiert werden.');
+    return failure('Die Zahlung konnte nicht verbucht werden.');
   }
 }
 

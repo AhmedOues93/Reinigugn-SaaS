@@ -5,7 +5,7 @@ import { Badge, EmptyState, PageHeader, Section, Select, type Tone } from '@/com
 import { SubmitButton } from '@/components/form-controls';
 import { requireStaffCompany } from '@/lib/auth';
 import { listAffectedAssignments } from '@/lib/data/absences';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatDateTime } from '@/lib/format';
 import { reassignAffectedJob, reviewAbsence } from './actions';
 
 type Absence = {
@@ -13,6 +13,8 @@ type Absence = {
   member_id: string;
   absence_type: 'VACATION' | 'SICKNESS';
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  decision: 'REPORTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewed_at: string | null;
   start_date: string;
   end_date: string;
   note: string | null;
@@ -22,12 +24,21 @@ type Absence = {
   } | null;
 };
 
-const statusLabel: Record<Absence['status'], string> = {
+/*
+ * What the office actually did, not what the row's status column says.
+ *
+ * A sickness is stored APPROVED so planning treats the day as unavailable, but
+ * nobody approves an illness — showing "Genehmigt" against an absence an
+ * employee just reported is what made vacation look auto-approved.
+ */
+const decisionLabel: Record<Absence['decision'], string> = {
+  REPORTED: 'Gemeldet',
   PENDING: 'Offen',
   APPROVED: 'Genehmigt',
   REJECTED: 'Abgelehnt',
 };
-const statusTone: Record<Absence['status'], Tone> = {
+const decisionTone: Record<Absence['decision'], Tone> = {
+  REPORTED: 'info',
   PENDING: 'warning',
   APPROVED: 'success',
   REJECTED: 'danger',
@@ -38,7 +49,7 @@ export default async function AbsencePage() {
   const { data: rawAbsences, error } = await supabase
     .from('employee_absences')
     .select(
-      'id, member_id, absence_type, status, start_date, end_date, note, au_storage_path, company_members!employee_absences_member_id_fkey(profiles!company_members_profile_id_fkey(first_name,last_name))',
+      'id, member_id, absence_type, status, decision, reviewed_at, start_date, end_date, note, au_storage_path, company_members!employee_absences_member_id_fkey(profiles!company_members_profile_id_fkey(first_name,last_name))',
     )
     .eq('company_id', company.id)
     .order('created_at', { ascending: false });
@@ -105,7 +116,14 @@ export default async function AbsencePage() {
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Badge tone={statusTone[absence.status]}>{statusLabel[absence.status]}</Badge>
+            <span className="flex flex-col items-end gap-1">
+              <Badge tone={decisionTone[absence.decision]}>{decisionLabel[absence.decision]}</Badge>
+              {absence.reviewed_at && (
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {formatDateTime('de', absence.reviewed_at)}
+                </span>
+              )}
+            </span>
             {isVacation && absence.status === 'PENDING' && (
               <>
                 <form action={reviewAbsence.bind(null, absence.id, true)}>
