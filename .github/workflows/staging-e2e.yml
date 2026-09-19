@@ -1,0 +1,84 @@
+name: Staging end-to-end
+
+# Deliberately not on push.
+#
+# This suite signs in and writes rows, so it needs credentials and a disposable
+# environment. Running it on every pull request would mean handing repository
+# secrets to any fork that opens one, and would let two concurrent PRs write to
+# the same staging tenant at once.
+#
+# It runs on request, and nightly once staging exists.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Staging URL to test against (must not be production)'
+        required: true
+        type: string
+  schedule:
+    # 04:30 UTC, after the nightly job generation at 03:00 has produced work.
+    - cron: '30 4 * * *'
+
+concurrency:
+  # One run at a time: the suite writes into a shared staging tenant.
+  group: staging-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Authenticated workflows against staging
+    runs-on: ubuntu-latest
+    # Requires a reviewer-approved environment, so the credentials below cannot
+    # be read by a workflow from a fork.
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install the Playwright browser
+        run: pnpm --filter @reinigung/web exec playwright install --with-deps chromium
+
+      # A missing URL must stop the run rather than quietly fall back to
+      # Playwright's own server, which would test nothing.
+      - name: Resolve the target
+        id: target
+        run: |
+          url="${{ inputs.base_url || vars.STAGING_BASE_URL }}"
+          if [ -z "$url" ]; then
+            echo "::error::No staging URL. Set the repository variable STAGING_BASE_URL or pass base_url."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Run the authenticated suite
+        run: pnpm --filter @reinigung/web exec playwright test e2e/authenticated
+        env:
+          E2E_BASE_URL: ${{ steps.target.outputs.url }}
+          E2E_OWNER_EMAIL: ${{ secrets.E2E_OWNER_EMAIL }}
+          E2E_OWNER_PASSWORD: ${{ secrets.E2E_OWNER_PASSWORD }}
+          E2E_EMPLOYEE_EMAIL: ${{ secrets.E2E_EMPLOYEE_EMAIL }}
+          E2E_EMPLOYEE_PASSWORD: ${{ secrets.E2E_EMPLOYEE_PASSWORD }}
+          E2E_CUSTOMER_EMAIL: ${{ secrets.E2E_CUSTOMER_EMAIL }}
+          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD }}
+          E2E_RUN_ID: gh-${{ github.run_id }}
+          # E2E_ALLOW_PRODUCTION is never set here. The suite refuses a target
+          # that looks like production or that reports itself as production,
+          # and that refusal must not be defeatable from CI.
+
+      - name: Keep the report when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-e2e-report
+          path: apps/web/playwright-report/
+          retention-days: 14

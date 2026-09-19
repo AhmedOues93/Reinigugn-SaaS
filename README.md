@@ -18,8 +18,12 @@ Languages: German, English, Arabic (RTL), Turkish, Ukrainian.
 - Docker Desktop (for local Supabase)
 - Supabase CLI
 
-Deploying to a Supabase Cloud staging project, the environment matrix and the
-outbound-mail rules are in [docs/deployment.md](docs/deployment.md).
+Deployment and operations:
+
+- [docs/deployment.md](docs/deployment.md) — environment matrix, migrations, outbound mail, CI
+- [docs/supabase-staging-setup.md](docs/supabase-staging-setup.md) — creating the staging project, step by step
+- [docs/hosting.md](docs/hosting.md) — what the app needs from a host, and which free tiers fit
+- [docs/production-readiness.md](docs/production-readiness.md) — what remains before real customers
 
 ## Local setup
 

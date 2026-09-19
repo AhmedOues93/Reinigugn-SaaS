@@ -11,11 +11,50 @@
 -- run against anything that is not a local Supabase stack.
 \set ON_ERROR_STOP on
 
+/*
+ * Refusing to run anywhere it does not belong.
+ *
+ * The header above always claimed this was local-only, but for a long time
+ * nothing enforced it: pointing psql at a staging or production database and
+ * running this file would have created sign-in-able users with a password
+ * printed in the README. Two independent guards now stand in the way, because
+ * either one alone is too easy to defeat by accident.
+ *
+ * 1. Real data present. A database that already holds a company which is not
+ *    the demo one is somebody's real tenant. There is no situation in which
+ *    seeding demo users into it is correct.
+ *
+ * 2. Explicit acknowledgement. An empty production database would pass the
+ *    first guard, so the operator must also say out loud what they are doing:
+ *
+ *      psql -v ON_ERROR_STOP=1 \
+ *           -c "set sauberwerk.seed_confirmed = 'local-development'" \
+ *           -f supabase/seed/demo.sql
+ *
+ *    or, in one session, `set sauberwerk.seed_confirmed = 'local-development';`
+ *    before running this file. The value is deliberately a phrase rather than a
+ *    boolean, so it cannot be set true by a stray flag.
+ */
 do $$
+declare foreign_companies integer;
 begin
   if current_setting('server_version_num')::int < 150000 then
     raise exception 'PostgreSQL 15 or newer required';
   end if;
+
+  select count(*) into foreign_companies
+  from public.companies where slug not like 'demo-sauberwerk%';
+  if foreign_companies > 0 then
+    raise exception
+      'Refusing to seed: this database already holds % real tenant(s). The demo seed is for an empty local database only.',
+      foreign_companies;
+  end if;
+
+  if coalesce(current_setting('sauberwerk.seed_confirmed', true), '') <> 'local-development' then
+    raise exception
+      'Refusing to seed: set sauberwerk.seed_confirmed to ''local-development'' first (see the comment at the top of this file).';
+  end if;
+
   if exists (select 1 from public.companies where slug like 'demo-sauberwerk%') then
     raise notice 'Demo data already present; nothing to do.';
     return;

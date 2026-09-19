@@ -32,14 +32,22 @@ inside a Supabase client.
 | `SMTP_*`, `MAIL_FROM` | Mailpit, optional | provider credentials |
 | `MAIL_CATCH_ALL` / `MAIL_ALLOWED_RECIPIENTS` | not needed | **required** — see below |
 
-### There is no service-role key, and there must not be
+### One privileged credential, and only one
 
-The application talks to Supabase only with the publishable (anon) key. Every
-access decision — which tenant, which role, which customer — is made by
-row-level security in the database. Nothing in the repository reads
-`SUPABASE_SERVICE_ROLE_KEY`, and nothing should: a service-role key bypasses
-RLS completely, and any value reachable from a `NEXT_PUBLIC_` name is compiled
-into the browser bundle.
+The application talks to Supabase with the publishable (anon) key for
+everything a user does. Every access decision — which tenant, which role,
+which customer — is made by row-level security in the database.
+
+The single exception is the optional Resend delivery webhook
+(`app/api/webhooks/resend/route.ts`), which receives an unauthenticated request
+from the provider and must write without a user session. It uses
+`SUPABASE_SERVICE_ROLE_KEY` to call one append-only function, after verifying
+the request signature. Leave the key unset and the endpoint reports that it is
+not configured; everything else works.
+
+Nothing else may read that key. A service-role key bypasses RLS completely, and
+any value reachable from a `NEXT_PUBLIC_` name is compiled into the browser
+bundle.
 
 If a future feature seems to need one, it almost certainly needs a
 `security definer` function instead — that is how every privileged operation in
@@ -196,20 +204,24 @@ passing when that is absent — a green run never means "the workflow works" whe
 nothing was exercised. Point it at a disposable project: it signs in and writes
 rows.
 
-## Known gap: nothing generates work on a schedule
+## Recurring work is generated nightly
 
-Recurring plans create visits up to eight weeks ahead, and only when a plan is
-saved, reactivated, or a quote is accepted. There is no scheduler, so an
-untouched standing contract stops producing visits about two months later. The
-planning screen names the plans that are running out and offers to extend them,
-which is a prompt, not automation.
+Closed. `public.generate_due_jobs(56)` sweeps every active plan across every
+tenant and tops its visits up to an eight-week horizon. It is scheduled with
+`pg_cron` at 03:00 UTC, created by migration where the extension is available
+and by one SQL statement where it is not — see
+[supabase-staging-setup.md](supabase-staging-setup.md).
 
-Closing it properly needs one of:
+It runs in the database on purpose. The generation logic and its idempotency
+already live there, no credential has to leave the database, and free hosting
+tiers idle the web process — a schedule that depends on the app being awake is
+a schedule that silently stops.
 
-- `pg_cron` in the Supabase project calling `generate_jobs_for_schedule` for
-  each active plan, or
-- a scheduled request from the hosting platform to an authenticated route
-  handler.
+Each plan runs in its own subtransaction, so one tenant with a broken plan is
+recorded and skipped rather than costing everyone else their schedule. The
+sweep is revoked from `anon` and `authenticated`: no user session can run it.
+`supabase/test/scheduler.test.sql` covers idempotency, horizon extension,
+tenant isolation and those reach restrictions.
 
-Both need a decision about credentials for an unattended caller, which is why
-neither is in place yet.
+What still needs watching: nothing alerts if the cron job itself stops. See
+[production-readiness.md](production-readiness.md).

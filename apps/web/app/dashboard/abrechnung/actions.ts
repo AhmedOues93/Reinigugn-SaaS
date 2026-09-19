@@ -8,6 +8,7 @@ import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
 import { getInvoice, listBillableJobs } from '@/lib/data/billing';
 import { sendMail } from '@/lib/mail/transport';
 import { formatDate, formatMoney } from '@/lib/format';
+import { randomUUID } from 'node:crypto';
 
 function failure(message: string): FormState {
   return { status: 'error', message };
@@ -226,6 +227,9 @@ async function recordDelivery(
   recipient: string | null,
   status: 'SENT' | 'FAILED' | 'NOT_CONFIGURED' | 'MANUAL',
   detail: string | null,
+  provider: 'resend' | 'smtp' | null = null,
+  providerMessageId: string | null = null,
+  idempotencyKey: string | null = null,
 ) {
   const { supabase } = await requireStaffCompany();
   const { error } = await supabase.rpc('record_invoice_delivery', {
@@ -235,6 +239,9 @@ async function recordDelivery(
     p_recipient: recipient,
     p_status: status,
     p_detail: detail,
+    p_provider: provider,
+    p_provider_message_id: providerMessageId,
+    p_idempotency_key: idempotencyKey,
   });
   return error;
 }
@@ -277,15 +284,39 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
       ? `Guten Tag,\n\nanbei erhalten Sie die Rechnung ${invoice.invoice_number} über ${amount}, zahlbar bis ${due}.\nSie finden die Rechnung außerdem jederzeit in Ihrem Kundenportal.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`
       : `Guten Tag,\n\nsicher ist es Ihrer Aufmerksamkeit entgangen: Die Rechnung ${invoice.invoice_number} über ${amount} war am ${due} fällig und ist bei uns noch nicht eingegangen.\nBitte überweisen Sie den Betrag in den nächsten Tagen. Sollte sich Ihre Zahlung mit dieser Erinnerung überschnitten haben, betrachten Sie sie bitte als gegenstandslos.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`;
 
+  /*
+   * One key identifies this attempt end to end. The browser supplies it with
+   * the form, so a double-clicked button, a replayed server action and a
+   * user-initiated retry of the same failed send all carry the same value:
+   * Resend refuses to deliver twice, and `record_invoice_delivery` returns the
+   * row it already wrote instead of counting a second reminder. A fresh page
+   * load produces a new key, which is what a deliberate second send is.
+   */
+  const submitted = String(formData.get('idempotency_key') ?? '').trim();
+  const idempotencyKey = /^[A-Za-z0-9_-]{8,100}$/.test(submitted) ? submitted : randomUUID();
+
   const result = await sendMail({
     to: recipient,
     subject,
     text,
     replyTo: company.email,
     attachments: [{ filename: rendered.fileName, content: rendered.bytes, contentType: 'application/pdf' }],
+    idempotencyKey,
   });
 
-  const error = await recordDelivery(invoiceId, kind, 'EMAIL', recipient, result.status, result.detail);
+  const error = await recordDelivery(
+    invoiceId,
+    kind,
+    'EMAIL',
+    recipient,
+    result.status,
+    result.detail,
+    result.provider,
+    result.providerMessageId,
+    // Only a delivered message is worth de-duplicating: a failure must stay
+    // retryable, and a retry that succeeds must be recorded.
+    result.status === 'SENT' ? idempotencyKey : null,
+  );
   revalidateBilling(invoiceId);
   if (error) return failure('Der Versand konnte nicht protokolliert werden.');
   if (result.status === 'SENT') return { status: 'success', message: kind === 'INVOICE' ? `Rechnung an ${recipient} gesendet.` : `Zahlungserinnerung an ${recipient} gesendet.` };

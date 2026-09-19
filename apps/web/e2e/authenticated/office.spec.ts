@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The office surface, signed in.
@@ -13,25 +13,11 @@ import { expect, test } from '@playwright/test';
  * Without that configuration they skip rather than pass, so a green run never
  * means "the workflow works" when nothing was actually exercised.
  */
-const email = process.env.E2E_OWNER_EMAIL;
-const password = process.env.E2E_OWNER_PASSWORD;
-
-test.skip(
-  !email || !password,
-  'E2E_OWNER_EMAIL / E2E_OWNER_PASSWORD are not set — no backend to sign in to.',
-);
-
-async function signIn(page: import('@playwright/test').Page) {
-  await page.goto('/login');
-  await page.locator('input[type=email]').fill(email!);
-  await page.locator('input[name=password]').fill(password!);
-  await page.getByRole('button', { name: /anmelden/i }).click();
-  await page.waitForURL(/\/(dashboard|mitarbeiter|portal)/, { timeout: 30_000 });
-}
 
 test.describe('office, signed in', () => {
+  requireRole('owner');
   test.beforeEach(async ({ page }) => {
-    await signIn(page);
+    await signIn(page, 'owner');
   });
 
   test('the dashboard opens and shows the shell', async ({ page }) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useId, useState } from 'react';
 import { BellRing, Mail, PackageCheck } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Field, Input } from '@/components/ui';
@@ -29,12 +29,22 @@ export function SendInvoicePanel({
   const [sendState, send] = useActionState(sendAction, initialFormState);
   const [manualState, manual] = useActionState(manualAction, initialFormState);
   const [showManual, setShowManual] = useState(!mailConfigured);
+  // useId is stable across re-renders and unique per form instance, so the
+  // invoice and reminder panels never share a key.
+  const attemptKey = `${kind ?? 'INVOICE'}-${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
   const isReminder = kind === 'REMINDER';
 
   return (
     <div className="space-y-4">
       {mailConfigured ? (
         <form action={send} className="space-y-3">
+          {/*
+            One key per rendering of this form. A double-click, or a retry of
+            the same failed send, reuses it, so the provider refuses a second
+            delivery and the log gains no duplicate success. Reloading the page
+            mints a new one, which is what a deliberate second send is.
+          */}
+          <input type="hidden" name="idempotency_key" value={attemptKey} />
           <FormMessage status={sendState.status} message={sendState.message} />
           <Field label="Empfänger" htmlFor={`${kind}-recipient`} info="Standardmäßig die E-Mail-Adresse aus den Kundenstammdaten. Das PDF wird angehängt.">
             <Input id={`${kind}-recipient`} name="recipient" type="email" required defaultValue={defaultRecipient ?? ''} autoComplete="off" />

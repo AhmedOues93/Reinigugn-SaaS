@@ -9,8 +9,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Everything here is safe on any pull request, including from a fork: no job
+# reads a secret, and no job touches a deployed environment. The suites that
+# need credentials — the authenticated end-to-end specs, and the Supabase
+# integration tests — live in staging-e2e.yml, which runs on request against a
+# reviewer-approved environment.
 env:
-  # Keeps turbo's strict env mode from stripping what the build needs.
   TURBO_TELEMETRY_DISABLED: 1
   NEXT_TELEMETRY_DISABLED: 1
 
@@ -42,6 +46,7 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
 
   # The schema is the product's real contract, so every push proves the whole
   # migration history still applies to an empty database and that the SQL
