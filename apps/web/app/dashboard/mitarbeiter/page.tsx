@@ -3,7 +3,7 @@ import { listEmployees, type MemberFilter, type RoleFilter } from '@/lib/data/em
 import { requireStaffCompany } from '@/lib/auth';
 import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
 import { DataTable, FilterBar } from '@/components/data-table';
-import { MemberStatusBadge, RoleBadge } from '@/components/member-badges';
+import { AccountStateBadge, MemberStatusBadge, RoleBadge } from '@/components/member-badges';
 
 function roleFilter(value?: string): RoleFilter {
   return value === 'OFFICE' || value === 'EMPLOYEE' ? value : 'all';
@@ -103,7 +103,19 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
               );
             },
           },
-          { key: 'status', header: 'Status', mobile: 'status', cell: (member) => <MemberStatusBadge status={member.status as 'INVITED' | 'ACTIVE' | 'DISABLED'} /> },
+          {
+            key: 'status',
+            header: 'Zugang',
+            mobile: 'status',
+            // The account state, not the employment state. An expired
+            // invitation needs an action and now says so.
+            cell: (member) => (
+              <AccountStateBadge
+                status={member.status as 'INVITED' | 'ACTIVE' | 'DISABLED'}
+                invitationState={member.accountState?.invitation_state ?? null}
+              />
+            ),
+          },
         ]}
         empty={
           <EmptyState

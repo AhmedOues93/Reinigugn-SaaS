@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  Calculator,
   Bell,
   Building2,
   CalendarDays,
@@ -46,6 +47,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard/vertrieb/anfragen', label: 'nav.leads', icon: 'leads' },
       { href: '/dashboard/vertrieb/besichtigungen', label: 'nav.surveys', icon: 'surveys' },
+      { href: '/dashboard/kalkulation', label: 'nav.calculation', icon: 'calculation' },
       { href: '/dashboard/vertrieb/angebote', label: 'nav.quotes', icon: 'quotes' },
     ],
   },
@@ -100,6 +102,7 @@ export const navIcons = {
   leads: Inbox,
   surveys: ClipboardList,
   quotes: FileSignature,
+  calculation: Calculator,
   messages: MessageSquare,
   settings: Settings,
 } as const;

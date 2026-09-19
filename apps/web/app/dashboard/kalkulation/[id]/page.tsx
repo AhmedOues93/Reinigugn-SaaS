@@ -1,0 +1,424 @@
+import { notFound } from 'next/navigation';
+import { FileText, Lock, ReceiptText } from 'lucide-react';
+import { BackLink, Badge, Card, DataRow, PageHeader } from '@/components/ui';
+import { CalculationKpiBand } from '@/components/kalkulation/kpi-band';
+import { CalculationLineEditor, RemoveLineButton } from '@/components/kalkulation/line-editor';
+import {
+  AssumptionsPanel,
+  FinaliseCalculationAction,
+  QuoteFromCalculationForm,
+  ReviseCalculationAction,
+} from '@/components/kalkulation/workspace-panels';
+import { FilterTabs } from '@/components/ui';
+import {
+  formatBp,
+  formatMinutes,
+  getCalculation,
+  getLeistungsverzeichnis,
+  listCatalogItems,
+  unitLabels,
+  type CalculationLine,
+} from '@/lib/data/kalkulation';
+import { formatMoney } from '@/lib/format';
+import {
+  createQuoteFromCalculation,
+  finaliseCalculation,
+  removeCalculationLine,
+  reviseCalculation,
+  saveCalculationLine,
+  updateCalculation,
+} from '../actions';
+
+const tabs = [
+  { key: 'leistung', label: 'Leistung' },
+  { key: 'zeit', label: 'Zeit' },
+  { key: 'kosten', label: 'Kosten' },
+  { key: 'preis', label: 'Preis' },
+  { key: 'wirtschaftlichkeit', label: 'Wirtschaftlichkeit' },
+  { key: 'dokumente', label: 'Dokumente' },
+] as const;
+
+type TabKey = (typeof tabs)[number]['key'];
+
+function money(cents: number, currency: string) {
+  return formatMoney('de', cents, currency);
+}
+
+/**
+ * The Kalkulation workspace.
+ *
+ * Six views over one calculation rather than one endless form: the office
+ * works through service, then time, then cost, then price, and the six figures
+ * that matter stay on screen throughout, because changing a productivity
+ * without seeing what it does to the margin is how bad contracts get signed.
+ */
+export default async function CalculationPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const tab = (tabs.find((entry) => entry.key === query.tab)?.key ?? 'leistung') as TabKey;
+
+  const [calculation, catalog] = await Promise.all([getCalculation(id), listCatalogItems()]);
+  if (!calculation) notFound();
+  const verzeichnis = tab === 'dokumente' ? await getLeistungsverzeichnis(id) : [];
+
+  const isDraft = calculation.status === 'ENTWURF';
+  const currency = calculation.currency;
+  const recurring = calculation.lines.filter((line) => line.frequency !== 'EINMALIG');
+  const oneOff = calculation.lines.filter((line) => line.frequency === 'EINMALIG');
+
+  const lineRow = (line: CalculationLine, cells: React.ReactNode) => (
+    <li key={line.id} className="grid gap-2 border-b border-border/70 px-4 py-3 last:border-0 sm:px-5">
+      {cells}
+    </li>
+  );
+
+  return (
+    <div className="mx-auto max-w-6xl">
+      <BackLink href="/dashboard/kalkulation">Kalkulationen</BackLink>
+
+      <PageHeader
+        title={calculation.title}
+        description={`Version ${calculation.version}`}
+        meta={
+          <>
+            {isDraft ? (
+              <Badge tone="warning">Entwurf</Badge>
+            ) : calculation.status === 'FINAL' ? (
+              <Badge tone="success">
+                <Lock className="size-3.5" aria-hidden="true" />
+                Festgeschrieben
+              </Badge>
+            ) : (
+              <Badge tone="neutral">Verworfen</Badge>
+            )}
+          </>
+        }
+        actions={
+          isDraft ? (
+            <FinaliseCalculationAction action={finaliseCalculation.bind(null, id)} />
+          ) : (
+            <ReviseCalculationAction action={reviseCalculation.bind(null, id)} />
+          )
+        }
+      />
+
+      <CalculationKpiBand calculation={calculation} />
+
+      <FilterTabs
+        className="mb-4"
+        label="Kalkulationsbereich"
+        items={tabs.map((entry) => ({
+          href: `/dashboard/kalkulation/${id}?tab=${entry.key}`,
+          label: entry.label,
+          active: tab === entry.key,
+        }))}
+      />
+
+      {/* --- Leistung: what is performed, where and how often ---------------- */}
+      {tab === 'leistung' && (
+        <div className="space-y-4">
+          <Card className="overflow-hidden">
+            <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5">Positionen</h2>
+            {calculation.lines.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-muted-foreground sm:px-5">
+                Noch keine Position erfasst.
+              </p>
+            ) : (
+              <ul className="mt-3">
+                {calculation.lines.map((line) =>
+                  lineRow(
+                    line,
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {line.area_name} · {line.service_name}
+                        </p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {line.quantity.toLocaleString('de-DE')} {unitLabels[line.calculation_unit]}
+                          {line.frequency === 'EINMALIG'
+                            ? ' · einmalig'
+                            : ` · ${line.frequency_count.toLocaleString('de-DE')}× ${line.frequency === 'PRO_WOCHE' ? 'pro Woche' : 'pro Monat'}`}
+                          {line.productivity_per_hour != null &&
+                            ` · ${line.productivity_per_hour.toLocaleString('de-DE')} m²/h`}
+                        </p>
+                        {line.override_reason && (
+                          <p className="mt-1 text-sm text-warning">
+                            Zeit manuell gesetzt: {line.override_reason}
+                          </p>
+                        )}
+                      </div>
+                      {isDraft && (
+                        <RemoveLineButton
+                          action={removeCalculationLine.bind(null, id, line.id)}
+                          label={`${line.area_name} · ${line.service_name}`}
+                        />
+                      )}
+                    </div>,
+                  ),
+                )}
+              </ul>
+            )}
+          </Card>
+
+          {isDraft && (
+            <CalculationLineEditor
+              action={saveCalculationLine.bind(null, id, null)}
+              catalog={catalog}
+            />
+          )}
+        </div>
+      )}
+
+      {/* --- Zeit: how the productivity became hours ------------------------- */}
+      {tab === 'zeit' && (
+        <Card className="overflow-hidden">
+          <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5">Zeitbedarf</h2>
+          <p className="px-4 pb-1 pt-1 text-sm text-muted-foreground sm:px-5">
+            Aus Menge und Richtleistung berechnet. Rüstzeit wird je Einsatz zusätzlich angesetzt.
+          </p>
+          <ul className="mt-3">
+            {calculation.lines.map((line) =>
+              lineRow(
+                line,
+                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                  <span className="min-w-0 font-medium">{line.area_name} · {line.service_name}</span>
+                  <span className="text-sm tabular-nums text-muted-foreground">
+                    {formatMinutes(line.minutes_per_service)} je Einsatz ·{' '}
+                    {line.services_per_month.toLocaleString('de-DE', { maximumFractionDigits: 2 })} Einsätze/Monat
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    {line.frequency === 'EINMALIG'
+                      ? `${formatMinutes(line.minutes_per_service)} einmalig`
+                      : `${formatMinutes(line.monthly_minutes)} /Monat`}
+                  </span>
+                </div>,
+              ),
+            )}
+          </ul>
+          <dl className="divide-y divide-border/70 border-t border-border px-4 sm:px-5">
+            <DataRow
+              label="Rüstzeit je Einsatz"
+              value={`${calculation.setup_minutes_per_visit.toLocaleString('de-DE')} Min.`}
+            />
+            <DataRow label="Einsätze pro Woche" value={calculation.visits_per_week.toLocaleString('de-DE')} />
+            <DataRow label="Produktive Stunden pro Monat" value={formatMinutes(calculation.monthly_minutes)} />
+            {calculation.one_off_minutes > 0 && (
+              <DataRow label="Einmalige Leistungen" value={formatMinutes(calculation.one_off_minutes)} />
+            )}
+          </dl>
+        </Card>
+      )}
+
+      {/* --- Kosten: the cost side, component by component ------------------- */}
+      {tab === 'kosten' && (
+        <div className="space-y-4">
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Personalkosten je produktiver Stunde</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Kalkulationslohn × (1 + Lohnnebenkosten) ÷ produktiver Anteil × (1 + Gemeinkosten)
+            </p>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow label="Kalkulationslohn" value={`${money(calculation.wage_cents_per_hour, currency)} / Std.`} />
+              <DataRow label="Lohnnebenkosten" value={formatBp(calculation.ancillary_rate_bp)} />
+              <DataRow label="Produktiver Anteil der bezahlten Zeit" value={formatBp(calculation.productive_rate_bp)} />
+              <DataRow label="Gemeinkostenzuschlag" value={formatBp(calculation.overhead_rate_bp)} />
+              <DataRow
+                label="= Kosten je produktiver Stunde"
+                value={
+                  <span className="font-semibold tabular-nums">
+                    {money(calculation.personnel_cost_cents_per_hour, currency)}
+                  </span>
+                }
+              />
+            </dl>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Monatliche Kosten</h2>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow label="Personal" value={money(calculation.personnel_cost_cents_month, currency)} />
+              <DataRow label="Material" value={money(calculation.material_cost_cents_month, currency)} />
+              <DataRow label="Maschinen" value={money(calculation.machine_cost_cents_month, currency)} />
+              <DataRow label="Fahrt" value={money(calculation.travel_cost_cents_month, currency)} />
+              <DataRow label="Sonstiges" value={money(calculation.other_cost_cents_month, currency)} />
+              <DataRow
+                label="Gesamtkosten pro Monat"
+                value={
+                  <span className="font-semibold tabular-nums">
+                    {money(calculation.total_cost_cents_month, currency)}
+                  </span>
+                }
+              />
+              <DataRow label="Gesamtkosten je Einsatz" value={money(calculation.total_cost_cents_visit, currency)} />
+              {calculation.one_off_cost_cents > 0 && (
+                <DataRow label="Einmalige Leistungen" value={money(calculation.one_off_cost_cents, currency)} />
+              )}
+            </dl>
+          </Card>
+
+          {isDraft && <AssumptionsPanel action={updateCalculation.bind(null, id)} calculation={calculation} />}
+        </div>
+      )}
+
+      {/* --- Preis: proposal, override, and the markup/margin distinction ---- */}
+      {tab === 'preis' && (
+        <div className="space-y-4">
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Preisbildung</h2>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow label="Kosten pro Monat" value={money(calculation.total_cost_cents_month, currency)} />
+              <DataRow label="Zielmarge" value={formatBp(calculation.target_margin_bp)} />
+              <DataRow
+                label="Vorschlag (Kosten ÷ (1 − Marge))"
+                value={money(calculation.proposed_price_cents_month, currency)}
+              />
+              <DataRow
+                label="Verkaufspreis pro Monat"
+                value={
+                  <span className="font-semibold tabular-nums">
+                    {money(calculation.selling_price_cents_month, currency)}
+                  </span>
+                }
+              />
+              {calculation.price_override_reason && (
+                <DataRow label="Abweichung begründet mit" value={calculation.price_override_reason} />
+              )}
+              {calculation.one_off_price_cents > 0 && (
+                <DataRow label="Einmalige Leistungen" value={money(calculation.one_off_price_cents, currency)} />
+              )}
+            </dl>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Marge und Aufschlag sind nicht dasselbe</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Die Marge misst den Gewinn am <em>Preis</em>, der Aufschlag misst ihn an den{' '}
+              <em>Kosten</em>. Beide Zahlen gehören zur selben Kalkulation und sind verschieden —
+              „Kosten plus 30 %“ ergibt keine 30 % Marge, sondern nur rund 23 %.
+            </p>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow label="Marge = (Preis − Kosten) ÷ Preis" value={formatBp(calculation.margin_bp)} />
+              <DataRow label="Aufschlag = (Preis − Kosten) ÷ Kosten" value={formatBp(calculation.markup_bp)} />
+              <DataRow
+                label="Deckungsbeitrag pro Monat"
+                value={money(calculation.contribution_cents_month, currency)}
+              />
+            </dl>
+          </Card>
+        </div>
+      )}
+
+      {/* --- Wirtschaftlichkeit: the year, and the floor under the price ----- */}
+      {tab === 'wirtschaftlichkeit' && (
+        <div className="space-y-4">
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Erwartete Wirtschaftlichkeit</h2>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow label="Umsatz pro Monat" value={money(calculation.selling_price_cents_month, currency)} />
+              <DataRow label="Umsatz pro Jahr" value={money(calculation.selling_price_cents_month * 12, currency)} />
+              <DataRow label="Kosten pro Monat" value={money(calculation.total_cost_cents_month, currency)} />
+              <DataRow label="Kosten pro Jahr" value={money(calculation.total_cost_cents_month * 12, currency)} />
+              <DataRow
+                label="Deckungsbeitrag pro Monat"
+                value={money(calculation.contribution_cents_month, currency)}
+              />
+              <DataRow
+                label="Deckungsbeitrag pro Jahr"
+                value={
+                  <span className="font-semibold tabular-nums">
+                    {money(calculation.contribution_cents_month * 12, currency)}
+                  </span>
+                }
+              />
+            </dl>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Untergrenze</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Unter diesem Stundensatz deckt der Auftrag seine eigenen Kosten nicht mehr.
+            </p>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow
+                label="Mindeststundensatz (Kostendeckung)"
+                value={
+                  <span className="font-semibold tabular-nums">
+                    {money(calculation.break_even_rate_cents_per_hour, currency)} / Std.
+                  </span>
+                }
+              />
+              <DataRow
+                label="Kosten je produktiver Stunde"
+                value={money(calculation.cost_cents_per_productive_hour, currency)}
+              />
+            </dl>
+          </Card>
+        </div>
+      )}
+
+      {/* --- Dokumente: what leaves the building ----------------------------- */}
+      {tab === 'dokumente' && (
+        <div className="space-y-4">
+          <Card className="overflow-hidden">
+            <div className="px-4 pt-4 sm:px-5">
+              <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+                <FileText className="size-4 text-muted-foreground" aria-hidden="true" />
+                Leistungsverzeichnis
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Was der Kunde erhält. Enthält bewusst keine Kosten, Löhne oder Margen.
+              </p>
+            </div>
+            <ul className="mt-3">
+              {verzeichnis.map((row) => (
+                <li key={row.line_position} className="border-b border-border/70 px-4 py-3 last:border-0 sm:px-5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                    <span className="font-medium">{row.area_name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {row.quantity.toLocaleString('de-DE')} {unitLabels[row.calculation_unit]}
+                    </span>
+                    <span className="text-sm">{row.frequency_label}</span>
+                  </div>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{row.service_name}</p>
+                  {row.scope_note && <p className="mt-1 text-sm leading-6">{row.scope_note}</p>}
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card className="p-5">
+            <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+              <ReceiptText className="size-4 text-muted-foreground" aria-hidden="true" />
+              Angebot erstellen
+            </h2>
+            {calculation.status === 'FINAL' ? (
+              <QuoteFromCalculationForm
+                action={createQuoteFromCalculation.bind(null, id)}
+                defaultTitle={calculation.title}
+              />
+            ) : (
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Erst festschreiben. Ein Angebot muss auf Zahlen stehen, die sich nicht mehr ändern
+                können — sonst verschiebt eine spätere Lohnanpassung rückwirkend das, was der Kunde
+                bekommen hat.
+              </p>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {oneOff.length > 0 && tab === 'leistung' && (
+        <p className="mt-4 text-sm leading-6 text-muted-foreground">
+          {oneOff.length} einmalige {oneOff.length === 1 ? 'Leistung' : 'Leistungen'} werden separat
+          abgerechnet und sind nicht Teil der monatlichen Zahlen. {recurring.length} wiederkehrende{' '}
+          {recurring.length === 1 ? 'Position' : 'Positionen'} bilden den Monatswert.
+        </p>
+      )}
+    </div>
+  );
+}

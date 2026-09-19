@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { ButtonLink, EmptyState, StatBand } from '@/components/ui';
+import { OfficeActionPanel } from '@/components/dashboard/action-items';
 import { landingPathForRole } from '@/lib/landing';
 import { getCurrentCompany } from '@/lib/auth';
-import { getBillingSummary } from '@/lib/data/billing';
+import { getBillingSummary, getOfficeActionItems } from '@/lib/data/billing';
 import { getDashboardMetrics, listTodayBoard } from '@/lib/data/jobs';
 import { getSalesSummary } from '@/lib/data/sales';
 import { formatDate, formatMoney, formatTimeRange } from '@/lib/format';
@@ -31,11 +32,12 @@ function first<T>(value: T | T[] | null | undefined) {
 export default async function DashboardPage() {
   const { membership, profile } = await getCurrentCompany();
   if (membership && membership.role !== 'OWNER' && membership.role !== 'OFFICE') redirect(landingPathForRole(membership.role));
-  const [metrics, board, billing, sales, locale] = await Promise.all([
+  const [metrics, board, billing, sales, actions, locale] = await Promise.all([
     getDashboardMetrics(),
     listTodayBoard(),
     getBillingSummary(),
     getSalesSummary(),
+    getOfficeActionItems(),
     currentLocale(),
   ]);
 
@@ -87,6 +89,13 @@ export default async function DashboardPage() {
           {t(locale, 'dashboard.openPlanning')}
         </ButtonLink>
       </header>
+
+      {/*
+        What needs a decision, above the numbers. The stat band describes the
+        day; this says what to do about it, and each row goes straight to the
+        screen that can resolve it.
+      */}
+      <OfficeActionPanel items={actions} />
 
       <StatBand
         items={[

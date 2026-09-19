@@ -24,3 +24,34 @@ export async function MemberStatusBadge({ status }: { status: 'INVITED' | 'ACTIV
   const locale = await currentLocale();
   return <Badge tone={statusTone[status]}>{t(locale, `status.${status}` as Parameters<typeof t>[1])}</Badge>;
 }
+
+/**
+ * The account side of a member: can this person sign in, and does the office
+ * need to do something about it.
+ *
+ * INVITED alone could not say whether the link was sent this morning or died
+ * three weeks ago — the same badge for both, and nobody finds out until the
+ * employee calls. An expired invitation is the one state that needs an action,
+ * so it is the one that looks different.
+ */
+export function AccountStateBadge({
+  status,
+  invitationState,
+}: {
+  status: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  invitationState: 'GUELTIG' | 'ANGENOMMEN' | 'ABGELAUFEN' | 'ZURUECKGEZOGEN' | 'UNBEKANNT' | null;
+}) {
+  if (status === 'ACTIVE') return <Badge tone="success">Aktiv</Badge>;
+  if (status === 'DISABLED') return <Badge tone="neutral">Deaktiviert</Badge>;
+
+  switch (invitationState) {
+    case 'ABGELAUFEN':
+      return <Badge tone="danger">Einladung abgelaufen</Badge>;
+    case 'ZURUECKGEZOGEN':
+      return <Badge tone="warning">Einladung ersetzt</Badge>;
+    case 'GUELTIG':
+      return <Badge tone="warning">Einladung offen</Badge>;
+    default:
+      return <Badge tone="neutral">Keine Einladung</Badge>;
+  }
+}

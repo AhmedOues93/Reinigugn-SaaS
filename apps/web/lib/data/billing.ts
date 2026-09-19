@@ -234,6 +234,97 @@ export async function getBillingSummary() {
   };
 }
 
+export type OfficeActionItems = {
+  /** Finished work the customer has been asked to accept and has not yet. */
+  awaitingAcceptance: number;
+  /** Services the customer reported a problem with; blocked from billing. */
+  disputedServices: number;
+  /** Accepted or acceptance-free work with no invoice line yet. */
+  readyToBill: number;
+  /** Contracts demanding a portal acceptance no contact can give. */
+  acceptanceConfigWarnings: number;
+  /** Visits in the next seven days with nobody assigned. */
+  unassignedSoon: number;
+  /** Active plans whose generated visits run out within four weeks. */
+  planHorizonWarnings: number;
+  /** Invitations that expired without being used. */
+  expiredInvitations: number;
+};
+
+/**
+ * The things an office has to act on, counted from data that already exists.
+ *
+ * Deliberately only counts — the dashboard links to the screen that can
+ * actually resolve each one. No figure here is estimated or extrapolated: an
+ * invented number on a dashboard is worse than a missing one, because somebody
+ * will plan around it.
+ */
+export async function getOfficeActionItems(): Promise<OfficeActionItems> {
+  const { supabase, company } = await requireStaffCompany();
+  const today = berlinDateKey();
+  const inAWeek = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const inFourWeeks = new Date(Date.now() + 28 * 86_400_000).toISOString().slice(0, 10);
+
+  const [
+    { count: awaiting },
+    { count: disputed },
+    { data: queue },
+    { data: configWarnings },
+    { data: soonJobs },
+    { data: schedules },
+    { count: expiredInvitations },
+  ] = await Promise.all([
+    supabase
+      .from('service_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'ABNAHME_AUSSTEHEND'),
+    supabase
+      .from('service_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', 'PROBLEM_GEMELDET'),
+    supabase.rpc('list_service_records', { p_from: null, p_to: null, p_queue: 'BEREIT' }),
+    supabase.rpc('list_acceptance_config_warnings'),
+    supabase
+      .from('jobs')
+      .select('id, job_assignments(member_id)')
+      .eq('company_id', company.id)
+      .gte('scheduled_date', today)
+      .lte('scheduled_date', inAWeek)
+      .in('status', ['PLANNED', 'CONFIRMED']),
+    supabase
+      .from('service_schedules')
+      .select('id, jobs(scheduled_date)')
+      .eq('company_id', company.id)
+      .eq('is_active', true),
+    supabase
+      .from('company_invitations')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .is('accepted_at', null)
+      .is('revoked_at', null)
+      .lt('expires_at', new Date().toISOString()),
+  ]);
+
+  // A plan whose furthest generated visit is inside four weeks will run dry.
+  const horizonWarnings = (schedules ?? []).filter((schedule) => {
+    const dates = (schedule.jobs ?? []).map((job) => job.scheduled_date).filter(Boolean);
+    if (dates.length === 0) return true;
+    return dates.sort().at(-1)! < inFourWeeks;
+  }).length;
+
+  return {
+    awaitingAcceptance: awaiting ?? 0,
+    disputedServices: disputed ?? 0,
+    readyToBill: (queue ?? []).length,
+    acceptanceConfigWarnings: (configWarnings ?? []).length,
+    unassignedSoon: (soonJobs ?? []).filter((job) => (job.job_assignments ?? []).length === 0).length,
+    planHorizonWarnings: horizonWarnings,
+    expiredInvitations: expiredInvitations ?? 0,
+  };
+}
+
 export type InvoiceDelivery = {
   id: string;
   kind: 'INVOICE' | 'REMINDER';

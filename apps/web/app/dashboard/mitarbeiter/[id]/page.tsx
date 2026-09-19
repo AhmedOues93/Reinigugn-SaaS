@@ -4,7 +4,7 @@ import { Mail, Pencil, Phone } from 'lucide-react';
 import { getEmployee } from '@/lib/data/employees';
 import { requireStaffCompany } from '@/lib/auth';
 import { BackLink, ButtonLink, DataRow, Notice, PageHeader, Section } from '@/components/ui';
-import { MemberStatusBadge, RoleBadge } from '@/components/member-badges';
+import { AccountStateBadge, RoleBadge } from '@/components/member-badges';
 import { StatusToggle } from '@/components/status-toggle';
 import { ResendInvitation } from '@/components/resend-invitation';
 import { setEmployeeActive } from '../actions';
@@ -71,11 +71,23 @@ export default async function EmployeeDetailPage({
   ]);
   const employeeThreads = threads.filter((thread) => thread.employee_member_id === employee.id);
 
+  /*
+   * The account line, which is about signing in rather than about employment.
+   * An invitation that quietly ran out used to read exactly like one sent this
+   * morning, so the office only learned of it when the employee rang up.
+   */
+  const invitationExpired =
+    employee.status === 'INVITED' &&
+    Boolean(lastInvitation?.expires_at) &&
+    new Date(lastInvitation!.expires_at as string) <= new Date();
+
   const account =
     employee.status === 'INVITED'
-      ? lastInvitation?.expires_at
-        ? `Einladung gültig bis ${formatDateTime('de', lastInvitation.expires_at)}`
-        : 'Einladung versendet'
+      ? invitationExpired
+        ? `Einladung am ${formatDateTime('de', lastInvitation!.expires_at as string)} abgelaufen – bitte erneut senden`
+        : lastInvitation?.expires_at
+          ? `Einladung gültig bis ${formatDateTime('de', lastInvitation.expires_at)}`
+          : 'Einladung versendet'
       : employee.joined_at
         ? `Beigetreten am ${formatDate('de', employee.joined_at)}`
         : '—';
@@ -101,7 +113,18 @@ export default async function EmployeeDetailPage({
         meta={
           <>
             <RoleBadge role={employee.role as 'OFFICE' | 'EMPLOYEE'} />
-            <MemberStatusBadge status={employee.status as 'INVITED' | 'ACTIVE' | 'DISABLED'} />
+            <AccountStateBadge
+              status={employee.status as 'INVITED' | 'ACTIVE' | 'DISABLED'}
+              invitationState={
+                employee.status === 'ACTIVE'
+                  ? 'ANGENOMMEN'
+                  : invitationExpired
+                    ? 'ABGELAUFEN'
+                    : lastInvitation
+                      ? 'GUELTIG'
+                      : 'UNBEKANNT'
+              }
+            />
           </>
         }
         actions={

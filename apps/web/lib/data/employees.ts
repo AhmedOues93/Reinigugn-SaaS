@@ -26,6 +26,33 @@ async function employeeDetailsByProfile(
   return new Map((data ?? []).map((detail) => [detail.profile_id, detail]));
 }
 
+export type InvitationState = 'GUELTIG' | 'ANGENOMMEN' | 'ABGELAUFEN' | 'ZURUECKGEZOGEN' | 'UNBEKANNT';
+
+export type MemberAccountState = {
+  member_id: string;
+  status: 'INVITED' | 'ACTIVE' | 'DISABLED';
+  invitation_state: InvitationState;
+  invitation_expires_at: string | null;
+  invitation_sent_at: string | null;
+  /** NONE or RESEND — decided in the database so no screen re-derives it. */
+  suggested_action: 'NONE' | 'RESEND';
+};
+
+/**
+ * Account state per member, keyed by member id.
+ *
+ * Deliberately separate from `employee_details`: an employee can be fully
+ * documented and unable to log in, or active with barely any master data. The
+ * office needs to see which of the two it is looking at.
+ */
+async function memberAccountStates(
+  supabase: Awaited<ReturnType<typeof requireStaffCompany>>['supabase'],
+): Promise<Map<string, MemberAccountState>> {
+  const { data, error } = await supabase.rpc('list_member_account_states');
+  if (error) return new Map();
+  return new Map(((data ?? []) as MemberAccountState[]).map((row) => [row.member_id, row]));
+}
+
 export async function listEmployees({ search, role = 'all', status = 'all' }: { search?: string; role?: RoleFilter; status?: MemberFilter }) {
   const { supabase, company } = await requireStaffCompany();
   let query = supabase
@@ -46,8 +73,14 @@ export async function listEmployees({ search, role = 'all', status = 'all' }: { 
   const members = data ?? [];
   const profileIds = members.flatMap((member) => member.profile_id ? [member.profile_id] : []);
   const detailsByProfile = await employeeDetailsByProfile(supabase, company.id, profileIds);
+  // The account side of each member, kept apart from their employment data:
+  // this answers "can this person sign in", not "are they employed". An
+  // invitation that quietly expired is otherwise indistinguishable from one
+  // sent this morning, and the office finds out only when the employee says so.
+  const accountStates = await memberAccountStates(supabase);
   const employees = members.map((member) => ({
     ...member,
+    accountState: accountStates.get(member.id) ?? null,
     employee_details: member.profile_id && detailsByProfile.has(member.profile_id)
       ? [detailsByProfile.get(member.profile_id)]
       : [],
