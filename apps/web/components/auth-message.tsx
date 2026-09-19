@@ -1,4 +1,24 @@
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { cn } from '@reinigung/ui';
+
+/** Server-side outcome of an auth action, shown at the top of the form. */
 export function AuthMessage({ error, message }: { error?: string; message?: string }) {
   if (!error && !message) return null;
-  return <p className={error ? 'rounded-md bg-red-50 p-3 text-sm text-red-700' : 'rounded-md bg-teal-50 p-3 text-sm text-teal-800'}>{error ?? message}</p>;
+  const isError = Boolean(error);
+  return (
+    <p
+      role={isError ? 'alert' : 'status'}
+      className={cn(
+        'flex animate-fade-in items-start gap-2.5 rounded-xl border p-3.5 text-sm leading-6',
+        isError ? 'border-danger/20 bg-danger-soft text-danger' : 'border-success/20 bg-success-soft text-success',
+      )}
+    >
+      {isError ? (
+        <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      ) : (
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      )}
+      <span className="break-anywhere font-medium">{error ?? message}</span>
+    </p>
+  );
 }

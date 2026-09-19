@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { landingPathForRole } from '@/lib/landing';
 
 export async function requireUser() {
   const supabase = await createClient();
@@ -12,7 +13,7 @@ export async function getCurrentCompany() {
   const { supabase, user } = await requireUser();
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, phone, avatar_storage_path')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -42,7 +43,7 @@ export async function requireStaffCompany() {
   const context = await getCurrentCompany();
   const company = context.membership?.companies as unknown as { id: string; name: string } | null;
   if (!company || !['OWNER', 'OFFICE'].includes(context.membership?.role ?? '')) {
-    redirect('/dashboard/mein-bereich');
+    redirect(landingPathForRole(context.membership?.role));
   }
   return { ...context, company, role: context.membership!.role as 'OWNER' | 'OFFICE' };
 }

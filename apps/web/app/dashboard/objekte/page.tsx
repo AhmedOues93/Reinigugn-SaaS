@@ -1,17 +1,88 @@
-import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Building2, Plus, Search } from 'lucide-react';
 import { listCleaningObjects } from '@/lib/data/cleaning-objects';
 import { listCustomerOptions, type StatusFilter } from '@/lib/data/customers';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
+import { DataTable, FilterBar } from '@/components/data-table';
 import { StatusBadge } from '@/components/status-badge';
 
-function statusFilter(value?: string): StatusFilter { return value === 'all' || value === 'inactive' ? value : 'active'; }
+function statusFilter(value?: string): StatusFilter {
+  return value === 'all' || value === 'inactive' ? value : 'active';
+}
+
+type CleaningObject = Awaited<ReturnType<typeof listCleaningObjects>>[number];
 
 export default async function ObjectsPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string; customer?: string }> }) {
-  const query = await searchParams; const status = statusFilter(query.status);
-  const [objects, customers] = await Promise.all([listCleaningObjects({ search: query.search, status, customerId: query.customer }), listCustomerOptions()]);
-  return <div className="mx-auto max-w-6xl"><div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl font-semibold tracking-tight">Objekte</h1><p className="mt-2 text-slate-600">Verwalte die Reinigungsobjekte deiner Kunden.</p></div><Link href="/dashboard/objekte/neu"><Button><Plus className="mr-2 size-4" />Objekt anlegen</Button></Link></div>
-    <Card className="overflow-hidden"><form className="grid gap-3 border-b p-4 md:grid-cols-[1fr_220px_170px_auto]"><div className="relative"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-slate-400" /><Input className="pl-9" name="search" defaultValue={query.search ?? ''} placeholder="Objektname oder Ort suchen" /></div><select name="customer" defaultValue={query.customer ?? ''} className="h-10 rounded-md border bg-white px-3 text-sm"><option value="">Alle Kunden</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select><select name="status" defaultValue={status} className="h-10 rounded-md border bg-white px-3 text-sm"><option value="active">Aktive Objekte</option><option value="inactive">Archivierte Objekte</option><option value="all">Alle Objekte</option></select><Button type="submit" variant="outline">Filtern</Button></form>
-      {objects.length === 0 ? <div className="p-10 text-center"><p className="font-medium">Sie haben noch keine Objekte angelegt.</p><p className="mt-2 text-sm text-slate-600">Lege zuerst einen Kunden und dann das passende Reinigungsobjekt an.</p><Link className="mt-5 inline-flex" href="/dashboard/objekte/neu"><Button>Objekt anlegen</Button></Link></div> : <div className="overflow-x-auto"><table className="w-full min-w-[690px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3 font-medium">Objekt</th><th className="px-5 py-3 font-medium">Kunde</th><th className="px-5 py-3 font-medium">Ort</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3" /></tr></thead><tbody className="divide-y">{objects.map((object) => <tr key={object.id} className="hover:bg-slate-50"><td className="px-5 py-4"><Link className="font-medium text-slate-900 hover:text-teal-700" href={`/dashboard/objekte/${object.id}`}>{object.name}</Link></td><td className="px-5 py-4 text-slate-600">{object.customers?.[0]?.name ?? '—'}</td><td className="px-5 py-4 text-slate-600">{object.city || '—'}</td><td className="px-5 py-4"><StatusBadge isActive={object.is_active} /></td><td className="px-5 py-4 text-right"><Link className="font-medium text-teal-700 hover:underline" href={`/dashboard/objekte/${object.id}/bearbeiten`}>Bearbeiten</Link></td></tr>)}</tbody></table></div>}</Card>
-  </div>;
+  const query = await searchParams;
+  const status = statusFilter(query.status);
+  const [objects, customers] = await Promise.all([
+    listCleaningObjects({ search: query.search, status, customerId: query.customer }),
+    listCustomerOptions(),
+  ]);
+  const filtered = Boolean(query.search || query.customer) || status !== 'active';
+
+  return (
+    <>
+      <PageHeader
+        title="Objekte"
+        description="Die Orte, an denen gereinigt wird – mit Zugang, Ansprechperson und Leistungsumfang."
+        actions={
+          <ButtonLink href="/dashboard/objekte/neu">
+            <Plus className="size-4" aria-hidden="true" />
+            Objekt anlegen
+          </ButtonLink>
+        }
+      />
+
+      <FilterBar>
+        <div className="relative sm:col-span-2 md:min-w-[16rem]">
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input className="ps-9" name="search" defaultValue={query.search ?? ''} placeholder="Objektname oder Ort" aria-label="Objekte durchsuchen" />
+        </div>
+        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+          <option value="">Alle Kunden</option>
+          {customers.map((customer) => (
+            <option key={customer.id} value={customer.id}>
+              {customer.name}
+            </option>
+          ))}
+        </Select>
+        <Select name="status" defaultValue={status} aria-label="Status">
+          <option value="active">Aktive Objekte</option>
+          <option value="inactive">Archivierte Objekte</option>
+          <option value="all">Alle Objekte</option>
+        </Select>
+        <Button type="submit" variant="outline">
+          Anwenden
+        </Button>
+      </FilterBar>
+
+      <DataTable<CleaningObject>
+        caption="Objekte"
+        rows={objects}
+        rowKey={(object) => object.id}
+        rowHref={(object) => `/dashboard/objekte/${object.id}`}
+        columns={[
+          { key: 'name', header: 'Objekt', mobile: 'title', cell: (object) => object.name },
+          { key: 'customer', header: 'Kunde', mobile: 'subtitle', cell: (object) => object.customers?.[0]?.name ?? '—' },
+          { key: 'city', header: 'Ort', cell: (object) => object.city || '—' },
+          { key: 'status', header: 'Status', mobile: 'status', cell: (object) => <StatusBadge isActive={object.is_active} /> },
+        ]}
+        empty={
+          <EmptyState
+            icon={<Building2 />}
+            title={filtered ? 'Keine passenden Objekte' : 'Noch keine Objekte'}
+            body={filtered ? 'Passen Sie Suche, Kunde oder Status an.' : 'Legen Sie zuerst einen Kunden und dann sein Reinigungsobjekt an.'}
+            action={
+              !filtered && (
+                <ButtonLink href="/dashboard/objekte/neu">
+                  <Plus className="size-4" aria-hidden="true" />
+                  Objekt anlegen
+                </ButtonLink>
+              )
+            }
+          />
+        }
+      />
+    </>
+  );
 }

@@ -21,7 +21,7 @@ export async function signUp(formData: FormData) {
     options: { emailRedirectTo: appUrl('/auth/callback') },
   });
   if (error) withMessage('/signup', 'error', error.message);
-  redirect('/login?message=Bitte bestätige zürst deine E-Mail-Adresse.');
+  redirect('/login?message=Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.');
 }
 
 export async function login(formData: FormData) {

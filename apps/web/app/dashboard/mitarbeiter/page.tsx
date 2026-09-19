@@ -1,19 +1,126 @@
-import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, UserRoundCheck } from 'lucide-react';
 import { listEmployees, type MemberFilter, type RoleFilter } from '@/lib/data/employees';
 import { requireStaffCompany } from '@/lib/auth';
-import { Button, Card, Input } from '@/components/ui';
+import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
+import { DataTable, FilterBar } from '@/components/data-table';
 import { MemberStatusBadge, RoleBadge } from '@/components/member-badges';
 
-function roleFilter(value?: string): RoleFilter { return value === 'OFFICE' || value === 'EMPLOYEE' ? value : 'all'; }
-function statusFilter(value?: string): MemberFilter { return value === 'INVITED' || value === 'ACTIVE' || value === 'DISABLED' ? value : 'all'; }
-function profileFor(member: { profiles: unknown }) { const profile = member.profiles as { first_name: string | null; last_name: string | null; phone: string | null } | { first_name: string | null; last_name: string | null; phone: string | null }[] | null; return Array.isArray(profile) ? profile[0] : profile; }
+function roleFilter(value?: string): RoleFilter {
+  return value === 'OFFICE' || value === 'EMPLOYEE' ? value : 'all';
+}
+function statusFilter(value?: string): MemberFilter {
+  return value === 'INVITED' || value === 'ACTIVE' || value === 'DISABLED' ? value : 'all';
+}
+type ProfileRow = { first_name: string | null; last_name: string | null; phone: string | null };
+function profileFor(member: { profiles: unknown }) {
+  const profile = member.profiles as ProfileRow | ProfileRow[] | null;
+  return Array.isArray(profile) ? profile[0] : profile;
+}
+
+type Member = Awaited<ReturnType<typeof listEmployees>>[number];
+
+function nameOf(member: Member) {
+  const profile = profileFor(member);
+  return (
+    [profile?.first_name ?? member.invited_first_name, profile?.last_name ?? member.invited_last_name].filter(Boolean).join(' ') || '—'
+  );
+}
 
 export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ search?: string; role?: string; status?: string }> }) {
-  const query = await searchParams; const role = roleFilter(query.role); const status = statusFilter(query.status);
+  const query = await searchParams;
+  const role = roleFilter(query.role);
+  const status = statusFilter(query.status);
   const [{ role: actorRole }, employees] = await Promise.all([requireStaffCompany(), listEmployees({ search: query.search, role, status })]);
-  return <div className="mx-auto max-w-6xl"><div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 className="text-2xl font-semibold tracking-tight">Mitarbeiter</h1><p className="mt-2 text-slate-600">Verwalte dein Büro- und Reinigungsteam.</p></div><Link href="/dashboard/mitarbeiter/neu"><Button><Plus className="mr-2 size-4" />Mitarbeiter hinzufügen</Button></Link></div>
-    <Card className="overflow-hidden"><form className="grid gap-3 border-b p-4 md:grid-cols-[1fr_160px_160px_auto]"><div className="relative"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-slate-400" /><Input className="pl-9" name="search" defaultValue={query.search ?? ''} placeholder="Name, E-Mail oder Telefon suchen" /></div><select className="h-10 rounded-md border bg-white px-3 text-sm" name="role" defaultValue={role}><option value="all">Alle Rollen</option>{actorRole === 'OWNER' && <option value="OFFICE">Büro</option>}<option value="EMPLOYEE">Mitarbeiter</option></select><select className="h-10 rounded-md border bg-white px-3 text-sm" name="status" defaultValue={status}><option value="all">Alle Status</option><option value="INVITED">Eingeladen</option><option value="ACTIVE">Aktiv</option><option value="DISABLED">Deaktiviert</option></select><Button type="submit" variant="outline">Filtern</Button></form>
-      {employees.length === 0 ? <div className="p-10 text-center"><p className="font-medium">Sie haben noch keine Mitarbeiter angelegt.</p><p className="mt-2 text-sm text-slate-600">Sende eine Einladung, um dein Team aufzubauen.</p><Link className="mt-5 inline-flex" href="/dashboard/mitarbeiter/neu"><Button>Mitarbeiter hinzufügen</Button></Link></div> : <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3 font-medium">Name</th><th className="px-5 py-3 font-medium">E-Mail</th><th className="px-5 py-3 font-medium">Telefon</th><th className="px-5 py-3 font-medium">Rolle</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3 font-medium">Arbeitsdaten</th><th className="px-5 py-3" /></tr></thead><tbody className="divide-y">{employees.map((member) => { const profile = profileFor(member); const details = member.employee_details?.[0]; const name = [profile?.first_name ?? member.invited_first_name, profile?.last_name ?? member.invited_last_name].filter(Boolean).join(' ') || '—'; return <tr key={member.id} className="hover:bg-slate-50"><td className="px-5 py-4"><Link className="font-medium text-slate-900 hover:text-teal-700" href={`/dashboard/mitarbeiter/${member.id}`}>{name}</Link></td><td className="px-5 py-4 text-slate-600">{member.invited_email || '—'}</td><td className="px-5 py-4 text-slate-600">{profile?.phone ?? member.invited_phone ?? '—'}</td><td className="px-5 py-4"><RoleBadge role={member.role as 'OFFICE' | 'EMPLOYEE'} /></td><td className="px-5 py-4"><MemberStatusBadge status={member.status as 'INVITED' | 'ACTIVE' | 'DISABLED'} /></td><td className="px-5 py-4 text-slate-600">{details?.employee_number || '—'}{details?.weekly_hours != null && <span className="ml-2 text-xs">{details.weekly_hours} Std.</span>}</td><td className="px-5 py-4 text-right"><Link className="font-medium text-teal-700 hover:underline" href={`/dashboard/mitarbeiter/${member.id}`}>Ansehen</Link></td></tr>; })}</tbody></table></div>}</Card>
-  </div>;
+  const filtered = Boolean(query.search) || role !== 'all' || status !== 'all';
+
+  return (
+    <>
+      <PageHeader
+        title="Mitarbeiter"
+        description="Büro- und Reinigungsteam, Einladungen und Arbeitsdaten."
+        actions={
+          <ButtonLink href="/dashboard/mitarbeiter/neu">
+            <Plus className="size-4" aria-hidden="true" />
+            Mitarbeiter einladen
+          </ButtonLink>
+        }
+      />
+
+      <FilterBar>
+        <div className="relative sm:col-span-2 md:min-w-[16rem]">
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input className="ps-9" name="search" defaultValue={query.search ?? ''} placeholder="Name, E-Mail oder Telefon" aria-label="Mitarbeiter durchsuchen" />
+        </div>
+        <Select name="role" defaultValue={role} aria-label="Rolle">
+          <option value="all">Alle Rollen</option>
+          {actorRole === 'OWNER' && <option value="OFFICE">Büro</option>}
+          <option value="EMPLOYEE">Reinigungskraft</option>
+        </Select>
+        <Select name="status" defaultValue={status} aria-label="Status">
+          <option value="all">Alle Status</option>
+          <option value="INVITED">Eingeladen</option>
+          <option value="ACTIVE">Aktiv</option>
+          <option value="DISABLED">Deaktiviert</option>
+        </Select>
+        <Button type="submit" variant="outline">
+          Anwenden
+        </Button>
+      </FilterBar>
+
+      <DataTable<Member>
+        caption="Mitarbeiter"
+        rows={employees}
+        rowKey={(member) => member.id}
+        rowHref={(member) => `/dashboard/mitarbeiter/${member.id}`}
+        columns={[
+          {
+            key: 'name',
+            header: 'Name',
+            mobile: 'title',
+            cell: (member) => (
+              <span className="flex items-center gap-3">
+                <span aria-hidden="true" className="hidden size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-semibold text-primary md:grid">
+                  {nameOf(member).slice(0, 1)}
+                </span>
+                {nameOf(member)}
+              </span>
+            ),
+          },
+          { key: 'email', header: 'E-Mail', mobile: 'subtitle', cell: (member) => <span className="break-anywhere">{member.invited_email || '—'}</span> },
+          { key: 'phone', header: 'Telefon', hideBelow: 'xl', cell: (member) => profileFor(member)?.phone ?? member.invited_phone ?? '—' },
+          { key: 'role', header: 'Rolle', cell: (member) => <RoleBadge role={member.role as 'OFFICE' | 'EMPLOYEE'} /> },
+          {
+            key: 'work',
+            header: 'Personalnr. / Stunden',
+            hideBelow: 'lg',
+            cell: (member) => {
+              const details = member.employee_details?.[0];
+              return (
+                <span className="tabular-nums">
+                  {details?.employee_number || '—'}
+                  {details?.weekly_hours != null && <span className="ms-2 text-xs">{details.weekly_hours} Std./Wo.</span>}
+                </span>
+              );
+            },
+          },
+          { key: 'status', header: 'Status', mobile: 'status', cell: (member) => <MemberStatusBadge status={member.status as 'INVITED' | 'ACTIVE' | 'DISABLED'} /> },
+        ]}
+        empty={
+          <EmptyState
+            icon={<UserRoundCheck />}
+            title={filtered ? 'Keine passenden Mitarbeiter' : 'Noch kein Team'}
+            body={filtered ? 'Passen Sie Suche, Rolle oder Status an.' : 'Laden Sie Ihr Team ein – jede Person erhält einen eigenen Zugang zur Mitarbeiter-App.'}
+            action={
+              !filtered && (
+                <ButtonLink href="/dashboard/mitarbeiter/neu">
+                  <Plus className="size-4" aria-hidden="true" />
+                  Mitarbeiter einladen
+                </ButtonLink>
+              )
+            }
+          />
+        }
+      />
+    </>
+  );
 }

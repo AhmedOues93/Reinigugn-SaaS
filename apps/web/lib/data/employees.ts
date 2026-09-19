@@ -66,7 +66,7 @@ export async function getEmployee(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('company_members')
-    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_url), company_invitations(id, expires_at, accepted_at, revoked_at, created_at)')
+    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_storage_path), company_invitations(id, expires_at, accepted_at, revoked_at, created_at)')
     .eq('company_id', company.id)
     .eq('id', id)
     .in('role', ['OFFICE', 'EMPLOYEE'])

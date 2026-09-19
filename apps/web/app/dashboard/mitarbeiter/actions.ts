@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { employeeInvitationSchema, employeeUpdateSchema, invitationTokenSchema, passwordSchema } from '@reinigung/validation';
 import { type FormState } from '@/lib/actions';
+import { landingPathForRole } from '@/lib/landing';
 import { requireStaffCompany } from '@/lib/auth';
 import { createInvitationToken, hashInvitationToken, invitationExpiresAt, invitationCookieName, type InvitationPreview } from '@/lib/invitations';
 import { mailService } from '@/lib/mail/invitations';
@@ -102,12 +103,15 @@ async function completeInvitationFromCookie(): Promise<FormState> {
   if (!token) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return failure('Bitte melde dich zürst an.');
+  if (!user) return failure('Bitte melde dich zuerst an.');
+  const { data: previewData } = await supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle();
+  const preview = previewData as InvitationPreview | null;
   const { error } = await supabase.rpc('complete_company_invitation', { p_token: token });
   if (error) return failure('Die Einladung konnte nicht angenommen werden. Stelle sicher, dass du mit der eingeladenen E-Mail-Adresse angemeldet bist.');
   (await cookies()).delete(invitationCookieName);
   revalidatePath('/dashboard');
-  return { status: 'success', id: 'accepted' };
+  // Land on the surface that belongs to the accepted role, not always the dashboard.
+  return { status: 'success', id: 'accepted', redirectTo: landingPathForRole(preview?.role) };
 }
 
 export async function acceptInvitation(_: FormState, _formData: FormData): Promise<FormState> {

@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation';
+import { getCurrentCompany } from '@/lib/auth';
+import { landingPathForRole } from '@/lib/landing';
 
-export default function Home() {
-  redirect('/dashboard');
+export default async function Home() {
+  const { membership } = await getCurrentCompany();
+  redirect(landingPathForRole(membership?.role));
 }
