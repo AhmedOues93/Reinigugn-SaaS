@@ -12,3 +12,10 @@ supabase/.temp
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# Claude Code local worktrees
+.claude/worktrees/
+
+# Playwright
+playwright-report/
+test-results/

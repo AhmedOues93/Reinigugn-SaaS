@@ -6,7 +6,7 @@ export type InvitationPreview = {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'OFFICE' | 'EMPLOYEE';
+  role: 'OFFICE' | 'EMPLOYEE' | 'CUSTOMER';
   company_name: string;
   expires_at: string;
 };

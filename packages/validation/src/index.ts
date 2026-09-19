@@ -83,6 +83,12 @@ const optionalDate = z.preprocess(
   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gültiges Datum ein.').optional(),
 );
 
+/** The five product locales, kept in one place so the schemas, the UI and the
+ * database language constraints cannot drift apart. */
+export const supportedLocaleSchema = z.enum(['de', 'en', 'ar', 'tr', 'uk'], {
+  errorMap: () => ({ message: 'Bitte wähle eine unterstützte Sprache.' }),
+});
+
 export const employeeRoleSchema = z.enum(['OFFICE', 'EMPLOYEE'], { errorMap: () => ({ message: 'Bitte wähle eine gültige Rolle.' }) });
 
 export const employeeInvitationSchema = z.object({
@@ -96,11 +102,18 @@ export const employeeInvitationSchema = z.object({
   employment_start_date: optionalDate,
   employment_end_date: optionalDate,
   employment_type: z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
-  preferred_language: z.enum(['de', 'en', 'fr', 'ar', 'tr', 'ro', 'pl']).default('de'),
+  preferred_language: supportedLocaleSchema.default('de'),
   notes: optionalText(4_000, 'Die Notizen'),
 }).refine((value) => !value.employment_end_date || !value.employment_start_date || value.employment_end_date >= value.employment_start_date, { message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.', path: ['employment_end_date'] });
 
 export const employeeUpdateSchema = employeeInvitationSchema;
+
+export const customerPortalInvitationSchema = z.object({
+  first_name: z.string().trim().min(1, 'Bitte gib einen Vornamen ein.').max(120, 'Der Vorname ist zu lang.'),
+  last_name: z.string().trim().min(1, 'Bitte gib einen Nachnamen ein.').max(120, 'Der Nachname ist zu lang.'),
+  email: emailSchema,
+  phone: optionalText(64, 'Die Telefonnummer'),
+});
 
 export const invitationTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{32,128}$/, 'Der Einladungslink ist ungültig.');
 

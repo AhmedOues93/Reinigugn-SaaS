@@ -1,19 +1,177 @@
 import Link from 'next/link';
-import { Bell, Building2, CalendarDays, ChevronDown, ClipboardCheck, Clock3, FileText, LayoutDashboard, Menu, MessageSquare, Receipt, Settings, Users, UserRoundCheck, Wrench } from 'lucide-react';
-import { logout } from '@/app/(auth)/actions';
-import { LanguageSelector } from '@/components/language-selector';
-import { t, type Locale, type TranslationKey } from '@/lib/i18n';
+import {
+  Bell,
+  Building2,
+  CalendarDays,
+  CalendarOff,
+  ClipboardCheck,
+  ClipboardList,
+  Clock3,
+  FileSignature,
+  FileText,
+  Inbox,
+  LayoutDashboard,
+  MessageSquare,
+  MessageSquareWarning,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  UserRoundCheck,
+  Users,
+} from 'lucide-react';
+import { CompanyBrand } from '@/components/company-brand';
+import { DashboardNav } from '@/components/dashboard-nav';
+import { DashboardUserMenu } from '@/components/dashboard-user-menu';
+import { QuickCreateMenu } from '@/components/quick-create-menu';
+import type { CompanyBranding } from '@/lib/data/branding';
+import { direction, t, type Locale, type TranslationKey } from '@/lib/i18n';
 
-const navigation: { href: string; label: TranslationKey; icon: typeof LayoutDashboard; active?: boolean }[] = [
-  { href: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard, active: true }, { href: '/dashboard/kunden', label: 'nav.customers', icon: Users, active: true }, { href: '/dashboard/objekte', label: 'nav.objects', icon: Building2, active: true }, { href: '/dashboard/mitarbeiter', label: 'nav.employees', icon: UserRoundCheck, active: true }, { href: '/dashboard/planung', label: 'nav.planning', icon: CalendarDays, active: true }, { href: '/dashboard/auftraege', label: 'nav.jobs', icon: ClipboardCheck, active: true }, { href: '/dashboard/arbeitszeiten', label: 'nav.time', icon: Clock3, active: true }, { href: '/dashboard/urlaub-krankheit', label: 'nav.leave', icon: CalendarDays, active: true }, { href: '/dashboard/reklamationen', label: 'nav.complaints', icon: Bell, active: true }, { href: '/dashboard/qualitaetskontrolle', label: 'nav.quality', icon: ClipboardCheck, active: true }, { href: '/dashboard/nachrichten', label: 'nav.messages', icon: MessageSquare, active: true }, { href: '/dashboard/leistungsnachweise', label: 'nav.serviceRecords', icon: FileText, active: true }, { href: '/dashboard/abrechnung', label: 'nav.billing', icon: Receipt }, { href: '/dashboard/settings', label: 'nav.settings', icon: Settings, active: true },
+export type NavGroup = { label: TranslationKey; items: { href: string; label: TranslationKey; icon: string }[] };
+
+/**
+ * Navigation grouped the way the office works through a week: win work, look
+ * after customers, run the operation, lead the team, keep quality, get paid.
+ * The icon is a name rather than a component so this stays a server module.
+ */
+export const navGroups: NavGroup[] = [
+  {
+    label: 'nav.groupOverview',
+    items: [
+      { href: '/dashboard', label: 'nav.dashboard', icon: 'dashboard' },
+      { href: '/dashboard/nachrichten', label: 'nav.messages', icon: 'messages' },
+    ],
+  },
+  {
+    label: 'nav.groupSales',
+    items: [
+      { href: '/dashboard/vertrieb/anfragen', label: 'nav.leads', icon: 'leads' },
+      { href: '/dashboard/vertrieb/besichtigungen', label: 'nav.surveys', icon: 'surveys' },
+      { href: '/dashboard/vertrieb/angebote', label: 'nav.quotes', icon: 'quotes' },
+    ],
+  },
+  {
+    label: 'nav.groupCustomers',
+    items: [
+      { href: '/dashboard/kunden', label: 'nav.customers', icon: 'customers' },
+      { href: '/dashboard/objekte', label: 'nav.objects', icon: 'objects' },
+    ],
+  },
+  {
+    label: 'nav.groupOperations',
+    items: [
+      { href: '/dashboard/planung', label: 'nav.planning', icon: 'planning' },
+      { href: '/dashboard/auftraege', label: 'nav.jobs', icon: 'jobs' },
+      { href: '/dashboard/arbeitszeiten', label: 'nav.time', icon: 'time' },
+      { href: '/dashboard/leistungsnachweise', label: 'nav.serviceRecords', icon: 'records' },
+      { href: '/dashboard/checklisten', label: 'nav.checklists', icon: 'checklists' },
+    ],
+  },
+  {
+    label: 'nav.groupTeam',
+    items: [
+      { href: '/dashboard/mitarbeiter', label: 'nav.employees', icon: 'employees' },
+      { href: '/dashboard/urlaub-krankheit', label: 'nav.leave', icon: 'leave' },
+    ],
+  },
+  {
+    label: 'nav.groupQuality',
+    items: [
+      { href: '/dashboard/reklamationen', label: 'nav.complaints', icon: 'complaints' },
+      { href: '/dashboard/qualitaetskontrolle', label: 'nav.quality', icon: 'quality' },
+    ],
+  },
+  { label: 'nav.groupFinance', items: [{ href: '/dashboard/abrechnung', label: 'nav.billing', icon: 'billing' }] },
 ];
 
-function Navigation({ role, locale }: { role: 'OWNER' | 'OFFICE' | 'EMPLOYEE'; locale: Locale }) {
-  const entries = role === 'EMPLOYEE' ? [{ href: '/dashboard/mein-bereich', label: 'nav.myArea' as TranslationKey, icon: LayoutDashboard, active: true }, { href: '/dashboard/urlaub-krankheit', label: 'nav.leave' as TranslationKey, icon: CalendarDays, active: true }, { href: '/dashboard/nachrichten', label: 'nav.messages' as TranslationKey, icon: MessageSquare, active: true }] : navigation;
-  return <nav className="space-y-1" aria-label={t(locale, 'common.menu')}>{entries.map(({ href, label, icon: Icon, active }) => <Link key={href} href={href} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"><Icon className="size-4" aria-hidden="true" />{t(locale, label)}{!active && <span className="ms-auto text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t(locale, 'nav.soon')}</span>}</Link>)}</nav>;
-}
+export const navIcons = {
+  dashboard: LayoutDashboard,
+  customers: Users,
+  objects: Building2,
+  planning: CalendarDays,
+  jobs: ClipboardCheck,
+  time: Clock3,
+  records: FileText,
+  checklists: ClipboardList,
+  employees: UserRoundCheck,
+  leave: CalendarOff,
+  complaints: MessageSquareWarning,
+  quality: ShieldCheck,
+  billing: Receipt,
+  leads: Inbox,
+  surveys: ClipboardList,
+  quotes: FileSignature,
+  messages: MessageSquare,
+  settings: Settings,
+} as const;
 
-export function DashboardShell({ children, companyName, email, role, locale, unreadNotifications }: { children: React.ReactNode; companyName: string; email: string; role: 'OWNER' | 'OFFICE' | 'EMPLOYEE'; locale: Locale; unreadNotifications: number }) {
-  const access = role === 'OWNER' ? 'common.ownerAccess' : role === 'OFFICE' ? 'common.officeAccess' : 'common.employeeAccess';
-  return <div className="min-h-screen bg-slate-50" dir={locale === 'ar' ? 'rtl' : 'ltr'}><aside className="fixed inset-y-0 hidden w-64 border-r bg-white p-4 lg:block"><Link href="/dashboard" className="mb-8 flex items-center gap-2 px-2 text-lg font-semibold tracking-tight">Sauber<span className="text-teal-700">Werk</span></Link><Navigation role={role} locale={locale} /><div className="absolute bottom-5 start-4 end-4 rounded-md bg-slate-50 p-3 text-xs text-slate-500"><p className="font-medium text-slate-700">{companyName}</p><p className="mt-1">{t(locale, access)}</p></div></aside><header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-4 lg:ms-64 lg:px-8"><details className="lg:hidden"><summary className="flex cursor-pointer list-none items-center rounded-md p-2 hover:bg-slate-100"><Menu className="size-5" /><span className="sr-only">{t(locale, 'common.menu')}</span></summary><div className="absolute start-0 top-16 h-[calc(100vh-4rem)] w-72 overflow-auto border-r bg-white p-4 shadow-lg"><Navigation role={role} locale={locale} /></div></details><div className="hidden items-center gap-2 text-sm text-slate-600 lg:flex"><Wrench className="size-4 text-teal-700" /><span>{companyName}</span></div><Link href="/dashboard/nachrichten" className="relative ms-auto rounded p-2 hover:bg-slate-100" aria-label={t(locale, 'nav.messages')}><Bell className="size-5" />{unreadNotifications > 0 && <span className="absolute end-0 top-0 grid min-w-4 place-items-center rounded-full bg-teal-700 px-1 text-[10px] text-white">{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}</Link><details className="relative ms-2"><summary className="flex cursor-pointer list-none items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100"><span className="grid size-8 place-items-center rounded-full bg-teal-100 font-semibold text-teal-800">{email.slice(0, 1).toUpperCase()}</span><span className="hidden max-w-48 truncate sm:block">{email}</span><ChevronDown className="size-4 text-slate-500" /></summary><div className="absolute end-0 mt-2 w-56 rounded-md border bg-white p-1 shadow-lg"><LanguageSelector locale={locale} /><Link className="block rounded px-3 py-2 text-sm hover:bg-slate-50" href="/dashboard/settings">{t(locale, 'common.settings')}</Link><form action={logout}><button className="w-full rounded px-3 py-2 text-start text-sm hover:bg-slate-50" type="submit">{t(locale, 'common.logout')}</button></form></div></details></header><main className="p-4 sm:p-6 lg:ms-64 lg:p-8">{children}</main></div>;
+export function DashboardShell({
+  children,
+  branding,
+  companyName,
+  email,
+  role,
+  locale,
+  unreadNotifications,
+}: {
+  children: React.ReactNode;
+  branding: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
+  companyName: string;
+  email: string;
+  role: 'OWNER' | 'OFFICE';
+  locale: Locale;
+  unreadNotifications: number;
+}) {
+  const accessKey: TranslationKey = role === 'OWNER' ? 'common.ownerAccess' : 'common.officeAccess';
+
+  return (
+    <div className="min-h-[100dvh] bg-background" dir={direction(locale)}>
+      {/* Desktop rail on Tiefsee. A scrolling middle keeps the footer pinned. */}
+      <aside className="surface-ink fixed inset-y-0 start-0 z-30 hidden w-[260px] flex-col lg:flex">
+        <div className="flex h-16 shrink-0 items-center px-5 [&_img]:brightness-0 [&_img]:invert">
+          <CompanyBrand branding={branding} href="/dashboard" className="text-white [&_span_span]:text-highlight" />
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 pb-4 pt-2 [scrollbar-color:hsl(var(--ink-line))_transparent] [scrollbar-width:thin]">
+          <DashboardNav locale={locale} unread={unreadNotifications} />
+        </div>
+        <div className="shrink-0 border-t border-ink-line px-5 py-4">
+          <p className="truncate text-sm font-medium text-white">{companyName}</p>
+          <p className="mt-0.5 text-xs text-ink-muted">{t(locale, accessKey)}</p>
+        </div>
+      </aside>
+
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur-md lg:ms-[260px]">
+        <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center gap-2 px-4 sm:px-6 lg:px-10">
+          <DashboardNav locale={locale} unread={unreadNotifications} mobile branding={branding} companyName={companyName} />
+          <div className="min-w-0 lg:hidden [&_span]:block [&_span]:truncate">
+            <CompanyBrand branding={branding} href="/dashboard" size="sm" className="min-w-0" />
+          </div>
+
+          <div className="ms-auto flex items-center gap-1.5">
+            <QuickCreateMenu />
+            <Link
+              href="/dashboard/nachrichten"
+              className="relative grid size-10 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground max-md:size-touch"
+              aria-label={
+                unreadNotifications > 0
+                  ? `${t(locale, 'nav.messages')} (${unreadNotifications})`
+                  : t(locale, 'nav.messages')
+              }
+            >
+              <Bell className="size-[18px]" aria-hidden="true" />
+              {unreadNotifications > 0 && (
+                <span className="absolute end-1.5 top-1.5 grid min-w-[1.05rem] place-items-center rounded-full bg-danger px-1 text-[10px] font-semibold leading-4 text-white ring-2 ring-background">
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </span>
+              )}
+            </Link>
+            <DashboardUserMenu locale={locale} email={email} />
+          </div>
+        </div>
+      </header>
+
+      <main className="lg:ms-[260px]">
+        <div className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-8">{children}</div>
+      </main>
+    </div>
+  );
 }

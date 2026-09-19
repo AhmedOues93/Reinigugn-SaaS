@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SauberWerk">
+  <rect width="512" height="512" fill="#0f766e"/>
+  <path d="M198 158h116a24 24 0 0 1 24 24v46H174v-46a24 24 0 0 1 24-24z" fill="#ffffff"/>
+  <rect x="240" y="228" width="32" height="64" fill="#ffffff"/>
+  <path d="M182 292h148l18 84a24 24 0 0 1-23 29H187a24 24 0 0 1-23-29z" fill="#ffffff" opacity="0.92"/>
+</svg>

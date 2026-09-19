@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type SetAllCookies } from '@supabase/ssr';
+import { supabasePublishableKey, supabaseUrl } from '@/lib/env';
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -9,8 +10,8 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      supabaseUrl(),
+      supabasePublishableKey(),
       {
         cookies: {
           getAll: () => request.cookies.getAll(),

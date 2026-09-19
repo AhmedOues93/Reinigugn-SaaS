@@ -1,2 +1,34 @@
-import { ScheduleForm } from '@/components/schedule-form'; import { Card } from '@/components/ui'; import { listCustomerOptions } from '@/lib/data/customers'; import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects'; import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists'; import { listActiveEmployeeOptions } from '@/lib/data/jobs'; import { createServiceSchedule } from '../../actions';
-export default async function NewSchedulePage() { const [customers, objects, employees, templates] = await Promise.all([listCustomerOptions(), listCleaningObjectOptions(), listActiveEmployeeOptions(), listActiveChecklistTemplateOptions()]); return <div className="mx-auto max-w-3xl"><h1 className="text-2xl font-semibold">Wiederkehrenden Plan erstellen</h1><Card className="mt-7 p-5 sm:p-7"><ScheduleForm customers={customers} objects={objects} employees={employees} templates={templates} action={createServiceSchedule} submitLabel="Plan erstellen" /></Card></div>; }
+import { ScheduleForm } from '@/components/schedule-form';
+import { FormPage } from '@/components/ui';
+import { listCustomerOptions } from '@/lib/data/customers';
+import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
+import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
+import { listActiveEmployeeOptions } from '@/lib/data/jobs';
+import { createServiceSchedule } from '../../actions';
+
+export default async function NewSchedulePage() {
+  const [customers, objects, employees, templates] = await Promise.all([
+    listCustomerOptions(),
+    listCleaningObjectOptions(),
+    listActiveEmployeeOptions(),
+    listActiveChecklistTemplateOptions(),
+  ]);
+
+  return (
+    <FormPage
+      back={{ href: '/dashboard/planung/plaene', label: 'Wiederkehrende Pläne' }}
+      title="Wiederkehrenden Plan erstellen"
+      description="Der Rhythmus wird einmal festgelegt und erzeugt die nächsten acht Wochen an Einsätzen."
+      width="narrow"
+    >
+      <ScheduleForm
+        customers={customers}
+        objects={objects}
+        employees={employees}
+        templates={templates}
+        action={createServiceSchedule}
+        submitLabel="Plan erstellen"
+      />
+    </FormPage>
+  );
+}

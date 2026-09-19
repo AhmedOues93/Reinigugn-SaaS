@@ -2,14 +2,122 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { FormMessage, SubmitButton } from '@/components/form-controls';
+import { useFormStatus } from 'react-dom';
+import { Camera, ChevronDown } from 'lucide-react';
+import { Button, Select, Textarea } from '@/components/ui';
+import { FormMessage } from '@/components/form-controls';
 import { initialFormState } from '@/lib/actions';
+import { t, type Locale } from '@/lib/i18n';
 
 type ChecklistItem = { id: string; title: string };
 type Action = (state: typeof initialFormState, formData: FormData) => Promise<typeof initialFormState>;
 
-export function JobPhotoUpload({ action, checklistItems }: { action: Action; checklistItems: ChecklistItem[] }) {
-  const [state, formAction] = useActionState(action, initialFormState); const [preview, setPreview] = useState<string | null>(null);
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
-  return <section className="rounded-lg border bg-white p-5"><h2 className="text-lg font-semibold">Foto dokumentieren</h2><p className="mt-1 text-sm text-slate-600">Nimm ein Bild auf oder wähle eines vom Geraet. Maximal 10 MB.</p><form action={formAction} className="mt-5 space-y-4"><FormMessage status={state.status} message={state.message} /><label className="block text-sm font-medium">Foto<input className="mt-2 block w-full text-sm" type="file" name="photo" accept="image/jpeg,image/png,image/webp" capture="environment" required onChange={(event) => { const file = event.target.files?.[0]; if (preview) URL.revokeObjectURL(preview); setPreview(file ? URL.createObjectURL(file) : null); }} /></label>{preview && <img src={preview} alt="Vorschau des ausgewählten Fotos" className="max-h-72 w-full rounded-md object-cover" />}<label className="block text-sm font-medium">Kategorie<select className="mt-1.5 h-11 w-full rounded-md border bg-white px-3" name="category" defaultValue="DOCUMENTATION"><option value="BEFORE">Vorher</option><option value="AFTER">Nachher</option><option value="DOCUMENTATION">Dokumentation</option></select></label>{checklistItems.length > 0 && <label className="block text-sm font-medium">Checklistenpunkt (optional)<select className="mt-1.5 h-11 w-full rounded-md border bg-white px-3" name="checklist_item_id" defaultValue=""><option value="">Keinem Punkt zuordnen</option>{checklistItems.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}<label className="block text-sm font-medium">Notiz (optional)<textarea className="mt-1.5 min-h-24 w-full rounded-md border p-3 text-sm" name="description" maxLength={500} placeholder="Kurze Information zum Foto" /></label><SubmitButton>Foto hochladen</SubmitButton></form></section>;
+function UploadButton({ locale }: { locale: Locale }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="block" disabled={pending}>
+      {pending ? t(locale, 'common.saving') : t(locale, 'emp.photo.upload')}
+    </Button>
+  );
+}
+
+export function JobPhotoUpload({
+  action,
+  checklistItems,
+  locale = 'de',
+}: {
+  action: Action;
+  checklistItems: ChecklistItem[];
+  locale?: Locale;
+}) {
+  const [state, formAction] = useActionState(action, initialFormState);
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview],
+  );
+
+  const categories = [
+    { value: 'BEFORE', label: t(locale, 'emp.photo.before') },
+    { value: 'AFTER', label: t(locale, 'emp.photo.after') },
+    { value: 'DOCUMENTATION', label: t(locale, 'emp.photo.documentation') },
+  ];
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <FormMessage status={state.status} message={state.message} />
+      <label className="group relative flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-foreground/15 bg-subtle p-4 text-center transition-colors hover:border-primary/50 focus-within:border-primary">
+        {preview ? (
+          <img src={preview} alt={t(locale, 'emp.photo.file')} className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <>
+            <span className="grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground">
+              <Camera className="size-6" aria-hidden="true" />
+            </span>
+            <span className="text-base font-semibold text-foreground">{t(locale, 'emp.photo.file')}</span>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              {t(locale, 'emp.photo.hint')}
+            </span>
+          </>
+        )}
+        <input
+          className="absolute inset-0 cursor-pointer opacity-0"
+          type="file"
+          name="photo"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          required
+          aria-label={t(locale, 'emp.photo.file')}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (preview) URL.revokeObjectURL(preview);
+            setPreview(file ? URL.createObjectURL(file) : null);
+          }}
+        />
+      </label>
+
+      <fieldset>
+        <legend className="mb-2 text-sm font-medium">{t(locale, 'emp.photo.category')}</legend>
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+          {categories.map((category) => (
+            <label key={category.value} className="relative">
+              <input type="radio" name="category" value={category.value} defaultChecked={category.value === 'DOCUMENTATION'} className="peer sr-only" />
+              <span className="flex min-h-touch cursor-pointer items-center justify-center rounded-lg px-2 text-center text-sm font-medium text-muted-foreground transition-colors peer-checked:bg-card peer-checked:text-foreground peer-checked:shadow-[0_1px_2px_0_rgb(11_42_51/0.12)] peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
+                {category.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <details className="group rounded-xl border border-border/80">
+        <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 text-sm font-medium text-muted-foreground">
+          {t(locale, 'common.note')}
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="space-y-4 border-t border-border/80 p-4">
+          {checklistItems.length > 0 && (
+            <label className="block text-sm font-medium">
+              {t(locale, 'emp.photo.linkItem')}
+              <Select className="mt-1.5" name="checklist_item_id" defaultValue="">
+                <option value="">{t(locale, 'emp.photo.noItem')}</option>
+                {checklistItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          )}
+          <label className="block text-sm font-medium">
+            {t(locale, 'common.note')}
+            <Textarea className="mt-1.5 min-h-20" name="description" maxLength={500} />
+          </label>
+        </div>
+      </details>
+      <UploadButton locale={locale} />
+    </form>
+  );
 }

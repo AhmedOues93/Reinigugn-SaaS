@@ -1,3 +1,84 @@
-import Link from 'next/link'; import { Plus } from 'lucide-react'; import { listServiceSchedules } from '@/lib/data/jobs'; import { Button, Card } from '@/components/ui'; import { StatusBadge } from '@/components/status-badge';
-const names = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-export default async function SchedulesPage() { const schedules = await listServiceSchedules(); return <div className="mx-auto max-w-6xl"><div className="mb-7 flex items-end justify-between"><div><h1 className="text-2xl font-semibold">Wiederkehrende Pläne</h1><p className="mt-2 text-slate-600">Vorlagen erzeugen sicher die nächsten acht Wochen an Einsätzen.</p></div><Link href="/dashboard/planung/plaene/neu"><Button><Plus className="mr-2 size-4" />Plan erstellen</Button></Link></div><Card className="overflow-hidden">{schedules.length === 0 ? <div className="p-10 text-center"><p className="font-medium">Sie haben noch keine wiederkehrenden Pläne angelegt.</p></div> : <div className="divide-y">{schedules.map((schedule) => { const customer = Array.isArray(schedule.customers) ? schedule.customers[0] : schedule.customers; const object = Array.isArray(schedule.cleaning_objects) ? schedule.cleaning_objects[0] : schedule.cleaning_objects; return <Link key={schedule.id} href={`/dashboard/planung/plaene/${schedule.id}`} className="flex items-center justify-between gap-4 p-5 hover:bg-slate-50"><div><p className="font-medium">{schedule.name}</p><p className="mt-1 text-sm text-slate-600">{customer?.name} · {object?.name}</p><p className="mt-1 text-xs text-slate-500">{schedule.schedule_rules.filter((rule) => rule.is_active !== false).map((rule) => `${names[rule.weekday - 1]} ${rule.planned_start_time.slice(0, 5)}`).join(' · ')}</p></div><StatusBadge isActive={schedule.is_active} /></Link>; })}</div>}</Card></div>; }
+import Link from 'next/link';
+import { Plus, Repeat } from 'lucide-react';
+import { cn } from '@reinigung/ui';
+import { listServiceSchedules } from '@/lib/data/jobs';
+import { BackLink, ButtonLink, EmptyState, PageHeader } from '@/components/ui';
+import { StatusBadge } from '@/components/status-badge';
+import { WeekRhythm } from '@/components/week-rhythm';
+
+function one<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
+
+export default async function SchedulesPage() {
+  const schedules = await listServiceSchedules();
+  const active = schedules.filter((schedule) => schedule.is_active).length;
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <BackLink href="/dashboard/planung">Planung</BackLink>
+      <PageHeader
+        title="Wiederkehrende Pläne"
+        description="Ein Plan erzeugt die nächsten acht Wochen an Einsätzen im Voraus – ohne Doppelbuchungen."
+        meta={
+          schedules.length > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {active} aktiv
+              {schedules.length > active && ` · ${schedules.length - active} archiviert`}
+            </span>
+          ) : undefined
+        }
+        actions={
+          <ButtonLink href="/dashboard/planung/plaene/neu">
+            <Plus className="size-4" aria-hidden="true" />
+            Plan erstellen
+          </ButtonLink>
+        }
+      />
+
+      {schedules.length === 0 ? (
+        <EmptyState
+          icon={<Repeat />}
+          title="Noch kein wiederkehrender Plan"
+          body="Für Objekte, die regelmäßig gereinigt werden, legen Sie den Rhythmus einmal an statt jede Woche neue Aufträge zu erfassen."
+          action={
+            <ButtonLink href="/dashboard/planung/plaene/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Plan erstellen
+            </ButtonLink>
+          }
+        />
+      ) : (
+        <ul className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
+          {schedules.map((schedule) => {
+            const customer = one(schedule.customers);
+            const object = one(schedule.cleaning_objects);
+            return (
+              <li key={schedule.id} className="border-b border-border/70 last:border-0">
+                <Link
+                  href={`/dashboard/planung/plaene/${schedule.id}`}
+                  className={cn(
+                    'group flex flex-wrap items-center gap-x-5 gap-y-3 px-4 py-4 transition-colors hover:bg-primary-soft/40 sm:px-5',
+                    !schedule.is_active && 'opacity-70',
+                  )}
+                >
+                  <span className="min-w-[12rem] flex-1">
+                    <span className="break-anywhere block font-medium text-foreground group-hover:text-primary">
+                      {schedule.name}
+                    </span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {[customer?.name, object?.name].filter(Boolean).join(' · ') ||
+                        'Keine Zuordnung'}
+                    </span>
+                  </span>
+                  <WeekRhythm rules={schedule.schedule_rules} />
+                  {!schedule.is_active && <StatusBadge isActive={false} />}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
