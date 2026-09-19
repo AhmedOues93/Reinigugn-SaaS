@@ -10,6 +10,7 @@ import { createInvitationToken, hashInvitationToken, invitationExpiresAt, invita
 import { mailService } from '@/lib/mail/invitations';
 import { createClient } from '@/lib/supabase/server';
 import { canInviteMember } from '@/lib/member-permissions';
+import { appUrl } from '@/lib/utils';
 
 function failure(message: string): FormState { return { status: 'error', message }; }
 
@@ -92,7 +93,7 @@ export async function signUpFromInvitation(_: FormState, formData: FormData): Pr
   const { data: previewData } = await supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle();
   const preview = previewData as InvitationPreview | null;
   if (!preview) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
-  const { data: signUpData, error } = await supabase.auth.signUp({ email: preview.email, password: password.data, options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/callback?next=/einladung` } });
+  const { data: signUpData, error } = await supabase.auth.signUp({ email: preview.email, password: password.data, options: { emailRedirectTo: appUrl('/auth/callback?next=/einladung') } });
   if (error) return failure('Konto konnte nicht erstellt werden. Melde dich an, falls bereits ein Konto besteht.');
   if (signUpData.session) return completeInvitationFromCookie();
   return { status: 'success', message: 'Bitte bestätige deine E-Mail-Adresse. Danach kannst du die Einladung abschliessen.' };

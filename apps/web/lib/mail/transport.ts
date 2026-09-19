@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { decideRecipient } from '@/lib/mail/guard';
 
 /**
  * Outbound e-mail for transactional documents.
@@ -27,6 +28,12 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
   if (!mailConfigured()) {
     return { status: 'NOT_CONFIGURED', detail: 'Kein E-Mail-Versand konfiguriert (SMTP_HOST / MAIL_FROM fehlen).' };
   }
+  // Non-production environments never mail a real recipient unannounced.
+  const decision = decideRecipient(message.to, message.subject);
+  if (decision.action === 'block') {
+    return { status: 'FAILED', detail: `Nicht gesendet. ${decision.reason}` };
+  }
+
   try {
     const port = Number(process.env.SMTP_PORT ?? 587);
     const transport = nodemailer.createTransport({
@@ -37,17 +44,21 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
     });
     const info = await transport.sendMail({
       from: process.env.MAIL_FROM,
-      to: message.to,
+      to: decision.to,
       replyTo: message.replyTo ?? undefined,
-      subject: message.subject,
-      text: message.text,
+      subject: decision.subject,
+      text: decision.notice ? `${decision.notice}\n\n${message.text}` : message.text,
       attachments: message.attachments?.map((attachment) => ({
         filename: attachment.filename,
         content: Buffer.from(attachment.content),
         contentType: attachment.contentType,
       })),
     });
-    return { status: 'SENT', detail: `Angenommen vom Mailserver (${info.messageId ?? 'ohne ID'}).` };
+    const redirected = decision.to === message.to ? '' : ` Umgeleitet an ${decision.to}.`;
+    return {
+      status: 'SENT',
+      detail: `Angenommen vom Mailserver (${info.messageId ?? 'ohne ID'}).${redirected}`,
+    };
   } catch (error) {
     const reason = error instanceof Error ? error.message : 'Unbekannter Fehler';
     return { status: 'FAILED', detail: `Versand fehlgeschlagen: ${reason}`.slice(0, 900) };

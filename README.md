@@ -18,6 +18,9 @@ Languages: German, English, Arabic (RTL), Turkish, Ukrainian.
 - Docker Desktop (for local Supabase)
 - Supabase CLI
 
+Deploying to a Supabase Cloud staging project, the environment matrix and the
+outbound-mail rules are in [docs/deployment.md](docs/deployment.md).
+
 ## Local setup
 
 ```bash
