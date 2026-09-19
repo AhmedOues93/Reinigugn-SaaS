@@ -33,7 +33,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           labelAction={
             <Link
               href="/forgot-password"
-              className="rounded-sm text-[13px] font-medium text-primary underline-offset-4 hover:underline"
+              /* Inline beside the label, so it cannot be 44px tall without
+                 pushing the field around; 24px is the accessible floor. */
+              className="inline-flex min-h-6 items-center rounded-sm text-[13px] font-medium text-primary underline-offset-4 hover:underline"
             >
               {t(locale, 'auth.forgotLink')}
             </Link>

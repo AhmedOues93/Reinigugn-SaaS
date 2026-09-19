@@ -48,3 +48,38 @@ export async function updateServiceSchedule(id: string, _: FormState, formData: 
 export async function setScheduleActive(id: string, isActive: boolean) {
   try { const { supabase, company } = await requireStaffCompany(); const { error } = await supabase.from('service_schedules').update({ is_active: isActive }).eq('id', id).eq('company_id', company.id); if (error) return { error: 'Der Planstatus konnte nicht aktualisiert werden.' }; if (isActive) await supabase.rpc('generate_jobs_for_schedule', { p_schedule_id: id, p_until: horizon() }); revalidatePath('/dashboard/planung'); revalidatePath('/dashboard/auftraege'); return { error: null }; } catch { return { error: 'Der Planstatus konnte nicht aktualisiert werden.' }; }
 }
+
+/**
+ * Roll every active plan's visits forward to the standard horizon.
+ *
+ * Generation is idempotent in the database, so this never duplicates a visit;
+ * it only fills in the dates a plan has not reached yet. Offered from the
+ * planning screen rather than run on page load, because writing during a GET
+ * hides from the office that its standing contracts needed topping up.
+ */
+export async function extendScheduleHorizon() {
+  try {
+    const { supabase, company } = await requireStaffCompany();
+    const { data, error } = await supabase
+      .from('service_schedules')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('is_active', true);
+    if (error) return { error: 'Die Pläne konnten nicht geladen werden.' };
+
+    for (const schedule of data ?? []) {
+      const { error: generationError } = await supabase.rpc('generate_jobs_for_schedule', {
+        p_schedule_id: schedule.id,
+        p_until: horizon(),
+      });
+      if (generationError) return { error: 'Die Einsätze konnten nicht vollständig erzeugt werden.' };
+    }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/planung');
+    revalidatePath('/dashboard/auftraege');
+    return { error: null };
+  } catch {
+    return { error: 'Die Einsätze konnten nicht erzeugt werden.' };
+  }
+}

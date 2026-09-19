@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Check, Download, Eye, FileText } from 'lucide-react';
+import { Check, ClipboardCheck, Download, Eye, FileText } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { BackLink, ButtonLink, buttonVariants, Card, DataRow, Notice } from '@/components/ui';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
@@ -164,6 +164,17 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                         <span className="block text-xs tabular-nums text-muted-foreground">
                           {line.quantity} {line.unit} × {formatMoney(locale, line.unit_price_cents, invoice.currency)} · USt. {formatPercent(locale, line.vat_rate_basis_points)}
                         </span>
+                        {/* A billed visit is answerable: the proof of service is one
+                            click away when a customer queries the line. */}
+                        {line.job_id && (
+                          <Link
+                            href={`/dashboard/auftraege/${line.job_id}/leistungsnachweis`}
+                            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            <ClipboardCheck className="size-3.5" aria-hidden="true" />
+                            Leistungsnachweis
+                          </Link>
+                        )}
                       </span>
                       <span className="text-sm font-medium tabular-nums">{formatMoney(locale, line.net_amount_cents, invoice.currency)}</span>
                     </li>

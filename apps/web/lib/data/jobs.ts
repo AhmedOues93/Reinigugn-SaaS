@@ -125,3 +125,45 @@ export async function getMyAssignedJob(id: string) {
   if (error) { console.error('getMyAssignedJob', error); throw new Error('Eigener Einsatz konnte nicht geladen werden.'); }
   return data;
 }
+
+/**
+ * Recurring plans generate visits only up to a horizon, and only when someone
+ * saves or reactivates the plan. Left alone, a standing contract quietly stops
+ * producing work: the planning board empties and nobody is told.
+ *
+ * This reports, per active plan, how far its visits currently reach, so the
+ * planning screen can offer to extend the ones that are running out.
+ */
+export async function listSchedulesRunningOut(withinDays = 28) {
+  const { supabase, company } = await requireStaffCompany();
+  const today = berlinDateKey();
+  const [{ data: schedules, error: scheduleError }, { data: jobs, error: jobError }] = await Promise.all([
+    supabase
+      .from('service_schedules')
+      .select('id, name, valid_until')
+      .eq('company_id', company.id)
+      .eq('is_active', true),
+    supabase
+      .from('jobs')
+      .select('service_schedule_id, scheduled_date')
+      .eq('company_id', company.id)
+      .not('service_schedule_id', 'is', null)
+      .gte('scheduled_date', today),
+  ]);
+  if (scheduleError || jobError) throw new Error('Die Planungsreichweite konnte nicht geladen werden.');
+
+  const lastBySchedule = new Map<string, string>();
+  for (const job of jobs ?? []) {
+    const key = job.service_schedule_id as string;
+    const current = lastBySchedule.get(key);
+    if (!current || job.scheduled_date > current) lastBySchedule.set(key, job.scheduled_date);
+  }
+
+  const limit = addDays(today, withinDays);
+  return (schedules ?? [])
+    .map((schedule) => ({ ...schedule, coveredUntil: lastBySchedule.get(schedule.id) ?? null }))
+    // A plan that has already ended is not running out, it is finished.
+    .filter((schedule) => !schedule.valid_until || schedule.valid_until > today)
+    .filter((schedule) => !schedule.coveredUntil || schedule.coveredUntil < limit)
+    .sort((a, b) => (a.coveredUntil ?? '').localeCompare(b.coveredUntil ?? ''));
+}

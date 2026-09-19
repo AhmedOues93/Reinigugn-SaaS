@@ -1,14 +1,21 @@
 import Link from 'next/link';
 import { CalendarRange, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
 import { cn } from '@reinigung/ui';
-import { listActiveEmployeeOptions, listJobs, type JobStatusFilter } from '@/lib/data/jobs';
+import {
+  listActiveEmployeeOptions,
+  listJobs,
+  listSchedulesRunningOut,
+  type JobStatusFilter,
+} from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { listAffectedAssignments } from '@/lib/data/absences';
 import { Button, ButtonLink, Notice, PageHeader, Select } from '@/components/ui';
 import { FilterBar } from '@/components/data-table';
+import { ExtendHorizonButton } from '@/components/extend-horizon';
 import { addDays, berlinDateKey } from '@/lib/date';
-import { formatTimeRange } from '@/lib/format';
+import { formatDate, formatTimeRange } from '@/lib/format';
+import { extendScheduleHorizon } from './actions';
 
 type Query = {
   week?: string;
@@ -69,7 +76,7 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
   const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
   const end = days[6]!;
 
-  const [jobs, customers, objects, employees, affectedAssignments] = await Promise.all([
+  const [jobs, customers, objects, employees, affectedAssignments, runningOut] = await Promise.all([
     listJobs({
       from: start,
       to: end,
@@ -82,6 +89,7 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
     listCleaningObjectOptions(),
     listActiveEmployeeOptions(),
     listAffectedAssignments(start, end),
+    listSchedulesRunningOut(),
   ]);
 
   const affectedJobIds = new Set(affectedAssignments.map((assignment) => assignment.jobId));
@@ -179,6 +187,34 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
           </>
         }
       />
+
+      {runningOut.length > 0 && (
+        <Notice
+          tone="warning"
+          className="mb-5"
+          title={
+            runningOut.length === 1
+              ? 'Einem wiederkehrenden Plan gehen die Einsätze aus'
+              : `${runningOut.length} wiederkehrenden Plänen gehen die Einsätze aus`
+          }
+        >
+          <p>
+            {runningOut
+              .slice(0, 3)
+              .map((schedule) =>
+                schedule.coveredUntil
+                  ? `${schedule.name} (bis ${formatDate('de', schedule.coveredUntil)})`
+                  : `${schedule.name} (keine Einsätze)`,
+              )
+              .join(', ')}
+            {runningOut.length > 3 && ` und ${runningOut.length - 3} weitere`}. Ohne Verlängerung
+            bleibt die Planung danach leer.
+          </p>
+          <div className="mt-3">
+            <ExtendHorizonButton action={extendScheduleHorizon} />
+          </div>
+        </Notice>
+      )}
 
       {affectedAssignments.length > 0 && (
         <Notice
