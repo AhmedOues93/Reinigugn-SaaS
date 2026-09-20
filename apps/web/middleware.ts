@@ -1,6 +1,7 @@
 import { createServerClient, type SetAllCookies } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { supabasePublishableKey, supabaseUrl } from '@/lib/env';
+import { SESSION_ONLY_COOKIE, scopeToSession } from '@/lib/supabase/session-scope';
 
 export async function middleware(request: NextRequest) {
   /*
@@ -12,6 +13,9 @@ export async function middleware(request: NextRequest) {
    */
   request.headers.set('x-pathname', request.nextUrl.pathname);
   let response = NextResponse.next({ request });
+  // The refresh below must honour the same choice the sign-in made, or a
+  // session-scoped login silently becomes a persistent one on the next request.
+  const sessionOnly = request.cookies.get(SESSION_ONLY_COOKIE)?.value === '1';
   const supabase = createServerClient(
     supabaseUrl(),
     supabasePublishableKey(),
@@ -21,7 +25,7 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, scopeToSession(options, sessionOnly)));
         },
       },
     },

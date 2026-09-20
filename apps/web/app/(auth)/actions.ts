@@ -1,9 +1,12 @@
 'use server';
 
+import { cookies } from 'next/headers';
+
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { companyNameSchema, loginSchema, passwordSchema, signUpSchema } from '@reinigung/validation';
 import { appUrl } from '@/lib/utils';
+import { SESSION_ONLY_COOKIE } from '@/lib/supabase/session-scope';
 import { createClient } from '@/lib/supabase/server';
 
 function withMessage(path: string, key: 'error' | 'message', message: string): never {
@@ -28,6 +31,18 @@ export async function login(formData: FormData) {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) withMessage('/login', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
+  /*
+   * "Angemeldet bleiben" decides how long the browser keeps the session, and
+   * has to be recorded before the tokens are written. Unchecked is the safer
+   * answer on the shared machine in the Objektleiter's office, so the marker
+   * is itself a session cookie: closing the browser forgets the preference
+   * along with the login it applied to.
+   */
+  const sessionOnly = formData.get('remember') === null;
+  const jar = await cookies();
+  if (sessionOnly) jar.set(SESSION_ONLY_COOKIE, '1', { httpOnly: true, sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production' });
+  else jar.delete(SESSION_ONLY_COOKIE);
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) withMessage('/login', 'error', 'E-Mail-Adresse oder Passwort ist nicht korrekt.');
@@ -37,6 +52,7 @@ export async function login(formData: FormData) {
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  (await cookies()).delete(SESSION_ONLY_COOKIE);
   redirect('/login');
 }
 

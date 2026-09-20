@@ -210,6 +210,26 @@
     color: hsl(40 95% 72%);
   }
 
+  /*
+   * The language switch on the sign-in backdrop. The same control as
+   * everywhere else, dressed for a dark surface rather than reimplemented.
+   */
+  .auth-language select {
+    min-height: 2.25rem;
+    border-color: hsl(0 0% 100% / 0.16);
+    background-color: hsl(0 0% 100% / 0.06);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .auth-language select:hover {
+    border-color: hsl(0 0% 100% / 0.3);
+  }
+
+  .auth-language select option {
+    color: hsl(var(--foreground));
+  }
+
   /* Hide scrollbars on horizontal chip rows while keeping them scrollable. */
   .no-scrollbar {
     scrollbar-width: none;

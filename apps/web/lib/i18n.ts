@@ -599,6 +599,11 @@ const de = {
   'auth.signInEmployee': 'Melde dich an, um deine Einsätze zu sehen.',
   'auth.signInPortal': 'Melden Sie sich an, um Objekte, Leistungen und Rechnungen einzusehen.',
   'common.loadingSession': 'Anwendung wird geladen …',
+  'auth.brandLine': 'Reinigungsmanagement. Digital. Einfach.',
+  'auth.headlineAccent': 'digital.',
+  'auth.signature': 'Gemeinsam.\nSauber.\nBesser.',
+  'auth.remember': 'Angemeldet bleiben',
+  'auth.employeeTagline': 'Starkes Team.\nSaubere Ergebnisse.',
 } as const;
 
 export type TranslationKey = keyof typeof de;
@@ -1170,6 +1175,11 @@ const en: Dictionary = {
   'auth.signInEmployee': 'Sign in to see your visits.',
   'auth.signInPortal': 'Sign in to view your sites, services and invoices.',
   'common.loadingSession': 'Loading the application …',
+  'auth.brandLine': 'Cleaning management. Digital. Simple.',
+  'auth.headlineAccent': 'digital.',
+  'auth.signature': 'Together.\nCleaner.\nBetter.',
+  'auth.remember': 'Stay signed in',
+  'auth.employeeTagline': 'A strong team.\nClean results.',
 };
 
 const ar: Dictionary = {
@@ -1738,6 +1748,11 @@ const ar: Dictionary = {
   'auth.signInEmployee': 'سجّل الدخول لعرض مهامك.',
   'auth.signInPortal': 'سجّل الدخول لعرض المواقع والخدمات والفواتير.',
   'common.loadingSession': 'جارٍ تحميل التطبيق …',
+  'auth.brandLine': 'إدارة التنظيف. رقمية. بسيطة.',
+  'auth.headlineAccent': 'رقميًا.',
+  'auth.signature': 'معًا.\nأنظف.\nأفضل.',
+  'auth.remember': 'ابقَ مسجّلاً',
+  'auth.employeeTagline': 'فريق قوي.\nنتائج نظيفة.',
 };
 
 const tr: Dictionary = {
@@ -2306,6 +2321,11 @@ const tr: Dictionary = {
   'auth.signInEmployee': 'Görevlerinizi görmek için giriş yapın.',
   'auth.signInPortal': 'Tesisleri, hizmetleri ve faturaları görmek için giriş yapın.',
   'common.loadingSession': 'Uygulama yükleniyor …',
+  'auth.brandLine': 'Temizlik yönetimi. Dijital. Basit.',
+  'auth.headlineAccent': 'dijital.',
+  'auth.signature': 'Birlikte.\nDaha temiz.\nDaha iyi.',
+  'auth.remember': 'Oturumu açık tut',
+  'auth.employeeTagline': 'Güçlü ekip.\nTemiz sonuçlar.',
 };
 
 const uk: Dictionary = {
@@ -2874,6 +2894,11 @@ const uk: Dictionary = {
   'auth.signInEmployee': 'Увійдіть, щоб побачити свої виїзди.',
   'auth.signInPortal': 'Увійдіть, щоб переглянути обʼєкти, послуги та рахунки.',
   'common.loadingSession': 'Завантаження програми …',
+  'auth.brandLine': 'Управління клінінгом. Цифрово. Просто.',
+  'auth.headlineAccent': 'цифрово.',
+  'auth.signature': 'Разом.\nЧистіше.\nКраще.',
+  'auth.remember': 'Залишатися в системі',
+  'auth.employeeTagline': 'Сильна команда.\nЧистий результат.',
 };
 
 const ru: Dictionary = {
@@ -3432,6 +3457,11 @@ const ru: Dictionary = {
   'auth.signInEmployee': 'Войдите, чтобы увидеть свои выезды.',
   'auth.signInPortal': 'Войдите, чтобы просмотреть объекты, услуги и счета.',
   'common.loadingSession': 'Загрузка приложения …',
+  'auth.brandLine': 'Управление клинингом. Цифрово. Просто.',
+  'auth.headlineAccent': 'цифрово.',
+  'auth.signature': 'Вместе.\nЧище.\nЛучше.',
+  'auth.remember': 'Оставаться в системе',
+  'auth.employeeTagline': 'Сильная команда.\nЧистый результат.',
 };
 
 export const translations: Record<Locale, Dictionary> = { de, en, ar, tr, uk, ru };

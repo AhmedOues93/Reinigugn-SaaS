@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { BarChart3, CalendarCheck, ShieldCheck, Users } from 'lucide-react';
 import { BrandBackdrop } from '@/components/brand-backdrop';
+import { BrandMark } from '@/components/brand-mark';
+import { LanguageSelector } from '@/components/language-selector';
 import { ProductBrand } from '@/components/company-brand';
 import { brandImage } from '@/lib/brand-assets';
 import { direction, t, type Locale } from '@/lib/i18n';
@@ -50,36 +52,45 @@ export function AuthShell({
         weight={wide ? 'side' : 'centre'}
       />
 
+      {/* The lockup and the language switch ride above the composition, so
+          they keep the same place whether the pitch column is shown or not. */}
+      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 px-5 py-5 sm:px-8 lg:px-10">
+        <Link href="/" className="inline-flex items-center gap-3">
+          <BrandMark className="size-9 shrink-0 text-highlight" />
+          <span className={wide ? 'hidden sm:block' : 'sr-only'}>
+            <ProductBrand className="block text-[1.35rem] leading-none text-white [&_span]:text-highlight" />
+            <span className="mt-1 block text-[11.5px] text-white/55">{t(locale, 'auth.brandLine')}</span>
+          </span>
+        </Link>
+        <LanguageSelector
+          locale={locale}
+          className="auth-language block w-[8.5rem] shrink-0 text-sm text-white"
+        />
+      </div>
+
       <div
         className={
           wide
-            ? 'relative mx-auto grid min-h-[100dvh] w-full max-w-[1280px] items-center gap-12 px-4 py-8 sm:px-6 lg:grid-cols-[1.05fr_minmax(0,460px)] lg:gap-16 lg:px-10 lg:py-14'
-            : 'relative mx-auto flex min-h-[100dvh] w-full max-w-[520px] flex-col justify-center px-5 py-10 sm:px-6'
+            ? 'relative mx-auto grid min-h-[100dvh] w-full max-w-[1320px] items-center gap-12 px-4 py-24 sm:px-6 lg:grid-cols-[1.05fr_minmax(0,470px)] lg:gap-16 lg:px-10'
+            : 'relative mx-auto flex min-h-[100dvh] w-full max-w-[520px] flex-col justify-center px-5 py-24 sm:px-6'
         }
       >
         {wide && <OfficePitch locale={locale} />}
 
         <div className={wide ? 'mx-auto w-full max-w-[460px] animate-rise-in lg:mx-0' : 'w-full animate-rise-in'}>
-          <div className={wide ? 'mb-8 lg:hidden' : 'mb-9 flex flex-col items-center text-center'}>
-            <Link href="/" className="inline-flex min-h-touch items-center">
-              <ProductBrand className="text-xl text-white [&_span]:text-highlight" />
-            </Link>
-            {!wide && (
-              <p className="mt-3 text-[15px] leading-6 text-white/70">
-                {t(locale, variant === 'employee' ? 'auth.employeeIntro' : 'auth.portalIntro')}
-              </p>
-            )}
-          </div>
-
           {/*
             A dark card rather than a white one. A bright sheet over a night
             photograph is a hole punched in the image; this sits in the same
             light as the building behind it.
           */}
-          <section className="auth-surface relative rounded-[1.4rem] border border-white/10 bg-white/[0.06] p-6 shadow-glass backdrop-blur-xl sm:p-8">
-            <h1 className="text-[1.6rem] font-semibold leading-tight tracking-[-0.02em] text-white">{title}</h1>
-            <p className="mt-2 text-[15px] leading-6 text-white/65">{description}</p>
-            <div className="mt-7">{children}</div>
+          <section className="auth-surface relative rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-6 text-center shadow-glass backdrop-blur-xl sm:p-9">
+            <BrandMark className="mx-auto size-11 text-highlight" />
+            <p className="mt-3 text-[1.35rem] font-semibold tracking-tight text-white">
+              <ProductBrand className="text-[1.35rem] text-white [&_span]:text-highlight" />
+            </p>
+            <h1 className="mt-4 text-[1.45rem] font-semibold leading-tight tracking-[-0.02em] text-white">{title}</h1>
+            <p className="mt-1.5 text-sm leading-6 text-white/60">{description}</p>
+            <div className="mt-7 text-start">{children}</div>
           </section>
 
           {footer && <div className="mt-6 text-center text-sm text-white/60">{footer}</div>}
@@ -90,6 +101,26 @@ export function AuthShell({
           </p>
         </div>
       </div>
+
+      {/*
+        The promise, written rather than set: three words the company would say
+        to a customer, in the corner where a signature belongs. Desktop only —
+        on a phone the photograph has no corner to spare.
+      */}
+      {variant === 'employee' && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-8 select-none whitespace-pre-line px-8 text-center text-[1.35rem] font-semibold leading-tight tracking-tight text-white lg:hidden">
+          {t(locale, 'auth.employeeTagline')}
+        </p>
+      )}
+
+      <p className="pointer-events-none absolute bottom-10 start-10 hidden select-none lg:block">
+        <span className="block whitespace-pre-line font-[system-ui] text-[1.45rem] italic leading-[1.3] tracking-tight text-white/85">
+          {t(locale, 'auth.signature')}
+        </span>
+        <svg viewBox="0 0 150 10" className="mt-1.5 h-2.5 w-[9rem] text-highlight" aria-hidden="true">
+          <path d="M2 7C28 2 62 1 96 4c18 1.6 34 3 52 1.4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+        </svg>
+      </p>
     </main>
   );
 }
@@ -110,27 +141,46 @@ function OfficePitch({ locale }: { locale: Locale }) {
 
   return (
     <section className="hidden lg:block">
-      <ProductBrand className="text-[1.3rem] text-white [&_span]:text-highlight" />
-
-      <p className="mt-14 text-[11px] font-medium uppercase tracking-[0.18em] text-highlight/80">
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-highlight/80">
         {t(locale, 'auth.eyebrow')}
       </p>
-      <h2 className="mt-4 max-w-[19ch] text-[2.9rem] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
-        {t(locale, 'auth.headline')}
+      {/*
+        The last word carries the accent. It is the one the product is actually
+        selling — the rest of the sentence is what the customer already does.
+      */}
+      <h2 className="mt-4 max-w-[19ch] text-[3rem] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
+        {headlineParts(t(locale, 'auth.headline'), t(locale, 'auth.headlineAccent'))}
       </h2>
       <p className="mt-5 max-w-[38ch] text-[15px] leading-7 text-white/70">{t(locale, 'auth.tagline')}</p>
 
-      <ul className="mt-11 grid max-w-[34rem] grid-cols-4 gap-x-6 gap-y-7">
+      <ul className="mt-12 grid max-w-[30rem] grid-cols-4 gap-x-5 gap-y-7">
         {capabilities.map(({ icon: Icon, key }) => (
           <li key={key} className="min-w-0">
-            <span className="grid size-11 place-items-center rounded-xl border border-white/12 bg-white/[0.07]">
-              <Icon className="size-[19px] text-white" aria-hidden="true" />
+            <span className="grid size-[3.25rem] place-items-center rounded-2xl border border-white/15 bg-white/[0.07]">
+              <Icon className="size-[22px] text-white" aria-hidden="true" />
             </span>
-            <span className="mt-3 block text-[13px] font-medium leading-5 text-white/85">{t(locale, key)}</span>
+            <span className="mt-3 block text-[13px] font-medium leading-[1.35] text-white/85">{t(locale, key)}</span>
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Splits a headline around its accent word without hard-coding either. A
+ * translation that omits the accent simply renders plain, which is better than
+ * emphasising the wrong word in a language nobody here reads.
+ */
+function headlineParts(headline: string, accent: string) {
+  const at = accent ? headline.lastIndexOf(accent) : -1;
+  if (at < 0) return headline;
+  return (
+    <>
+      {headline.slice(0, at)}
+      <span className="text-highlight">{headline.slice(at, at + accent.length)}</span>
+      {headline.slice(at + accent.length)}
+    </>
   );
 }
 
