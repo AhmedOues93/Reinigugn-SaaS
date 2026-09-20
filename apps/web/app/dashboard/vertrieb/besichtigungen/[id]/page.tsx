@@ -129,6 +129,19 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
 
       {survey.status === 'COMPLETED' && (
         <Card className="mt-5 p-5">
+          <h2 className="font-semibold">Nächster Schritt: Kalkulation</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Flächen aus dieser Besichtigung übernehmen und Zeit, Kosten und Verkaufspreis berechnen.</p>
+          <Link
+            href={`/dashboard/kalkulation/neu?survey=${survey.id}`}
+            className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            Kalkulation erstellen
+          </Link>
+        </Card>
+      )}
+
+      {survey.status === 'COMPLETED' && (
+        <Card className="mt-5 p-5">
           <h2 className="mb-1 font-semibold">{t(locale, 'sales.quote.createFromSurvey')}</h2>
           <p className="mb-4 text-sm text-muted-foreground">{t(locale, 'sales.quote.emptyBody')}</p>
           <QuoteFromSurveyForm
