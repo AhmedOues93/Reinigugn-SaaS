@@ -25,20 +25,20 @@ export default async function CatalogPage() {
       <BackLink href="/dashboard/kalkulation">Kalkulation</BackLink>
       <PageHeader
         title="Leistungskatalog"
-        description="Ihre Leistungen mit Richtleistung und Materialansatz. Werte sind Erfahrungswerte und in jeder Kalkulation überschreibbar."
+        description="Ihre wiederverwendbaren Reinigungsleistungen. Sie liefern Zeit- und Materialvorgaben für neue Kalkulationen."
       />
 
       <p className="mb-5 rounded-lg border border-info/25 bg-info-soft px-3.5 py-3 text-sm leading-6 text-info">
-        Eine Richtleistung ist ein Erfahrungswert Ihres Betriebs — abhängig von Ausstattung,
-        Qualitätsanspruch und Objekt. Sie ersetzt keine Besichtigung, sondern macht deren Ergebnis
-        rechenbar.
+        Beispiel: 250 m²/h bedeutet, dass 500 m² rechnerisch etwa 2 Arbeitsstunden benötigen.
+        Der Katalog spart Tipparbeit: Bei einer Kalkulation werden diese Vorgaben übernommen und können
+        für das konkrete Objekt angepasst werden.
       </p>
 
       {items.length === 0 ? (
         <EmptyState
           icon={<SquareStack />}
           title="Noch keine Leistungen"
-          body="Legen Sie die Leistungen an, die Sie regelmäßig anbieten — dann berechnet sich der Zeitbedarf aus den erfassten Flächen."
+          body="Hier fehlen noch Ihre Standardleistungen. Legen Sie z. B. Büro-, Sanitär- oder Glasreinigung an; danach kann die Kalkulation aus Fläche und Richtleistung automatisch den Zeitbedarf ableiten."
         />
       ) : (
         <div className="space-y-5">
