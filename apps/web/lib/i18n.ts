@@ -58,6 +58,7 @@ const de = {
   'nav.groupFinance': 'Finanzen',
 
   'nav.groupSales': 'Vertrieb',
+  'nav.sales': 'Vertrieb',
   'nav.leads': 'Anfragen',
   'nav.surveys': 'Besichtigungen',
   'nav.quotes': 'Angebote',
