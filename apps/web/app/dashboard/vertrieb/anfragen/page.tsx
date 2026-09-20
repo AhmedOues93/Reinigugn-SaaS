@@ -35,7 +35,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           ['Kalkulationen', '/dashboard/kalkulation'],
           ['Angebote', '/dashboard/vertrieb/angebote'],
         ].map(([label, href]) => (
-          <ButtonLink key={href} href={href} variant={href === '/dashboard/vertrieb/anfragen' ? 'primary' : 'ghost'}>
+          <ButtonLink key={href} href={href} variant={href === '/dashboard/vertrieb/anfragen' ? 'default' : 'ghost'}>
             {label}
           </ButtonLink>
         ))}
