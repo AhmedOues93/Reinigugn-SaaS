@@ -1,4 +1,4 @@
 export const appConfig = {
-  appName: 'SauberWerk',
+  appName: 'ReinPlan',
   locale: 'de-DE',
 } as const;
