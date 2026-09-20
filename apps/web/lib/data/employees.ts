@@ -99,7 +99,7 @@ export async function getEmployee(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('company_members')
-    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_storage_path), company_invitations(id, expires_at, accepted_at, revoked_at, created_at)')
+    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_storage_path), company_invitations(id, expires_at, accepted_at, revoked_at, created_at, employee_number, weekly_hours, employment_start_date, employment_end_date, employment_type, preferred_language, notes)')
     .eq('company_id', company.id)
     .eq('id', id)
     .in('role', ['OFFICE', 'EMPLOYEE'])
@@ -109,7 +109,30 @@ export async function getEmployee(id: string) {
     console.error('company_members detail query failed', error);
     throw new Error('Mitarbeiter konnte nicht geladen werden.');
   }
-  if (!data || !data.profile_id) return data ? { ...data, employee_details: [] } : null;
+  if (!data) return null;
+
+  // Before acceptance there is deliberately no profile_id yet. Employment
+  // master data is nevertheless already persisted on the active invitation,
+  // so expose it through the same employee_details shape used after acceptance.
+  // This keeps edit/detail screens stable across the account lifecycle.
+  if (!data.profile_id) {
+    const invitations = [...(data.company_invitations ?? [])].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    const invitation = invitations.find((item) => !item.accepted_at && !item.revoked_at) ?? invitations[0];
+    const invitationDetails = invitation
+      ? {
+          employee_number: invitation.employee_number,
+          weekly_hours: invitation.weekly_hours,
+          employment_start_date: invitation.employment_start_date,
+          employment_end_date: invitation.employment_end_date,
+          employment_type: invitation.employment_type,
+          preferred_language: invitation.preferred_language,
+          notes: invitation.notes,
+        }
+      : null;
+    return { ...data, employee_details: invitationDetails ? [invitationDetails] : [] };
+  }
 
   const detailsByProfile = await employeeDetailsByProfile(supabase, company.id, [data.profile_id]);
   const detail = detailsByProfile.get(data.profile_id);
