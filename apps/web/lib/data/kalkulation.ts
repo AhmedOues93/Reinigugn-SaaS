@@ -57,12 +57,17 @@ export async function getCalculationDefaults(): Promise<CalculationDefaults> {
   const { supabase, company } = await requireStaffCompany();
   const { data } = await supabase
     .from('company_calculation_defaults')
-    .select('wage_cents_per_hour, ancillary_rate_bp, productive_rate_bp, overhead_rate_bp, target_margin_bp')
+    .select('*')
     .eq('company_id', company.id)
     .maybeSingle();
   // Nothing configured yet is a real state, not an error: the assumptions
   // screen exists precisely so the office can fill it in. Zeroes make the
   // consequence visible rather than inventing a plausible-looking wage.
+  //
+  // The day model is the one exception. A working week has to be *some*
+  // length for the arithmetic to mean anything, and 39 hours over 5 days is
+  // the shape of the form, not a claim about this company's contracts — every
+  // field is on screen and editable before anything is saved.
   return (
     (data as CalculationDefaults | null) ?? {
       wage_cents_per_hour: 0,
@@ -70,6 +75,19 @@ export async function getCalculationDefaults(): Promise<CalculationDefaults> {
       productive_rate_bp: 10000,
       overhead_rate_bp: 0,
       target_margin_bp: 0,
+      weekly_hours: 39,
+      working_days_per_week: 5,
+      vacation_days: 0,
+      public_holidays: 0,
+      sick_days: 0,
+      training_days: 0,
+      unproductive_minutes_per_day: 0,
+      productive_rate_is_manual: true,
+      min_hourly_rate_cents: 0,
+      default_material_cents_per_visit: 0,
+      default_machine_cents_per_month: 0,
+      default_travel_cents_per_visit: 0,
+      default_setup_minutes_per_visit: 0,
     }
   );
 }

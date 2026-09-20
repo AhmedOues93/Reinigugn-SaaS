@@ -13,10 +13,12 @@ import { FilterTabs } from '@/components/ui';
 import {
   formatBp,
   formatMinutes,
+  frequencyLabels,
   getCalculation,
   getLeistungsverzeichnis,
   listCatalogItems,
   unitLabels,
+  weekdayLabels,
   type CalculationLine,
 } from '@/lib/data/kalkulation';
 import { formatMoney } from '@/lib/format';
@@ -140,11 +142,19 @@ export default async function CalculationPage({
                         </p>
                         <p className="mt-0.5 text-sm text-muted-foreground">
                           {line.quantity.toLocaleString('de-DE')} {unitLabels[line.calculation_unit]}
-                          {line.frequency === 'EINMALIG'
-                            ? ' · einmalig'
-                            : ` · ${line.frequency_count.toLocaleString('de-DE')}× ${line.frequency === 'PRO_WOCHE' ? 'pro Woche' : 'pro Monat'}`}
+                          {' · '}
+                          {/* "2× pro Woche" reads right; "1× vierteljährlich"
+                              does not, so the count only appears where it is a
+                              real choice. */}
+                          {line.frequency === 'PRO_WOCHE' || line.frequency === 'PRO_MONAT'
+                            ? `${line.frequency_count.toLocaleString('de-DE')}× ${frequencyLabels[line.frequency]}`
+                            : frequencyLabels[line.frequency]}
                           {line.productivity_per_hour != null &&
                             ` · ${line.productivity_per_hour.toLocaleString('de-DE')} m²/h`}
+                          {line.service_weekdays && line.service_weekdays.length > 0 &&
+                            ` · ${line.service_weekdays
+                              .map((day) => weekdayLabels.find((entry) => entry.value === day)?.short ?? day)
+                              .join(', ')}`}
                         </p>
                         {line.override_reason && (
                           <p className="mt-1 text-sm text-warning">
@@ -236,6 +246,55 @@ export default async function CalculationPage({
                 }
               />
             </dl>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Dies ist ein Kalkulationsmodell, keine Lohnabrechnung. Es berechnet keine Vergütung und
+              erhebt keinen Anspruch, lohnsteuer- oder sozialversicherungsrechtliche Vorgaben
+              abzubilden.
+            </p>
+          </Card>
+
+          {/*
+            Where the productive share came from. Without this the most
+            consequential number in the calculation is a percentage with no
+            provenance, and nobody can tell a considered figure from a guess.
+          */}
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Herkunft des produktiven Anteils</h2>
+            {calculation.productive_rate_is_manual ? (
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Der produktive Anteil von {formatBp(calculation.productive_rate_bp)} wurde für diese
+                Kalkulation direkt vorgegeben und nicht aus Ausfalltagen berechnet.
+              </p>
+            ) : (
+              <>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  (Anwesenheitstage ÷ Arbeitstage) × (1 − unproduktive Minuten ÷ Minuten je
+                  Arbeitstag)
+                </p>
+                <dl className="mt-3 divide-y divide-border/70">
+                  <DataRow
+                    label="Arbeitstage pro Jahr"
+                    value={`${(calculation.working_days_per_week * 52).toLocaleString('de-DE', { maximumFractionDigits: 0 })} (${calculation.working_days_per_week.toLocaleString('de-DE')} je Woche)`}
+                  />
+                  <DataRow label="Urlaubstage" value={calculation.vacation_days.toLocaleString('de-DE')} />
+                  <DataRow label="Feiertage" value={calculation.public_holidays.toLocaleString('de-DE')} />
+                  <DataRow label="Krankheitstage" value={calculation.sick_days.toLocaleString('de-DE')} />
+                  <DataRow label="Schulung und Sonstiges" value={calculation.training_days.toLocaleString('de-DE')} />
+                  <DataRow
+                    label="Unproduktive Minuten je Arbeitstag"
+                    value={`${calculation.unproductive_minutes_per_day.toLocaleString('de-DE')} Min. von ${Math.round((calculation.weekly_hours / Math.max(calculation.working_days_per_week, 0.1)) * 60).toLocaleString('de-DE')} Min.`}
+                  />
+                  <DataRow
+                    label="= Produktiver Anteil"
+                    value={<span className="font-semibold tabular-nums">{formatBp(calculation.productive_rate_bp)}</span>}
+                  />
+                </dl>
+              </>
+            )}
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Diese Angaben gehören zu dieser Kalkulation. Eine spätere Änderung der
+              Unternehmens&shy;grundlagen verändert sie nicht.
+            </p>
           </Card>
 
           <Card className="p-5">
@@ -278,6 +337,20 @@ export default async function CalculationPage({
                 value={money(calculation.proposed_price_cents_month, currency)}
               />
               <DataRow
+                label={
+                  calculation.price_override_cents_month != null
+                    ? 'Grundpreis (manuell gesetzt)'
+                    : 'Grundpreis'
+                }
+                value={money(calculation.base_price_cents_month, currency)}
+              />
+              {calculation.surcharge_cents_month > 0 && (
+                <DataRow
+                  label="+ Zuschläge für den Kunden"
+                  value={money(calculation.surcharge_cents_month, currency)}
+                />
+              )}
+              <DataRow
                 label="Verkaufspreis pro Monat"
                 value={
                   <span className="font-semibold tabular-nums">
@@ -291,6 +364,83 @@ export default async function CalculationPage({
               {calculation.one_off_price_cents > 0 && (
                 <DataRow label="Einmalige Leistungen" value={money(calculation.one_off_price_cents, currency)} />
               )}
+            </dl>
+          </Card>
+
+          {/*
+            Surcharges, stated as what they are. They raise revenue and
+            therefore the margin — which is correct, because the cost they
+            relate to is either already in the cost side or is not a cost.
+          */}
+          {(calculation.surcharge_cents_month > 0 || calculation.surcharge_note) && (
+            <Card className="p-5">
+              <h2 className="text-[15px] font-semibold">Zuschläge für den Kunden</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Aufschläge auf den Grundpreis. Sie sind keine Kosten — die eigenen Fahrt- und
+                Sachkosten stehen im Reiter „Kosten“ und sind über die Marge gedeckt.
+              </p>
+              <dl className="mt-3 divide-y divide-border/70">
+                {calculation.surcharge_travel_cents_month > 0 && (
+                  <DataRow label="Anfahrtspauschale" value={money(calculation.surcharge_travel_cents_month, currency)} />
+                )}
+                {calculation.surcharge_small_order_cents_month > 0 && (
+                  <DataRow
+                    label="Kleinauftragszuschlag"
+                    value={money(calculation.surcharge_small_order_cents_month, currency)}
+                  />
+                )}
+                {calculation.surcharge_offpeak_bp > 0 && (
+                  <DataRow
+                    label="Nacht-, Sonn- und Feiertagszuschlag"
+                    value={`${formatBp(calculation.surcharge_offpeak_bp)} auf ${money(calculation.base_price_cents_month, currency)}`}
+                  />
+                )}
+                <DataRow
+                  label="Summe Zuschläge"
+                  value={
+                    <span className="font-semibold tabular-nums">
+                      {money(calculation.surcharge_cents_month, currency)}
+                    </span>
+                  }
+                />
+              </dl>
+              {calculation.surcharge_note && (
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {calculation.surcharge_note}
+                </p>
+              )}
+            </Card>
+          )}
+
+          <Card className="p-5">
+            <h2 className="text-[15px] font-semibold">Erzielter Stundensatz</h2>
+            <dl className="mt-3 divide-y divide-border/70">
+              <DataRow
+                label="Verkaufspreis je produktiver Stunde"
+                value={
+                  <span className="font-semibold tabular-nums">
+                    {money(calculation.price_cents_per_productive_hour, currency)}
+                  </span>
+                }
+              />
+              <DataRow
+                label="Mindeststundensatz (selbst gesetzt)"
+                value={
+                  calculation.min_hourly_rate_cents > 0
+                    ? money(calculation.min_hourly_rate_cents, currency)
+                    : 'nicht hinterlegt'
+                }
+              />
+              {calculation.min_hourly_rate_cents > 0 && (
+                <DataRow
+                  label="Entspricht einem Monatspreis von"
+                  value={money(calculation.min_price_cents_month, currency)}
+                />
+              )}
+              <DataRow
+                label="Kostendeckung erfordert mindestens"
+                value={`${money(calculation.break_even_rate_cents_per_hour, currency)} / Std.`}
+              />
             </dl>
           </Card>
 

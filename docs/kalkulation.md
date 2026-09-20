@@ -44,14 +44,32 @@ The reason is stored on the line.
 
 ### Turnus
 
-| `frequency` | Einsätze pro Monat |
-| --- | --- |
-| `PRO_WOCHE` | `Anzahl × 13/3` |
-| `PRO_MONAT` | `Anzahl` |
-| `EINMALIG` | `0` |
+| `frequency` | Einsätze pro Monat | Im Leistungsverzeichnis |
+| --- | --- | --- |
+| `PRO_WOCHE` | `Anzahl × 13/3` | „wöchentlich“ / „5× wöchentlich“ |
+| `VIERZEHNTAEGIG` | `Anzahl × 13/6` | „14-täglich“ |
+| `PRO_MONAT` | `Anzahl` | „monatlich“ |
+| `VIERTELJAEHRLICH` | `Anzahl ÷ 3` | „vierteljährlich“ |
+| `HALBJAEHRLICH` | `Anzahl ÷ 6` | „halbjährlich“ |
+| `JAEHRLICH` | `Anzahl ÷ 12` | „jährlich“ |
+| `EINMALIG` | `0` | „einmalig“ |
 
 Weeks per month is **13/3 ≈ 4.333**, not 4. Twelve months of four weeks is 48
 weeks and loses four weeks of a year's work *and* four weeks of its cost.
+
+The customer-facing wording comes from `frequency_label(frequency, count)`, in
+one place, so a screen and a PDF cannot word the same Turnus differently. A
+Glasreinigung is quarterly and a Grundreinigung half-yearly; expressing either
+as „0,33× pro Monat“ is arithmetically fine and reads as a mistake on the
+document the customer keeps.
+
+`frequency_count` is only meaningful where the Turnus leaves it open — weekly
+and monthly. Asking how often a quarterly service happens invites an answer
+that quietly triples the contract, so the field is not shown for the others.
+
+A position may also record **Wochentage** (`service_weekdays`, 1 = Montag). That
+is planning detail for the Einsatzplan and the Leistungsverzeichnis; it does not
+enter the arithmetic, which follows from the Turnus alone.
 
 `EINMALIG` positions — a Grundreinigung before the contract starts, a one-off
 window clean — are costed and priced **separately** and never enter the monthly
@@ -81,13 +99,56 @@ spent productively at a customer's site, an hour of work there carries
 `1 ÷ 0.85` hours of wage — the rest is travel between objects, briefings,
 holiday and sickness, all of which are paid.
 
-> **No default values are supplied.** The fields start at zero, and the
-> assumptions screen says why: an invented Lohnnebenkosten percentage that
+> **No wage or ancillary default is supplied.** Those fields start at zero, and
+> the assumptions screen says why: an invented Lohnnebenkosten percentage that
 > looks official is worse than an empty one, because nobody checks it. These
 > are your figures, from your own Nachkalkulation or your Steuerberatung.
 
 **This is costing, not Lohnabrechnung.** Nothing here computes anybody's pay,
 and none of it is a payroll or tax calculation.
+
+### Where the productive share comes from
+
+Asking for a single percentage assumes the office knows one. Almost nobody
+does. What an office does know is how many days a year a cleaner is paid for
+and not at a customer's site, and roughly how much of each day goes on
+travelling between objects. Those are the inputs, and the percentage is
+derived:
+
+```
+Arbeitstage brutto  = Arbeitstage je Woche × 52
+Ausfalltage         = Urlaub + Feiertage + Krankheit + Schulung
+Anwesenheitstage    = Arbeitstage brutto − Ausfalltage
+Minuten je Arbeitstag = Wochenstunden ÷ Arbeitstage je Woche × 60
+Tagesanteil         = 1 − (unproduktive Minuten ÷ Minuten je Arbeitstag)
+produktiver Anteil  = (Anwesenheitstage ÷ Arbeitstage brutto) × Tagesanteil
+```
+
+At 39 hours over 5 days, with 30 Urlaubs-, 11 Feier-, 10 Krankheits- and 2
+Schulungstagen and 45 unproductive minutes a day:
+
+```
+260 Arbeitstage − 53 Ausfalltage = 207 Anwesenheitstage  →  79,61 %
+468 Minuten je Tag − 45 unproduktiv                      →  90,38 %
+0,7961 × 0,9038                                          →  71,96 %
+```
+
+**Both factors matter and they multiply.** Counting only absence overstates
+capacity by about a tenth; counting only daily travel overstates it by about a
+fifth.
+
+The derived value is written into `productive_rate_bp`, which is what every
+calculation reads — the model got richer, the stored contract did not change. A
+company that prefers to set the percentage directly still can, and
+`productive_rate_is_manual` records which of the two it was, so a figure can be
+audited later instead of guessed at.
+
+The suggested absence days shown on an empty setup form (30 / 11 / 10 / 2) are
+**starting points from practice, not a standard and not a legal requirement**.
+They are visible and editable before anything is saved.
+
+The day model is snapshotted onto each calculation alongside the resulting
+percentage, so a calculation from March can still show its working in November.
 
 ## Other costs
 
@@ -103,6 +164,74 @@ Per position — material, machines, other — each with a basis:
 Per calculation: **Fahrtkosten je Einsatz**, **Rüstzeit je Einsatz** and
 **sonstige Kosten je Monat**. Rüstzeit is paid working time, so it carries
 personnel cost exactly like cleaning time does.
+
+## Costs and customer surcharges are not the same thing
+
+A **Kosten** figure is what the work costs the company. A **Zuschlag** is what
+the customer is charged on top of the price. They live in different columns and
+enter the arithmetic at different points:
+
+```
+Grundpreis      = Preisvorgabe  oder  Kosten ÷ (1 − Zielmarge)
+Zuschläge       = Anfahrtspauschale + Kleinauftragszuschlag
+                  + Grundpreis × Zuschlagssatz
+Verkaufspreis   = Grundpreis + Zuschläge
+Deckungsbeitrag = Verkaufspreis − Kosten
+```
+
+| Spalte | Art | Wirkung |
+| --- | --- | --- |
+| `travel_cents_per_visit` | Kosten | erhöht die Kosten, über die Marge gedeckt |
+| `other_cost_cents_per_month` | Kosten | erhöht die Kosten |
+| `surcharge_travel_cents_month` | Erlös | erhöht den Verkaufspreis |
+| `surcharge_small_order_cents_month` | Erlös | erhöht den Verkaufspreis |
+| `surcharge_offpeak_bp` | Erlös | Prozentsatz auf den **Grundpreis** |
+
+A surcharge raises revenue and therefore the margin, which is correct: the cost
+it relates to is either already on the cost side or is not a cost at all. **What
+must never happen is the same euro in both places** — a Anfahrtspauschale
+entered as a cost *and* as a surcharge makes the contract look more profitable
+than it is. The columns are separate and the workspace says which is which.
+
+The percentage applies to the base price, not to the base price plus the flat
+surcharges, so two surcharges never compound into a third.
+
+## Untergrenze
+
+`min_hourly_rate_cents` is a floor the company sets for itself, copied onto each
+calculation like every other assumption. It is **not enforced** — a firm may
+knowingly go below it for a strategic customer — but the workspace compares it
+against the rate actually achieved:
+
+```
+erzielter Stundensatz = Verkaufspreis ÷ produktive Stunden
+Mindestpreis je Monat = Mindeststundensatz × produktive Stunden
+```
+
+It is a different question from `break_even_rate_cents_per_hour`, which is
+where the contract stops covering its own costs. A price can clear break-even
+and still be below the rate the company decided it would work for.
+
+## An incomplete calculation says so
+
+A calculation with no wage computes a personnel cost of zero, a price of zero
+and a margin of 0,0 %. That is arithmetically impeccable and commercially
+meaningless, and it looks exactly like an answer.
+
+`recalculate_calculation` therefore writes `incomplete_reasons`, a list of
+stable codes that the UI turns into German sentences:
+
+| Code | Bedeutung |
+| --- | --- |
+| `KEINE_POSITIONEN` | keine Position erfasst |
+| `KEIN_LOHN` | kein Kalkulationslohn hinterlegt |
+| `KEINE_ZEIT` | die Positionen ergeben keine Arbeitszeit |
+| `KEINE_ZIELMARGE` | weder Zielmarge noch Verkaufspreis |
+| `KEIN_PREIS` | es ergibt sich kein Verkaufspreis |
+
+The KPI band shows the list **above** the figures, not below them, and says
+plainly that the numbers are not yet a basis for an Angebot. Nothing is
+fabricated to fill a gap.
 
 ## Markup and margin are different numbers
 
@@ -142,8 +271,16 @@ A calculation is `ENTWURF` while it is being worked on and `FINAL` once frozen.
 
 **The company's assumptions are copied onto the calculation, not referenced.**
 The moment it is created it carries its own wage, ancillary rate, productive
-share, overhead and target margin. Next spring's wage review therefore cannot
-reach back and change what was offered last year.
+share, overhead, target margin, the day model the share was derived from, the
+cost starting points and the minimum hourly rate. Next spring's wage review
+therefore cannot reach back and change what was offered last year.
+
+A **revision** carries all of it forward — the personnel model, the surcharges
+and the minimum rate — because a revision is a new draft of the same commercial
+thinking. Copying only part of it would silently reset the rest to whatever the
+company defaults now say, which looks like the office changed its mind. The
+price override is the one thing deliberately not carried: a revision starts from
+the calculated price.
 
 Once `FINAL`:
 

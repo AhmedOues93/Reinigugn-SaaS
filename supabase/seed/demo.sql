@@ -123,6 +123,47 @@ begin
   returning id into demo_company;
   update public.companies set default_hourly_rate_cents = 3900 where id = demo_company;
 
+  -- A demo company that meets "Im Leistungskatalog ist noch nichts hinterlegt"
+  -- demonstrates nothing. It is set up the way the first-run wizard would leave
+  -- it: a profile, a costing model derived from days, and a starting catalogue.
+  update public.companies set
+    managing_director = 'Miriam Kessler',
+    default_vat_rate_basis_points = 1900,
+    service_focus = array['UNTERHALTSREINIGUNG', 'BUEROREINIGUNG', 'SANITAERREINIGUNG',
+                          'TREPPENHAUSREINIGUNG', 'GLASREINIGUNG', 'GRUNDREINIGUNG'],
+    onboarding_steps = array['unternehmen', 'rechnung', 'kalkulation', 'schwerpunkte', 'branding', 'abschluss'],
+    -- Already finished, so the demo lands on the dashboard rather than in the
+    -- wizard. The wizard itself stays reachable at /dashboard/einrichtung.
+    onboarding_completed_at = now()
+  where id = demo_company;
+
+  -- The assumptions a demo needs to price anything. Illustrative figures for a
+  -- fictional Hamburg company — not a recommendation and not an industry
+  -- benchmark. The productive share is derived from the days below rather than
+  -- asserted: 260 Arbeitstage − 53 Ausfalltage, minus 45 unproduktive Minuten
+  -- of 468 a day, which is 71,96 %.
+  insert into public.company_calculation_defaults (
+    company_id, wage_cents_per_hour, ancillary_rate_bp, productive_rate_bp,
+    overhead_rate_bp, target_margin_bp,
+    weekly_hours, working_days_per_week, vacation_days, public_holidays,
+    sick_days, training_days, unproductive_minutes_per_day, productive_rate_is_manual,
+    min_hourly_rate_cents, default_material_cents_per_visit,
+    default_machine_cents_per_month, default_travel_cents_per_visit,
+    default_setup_minutes_per_visit
+  ) values (
+    demo_company, 1500, 2100,
+    public.derive_productive_rate_bp(39, 5, 30, 11, 10, 2, 45),
+    1200, 2500,
+    39, 5, 30, 11, 10, 2, 45, false,
+    2800, 300, 0, 800, 10
+  )
+  on conflict (company_id) do nothing;
+
+  perform public.seed_service_catalog_for(
+    demo_company,
+    array['UNTERHALTSREINIGUNG', 'BUEROREINIGUNG', 'SANITAERREINIGUNG',
+          'TREPPENHAUSREINIGUNG', 'GLASREINIGUNG', 'GRUNDREINIGUNG']);
+
   insert into public.company_members (company_id, profile_id, role, status, invited_email, joined_at)
   values
     (demo_company, owner_profile, 'OWNER', 'ACTIVE', 'inhaber@demo.test', now()),

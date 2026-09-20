@@ -22,7 +22,7 @@ test.describe('Kalkulation workspace', () => {
     await page.goto('/dashboard/kalkulation/grundlagen');
     await expect(page.getByRole('heading', { level: 1, name: /kalkulationsgrundlagen/i })).toBeVisible();
 
-    for (const name of ['wage', 'ancillary', 'productive', 'overhead', 'margin']) {
+    for (const name of ['wage', 'ancillary', 'overhead', 'margin', 'min_hourly_rate']) {
       await expect(page.locator(`input[name=${name}]`)).toBeVisible();
     }
 
@@ -30,6 +30,23 @@ test.describe('Kalkulation workspace', () => {
     // has to say what it is for rather than just label it.
     await expect(page.locator('body')).toContainText(/produktiv/i);
     await expect(page.locator('body')).toContainText(/marge/i);
+  });
+
+  test('the productive share can be derived from days or typed directly', async ({ page }) => {
+    await page.goto('/dashboard/kalkulation/grundlagen');
+
+    // Whichever mode the company is in, the other one is one click away — and
+    // the derived mode has to show its working, not just a result.
+    const toDerived = page.getByRole('button', { name: /aus urlaub, feiertagen/i });
+    if (await toDerived.count()) await toDerived.click();
+
+    for (const name of ['weekly_hours', 'working_days', 'vacation_days', 'public_holidays', 'sick_days', 'training_days', 'unproductive_minutes']) {
+      await expect(page.locator(`input[name=${name}]`)).toBeVisible();
+    }
+    await expect(page.locator('body')).toContainText(/anwesenheitstage/i);
+
+    await page.getByRole('button', { name: /direkt eingeben/i }).click();
+    await expect(page.locator('input[name=productive]')).toBeVisible();
   });
 
   test('a calculation can be built from a Richtleistung and shows what it costs', async ({ page }) => {
@@ -82,6 +99,51 @@ test.describe('Kalkulation workspace', () => {
     await page.goto(`${workspaceUrl}?tab=preis`);
     await expect(page.locator('body')).toContainText(/marge/i);
     await expect(page.locator('body')).toContainText(/aufschlag/i);
+    // The floor under the price belongs next to the price, not in a footnote.
+    await expect(page.locator('body')).toContainText(/mindeststundensatz/i);
+  });
+
+  test('every Turnus a cleaning contract uses is selectable', async ({ page }) => {
+    await page.goto('/dashboard/kalkulation?status=ENTWURF');
+    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
+    await draft.click();
+    await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
+
+    const frequency = page.locator('select[name=frequency]');
+    test.skip((await frequency.count()) === 0, 'this calculation is not editable');
+    const values = await frequency.locator('option').evaluateAll((options) =>
+      options.map((option) => (option as HTMLOptionElement).value),
+    );
+    for (const value of ['PRO_WOCHE', 'VIERZEHNTAEGIG', 'PRO_MONAT', 'VIERTELJAEHRLICH', 'HALBJAEHRLICH', 'JAEHRLICH', 'EINMALIG']) {
+      expect(values).toContain(value);
+    }
+
+    // A quarterly service has no "how many per quarter" — that field is only
+    // shown where the count is a real choice.
+    await frequency.selectOption('VIERTELJAEHRLICH');
+    await expect(page.locator('input[name=frequency_count]')).toHaveCount(0);
+    await frequency.selectOption('PRO_WOCHE');
+    await expect(page.locator('input[name=frequency_count]')).toBeVisible();
+  });
+
+  test('customer surcharges are presented as revenue, not as cost', async ({ page }) => {
+    await page.goto('/dashboard/kalkulation?status=ENTWURF');
+    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
+    const href = await draft.getAttribute('href');
+    await page.goto(`${href}?tab=kosten`);
+
+    const surcharge = page.locator('input[name=surcharge_travel]');
+    test.skip((await surcharge.count()) === 0, 'this calculation is not editable');
+
+    // The distinction is the whole point, so the screen has to state it rather
+    // than leave the office to infer it from two similarly named fields.
+    await expect(page.locator('body')).toContainText(/keine kosten/i);
+    await expect(page.locator('input[name=surcharge_small_order]')).toBeVisible();
+    await expect(page.locator('input[name=surcharge_offpeak]')).toBeVisible();
+    // The company's own travel cost is a separate field on the same form.
+    await expect(page.locator('input[name=travel]')).toBeVisible();
   });
 
   test('a time that departs from the Richtleistung demands a reason', async ({ page }) => {

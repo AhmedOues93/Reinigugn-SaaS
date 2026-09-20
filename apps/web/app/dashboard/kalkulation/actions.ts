@@ -52,35 +52,76 @@ function parseNumber(raw: string): number | null {
 // Company assumptions
 // ---------------------------------------------------------------------------
 
+/**
+ * The company's costing assumptions.
+ *
+ * The productive share arrives one of two ways: as a percentage somebody typed,
+ * or as the days it is derived from. Exactly one is sent, and the database
+ * records which — a derived share that silently became manual is a number
+ * nobody can audit later.
+ */
 export async function saveCalculationDefaults(_: FormState, formData: FormData): Promise<FormState> {
   const wage = parseEuroToCents(String(formData.get('wage') ?? ''));
   const ancillary = parsePercentToBp(String(formData.get('ancillary') ?? ''));
-  const productive = parsePercentToBp(String(formData.get('productive') ?? ''));
   const overhead = parsePercentToBp(String(formData.get('overhead') ?? ''));
   const margin = parsePercentToBp(String(formData.get('margin') ?? ''));
+  const minRate = parseEuroToCents(String(formData.get('min_hourly_rate') ?? ''));
+  const material = parseEuroToCents(String(formData.get('material') ?? ''));
+  const machine = parseEuroToCents(String(formData.get('machine') ?? ''));
+  const travel = parseEuroToCents(String(formData.get('travel') ?? ''));
 
   if (wage === null) return failure('Bitte gib einen gültigen Kalkulationslohn an.');
   if (ancillary === null || ancillary > 20000) return failure('Bitte gib gültige Lohnnebenkosten an.');
-  if (productive === null || productive < 1000 || productive > 10000) {
-    return failure('Der produktive Anteil muss zwischen 10 % und 100 % liegen.');
-  }
   if (overhead === null || overhead > 20000) return failure('Bitte gib einen gültigen Gemeinkostenzuschlag an.');
   // A 100 % margin has no finite price, so the database caps the target at 90 %.
   if (margin === null || margin > 9000) return failure('Die Zielmarge muss unter 90 % liegen.');
+  if (minRate === null || material === null || machine === null || travel === null) {
+    return failure('Bitte gib gültige Beträge an.');
+  }
+
+  const manual = String(formData.get('productive_mode') ?? 'derived') === 'manual';
+  let productive: number | null = null;
+  if (manual) {
+    productive = parsePercentToBp(String(formData.get('productive') ?? ''));
+    if (productive === null || productive < 1000 || productive > 10000) {
+      return failure('Der produktive Anteil muss zwischen 10 % und 100 % liegen.');
+    }
+  }
+
+  const day = (name: string, fallback: number) => {
+    const value = parseNumber(String(formData.get(name) ?? ''));
+    return value === null ? fallback : value;
+  };
 
   try {
     const { supabase } = await requireStaffCompany();
-    const { error } = await supabase.rpc('set_calculation_defaults', {
+    const { error } = await supabase.rpc('set_calculation_defaults_v2', {
       p_wage_cents: wage,
       p_ancillary_bp: ancillary,
-      p_productive_bp: productive,
       p_overhead_bp: overhead,
       p_target_margin_bp: margin,
+      p_productive_bp: productive,
+      p_weekly_hours: day('weekly_hours', 39),
+      p_working_days_per_week: day('working_days', 5),
+      p_vacation_days: Math.round(day('vacation_days', 0)),
+      p_public_holidays: Math.round(day('public_holidays', 0)),
+      p_sick_days: Math.round(day('sick_days', 0)),
+      p_training_days: Math.round(day('training_days', 0)),
+      p_unproductive_minutes_per_day: day('unproductive_minutes', 0),
+      p_min_hourly_rate_cents: minRate,
+      p_material_cents_per_visit: material,
+      p_machine_cents_per_month: machine,
+      p_travel_cents_per_visit: travel,
+      p_setup_minutes_per_visit: day('setup_minutes', 0),
     });
     if (error) return failure('Die Kalkulationsgrundlagen konnten nicht gespeichert werden.');
     revalidatePath('/dashboard/kalkulation/grundlagen');
+    revalidatePath('/dashboard/einrichtung');
     revalidateCalculation();
-    return { status: 'success', message: 'Kalkulationsgrundlagen gespeichert.' };
+    return {
+      status: 'success',
+      message: 'Kalkulationsgrundlagen gespeichert. Bestehende Kalkulationen bleiben unverändert.',
+    };
   } catch {
     return failure('Die Kalkulationsgrundlagen konnten nicht gespeichert werden.');
   }
@@ -190,16 +231,42 @@ export async function updateCalculation(
   const otherMonthly = has('other_monthly') ? euro('other_monthly') : null;
   const visits = has('visits_per_week') ? parseNumber(String(formData.get('visits_per_week') ?? '')) : null;
 
-  for (const [label, value] of [
-    ['Kalkulationslohn', wage],
-    ['Lohnnebenkosten', ancillary],
-    ['produktiven Anteil', productive],
-    ['Gemeinkostenzuschlag', overhead],
-    ['Zielmarge', margin],
-    ['Fahrtkosten', travel],
-    ['sonstigen Kosten', otherMonthly],
+  // Customer surcharges. Revenue, not cost — the company's own travel expense
+  // is `travel`, above, and the two must never be filled from the same figure.
+  const surchargeTravel = has('surcharge_travel') ? euro('surcharge_travel') : null;
+  const surchargeSmallOrder = has('surcharge_small_order') ? euro('surcharge_small_order') : null;
+  const surchargeOffpeak = has('surcharge_offpeak') ? percent('surcharge_offpeak') : null;
+  const minRate = has('min_hourly_rate') ? euro('min_hourly_rate') : null;
+  if (surchargeTravel === null && has('surcharge_travel')) return failure('Bitte gib eine gültige Anfahrtspauschale an.');
+  if (surchargeSmallOrder === null && has('surcharge_small_order')) {
+    return failure('Bitte gib einen gültigen Kleinauftragszuschlag an.');
+  }
+  if (surchargeOffpeak !== null && surchargeOffpeak > 10000) {
+    return failure('Der Zuschlag für Nacht-, Sonn- und Feiertagsarbeit muss unter 100 % liegen.');
+  }
+
+  // The personnel day model. Sending any of it re-derives the productive share
+  // in the database; sending the percentage instead overrides it. Only one of
+  // the two is ever present in the form.
+  const dayModelMode = String(formData.get('productive_mode') ?? '');
+  const sendDayModel = dayModelMode === 'derived';
+  const day = (name: string) =>
+    sendDayModel && has(name) ? parseNumber(String(formData.get(name) ?? '')) : null;
+
+  // The field name, not the German label: `has('Kalkulationslohn')` is never
+  // true, so this loop silently passed every malformed amount straight through
+  // to a `coalesce(null, …)` that left the value unchanged — a typo looked
+  // exactly like a successful save.
+  for (const [field, label, value] of [
+    ['wage', 'Kalkulationslohn', wage],
+    ['ancillary', 'Lohnnebenkosten', ancillary],
+    ['productive', 'produktiven Anteil', productive],
+    ['overhead', 'Gemeinkostenzuschlag', overhead],
+    ['margin', 'Zielmarge', margin],
+    ['travel', 'Fahrtkosten', travel],
+    ['other_monthly', 'sonstigen Kosten', otherMonthly],
   ] as const) {
-    if (has(String(label)) && value === null) return failure(`Bitte gib einen gültigen Wert für ${label} an.`);
+    if (has(field) && value === null) return failure(`Bitte gib einen gültigen Wert für ${label} an.`);
   }
   if (margin !== null && margin > 9000) return failure('Die Zielmarge muss unter 90 % liegen.');
   if (productive !== null && (productive < 1000 || productive > 10000)) {
@@ -226,7 +293,7 @@ export async function updateCalculation(
       p_title: String(formData.get('title') ?? '').trim() || null,
       p_wage_cents: wage,
       p_ancillary_bp: ancillary,
-      p_productive_bp: productive,
+      p_productive_bp: sendDayModel ? null : productive,
       p_overhead_bp: overhead,
       p_target_margin_bp: margin,
       p_travel_cents_per_visit: travel,
@@ -236,6 +303,21 @@ export async function updateCalculation(
       p_price_override_cents_month: priceOverride,
       p_price_override_reason: priceOverride === null ? null : overrideReason,
       p_notes: String(formData.get('notes') ?? '').trim() || null,
+      // Exactly one of these two arrives: a percentage set by hand, or the days
+      // it is derived from. Sending both would make the winner a matter of
+      // which branch the database happens to check first.
+      p_weekly_hours: day('weekly_hours'),
+      p_working_days_per_week: day('working_days'),
+      p_vacation_days: day('vacation_days'),
+      p_public_holidays: day('public_holidays'),
+      p_sick_days: day('sick_days'),
+      p_training_days: day('training_days'),
+      p_unproductive_minutes_per_day: day('unproductive_minutes'),
+      p_surcharge_travel_cents_month: surchargeTravel,
+      p_surcharge_small_order_cents_month: surchargeSmallOrder,
+      p_surcharge_offpeak_bp: surchargeOffpeak,
+      p_surcharge_note: String(formData.get('surcharge_note') ?? '').trim() || null,
+      p_min_hourly_rate_cents: minRate,
     });
     if (error) {
       return failure(
@@ -263,6 +345,12 @@ export async function saveCalculationLine(
   const quantity = parseNumber(String(formData.get('quantity') ?? ''));
   const frequency = String(formData.get('frequency') ?? 'PRO_WOCHE');
   const frequencyCount = parseNumber(String(formData.get('frequency_count') ?? '1')) ?? 1;
+  // Weekdays are planning detail, not arithmetic, so an empty selection is a
+  // legitimate answer and is stored as "not specified" rather than "never".
+  const weekdays = formData
+    .getAll('service_weekdays')
+    .map((value) => Number(String(value)))
+    .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
   const productivity = parseNumber(String(formData.get('productivity') ?? ''));
   const minutesPerUnit = parseNumber(String(formData.get('minutes_per_unit') ?? ''));
   const minutesOverride = parseNumber(String(formData.get('minutes_override') ?? ''));
@@ -271,7 +359,17 @@ export async function saveCalculationLine(
   if (areaName.length < 1) return failure('Bitte gib den Bereich oder Raum an.');
   if (serviceName.length < 2) return failure('Bitte gib die Leistung an.');
   if (quantity === null) return failure('Bitte gib eine gültige Menge an.');
-  if (!['EINMALIG', 'PRO_WOCHE', 'PRO_MONAT'].includes(frequency)) {
+  if (
+    ![
+      'EINMALIG',
+      'PRO_WOCHE',
+      'VIERZEHNTAEGIG',
+      'PRO_MONAT',
+      'VIERTELJAEHRLICH',
+      'HALBJAEHRLICH',
+      'JAEHRLICH',
+    ].includes(frequency)
+  ) {
     return failure('Bitte wähle einen gültigen Turnus.');
   }
   if (unit === 'QM' && productivity === null && minutesOverride === null) {
@@ -315,7 +413,7 @@ export async function saveCalculationLine(
       p_other_cents: other,
       p_other_basis: String(formData.get('other_basis') ?? 'PRO_EINSATZ'),
       p_scope_note: String(formData.get('scope_note') ?? '').trim() || null,
-      p_service_weekdays: null,
+      p_service_weekdays: weekdays.length > 0 ? weekdays : null,
     });
     if (error) {
       return failure(

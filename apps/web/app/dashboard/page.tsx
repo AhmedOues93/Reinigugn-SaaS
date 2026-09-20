@@ -15,6 +15,7 @@ import {
 import { cn } from '@reinigung/ui';
 import { ButtonLink, EmptyState, StatBand } from '@/components/ui';
 import { OfficeActionPanel } from '@/components/dashboard/action-items';
+import { getOnboardingStatus, shouldRunOnboarding } from '@/lib/data/onboarding';
 import { landingPathForRole } from '@/lib/landing';
 import { getCurrentCompany } from '@/lib/auth';
 import { getBillingSummary, getOfficeActionItems } from '@/lib/data/billing';
@@ -32,6 +33,16 @@ function first<T>(value: T | T[] | null | undefined) {
 export default async function DashboardPage() {
   const { membership, profile } = await getCurrentCompany();
   if (membership && membership.role !== 'OWNER' && membership.role !== 'OFFICE') redirect(landingPathForRole(membership.role));
+
+  /*
+   * A brand-new company lands in the setup wizard rather than on an empty
+   * dashboard. Once, and only for the OWNER: an OFFICE colleague joining an
+   * established company has no business in somebody else's company setup.
+   */
+  if (membership?.role === 'OWNER') {
+    const onboarding = await getOnboardingStatus();
+    if (shouldRunOnboarding(onboarding, membership.role)) redirect('/dashboard/einrichtung');
+  }
   const [metrics, board, billing, sales, actions, locale] = await Promise.all([
     getDashboardMetrics(),
     listTodayBoard(),

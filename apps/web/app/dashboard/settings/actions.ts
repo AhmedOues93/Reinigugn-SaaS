@@ -19,7 +19,35 @@ export async function updateCompanySettings(_: FormState, formData: FormData): P
       const { error: rateError } = await supabase.rpc('set_company_default_hourly_rate', { p_cents: Math.round(parsed * 100) });
       if (rateError) return { status: 'error', message: 'Der Stundensatz konnte nicht gespeichert werden.' };
     }
-    revalidatePath('/dashboard'); revalidatePath('/dashboard/settings'); return { status: 'success', message: 'Firmendaten gespeichert.' }; } catch { return { status: 'error', message: 'Nur Inhaber duerfen Firmendaten bearbeiten.' }; }
+
+    // Phase 21 added three fields that `update_my_company_master_data` does not
+    // know about. They go through the owner-gated profile function rather than
+    // widening an RPC that the rest of the application already depends on.
+    const vatRaw = String(value.vat_rate ?? '').replace(',', '.').trim();
+    let vatBp: number | null = null;
+    if (vatRaw) {
+      const parsedVat = Number(vatRaw);
+      if (!Number.isFinite(parsedVat) || parsedVat < 0 || parsedVat > 100) {
+        return { status: 'error', message: 'Bitte gib einen gültigen Umsatzsteuersatz an.' };
+      }
+      vatBp = Math.round(parsedVat * 100);
+    }
+    const director = String(value.managing_director ?? '').trim();
+    if (director || vatBp !== null) {
+      const { error: profileError } = await supabase.rpc('save_company_profile', {
+        p_managing_director: director || null,
+        p_vat_rate_bp: vatBp,
+      });
+      if (profileError) return { status: 'error', message: 'Die Firmendaten konnten nicht gespeichert werden.' };
+    }
+
+    // Changing the focus adds matching catalogue entries and never overwrites
+    // one that already exists, so this is safe to repeat.
+    const focus = formData.getAll('focus').map(String).filter(Boolean);
+    const { error: focusError } = await supabase.rpc('set_service_focus', { p_focus: focus });
+    if (focusError) return { status: 'error', message: 'Die Reinigungsschwerpunkte konnten nicht gespeichert werden.' };
+
+    revalidatePath('/dashboard'); revalidatePath('/dashboard/settings'); revalidatePath('/dashboard/kalkulation/leistungskatalog'); return { status: 'success', message: 'Firmendaten gespeichert.' }; } catch { return { status: 'error', message: 'Nur Inhaber duerfen Firmendaten bearbeiten.' }; }
 }
 
 const brandingMimeTypes: Record<string, string> = {

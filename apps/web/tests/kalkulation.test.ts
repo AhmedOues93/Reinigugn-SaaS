@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatBp, formatMinutes, frequencyLabels, unitLabels } from '@/lib/kalkulation';
+import {
+  deriveProductiveRateBp,
+  formatBp,
+  formatMinutes,
+  frequencyLabels,
+  incompleteReasonLabels,
+  unitLabels,
+  weekdayLabels,
+} from '@/lib/kalkulation';
 
 /**
  * The pure side of the Kalkulation domain.
@@ -33,7 +41,103 @@ describe('Kalkulation presentation', () => {
     // quietly becomes unselectable.
     expect(Object.keys(unitLabels).sort()).toEqual(['EINSATZ', 'PAUSCHAL', 'QM', 'STUECK', 'STUNDE']);
     expect(Object.values(unitLabels).every((label) => label.length > 0)).toBe(true);
-    expect(Object.keys(frequencyLabels).sort()).toEqual(['EINMALIG', 'PRO_MONAT', 'PRO_WOCHE']);
+    expect(Object.keys(frequencyLabels).sort()).toEqual([
+      'EINMALIG',
+      'HALBJAEHRLICH',
+      'JAEHRLICH',
+      'PRO_MONAT',
+      'PRO_WOCHE',
+      'VIERTELJAEHRLICH',
+      'VIERZEHNTAEGIG',
+    ]);
+    expect(Object.values(frequencyLabels).every((label) => label.length > 0)).toBe(true);
+  });
+
+  it('orders the Turnus list from most frequent to one-off', () => {
+    // The order is what a dropdown shows, and "einmalig" at the top is how a
+    // recurring contract gets entered as a single visit.
+    expect(Object.keys(frequencyLabels)[0]).toBe('PRO_WOCHE');
+    expect(Object.keys(frequencyLabels).at(-1)).toBe('EINMALIG');
+  });
+
+  it('names the weekdays Monday first, matching the stored numbering', () => {
+    expect(weekdayLabels.map((day) => day.value)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(weekdayLabels[0].label).toBe('Montag');
+    expect(weekdayLabels[6].label).toBe('Sonntag');
+  });
+
+  it('has German wording for every gap the database reports', () => {
+    // The database writes stable codes; an unlabelled one would surface as a
+    // bare KEIN_LOHN in front of a customer-facing office.
+    for (const code of ['KEINE_POSITIONEN', 'KEIN_LOHN', 'KEINE_ZEIT', 'KEINE_ZIELMARGE', 'KEIN_PREIS']) {
+      expect(incompleteReasonLabels[code]?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+});
+
+/**
+ * The productive share.
+ *
+ * Restated here because the preview shown while typing must agree with the
+ * value the database stores — two implementations of one formula that disagree
+ * would mean the office decides on one number and prices with another. The
+ * same cases are asserted against PostgreSQL in supabase/test/phase21.test.sql.
+ */
+describe('productive share', () => {
+  const base = {
+    weekly_hours: 39,
+    working_days_per_week: 5,
+    vacation_days: 30,
+    public_holidays: 11,
+    sick_days: 10,
+    training_days: 2,
+    unproductive_minutes_per_day: 45,
+  };
+
+  it('multiplies the year share by the day share', () => {
+    expect(deriveProductiveRateBp(base)).toBe(7196);
+  });
+
+  it('counts absence and daily travel separately', () => {
+    expect(deriveProductiveRateBp({ ...base, unproductive_minutes_per_day: 0 })).toBe(7962);
+    expect(
+      deriveProductiveRateBp({
+        ...base,
+        vacation_days: 0,
+        public_holidays: 0,
+        sick_days: 0,
+        training_days: 0,
+      }),
+    ).toBe(9038);
+  });
+
+  it('is fully productive when nothing is lost', () => {
+    expect(
+      deriveProductiveRateBp({
+        ...base,
+        vacation_days: 0,
+        public_holidays: 0,
+        sick_days: 0,
+        training_days: 0,
+        unproductive_minutes_per_day: 0,
+      }),
+    ).toBe(10000);
+  });
+
+  it('never returns a share that makes an hour cost infinity', () => {
+    // A zero share would divide by zero in the cost formula, so it is floored
+    // at 10 % exactly as the column check is.
+    expect(
+      deriveProductiveRateBp({
+        ...base,
+        vacation_days: 200,
+        public_holidays: 60,
+        sick_days: 200,
+        training_days: 200,
+        unproductive_minutes_per_day: 400,
+      }),
+    ).toBe(1000);
+    expect(deriveProductiveRateBp({ ...base, working_days_per_week: 0 })).toBe(10000);
   });
 });
 

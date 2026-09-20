@@ -7,8 +7,11 @@ import { Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import {
   costBasisLabels,
+  countableFrequencies,
   frequencyLabels,
   unitLabels,
+  weekdayLabels,
+  type CalculationFrequency,
   type CalculationLine,
   type CalculationUnit,
   type CatalogItem,
@@ -17,6 +20,7 @@ import {
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
 const units: CalculationUnit[] = ['QM', 'STUNDE', 'STUECK', 'EINSATZ', 'PAUSCHAL'];
+const frequencies = Object.keys(frequencyLabels) as CalculationFrequency[];
 const bases = ['PRO_EINSATZ', 'PRO_MONAT', 'PRO_STUNDE', 'PRO_QM'] as const;
 
 function euro(cents: number) {
@@ -44,7 +48,9 @@ export function CalculationLineEditor({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [unit, setUnit] = useState<CalculationUnit>(line?.calculation_unit ?? 'QM');
+  const [frequency, setFrequency] = useState<CalculationFrequency>(line?.frequency ?? 'PRO_WOCHE');
   const [showOverride, setShowOverride] = useState(line?.minutes_override != null);
+  const countable = countableFrequencies.includes(frequency);
 
   // Choosing a catalogue service copies its assumptions in. They are defaults,
   // not rules: everything stays editable, and the line keeps its own copy so a
@@ -112,18 +118,68 @@ export function CalculationLineEditor({
           <Input id="quantity" name="quantity" inputMode="decimal" required defaultValue={line?.quantity?.toString().replace('.', ',') ?? ''} />
         </Field>
         <Field label="Turnus" htmlFor="frequency">
-          <Select id="frequency" name="frequency" defaultValue={line?.frequency ?? 'PRO_WOCHE'}>
-            {(Object.keys(frequencyLabels) as (keyof typeof frequencyLabels)[]).map((value) => (
+          <Select
+            id="frequency"
+            name="frequency"
+            value={frequency}
+            onChange={(event) => setFrequency(event.target.value as CalculationFrequency)}
+          >
+            {frequencies.map((value) => (
               <option key={value} value={value}>
                 {frequencyLabels[value]}
               </option>
             ))}
           </Select>
         </Field>
-        <Field label="Anzahl" htmlFor="frequency_count" info="Wie oft pro Woche bzw. pro Monat.">
-          <Input id="frequency_count" name="frequency_count" inputMode="decimal" defaultValue={line?.frequency_count?.toString().replace('.', ',') ?? '1'} />
-        </Field>
+        {/*
+          "Anzahl" only means something where the Turnus leaves it open. Asking
+          how many times a vierteljährliche Leistung happens per quarter invites
+          an answer that quietly triples the contract.
+        */}
+        {countable ? (
+          <Field
+            label="Anzahl"
+            htmlFor="frequency_count"
+            info={frequency === 'PRO_WOCHE' ? 'Einsätze pro Woche.' : 'Einsätze pro Monat.'}
+          >
+            <Input id="frequency_count" name="frequency_count" inputMode="decimal" defaultValue={line?.frequency_count?.toString().replace('.', ',') ?? '1'} />
+          </Field>
+        ) : (
+          <input type="hidden" name="frequency_count" value="1" />
+        )}
       </div>
+
+      {/*
+        Which days the team attends. Planning detail rather than arithmetic —
+        the cost follows from the Turnus — but it belongs on the position,
+        because it is what the Leistungsverzeichnis and the Einsatzplan need.
+      */}
+      {frequency !== 'EINMALIG' && (
+        <fieldset>
+          <legend className="text-sm font-medium">Wochentage (optional)</legend>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Für die Einsatzplanung. Auf die Kalkulation wirkt sich die Auswahl nicht aus.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {weekdayLabels.map((day) => (
+              <label
+                key={day.value}
+                className="inline-flex min-h-touch cursor-pointer items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 text-sm font-medium has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary md:min-h-9"
+              >
+                <input
+                  type="checkbox"
+                  name="service_weekdays"
+                  value={day.value}
+                  defaultChecked={line?.service_weekdays?.includes(day.value) ?? false}
+                  className="size-4 accent-current"
+                />
+                <span aria-hidden="true">{day.short}</span>
+                <span className="sr-only">{day.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       {/* Productivity only means something for area and piece work. */}
       {unit === 'QM' && (

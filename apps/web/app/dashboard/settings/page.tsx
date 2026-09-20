@@ -29,7 +29,7 @@ export default async function SettingsPage() {
   const { data } = await supabase
     .from('companies')
     .select(
-      'id, name, legal_form, street, postal_code, city, country, phone, email, website, tax_number, vat_id, billing_email, iban, bic, default_payment_terms_days, timezone, default_language, default_hourly_rate_cents',
+      'id, name, legal_form, managing_director, street, postal_code, city, country, phone, email, website, tax_number, vat_id, billing_email, iban, bic, default_payment_terms_days, default_vat_rate_basis_points, service_focus, timezone, default_language, default_hourly_rate_cents',
     )
     .eq('id', company.id)
     .single();
@@ -46,6 +46,7 @@ export default async function SettingsPage() {
       <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
         <CompanySettingsForm
           company={data ?? { name: company.name }}
+          serviceFocus={(data?.service_focus as string[] | null) ?? []}
           action={updateCompanySettings}
         />
       </div>
