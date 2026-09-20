@@ -53,7 +53,7 @@ export const navGroups: NavGroup[] = [
       { href: '/dashboard/kunden', label: 'nav.customers', icon: 'customers' },
       { href: '/dashboard/planung', label: 'nav.planning', icon: 'planning' },
       { href: '/dashboard/mitarbeiter', label: 'nav.employees', icon: 'employees' },
-      { href: '/dashboard/arbeitszeiten', label: 'nav.timeEntries', icon: 'time' },
+      { href: '/dashboard/arbeitszeiten', label: 'nav.time', icon: 'time' },
       { href: '/dashboard/abrechnung', label: 'nav.billing', icon: 'billing' },
     ],
   },
