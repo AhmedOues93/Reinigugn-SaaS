@@ -46,8 +46,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       {/* Where the accepted quote landed — the provenance the whole workflow is for. */}
       {quote.status === 'ACCEPTED' && (
         <Card className="mb-5 border-success/30 bg-success-soft p-5">
-          <p className="mb-3 text-sm font-semibold text-success">
-            {t(locale, 'sales.accept.created')} · {formatDateTime(locale, quote.accepted_at!)}
+          <p className="text-sm font-semibold text-success">
+            Angebot angenommen · {formatDateTime(locale, quote.accepted_at!)}
+          </p>
+          <p className="mb-3 mt-1 text-sm text-success/80">
+            Die Stammdaten wurden übernommen. Prüfen Sie jetzt Team und Einsatzplanung – Mitarbeiter werden nicht automatisch zugewiesen.
           </p>
           <div className="flex flex-wrap gap-2">
             {quote.created_customer_id && (
@@ -74,7 +77,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 className="inline-flex min-h-touch items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium hover:bg-muted"
               >
                 <CalendarDays className="size-4" aria-hidden="true" />
-                {t(locale, 'nav.planning')}
+                Planung vervollständigen
               </Link>
             )}
           </div>
