@@ -49,51 +49,23 @@ export const navGroups: NavGroup[] = [
     label: 'nav.groupOverview',
     items: [
       { href: '/dashboard', label: 'nav.dashboard', icon: 'dashboard' },
-      { href: '/dashboard/nachrichten', label: 'nav.messages', icon: 'messages' },
-    ],
-  },
-  {
-    label: 'nav.groupSales',
-    items: [
-      { href: '/dashboard/vertrieb/anfragen', label: 'nav.leads', icon: 'leads' },
-      { href: '/dashboard/vertrieb/besichtigungen', label: 'nav.surveys', icon: 'surveys' },
-      { href: '/dashboard/kalkulation', label: 'nav.calculation', icon: 'calculation' },
-      { href: '/dashboard/vertrieb/angebote', label: 'nav.quotes', icon: 'quotes' },
-      // Leistungspläne are the standing agreement behind the recurring visits,
-      // which is what an office means by "Vertrag".
-      { href: '/dashboard/planung/plaene', label: 'nav.contracts', icon: 'contracts' },
-    ],
-  },
-  {
-    label: 'nav.groupCustomers',
-    items: [
+      { href: '/dashboard/vertrieb/anfragen', label: 'nav.sales', icon: 'leads' },
       { href: '/dashboard/kunden', label: 'nav.customers', icon: 'customers' },
-      { href: '/dashboard/objekte', label: 'nav.objects', icon: 'objects' },
+      { href: '/dashboard/planung', label: 'nav.planning', icon: 'planning' },
+      { href: '/dashboard/mitarbeiter', label: 'nav.employees', icon: 'employees' },
+      { href: '/dashboard/abrechnung', label: 'nav.billing', icon: 'billing' },
     ],
   },
   {
     label: 'nav.groupOperations',
     items: [
-      { href: '/dashboard/planung', label: 'nav.planning', icon: 'planning' },
-      { href: '/dashboard/auftraege', label: 'nav.jobs', icon: 'jobs' },
-      { href: '/dashboard/arbeitszeiten', label: 'nav.time', icon: 'time' },
-      { href: '/dashboard/leistungsnachweise', label: 'nav.serviceRecords', icon: 'records' },
-      { href: '/dashboard/checklisten', label: 'nav.checklists', icon: 'checklists' },
-      { href: '/dashboard/urlaub-krankheit', label: 'nav.leave', icon: 'leave' },
-    ],
-  },
-  {
-    label: 'nav.groupQuality',
-    items: [
-      { href: '/dashboard/reklamationen', label: 'nav.complaints', icon: 'complaints' },
       { href: '/dashboard/qualitaetskontrolle', label: 'nav.quality', icon: 'quality' },
+      { href: '/dashboard/nachrichten', label: 'nav.messages', icon: 'messages' },
     ],
   },
-  { label: 'nav.groupFinance', items: [{ href: '/dashboard/abrechnung', label: 'nav.billing', icon: 'billing' }] },
   {
     label: 'nav.groupMasterData',
     items: [
-      { href: '/dashboard/mitarbeiter', label: 'nav.employees', icon: 'employees' },
       { href: '/dashboard/kalkulation/leistungskatalog', label: 'nav.catalog', icon: 'catalog' },
       { href: '/dashboard/kalkulation/grundlagen', label: 'nav.calculationBasics', icon: 'basics' },
     ],
