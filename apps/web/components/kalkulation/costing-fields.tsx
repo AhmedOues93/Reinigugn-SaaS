@@ -20,7 +20,7 @@ const decimal = (value: number) => value.toString().replace('.', ',');
  * claims to satisfy a tax or payroll obligation — it works out what an hour of
  * work costs the company so a price can be set on purpose.
  */
-export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
+export function CostingFields({ defaults, step }: { defaults: CalculationDefaults; step?: number }) {
   // A company that has never saved anything is a different situation from one
   // that deliberately set zero: the first gets suggested starting points, the
   // second gets its own figures back.
@@ -50,7 +50,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
     <>
       <input type="hidden" name="productive_mode" value={manual ? 'manual' : 'derived'} />
 
-      <FormSection
+      <div className={step == null || step === 0 ? 'block' : 'hidden'}><FormSection
         title="Personalkosten"
         description="Lohn und Nebenkosten sind betriebsindividuell. Hinterlegen Sie Ihren eigenen Mischsatz."
       >
@@ -70,9 +70,9 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
             <Input id="ancillary" name="ancillary" inputMode="decimal" required defaultValue={percent(defaults.ancillary_rate_bp)} />
           </Field>
         </div>
-      </FormSection>
+      </FormSection></div>
 
-      <FormSection
+      <div className={step == null || step === 1 ? 'block' : 'hidden'}><FormSection
         title="Produktive Zeit"
         description="Bezahlte Zeit ist nicht immer Zeit beim Kunden. Die Angaben machen diesen Anteil nachvollziehbar."
       >
@@ -213,9 +213,9 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
             </button>
           </>
         )}
-      </FormSection>
+      </FormSection></div>
 
-      <FormSection
+      <div className={step == null || step === 3 ? 'block' : 'hidden'}><FormSection
         title="Zuschläge"
         description="Diese Zuschläge decken Verwaltung und die angestrebte Marge in neuen Kalkulationen ab."
       >
@@ -231,9 +231,9 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
             <Input id="margin" name="margin" inputMode="decimal" required defaultValue={percent(defaults.target_margin_bp)} />
           </Field>
         </div>
-      </FormSection>
+      </FormSection></div>
 
-      <FormSection
+      <div className={step == null || step === 2 ? 'block' : 'hidden'}><FormSection
         title="Sachkosten"
         description="Startwerte pro Einsatz oder Monat. In einzelnen Kalkulationen weiterhin anpassbar."
       >
@@ -258,7 +258,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
             <Input id="setup_minutes" name="setup_minutes" inputMode="decimal" defaultValue={decimal(defaults.default_setup_minutes_per_visit)} />
           </Field>
         </div>
-      </FormSection>
+      </FormSection></div>
     </>
   );
 }
