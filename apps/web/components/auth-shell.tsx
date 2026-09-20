@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, CalendarCheck, ShieldCheck, Users } from 'lucide-react';
+import { Calculator, CalendarCheck, ClipboardCheck, FileText, ReceiptText, ShieldCheck } from 'lucide-react';
 import { BrandBackdrop } from '@/components/brand-backdrop';
 import { BrandMark } from '@/components/brand-mark';
 import { LanguageSelector } from '@/components/language-selector';
@@ -133,10 +133,12 @@ export function AuthShell({
  */
 function OfficePitch({ locale }: { locale: Locale }) {
   const capabilities = [
-    { icon: Users, key: 'auth.capCustomers' },
-    { icon: CalendarCheck, key: 'auth.capPlanning' },
-    { icon: ShieldCheck, key: 'auth.capQuality' },
-    { icon: BarChart3, key: 'auth.capResults' },
+    { icon: FileText, label: 'Anfrage & Angebot' },
+    { icon: Calculator, label: 'Kalkulation' },
+    { icon: CalendarCheck, label: 'Einsatzplanung' },
+    { icon: ClipboardCheck, label: 'Leistungsnachweis' },
+    { icon: ShieldCheck, label: 'Qualität' },
+    { icon: ReceiptText, label: 'Abrechnung' },
   ] as const;
 
   return (
@@ -153,13 +155,13 @@ function OfficePitch({ locale }: { locale: Locale }) {
       </h2>
       <p className="mt-5 max-w-[38ch] text-[15px] leading-7 text-white/70">{t(locale, 'auth.tagline')}</p>
 
-      <ul className="mt-12 grid max-w-[30rem] grid-cols-4 gap-x-5 gap-y-7">
-        {capabilities.map(({ icon: Icon, key }) => (
-          <li key={key} className="min-w-0">
+      <ul className="mt-10 grid max-w-[34rem] grid-cols-3 gap-x-5 gap-y-6">
+        {capabilities.map(({ icon: Icon, label }) => (
+          <li key={label} className="min-w-0">
             <span className="grid size-[3.25rem] place-items-center rounded-2xl border border-white/15 bg-white/[0.07]">
               <Icon className="size-[22px] text-white" aria-hidden="true" />
             </span>
-            <span className="mt-3 block text-[13px] font-medium leading-[1.35] text-white/85">{t(locale, key)}</span>
+            <span className="mt-3 block text-[13px] font-medium leading-[1.35] text-white/85">{label}</span>
           </li>
         ))}
       </ul>
