@@ -61,13 +61,9 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: '/dashboard/qualitaetskontrolle', label: 'nav.quality', icon: 'quality' },
       { href: '/dashboard/nachrichten', label: 'nav.messages', icon: 'messages' },
-    ],
-  },
-  {
-    label: 'nav.groupMasterData',
-    items: [
       { href: '/dashboard/kalkulation/leistungskatalog', label: 'nav.catalog', icon: 'catalog' },
       { href: '/dashboard/kalkulation/grundlagen', label: 'nav.calculationBasics', icon: 'basics' },
+      { href: '/dashboard/settings', label: 'nav.settings', icon: 'settings' },
     ],
   },
 ];
