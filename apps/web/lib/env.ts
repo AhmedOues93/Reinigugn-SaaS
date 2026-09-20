@@ -27,9 +27,10 @@ const publicEnv = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
+  NETLIFY_URL: process.env.URL,
 } as const;
 
-function required(name: keyof typeof publicEnv, value: string | undefined): string {
+function required(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', value: string | undefined): string {
   if (!value) {
     throw new Error(
       `Konfiguration fehlt: ${name} ist nicht gesetzt. Siehe apps/web/.env.example und docs/deployment.md.`,
@@ -66,6 +67,10 @@ export const supabasePublishableKey = () =>
 export function siteUrl(): string {
   const configured = publicEnv.NEXT_PUBLIC_SITE_URL;
   if (configured) return configured.replace(/\/+$/, '');
+  // Netlify exposes the canonical production origin as URL on the server.
+  // This prevents invitation links from ever falling back to localhost when
+  // NEXT_PUBLIC_SITE_URL was accidentally omitted from a Netlify deployment.
+  if (publicEnv.NETLIFY_URL) return publicEnv.NETLIFY_URL.replace(/\/+$/, '');
   if (appEnvironment() !== 'local') {
     throw new Error(
       'Konfiguration fehlt: NEXT_PUBLIC_SITE_URL muss außerhalb der lokalen Entwicklung gesetzt sein, ' +
