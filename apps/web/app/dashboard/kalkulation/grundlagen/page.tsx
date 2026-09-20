@@ -17,7 +17,8 @@ export default async function CalculationDefaultsPage() {
     <FormPage
       back={{ href: '/dashboard/kalkulation', label: 'Kalkulation' }}
       title="Kalkulationsgrundlagen"
-      width="narrow"
+      description="Personalkosten, produktive Zeit und Sachkosten für neue Kalkulationen."
+      width="default"
     >
       <CalculationDefaultsForm action={saveCalculationDefaults} defaults={defaults} />
     </FormPage>

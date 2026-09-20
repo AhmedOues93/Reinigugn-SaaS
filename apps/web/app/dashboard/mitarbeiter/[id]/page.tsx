@@ -152,10 +152,17 @@ export default async function EmployeeDetailPage({
         }
       />
 
+      {employee.status === 'INVITED' && (
+        <Notice tone="info" title="Einladung offen" className="mb-6">
+          Das Konto wird erst nach Annahme der Einladung angelegt. Arbeits- und Einsatzdaten können
+          bis dahin bewusst noch leer sein und werden nicht geschätzt oder vorbefüllt.
+        </Notice>
+      )}
+
       <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="space-y-6">
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
-            <h2 className="mb-4 text-[15px] font-semibold">Kontakt</h2>
+            <h2 className="mb-4 text-[15px] font-semibold">Identität &amp; Kontakt</h2>
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm">
                 <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -182,11 +189,15 @@ export default async function EmployeeDetailPage({
                 </span>
               </li>
             </ul>
-            <dl className="mt-5 divide-y divide-border/70 border-t border-border/70">
-              <DataRow label="Rolle" value={employee.role === 'OFFICE' ? 'Büro' : 'Mitarbeiter'} />
-              <DataRow label="Account" value={account} />
-            </dl>
           </section>
+          <Section title="Einladung &amp; Konto">
+            <div className="rounded-xl border border-border/80 bg-card px-5 shadow-card">
+              <dl className="divide-y divide-border/70">
+                <DataRow label="Rolle" value={employee.role === 'OFFICE' ? 'Büro' : 'Mitarbeiter'} />
+                <DataRow label="Accountstatus" value={account} />
+              </dl>
+            </div>
+          </Section>
         </aside>
 
         <div className="min-w-0 space-y-8">
@@ -238,6 +249,16 @@ export default async function EmployeeDetailPage({
               </p>
             )}
           </Section>
+
+          {employee.role === 'EMPLOYEE' && (
+            <Section title="Betrieblicher Einsatz" description="Planung und Zeiterfassung erscheinen hier, sobald Einsätze zugewiesen oder erfasst wurden.">
+              <p className="rounded-xl border border-dashed border-foreground/15 bg-subtle/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
+                {employee.status === 'INVITED'
+                  ? 'Noch keine Einsatzdaten: Die Einladung wurde noch nicht angenommen.'
+                  : 'Noch keine Einsatz- oder Zeiterfassungsdaten vorhanden.'}
+              </p>
+            </Section>
+          )}
 
           {employee.role === 'EMPLOYEE' && (
             <Section title="Unterhaltungen">

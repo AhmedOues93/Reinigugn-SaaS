@@ -52,9 +52,9 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
 
       <FormSection
         title="Personalkosten"
-        description="Grundlage jeder Kalkulation. Es sind bewusst keine Beispielwerte für Lohn und Nebenkosten vorgegeben — diese Zahlen sind betriebsindividuell und sollten aus Ihrer eigenen Nachkalkulation oder von Ihrer Steuerberatung kommen."
+        description="Lohn und Nebenkosten sind betriebsindividuell. Hinterlegen Sie Ihren eigenen Mischsatz."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
           <Field
             label="Bruttostundenlohn (€)"
             htmlFor="wage"
@@ -74,11 +74,11 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
 
       <FormSection
         title="Produktive Zeit"
-        description="Bezahlte Zeit ist nicht gleich produktive Zeit. Urlaub, Feiertage, Krankheit, Schulung und Wegezeiten werden bezahlt, aber nicht beim Kunden geleistet — deshalb kostet eine Stunde vor Ort mehr als eine Stunde Lohn."
+        description="Bezahlte Zeit ist nicht immer Zeit beim Kunden. Die Angaben machen diesen Anteil nachvollziehbar."
       >
         {!manual ? (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
               <Field label="Wochenstunden" htmlFor="weekly_hours">
                 <Input
                   id="weekly_hours"
@@ -100,7 +100,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
                 />
               </Field>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:col-span-2 lg:grid-cols-4">
               <Field label="Urlaubstage" htmlFor="vacation_days">
                 <Input
                   id="vacation_days"
@@ -134,7 +134,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
                   onChange={(event) => setDays((prev) => ({ ...prev, sick_days: num(event.target.value) }))}
                 />
               </Field>
-              <Field label="Schulung / Sonstiges" htmlFor="training_days">
+              <Field label="Schulung & sonstige Ausfalltage" htmlFor="training_days">
                 <Input
                   id="training_days"
                   name="training_days"
@@ -150,6 +150,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
               label="Unproduktive Minuten pro Arbeitstag"
               htmlFor="unproductive_minutes"
               info="Wegezeit zwischen Objekten, Einweisung, Materialausgabe."
+              className="sm:col-span-2"
             >
               <Input
                 id="unproductive_minutes"
@@ -164,7 +165,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
 
             {/* The working, shown. A percentage handed down without an
                 explanation is a percentage nobody revisits. */}
-            <div className="rounded-lg border border-border/80 bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
+            <div className="rounded-xl border border-border/80 bg-subtle px-4 py-4 text-sm leading-6 text-muted-foreground sm:col-span-2">
               <p>
                 <span className="font-medium text-foreground">Anwesenheitstage</span> ={' '}
                 {(days.working_days_per_week * 52).toLocaleString('de-DE', { maximumFractionDigits: 0 })} Arbeitstage −{' '}
@@ -188,7 +189,7 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
             <button
               type="button"
               onClick={() => setManual(true)}
-              className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline-offset-4 hover:underline md:min-h-9"
+              className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline-offset-4 hover:underline md:min-h-9 sm:col-span-2"
             >
               Produktiven Anteil stattdessen direkt eingeben
             </button>
@@ -199,13 +200,14 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
               label="Produktiver Anteil (%)"
               htmlFor="productive"
               info="Wie viel der bezahlten Zeit tatsächlich beim Kunden gearbeitet wird."
+              className="sm:col-span-2"
             >
               <Input id="productive" name="productive" inputMode="decimal" required defaultValue={percent(defaults.productive_rate_bp)} />
             </Field>
             <button
               type="button"
               onClick={() => setManual(false)}
-              className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline-offset-4 hover:underline md:min-h-9"
+              className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline-offset-4 hover:underline md:min-h-9 sm:col-span-2"
             >
               Aus Urlaub, Feiertagen und Ausfallzeiten berechnen
             </button>
@@ -214,10 +216,10 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
       </FormSection>
 
       <FormSection
-        title="Zuschläge und Sachkosten"
-        description="Startwerte für neue Kalkulationen. In jeder Kalkulation änderbar; bestehende Kalkulationen bleiben unverändert."
+        title="Zuschläge"
+        description="Diese Zuschläge decken Verwaltung und die angestrebte Marge in neuen Kalkulationen ab."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
           <Field label="Gemeinkostenzuschlag (%)" htmlFor="overhead" info="Verwaltung, Büro, Fahrzeuge, Versicherungen — alles, was nicht einem einzelnen Auftrag zugeordnet wird.">
             <Input id="overhead" name="overhead" inputMode="decimal" required defaultValue={percent(defaults.overhead_rate_bp)} />
           </Field>
@@ -228,6 +230,14 @@ export function CostingFields({ defaults }: { defaults: CalculationDefaults }) {
           >
             <Input id="margin" name="margin" inputMode="decimal" required defaultValue={percent(defaults.target_margin_bp)} />
           </Field>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Sachkosten"
+        description="Startwerte pro Einsatz oder Monat. In einzelnen Kalkulationen weiterhin anpassbar."
+      >
+        <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
           <Field
             label="Mindeststundensatz (€)"
             htmlFor="min_hourly_rate"

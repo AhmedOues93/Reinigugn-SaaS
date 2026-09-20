@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Card, Field, Input, Select } from '@/components/ui';
+import { Card, CardHeader, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { costBasisLabels, unitLabels, type CalculationUnit } from '@/lib/kalkulation';
 
@@ -23,19 +23,22 @@ export function CatalogItemEditor({ action }: { action: Action }) {
   const [unit, setUnit] = useState<CalculationUnit>('QM');
 
   return (
-    <Card className="p-5">
-      <h2 className="text-[15px] font-semibold">Leistung hinzufügen</h2>
-      <form action={formAction} className="mt-4 space-y-4">
+    <Card className="overflow-hidden">
+      <CardHeader
+        title="Leistung hinzufügen"
+        description="Einheit, Richtleistung und Materialansatz bilden die Grundlage für neue Kalkulationen."
+      />
+      <form action={formAction} className="space-y-5 p-5 sm:p-6">
         <FormMessage status={state.status} message={state.message} />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Bezeichnung" htmlFor="name">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Field label="Bezeichnung" htmlFor="name" className="lg:col-span-2">
             <Input id="name" name="name" required minLength={2} maxLength={160} placeholder="z. B. Unterhaltsreinigung Büro" />
           </Field>
           <Field label="Kategorie" htmlFor="category" info="Gruppiert die Liste, z. B. Unterhalt, Glas, Sonderreinigung.">
             <Input id="category" name="category" maxLength={80} />
           </Field>
-          <Field label="Kalkulationseinheit" htmlFor="calculation_unit">
+          <Field label="Kalkulationseinheit" htmlFor="calculation_unit" hint="Bestimmt, wie der Aufwand berechnet wird.">
             <Select
               id="calculation_unit"
               name="calculation_unit"
@@ -65,7 +68,7 @@ export function CatalogItemEditor({ action }: { action: Action }) {
             </Field>
           )}
 
-          <Field label="Material (€)" htmlFor="material">
+          <Field label="Material je Ansatz (€)" htmlFor="material" hint="0,00, wenn keine separaten Materialkosten anfallen.">
             <Input id="material" name="material" inputMode="decimal" defaultValue="0,00" />
           </Field>
           <Field label="Materialbasis" htmlFor="material_basis">
@@ -79,7 +82,7 @@ export function CatalogItemEditor({ action }: { action: Action }) {
           </Field>
         </div>
 
-        <Field label="Beschreibung" htmlFor="description" info="Optional. Kann als Leistungsbeschreibung im Leistungsverzeichnis dienen.">
+        <Field label="Beschreibung" htmlFor="description" optional info="Kann als Leistungsbeschreibung im Leistungsverzeichnis dienen.">
           <Input id="description" name="description" maxLength={2000} />
         </Field>
 

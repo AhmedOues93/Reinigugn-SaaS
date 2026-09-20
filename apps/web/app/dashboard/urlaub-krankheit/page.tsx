@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarOff, ExternalLink, Stethoscope, Umbrella } from 'lucide-react';
+import { CalendarDays, CalendarOff, ClipboardCheck, ExternalLink, Stethoscope, Umbrella } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { Badge, EmptyState, PageHeader, Section, Select, type Tone } from '@/components/ui';
 import { SubmitButton } from '@/components/form-controls';
@@ -237,7 +237,21 @@ export default async function AbsencePage() {
             <EmptyState
               icon={<CalendarOff />}
               title="Keine Abwesenheiten erfasst"
-              body="Urlaubsanträge und Krankmeldungen aus der Mitarbeiter-App erscheinen hier zur Freigabe."
+              body="Urlaubsanträge und Krankmeldungen aus der Mitarbeiter-App erscheinen hier. Wenn sie einen geplanten Einsatz betreffen, steht die nötige Vertretung oben auf dieser Seite bereit."
+              action={
+                <div className="mt-5 grid w-full gap-3 text-start sm:grid-cols-2">
+                  <div className="rounded-lg border border-border/80 bg-card px-3.5 py-3">
+                    <CalendarDays className="size-4 text-primary" aria-hidden="true" />
+                    <p className="mt-2 text-sm font-medium text-foreground">Hier erscheinen neue Meldungen</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Mitarbeiter reichen Urlaub und Krankheit in ihrer App ein.</p>
+                  </div>
+                  <div className="rounded-lg border border-border/80 bg-card px-3.5 py-3">
+                    <ClipboardCheck className="size-4 text-primary" aria-hidden="true" />
+                    <p className="mt-2 text-sm font-medium text-foreground">Einsätze bleiben sichtbar</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Betroffene Aufträge werden nicht automatisch umgeplant.</p>
+                  </div>
+                </div>
+              }
             />
           ) : (
             <p className="rounded-xl border border-dashed border-foreground/15 px-4 py-6 text-sm text-muted-foreground">

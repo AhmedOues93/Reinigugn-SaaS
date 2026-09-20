@@ -157,7 +157,7 @@ export function DashboardShell({
           <DashboardNav locale={locale} unread={unreadNotifications} />
         </div>
         <div className="shrink-0 border-t border-ink-line px-5 py-4">
-          <p className="truncate text-sm font-medium text-white">{companyName}</p>
+          <p className="truncate text-sm font-medium text-white" title={companyName}>{companyName}</p>
           <p className="mt-0.5 text-xs text-ink-muted">{t(locale, accessKey)}</p>
         </div>
       </aside>

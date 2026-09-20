@@ -23,6 +23,8 @@ export function CompanySettingsForm({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const chosenFocus = new Set(serviceFocus);
+  const directorWasSet = Boolean(String(company.managing_director ?? '').trim());
+  const vatWasSet = company.default_vat_rate_basis_points != null;
   return (
     <form action={formAction} className="space-y-7">
       <FormMessage status={state.status} message={state.message} />
@@ -38,12 +40,14 @@ export function CompanySettingsForm({
           label="Geschäftsführung"
           htmlFor="managing_director"
           info="Erscheint im Impressum-Block Ihrer Angebote und Rechnungen."
+          hint={directorWasSet ? 'Zum Entfernen bitte den Wert löschen und speichern. Sollte die Datenbank die Änderung ablehnen, wird der konkrete Grund angezeigt.' : undefined}
         >
           <Input
             id="managing_director"
             name="managing_director"
             defaultValue={String(company.managing_director ?? '')}
           />
+          <input type="hidden" name="managing_director_was_set" value={directorWasSet ? 'true' : 'false'} />
         </Field>
         <Field label="Telefon" htmlFor="phone">
           <Input id="phone" name="phone" defaultValue={String(company.phone ?? '')} />
@@ -112,6 +116,7 @@ export function CompanySettingsForm({
                 : '19'
             }
           />
+          <input type="hidden" name="vat_rate_was_set" value={vatWasSet ? 'true' : 'false'} />
         </Field>
       </section>
       <section className="grid gap-4 border-t pt-6">

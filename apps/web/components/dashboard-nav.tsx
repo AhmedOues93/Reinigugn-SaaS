@@ -90,7 +90,7 @@ export function DashboardNav({
   };
 
   const list = (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {navGroups.map((group) => (
         <div key={group.label}>
           <p className="px-3 pb-1.5 text-[11.5px] font-medium text-ink-muted/70">{t(locale, group.label)}</p>
@@ -155,7 +155,7 @@ export function DashboardNav({
             <div className="flex-1 overflow-y-auto px-3 pb-4 pt-2">{list}</div>
             {companyName && (
               <div className="shrink-0 border-t border-ink-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                <p className="truncate text-sm font-medium text-white">{companyName}</p>
+                <p className="truncate text-sm font-medium text-white" title={companyName}>{companyName}</p>
               </div>
             )}
           </nav>

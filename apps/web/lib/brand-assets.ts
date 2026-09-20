@@ -6,13 +6,9 @@
  * under `public/`: nothing is fetched from a third party, so no sign-in screen
  * waits on somebody else's CDN and no image can be swapped out from under us.
  *
- * The shape below is built for a real photograph — modern formats first, an
- * art-directed portrait crop for phones, a blur placeholder for the moment
- * before it decodes. Today only `fallback` is filled in, and it points at a
- * plain brand field rather than a drawing of a building: an invented facade
- * that looks almost right is harder to notice and replace than an empty one.
- *
- * `docs/brand-assets.md` is the brief for what still has to be commissioned.
+ * The shape below is built for a real photograph — modern formats first and
+ * an art-directed portrait crop for phones. The assets live with the app so
+ * authentication never depends on a third-party image host.
  */
 
 export type BrandPhoto = {
@@ -34,11 +30,27 @@ export type BrandPhoto = {
   isPlaceholder: boolean;
 };
 
-const placeholder: BrandPhoto = {
-  fallback: '/brand/backdrop-placeholder.svg',
-  width: 1600,
-  height: 1000,
-  isPlaceholder: true,
+const lobby: BrandPhoto = {
+  fallback: '/brand/lobby.jpg',
+  avif: '/brand/lobby.avif',
+  webp: '/brand/lobby.webp',
+  portrait: {
+    fallback: '/brand/lobby-portrait.jpg',
+    avif: '/brand/lobby-portrait.avif',
+    webp: '/brand/lobby-portrait.webp',
+  },
+  width: 1586,
+  height: 992,
+  isPlaceholder: false,
+};
+
+const dashboardHero: BrandPhoto = {
+  fallback: '/brand/dashboard-hero.jpg',
+  avif: '/brand/dashboard-hero.avif',
+  webp: '/brand/dashboard-hero.webp',
+  width: 1586,
+  height: 992,
+  isPlaceholder: false,
 };
 
 /**
@@ -48,11 +60,11 @@ const placeholder: BrandPhoto = {
  */
 export const brandImage = {
   /** Office and portal sign-in. */
-  authBackdrop: placeholder,
+  authBackdrop: lobby,
   /** Employee sign-in, opened on a phone far more often than on a desk. */
-  employeeBackdrop: placeholder,
+  employeeBackdrop: lobby,
   /** The branded loading screen shown while a session resolves. */
-  loadingBackdrop: placeholder,
+  loadingBackdrop: lobby,
   /** The dashboard's call-to-action card. */
-  dashboardHero: placeholder,
+  dashboardHero,
 } as const;

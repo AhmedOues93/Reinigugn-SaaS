@@ -1,6 +1,6 @@
 # Brand imagery
 
-What the application ships today, and what still has to be commissioned.
+The production photographic assets shipped with the application.
 
 ## How imagery is wired
 
@@ -8,10 +8,10 @@ Every brand image is referenced through one module, `apps/web/lib/brand-assets.t
 
 ```ts
 export const brandImage = {
-  authBackdrop: placeholder,      // office + portal sign-in
-  employeeBackdrop: placeholder,  // employee sign-in
-  loadingBackdrop: placeholder,   // branded session-loading screen
-  dashboardHero: placeholder,     // dashboard call-to-action card
+  authBackdrop: lobby,            // office + portal sign-in
+  employeeBackdrop: lobby,        // employee sign-in
+  loadingBackdrop: lobby,         // branded session-loading screen
+  dashboardHero,                  // dashboard call-to-action card
 };
 ```
 
@@ -33,69 +33,19 @@ Three rules hold across the product:
   part of the frame. A new photograph must keep the veil, not replace it with
   its own darkening.
 
-## What ships today
+## Assets in use
 
-`public/brand/backdrop-placeholder.svg` — **a plain field in the brand's
-Tiefsee, and nothing else**.
+| Asset | Dimensions | Purpose |
+| --- | --- | --- |
+| `lobby.{avif,webp,jpg}` | 1586 × 992 | Desktop office, portal and employee login background |
+| `lobby-portrait.{avif,webp,jpg}` | 941 × 1672 | Art-directed mobile login background |
+| `dashboard-hero.{avif,webp,jpg}` | 1586 × 992 | Dashboard quick-action hero |
 
-An earlier revision drew an office lobby in SVG: a lit corridor, glazed walls, a
-trolley silhouette. It was dropped on purpose. Illustrated architecture that is
-almost convincing is worse than an empty frame, because it reads as a finished
-decision and nobody replaces it. The frame is deliberately blank so that it is
-obvious the photograph has not arrived.
-
-**This environment cannot fetch one.** The network policy denies the stock
-libraries at the proxy, so no licensed image can be downloaded and committed
-from here. The asset below has to be supplied.
-
-## What still has to be commissioned
-
-One photograph, or a small set sharing one look:
-
-| | |
-| --- | --- |
-| **Subject** | A modern office building or lobby, after hours, with cleaning work visibly in progress |
-| **Mood** | Deep blue-petrol, low key, artificial interior light; calm, not dramatic |
-| **Content** | Subtle equipment — a trolley, a machine, a warning sign. **No** posed workers looking at camera |
-| **Composition** | Quiet left third and quiet right third: the headline sits on one, the sign-in card on the other. The interest belongs in the middle |
-| **Aspect** | 16:10, delivered at 2560 × 1600 or larger |
-| **Format** | AVIF plus a WebP fallback; under 250 kB each after optimisation |
-| **Rights** | Licensed for commercial web use, perpetual, no attribution in the UI |
-
-A second, portrait-cropped frame (4:5 or 9:16) for the employee sign-in would
-improve the phone experience, where the landscape frame currently crops to its
-centre. It is a nice-to-have, not a blocker.
-
-## Swapping the placeholder
-
-1. Put the files in `apps/web/public/brand/` — AVIF and WebP for each of the
-   landscape and portrait crops, plus one JPEG fallback each.
-2. Replace the `placeholder` constant in `lib/brand-assets.ts` with the real
-   entry, and set `isPlaceholder: false`:
-
-   ```ts
-   const lobby: BrandPhoto = {
-     fallback: '/brand/lobby.jpg',
-     avif: '/brand/lobby.avif',
-     webp: '/brand/lobby.webp',
-     portrait: {
-       fallback: '/brand/lobby-portrait.jpg',
-       avif: '/brand/lobby-portrait.avif',
-       webp: '/brand/lobby-portrait.webp',
-     },
-     width: 2560,
-     height: 1600,
-     isPlaceholder: false,
-   };
-   ```
-
-3. Check contrast on the sign-in screen at 1440 × 900 and at 390 × 844. If any
-   text falls below 4.5:1, deepen `.photo-veil` in `globals.css` — never lighten
-   the text.
-
-No component changes are needed: `BrandBackdrop` already emits the `<picture>`,
-picks the portrait crop below a 3:4 aspect ratio, and preloads the landscape
-frame once `isPlaceholder` is false.
+All are photorealistic architectural scenes generated for SauberWerk: a premium
+commercial office, restrained cleaning context, and dark petrol/navy grading.
+`BrandBackdrop` emits a `<picture>`, selects the portrait image below a 3:4
+aspect ratio, then prefers AVIF, WebP and JPEG. The contrast veil remains part
+of the composition and must be kept when the photos are changed.
 
 The logo and colour used in the navigation are separate and come from company
 branding in the database, not from this module.
