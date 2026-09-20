@@ -19,8 +19,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader
-        title={t(locale, 'sales.leads.title')}
-        description={t(locale, 'sales.leads.subtitle')}
+        title="Vertrieb"
+        description="Von der Anfrage bis zum angenommenen Angebot – ein durchgängiger Vorgang ohne doppelte Dateneingabe."
         actions={
           <ButtonLink href="/dashboard/vertrieb/anfragen/neu">
             <Plus className="size-4" aria-hidden="true" />
@@ -28,6 +28,18 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           </ButtonLink>
         }
       />
+      <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-2 sm:grid-cols-4">
+        {[
+          ['Anfragen', '/dashboard/vertrieb/anfragen'],
+          ['Besichtigungen', '/dashboard/vertrieb/besichtigungen'],
+          ['Kalkulationen', '/dashboard/kalkulation'],
+          ['Angebote', '/dashboard/vertrieb/angebote'],
+        ].map(([label, href]) => (
+          <ButtonLink key={href} href={href} variant={href === '/dashboard/vertrieb/anfragen' ? 'default' : 'ghost'}>
+            {label}
+          </ButtonLink>
+        ))}
+      </div>
       <FilterTabs
         className="mb-4"
         label={t(locale, 'common.status')}

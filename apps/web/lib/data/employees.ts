@@ -1,4 +1,5 @@
 import { requireStaffCompany } from '@/lib/auth';
+import { berlinDateKey } from '@/lib/date';
 
 export type MemberFilter = 'all' | 'INVITED' | 'ACTIVE' | 'DISABLED';
 export type RoleFilter = 'all' | 'OFFICE' | 'EMPLOYEE';
@@ -99,7 +100,7 @@ export async function getEmployee(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('company_members')
-    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_storage_path), company_invitations(id, expires_at, accepted_at, revoked_at, created_at)')
+    .select('id, company_id, profile_id, role, status, invited_email, invited_first_name, invited_last_name, invited_phone, invited_at, joined_at, disabled_at, created_at, profiles!company_members_profile_id_fkey(first_name, last_name, phone, avatar_storage_path), company_invitations(id, expires_at, accepted_at, revoked_at, created_at, employee_number, weekly_hours, employment_start_date, employment_end_date, employment_type, preferred_language, notes)')
     .eq('company_id', company.id)
     .eq('id', id)
     .in('role', ['OFFICE', 'EMPLOYEE'])
@@ -109,9 +110,63 @@ export async function getEmployee(id: string) {
     console.error('company_members detail query failed', error);
     throw new Error('Mitarbeiter konnte nicht geladen werden.');
   }
-  if (!data || !data.profile_id) return data ? { ...data, employee_details: [] } : null;
+  if (!data) return null;
+
+  // Before acceptance there is deliberately no profile_id yet. Employment
+  // master data is nevertheless already persisted on the active invitation,
+  // so expose it through the same employee_details shape used after acceptance.
+  // This keeps edit/detail screens stable across the account lifecycle.
+  if (!data.profile_id) {
+    const invitations = [...(data.company_invitations ?? [])].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    const invitation = invitations.find((item) => !item.accepted_at && !item.revoked_at) ?? invitations[0];
+    const invitationDetails = invitation
+      ? {
+          employee_number: invitation.employee_number,
+          weekly_hours: invitation.weekly_hours,
+          employment_start_date: invitation.employment_start_date,
+          employment_end_date: invitation.employment_end_date,
+          employment_type: invitation.employment_type,
+          preferred_language: invitation.preferred_language,
+          notes: invitation.notes,
+        }
+      : null;
+    return { ...data, employee_details: invitationDetails ? [invitationDetails] : [] };
+  }
 
   const detailsByProfile = await employeeDetailsByProfile(supabase, company.id, [data.profile_id]);
   const detail = detailsByProfile.get(data.profile_id);
   return { ...data, employee_details: detail ? [detail] : [] };
+}
+
+
+export async function getEmployeeMonthlyWorkSummary(memberId: string, month?: string) {
+  const { supabase, company } = await requireStaffCompany();
+  const today = berlinDateKey();
+  const monthKey = /^\d{4}-\d{2}$/.test(month ?? '') ? month! : today.slice(0, 7);
+  const [year, monthNumber] = monthKey.split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  const from = `${monthKey}-01`;
+  const to = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
+  const { data, error } = await supabase
+    .from('job_time_entries')
+    .select('id, started_at, finished_at, duration_minutes, break_minutes, jobs!inner(company_id, title, scheduled_date, cleaning_objects(name), customers(name))')
+    .eq('jobs.company_id', company.id)
+    .eq('member_id', memberId)
+    .gte('started_at', `${from}T00:00:00Z`)
+    .lte('started_at', `${to}T23:59:59Z`)
+    .order('started_at', { ascending: false });
+  if (error) throw new Error('Arbeitszeiten konnten nicht geladen werden.');
+  const entries = data ?? [];
+  const workedMinutes = entries.reduce(
+    (sum, entry) => sum + Math.max(0, Number(entry.duration_minutes ?? 0) - Number(entry.break_minutes ?? 0)),
+    0,
+  );
+  return {
+    monthKey,
+    entries,
+    workedMinutes,
+    daysWorked: new Set(entries.map((entry) => entry.started_at.slice(0, 10))).size,
+  };
 }

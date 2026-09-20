@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Mail, Pencil, Phone } from 'lucide-react';
-import { getEmployee } from '@/lib/data/employees';
+import { getEmployee, getEmployeeMonthlyWorkSummary } from '@/lib/data/employees';
 import { requireStaffCompany } from '@/lib/auth';
 import { BackLink, ButtonLink, DataRow, Notice, PageHeader, Section } from '@/components/ui';
 import { AccountStateBadge, RoleBadge } from '@/components/member-badges';
@@ -65,9 +65,12 @@ export default async function EmployeeDetailPage({
 
   // The avatar and the phone number are the same rows the employee maintains in
   // their own app — one source of truth, read here under the same policies.
-  const [avatarUrl, threads] = await Promise.all([
+  const [avatarUrl, threads, workMonth] = await Promise.all([
     signedAvatarUrl(supabase, profile?.avatar_storage_path ?? null),
     employee.role === 'EMPLOYEE' ? listMyThreads() : Promise.resolve([]),
+    employee.role === 'EMPLOYEE'
+      ? getEmployeeMonthlyWorkSummary(employee.id)
+      : Promise.resolve({ monthKey: '', entries: [], workedMinutes: 0, daysWorked: 0 }),
   ]);
   const employeeThreads = threads.filter((thread) => thread.employee_member_id === employee.id);
 
@@ -153,9 +156,9 @@ export default async function EmployeeDetailPage({
       />
 
       {employee.status === 'INVITED' && (
-        <Notice tone="info" title="Einladung offen" className="mb-6">
-          Das Konto wird erst nach Annahme der Einladung angelegt. Arbeits- und Einsatzdaten können
-          bis dahin bewusst noch leer sein und werden nicht geschätzt oder vorbefüllt.
+        <Notice tone="neutral" title="Einladung offen" className="mb-6">
+          Die Stammdaten sind bereits gespeichert. Der persönliche App-Zugang wird aktiv, sobald
+          der Mitarbeiter die Einladung per E-Mail annimmt.
         </Notice>
       )}
 
@@ -251,12 +254,26 @@ export default async function EmployeeDetailPage({
           </Section>
 
           {employee.role === 'EMPLOYEE' && (
-            <Section title="Betrieblicher Einsatz" description="Planung und Zeiterfassung erscheinen hier, sobald Einsätze zugewiesen oder erfasst wurden.">
-              <p className="rounded-xl border border-dashed border-foreground/15 bg-subtle/50 px-4 py-5 text-sm leading-6 text-muted-foreground">
-                {employee.status === 'INVITED'
-                  ? 'Noch keine Einsatzdaten: Die Einladung wurde noch nicht angenommen.'
-                  : 'Noch keine Einsatz- oder Zeiterfassungsdaten vorhanden.'}
-              </p>
+            <Section title="Arbeitszeit im aktuellen Monat" description="Erfasste Einsatzzeit abzüglich dokumentierter Pausen. Grundlage für die monatliche Prüfung, nicht automatisch eine Lohnabrechnung.">
+              <div className="grid grid-cols-3 overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
+                <div className="p-4"><p className="text-2xl font-semibold tabular-nums">{Math.floor(workMonth.workedMinutes / 60)}:{String(workMonth.workedMinutes % 60).padStart(2, '0')}</p><p className="mt-1 text-xs text-muted-foreground">Arbeitsstunden</p></div>
+                <div className="border-x border-border/70 p-4"><p className="text-2xl font-semibold tabular-nums">{workMonth.daysWorked}</p><p className="mt-1 text-xs text-muted-foreground">Arbeitstage</p></div>
+                <div className="p-4"><p className="text-2xl font-semibold tabular-nums">{workMonth.entries.length}</p><p className="mt-1 text-xs text-muted-foreground">Zeiteinträge</p></div>
+              </div>
+              {workMonth.entries.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">Für diesen Monat wurden noch keine Arbeitszeiten erfasst.</p>
+              ) : (
+                <div className="mt-4 overflow-hidden rounded-xl border border-border/80 bg-card">
+                  <ul className="divide-y divide-border/70">
+                    {workMonth.entries.slice(0, 8).map((entry) => {
+                      const job = Array.isArray(entry.jobs) ? entry.jobs[0] : entry.jobs;
+                      const site = job?.cleaning_objects ? (Array.isArray(job.cleaning_objects) ? job.cleaning_objects[0] : job.cleaning_objects) : null;
+                      const net = Math.max(0, Number(entry.duration_minutes ?? 0) - Number(entry.break_minutes ?? 0));
+                      return <li key={entry.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm"><span className="min-w-0"><span className="block truncate font-medium">{site?.name ?? job?.title ?? 'Einsatz'}</span><span className="text-xs text-muted-foreground">{formatDate('de', entry.started_at.slice(0, 10))}</span></span><span className="shrink-0 font-medium tabular-nums">{Math.floor(net / 60)}:{String(net % 60).padStart(2, '0')} Std.</span></li>;
+                    })}
+                  </ul>
+                </div>
+              )}
             </Section>
           )}
 

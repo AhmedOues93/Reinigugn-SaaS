@@ -68,8 +68,11 @@ declare
   office_user uuid := '0a000000-0000-4000-8000-000000000002';
   employee_user uuid := '0a000000-0000-4000-8000-000000000003';
   portal_user uuid := '0a000000-0000-4000-8000-000000000004';
-  owner_member uuid; office_member uuid; employee_member uuid; portal_member uuid;
-  owner_profile uuid; employee_profile uuid; portal_profile uuid;
+  employee2_user uuid := '0a000000-0000-4000-8000-000000000005';
+  employee3_user uuid := '0a000000-0000-4000-8000-000000000006';
+  employee4_user uuid := '0a000000-0000-4000-8000-000000000007';
+  owner_member uuid; office_member uuid; employee_member uuid; employee2_member uuid; employee3_member uuid; employee4_member uuid; portal_member uuid;
+  owner_profile uuid; employee_profile uuid; employee2_profile uuid; employee3_profile uuid; employee4_profile uuid; portal_profile uuid;
   customer_nord uuid; customer_sued uuid;
   object_alster uuid; object_hafen uuid; object_sued uuid;
   schedule_weekly uuid;
@@ -99,7 +102,10 @@ begin
     (owner_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'inhaber@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Miriam","last_name":"Kessler"}', now(), now(), '', '', '', '', '', ''),
     (office_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'buero@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Tobias","last_name":"Renner"}', now(), now(), '', '', '', '', '', ''),
     (employee_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'mitarbeiter@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Olena","last_name":"Kovalenko"}', now(), now(), '', '', '', '', '', ''),
-    (portal_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'kunde@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Sabine","last_name":"Lorenz"}', now(), now(), '', '', '', '', '', '')
+    (portal_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'kunde@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Sabine","last_name":"Lorenz"}', now(), now(), '', '', '', '', '', ''),
+    (employee2_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'maria@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Maria","last_name":"Nowak"}', now(), now(), '', '', '', '', '', ''),
+    (employee3_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'mehmet@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Mehmet","last_name":"Yilmaz"}', now(), now(), '', '', '', '', '', ''),
+    (employee4_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'anna@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Anna","last_name":"Schneider"}', now(), now(), '', '', '', '', '', '')
   on conflict (id) do nothing;
 
   -- GoTrue links an email/password account through `auth.identities`; without a
@@ -111,15 +117,21 @@ begin
     (gen_random_uuid(), owner_user, owner_user::text, jsonb_build_object('sub', owner_user::text, 'email', 'inhaber@demo.test', 'email_verified', true), 'email', now(), now(), now()),
     (gen_random_uuid(), office_user, office_user::text, jsonb_build_object('sub', office_user::text, 'email', 'buero@demo.test', 'email_verified', true), 'email', now(), now(), now()),
     (gen_random_uuid(), employee_user, employee_user::text, jsonb_build_object('sub', employee_user::text, 'email', 'mitarbeiter@demo.test', 'email_verified', true), 'email', now(), now(), now()),
-    (gen_random_uuid(), portal_user, portal_user::text, jsonb_build_object('sub', portal_user::text, 'email', 'kunde@demo.test', 'email_verified', true), 'email', now(), now(), now())
+    (gen_random_uuid(), portal_user, portal_user::text, jsonb_build_object('sub', portal_user::text, 'email', 'kunde@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee2_user, employee2_user::text, jsonb_build_object('sub', employee2_user::text, 'email', 'maria@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee3_user, employee3_user::text, jsonb_build_object('sub', employee3_user::text, 'email', 'mehmet@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee4_user, employee4_user::text, jsonb_build_object('sub', employee4_user::text, 'email', 'anna@demo.test', 'email_verified', true), 'email', now(), now(), now())
   on conflict (provider_id, provider) do nothing;
 
   select id into owner_profile from public.profiles where auth_user_id = owner_user;
   select id into employee_profile from public.profiles where auth_user_id = employee_user;
   select id into portal_profile from public.profiles where auth_user_id = portal_user;
+  select id into employee2_profile from public.profiles where auth_user_id = employee2_user;
+  select id into employee3_profile from public.profiles where auth_user_id = employee3_user;
+  select id into employee4_profile from public.profiles where auth_user_id = employee4_user;
 
   insert into public.companies (name, slug, legal_form, street, postal_code, city, phone, email, website, tax_number, vat_id, iban, bic, default_payment_terms_days, default_language)
-  values ('SauberWerk Demo GmbH', 'demo-sauberwerk', 'GmbH', 'Reeperbahn 42', '20359', 'Hamburg', '+49 40 1234567', 'kontakt@demo.test', 'https://demo.test', '22/815/01234', 'DE123456789', 'DE02120300000000202051', 'BYLADEM1001', 14, 'de')
+  values ('ReinPlan Demo GmbH', 'demo-sauberwerk', 'GmbH', 'Reeperbahn 42', '20359', 'Hamburg', '+49 40 1234567', 'kontakt@demo.test', 'https://demo.test', '22/815/01234', 'DE123456789', 'DE02120300000000202051', 'BYLADEM1001', 14, 'de')
   returning id into demo_company;
   update public.companies set default_hourly_rate_cents = 3900 where id = demo_company;
 
@@ -169,11 +181,17 @@ begin
     (demo_company, owner_profile, 'OWNER', 'ACTIVE', 'inhaber@demo.test', now()),
     (demo_company, (select id from public.profiles where auth_user_id = office_user), 'OFFICE', 'ACTIVE', 'buero@demo.test', now()),
     (demo_company, employee_profile, 'EMPLOYEE', 'ACTIVE', 'mitarbeiter@demo.test', now()),
+    (demo_company, employee2_profile, 'EMPLOYEE', 'ACTIVE', 'maria@demo.test', now()),
+    (demo_company, employee3_profile, 'EMPLOYEE', 'ACTIVE', 'mehmet@demo.test', now()),
+    (demo_company, employee4_profile, 'EMPLOYEE', 'ACTIVE', 'anna@demo.test', now()),
     (demo_company, portal_profile, 'CUSTOMER', 'ACTIVE', 'kunde@demo.test', now());
 
   select id into owner_member from public.company_members where company_id = demo_company and role = 'OWNER';
   select id into office_member from public.company_members where company_id = demo_company and role = 'OFFICE';
   select id into employee_member from public.company_members where company_id = demo_company and role = 'EMPLOYEE';
+  select id into employee2_member from public.company_members where company_id = demo_company and profile_id = employee2_profile;
+  select id into employee3_member from public.company_members where company_id = demo_company and profile_id = employee3_profile;
+  select id into employee4_member from public.company_members where company_id = demo_company and profile_id = employee4_profile;
   select id into portal_member from public.company_members where company_id = demo_company and role = 'CUSTOMER';
 
   insert into public.employee_details (company_id, profile_id, employee_number, weekly_hours, employment_start_date, employment_type, preferred_language, is_active)
@@ -181,7 +199,11 @@ begin
   -- Any of the five shipped locales works here; the employee changes it in the
   -- app under Profil, and nothing about the localisation behaviour depends on
   -- this value.
-  values (demo_company, employee_profile, 'M-0001', 30, current_date - 400, 'PART_TIME', 'de', true);
+  values
+    (demo_company, employee_profile, 'M-0001', 30, current_date - 400, 'PART_TIME', 'de', true),
+    (demo_company, employee2_profile, 'M-0002', 25, current_date - 280, 'PART_TIME', 'de', true),
+    (demo_company, employee3_profile, 'M-0003', 39, current_date - 620, 'FULL_TIME', 'de', true),
+    (demo_company, employee4_profile, 'M-0004', 10, current_date - 95, 'MINIJOB', 'de', true);
 
   insert into public.customers (company_id, name, contact_person, email, phone, billing_address, postal_code, city)
   values

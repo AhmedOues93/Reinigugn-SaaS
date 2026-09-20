@@ -11,7 +11,7 @@ const onest = Onest({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ['arabic'], weight: ['400', '500', '600', '700'], variable: '--font-arabic', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'SauberWerk',
+  title: 'ReinPlan',
   description: 'Die Betriebssoftware für Reinigungsunternehmen.',
 };
 

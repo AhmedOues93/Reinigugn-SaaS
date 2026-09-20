@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, CalendarCheck, ShieldCheck, Users } from 'lucide-react';
+import { Calculator, CalendarCheck, ClipboardCheck, FileText, ReceiptText, ShieldCheck } from 'lucide-react';
 import { BrandBackdrop } from '@/components/brand-backdrop';
 import { BrandMark } from '@/components/brand-mark';
 import { LanguageSelector } from '@/components/language-selector';
@@ -83,7 +83,7 @@ export function AuthShell({
             photograph is a hole punched in the image; this sits in the same
             light as the building behind it.
           */}
-          <section className="auth-surface relative rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-6 text-center shadow-glass backdrop-blur-xl sm:p-9">
+          <section className="auth-surface relative rounded-[1.5rem] border border-white/10 bg-[#071d24]/75 p-6 text-center shadow-glass backdrop-blur-2xl sm:p-9">
             <BrandMark className="mx-auto size-11 text-highlight" />
             <p className="mt-3 text-[1.35rem] font-semibold tracking-tight text-white">
               <ProductBrand className="text-[1.35rem] text-white [&_span]:text-highlight" />
@@ -133,10 +133,12 @@ export function AuthShell({
  */
 function OfficePitch({ locale }: { locale: Locale }) {
   const capabilities = [
-    { icon: Users, key: 'auth.capCustomers' },
-    { icon: CalendarCheck, key: 'auth.capPlanning' },
-    { icon: ShieldCheck, key: 'auth.capQuality' },
-    { icon: BarChart3, key: 'auth.capResults' },
+    { icon: FileText, label: 'Anfrage & Angebot' },
+    { icon: Calculator, label: 'Kalkulation' },
+    { icon: CalendarCheck, label: 'Einsatzplanung' },
+    { icon: ClipboardCheck, label: 'Leistungsnachweis' },
+    { icon: ShieldCheck, label: 'Qualität' },
+    { icon: ReceiptText, label: 'Abrechnung' },
   ] as const;
 
   return (
@@ -153,13 +155,13 @@ function OfficePitch({ locale }: { locale: Locale }) {
       </h2>
       <p className="mt-5 max-w-[38ch] text-[15px] leading-7 text-white/70">{t(locale, 'auth.tagline')}</p>
 
-      <ul className="mt-12 grid max-w-[30rem] grid-cols-4 gap-x-5 gap-y-7">
-        {capabilities.map(({ icon: Icon, key }) => (
-          <li key={key} className="min-w-0">
-            <span className="grid size-[3.25rem] place-items-center rounded-2xl border border-white/15 bg-white/[0.07]">
-              <Icon className="size-[22px] text-white" aria-hidden="true" />
+      <ul className="mt-10 grid max-w-[30rem] grid-cols-3 gap-x-3 gap-y-4">
+        {capabilities.map(({ icon: Icon, label }) => (
+          <li key={label} className="min-w-0">
+            <span className="grid size-12 place-items-center rounded-xl border border-white/15 bg-white/[0.07]">
+              <Icon className="size-[21px] text-white" strokeWidth={2.35} aria-hidden="true" />
             </span>
-            <span className="mt-3 block text-[13px] font-medium leading-[1.35] text-white/85">{t(locale, key)}</span>
+            <span className="mt-2.5 block text-[13px] font-semibold leading-[1.35] text-white/85">{label}</span>
           </li>
         ))}
       </ul>

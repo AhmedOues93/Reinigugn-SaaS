@@ -5,7 +5,9 @@ automatically; run it against a local Supabase stack:
 
 ```bash
 npx supabase start
-psql "$(npx supabase status --output json | jq -r .DB_URL)" -f supabase/seed/demo.sql
+DB_URL="$(npx supabase status --output json | jq -r .DB_URL)"
+psql "$DB_URL" -c "set sauberwerk.seed_confirmed = 'local-development';" \
+  -f supabase/seed/demo.sql
 ```
 
 Re-running it is a no-op — it detects its own company and stops, so it cannot
@@ -13,7 +15,7 @@ produce duplicates or a second demo tenant.
 
 ## What it contains
 
-One company (`SauberWerk Demo GmbH`) with complete master data, a recurring
+One company (`ReinPlan Demo GmbH`) with complete master data, a recurring
 agreement carrying the rate it was sold at, past visits with recorded working
 time, upcoming visits, a complaint under way, a portal contact, and billing: one
 paid invoice, one open invoice built from the actual completed visits, and one

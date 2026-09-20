@@ -50,7 +50,7 @@ export async function listCustomerOptions() {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('customers')
-    .select('id, name, customer_number, is_active')
+    .select('id, name, customer_number, contact_person, email, phone, billing_address, postal_code, city, is_active')
     .eq('company_id', company.id)
     .order('name');
   if (error) throw new Error('Kunden konnten nicht geladen werden.');

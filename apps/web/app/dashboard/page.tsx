@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileSignature,
-  FileText,
   Inbox,
   Receipt,
   TrendingUp,
@@ -128,7 +127,7 @@ export default async function DashboardPage() {
         {/* ================= main column ================= */}
         <div className="min-w-0 space-y-5">
           {/* --- A. What the company looks after --------------------------- */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <StatCard
               label={t(locale, 'dashboard.activeCustomers')}
               value={portfolio.customers}
@@ -341,8 +340,8 @@ export default async function DashboardPage() {
                 {t(locale, 'dashboard.heroTitle')}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/75">{t(locale, 'dashboard.heroBody')}</p>
-              <ButtonLink href="/dashboard/kalkulation/neu" className="mt-5">
-                {t(locale, 'dashboard.heroCta')}
+              <ButtonLink href="/dashboard/vertrieb/anfragen/neu" className="mt-5">
+                Neue Anfrage
                 <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
               </ButtonLink>
             </div>
@@ -356,7 +355,7 @@ export default async function DashboardPage() {
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
               <QuickAction href="/dashboard/kunden/neu" label={t(locale, 'dashboard.newCustomer')} icon={<UserPlus />} />
               <QuickAction href="/dashboard/vertrieb/anfragen/neu" label={t(locale, 'dashboard.newLead')} icon={<Inbox />} />
-              <QuickAction href="/dashboard/kalkulation/neu" label={t(locale, 'dashboard.newQuote')} icon={<FileText />} />
+              <QuickAction href="/dashboard/planung" label="Planung öffnen" icon={<CalendarClock />} />
               <QuickAction href="/dashboard/auftraege/neu" label={t(locale, 'dashboard.planJob')} icon={<CalendarPlus />} />
             </div>
           </SectionCard>

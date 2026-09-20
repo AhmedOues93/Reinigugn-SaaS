@@ -31,7 +31,7 @@ export default async function TimeEntriesPage({
   ]);
 
   const finished = entries.filter((entry) => entry.duration_minutes != null);
-  const net = finished.reduce((total, entry) => total + (entry.duration_minutes ?? 0), 0);
+  const net = finished.reduce((total, entry) => total + Math.max(0, (entry.duration_minutes ?? 0) - (entry.break_minutes ?? 0)), 0);
   const breaks = entries.reduce((total, entry) => total + (entry.break_minutes ?? 0), 0);
   const running = entries.length - finished.length;
   const corrected = entries.filter((entry) => (entry.time_entry_audit_logs?.[0]?.count ?? 0) > 0).length;
@@ -145,7 +145,7 @@ export default async function TimeEntriesPage({
             header: 'Netto',
             align: 'end',
             cell: (entry) => (
-              <span className="font-semibold text-foreground">{entry.duration_minutes == null ? '—' : minutes(entry.duration_minutes)}</span>
+              <span className="font-semibold text-foreground">{entry.duration_minutes == null ? '—' : minutes(Math.max(0, entry.duration_minutes - (entry.break_minutes ?? 0)))}</span>
             ),
           },
           {

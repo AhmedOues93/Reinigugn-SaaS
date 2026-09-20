@@ -31,29 +31,77 @@ function toCents(value: FormDataEntryValue | null): number | null {
 }
 
 export async function createLead(_: FormState, formData: FormData): Promise<FormState> {
-  const organisation = String(formData.get('organisation') ?? '').trim();
-  if (organisation.length < 2 || organisation.length > 160) return failure('Bitte geben Sie einen Firmen- oder Objektnamen an.');
-  let id: string;
+  const customerMode = String(formData.get('customer_mode') ?? 'NEW');
+  const customerId = String(formData.get('customer_id') ?? '').trim();
+  const cleaningType = String(formData.get('cleaning_type') ?? '').trim();
+  const frequency = String(formData.get('frequency') ?? '').trim();
+  const preferredTime = String(formData.get('preferred_time') ?? '').trim();
+  const desiredStart = String(formData.get('desired_start') ?? '').trim();
+
+  let organisation = String(formData.get('organisation') ?? '').trim();
+  let contactPerson = String(formData.get('contact_person') ?? '').trim();
+  let email = String(formData.get('email') ?? '').trim();
+  let phone = String(formData.get('phone') ?? '').trim();
+  let street = String(formData.get('street') ?? '').trim();
+  let postalCode = String(formData.get('postal_code') ?? '').trim();
+  let city = String(formData.get('city') ?? '').trim();
+
   try {
-    const { supabase } = await requireStaffCompany();
+    const { supabase, company } = await requireStaffCompany();
+
+    if (customerMode === 'EXISTING') {
+      if (!customerId) return failure('Bitte wählen Sie einen bestehenden Kunden aus.');
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id, name, contact_person, email, phone, billing_address, postal_code, city, is_active')
+        .eq('company_id', company.id)
+        .eq('id', customerId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (customerError || !customer) return failure('Der ausgewählte Kunde ist nicht verfügbar.');
+      organisation = customer.name;
+      contactPerson = customer.contact_person ?? '';
+      email = customer.email ?? '';
+      phone = customer.phone ?? '';
+      street = customer.billing_address ?? '';
+      postalCode = customer.postal_code ?? '';
+      city = customer.city ?? '';
+    } else if (customerMode !== 'NEW') {
+      return failure('Bitte wählen Sie einen gültigen Kundentyp.');
+    }
+
+    if (organisation.length < 2 || organisation.length > 160) {
+      return failure('Bitte geben Sie einen Firmen- oder Objektnamen an.');
+    }
+
+    const structuredNotes = [
+      cleaningType && `Reinigungsart: ${cleaningType}`,
+      frequency && `Turnus: ${frequency}`,
+      preferredTime && `Bevorzugte Ausführungszeit: ${preferredTime}`,
+      desiredStart && `Gewünschter Start: ${desiredStart}`,
+      String(formData.get('notes') ?? '').trim(),
+    ].filter(Boolean).join('\n');
+
     const { data, error } = await supabase.rpc('create_lead', {
       p_organisation: organisation,
-      p_contact_person: String(formData.get('contact_person') ?? ''),
-      p_email: String(formData.get('email') ?? ''),
-      p_phone: String(formData.get('phone') ?? ''),
-      p_street: String(formData.get('street') ?? ''),
-      p_postal_code: String(formData.get('postal_code') ?? ''),
-      p_city: String(formData.get('city') ?? ''),
-      p_source: String(formData.get('source') ?? ''),
-      p_notes: String(formData.get('notes') ?? ''),
+      p_contact_person: contactPerson,
+      p_email: email,
+      p_phone: phone,
+      p_street: street,
+      p_postal_code: postalCode,
+      p_city: city,
+      p_source: customerMode === 'EXISTING' ? 'Bestandskunde' : String(formData.get('source') ?? ''),
+      p_notes: structuredNotes,
     });
     if (error || !data) return failure('Die Anfrage konnte nicht angelegt werden.');
-    id = data as string;
-  } catch {
+
+    revalidateSales();
+    redirect(`/dashboard/vertrieb/anfragen/${data as string}`);
+  } catch (error) {
+    if (error && typeof error === 'object' && 'digest' in error) throw error;
     return failure('Die Anfrage konnte nicht angelegt werden.');
   }
-  revalidateSales();
-  redirect(`/dashboard/vertrieb/anfragen/${id}`);
 }
 
 export async function setLeadStatus(leadId: string, _: FormState, formData: FormData): Promise<FormState> {
@@ -267,6 +315,9 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
     .map((value) => Number(String(value)))
     .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
   const start = String(formData.get('start_time') ?? '08:00');
+  const acceptancePolicy = String(formData.get('acceptance_policy') ?? 'KEINE_ABNAHME_ERFORDERLICH');
+  const validPolicies = ['KEINE_ABNAHME_ERFORDERLICH', 'DIGITALE_BESTAETIGUNG', 'UNTERSCHRIFT'];
+  if (!validPolicies.includes(acceptancePolicy)) return failure('Bitte wählen Sie eine gültige Kundenabnahme.');
   const end = String(formData.get('end_time') ?? '10:00');
   if (weekdays.length === 0) return failure('Bitte wählen Sie mindestens einen Wochentag.');
   if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end) || end <= start) {
@@ -280,6 +331,7 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
       p_weekdays: weekdays,
       p_start_time: start,
       p_end_time: end,
+      p_acceptance_policy: acceptancePolicy,
     });
     if (error) return failure('Das Angebot konnte nicht angenommen werden.');
   } catch {
@@ -288,5 +340,5 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
   revalidateSales([`/dashboard/vertrieb/angebote/${quoteId}`]);
   revalidatePath('/dashboard/kunden');
   revalidatePath('/dashboard/planung');
-  return { status: 'success', message: 'Angebot angenommen. Kunde, Objekt und Plan wurden angelegt.' };
+  return { status: 'success', message: 'Angebot angenommen. Kunde, Objekt und Einsatzplanung wurden vorbereitet.' };
 }

@@ -17,11 +17,26 @@ export async function signUp(formData: FormData) {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) withMessage('/signup', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
+  const firstName = String(formData.get('first_name') ?? '').trim();
+  const lastName = String(formData.get('last_name') ?? '').trim();
+  const companyName = String(formData.get('company_name') ?? '').trim();
+  if (!firstName || !lastName || !companyName) {
+    withMessage('/signup', 'error', 'Vorname, Nachname und Firmenname sind erforderlich.');
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { emailRedirectTo: appUrl('/auth/callback') },
+    options: {
+      emailRedirectTo: appUrl('/auth/callback'),
+      data: {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+        company_name: companyName,
+      },
+    },
   });
   if (error) withMessage('/signup', 'error', error.message);
   redirect('/login?message=Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.');
