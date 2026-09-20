@@ -35,7 +35,6 @@ export function localeTag(locale: Locale) {
 }
 
 const de = {
-  'nav.sales': 'Vertrieb',
   'nav.dashboard': 'Dashboard',
   'nav.customers': 'Kunden',
   'nav.objects': 'Objekte',
@@ -635,6 +634,7 @@ const en: Dictionary = {
   'nav.groupFinance': 'Finance',
 
   'nav.groupSales': 'Sales',
+  'nav.sales': 'Sales',
   'nav.leads': 'Leads',
   'nav.surveys': 'Site surveys',
   'nav.quotes': 'Quotes',
@@ -1208,6 +1208,7 @@ const ar: Dictionary = {
   'nav.groupFinance': 'المالية',
 
   'nav.groupSales': 'المبيعات',
+  'nav.sales': 'المبيعات',
   'nav.leads': 'الطلبات',
   'nav.surveys': 'المعاينات',
   'nav.quotes': 'العروض',
@@ -1781,6 +1782,7 @@ const tr: Dictionary = {
   'nav.groupFinance': 'Finans',
 
   'nav.groupSales': 'Satış',
+  'nav.sales': 'Satış',
   'nav.leads': 'Talepler',
   'nav.surveys': 'Keşifler',
   'nav.quotes': 'Teklifler',
@@ -2354,6 +2356,7 @@ const uk: Dictionary = {
   'nav.groupFinance': 'Фінанси',
 
   'nav.groupSales': 'Продажі',
+  'nav.sales': 'Продажі',
   'nav.leads': 'Запити',
   'nav.surveys': 'Огляди',
   'nav.quotes': 'Пропозиції',
@@ -2926,6 +2929,7 @@ const ru: Dictionary = {
   'nav.groupQuality': 'Качество',
   'nav.groupFinance': 'Финансы',
   'nav.groupSales': 'Продажи',
+  'nav.sales': 'Продажи',
   'nav.leads': 'Запросы',
   'nav.surveys': 'Осмотры',
   'nav.quotes': 'Предложения',
