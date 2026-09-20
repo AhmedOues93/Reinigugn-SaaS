@@ -14,11 +14,13 @@ export function NewCalculationForm({
   customers,
   catalog,
   surveys,
+  preferredSurveyId,
 }: {
   action: Action;
   customers: Option[];
   catalog: CatalogItem[];
   surveys: { id: string; label: string }[];
+  preferredSurveyId?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [fromSurvey, setFromSurvey] = useState(surveys.length > 0);
@@ -51,7 +53,7 @@ export function NewCalculationForm({
             htmlFor="site_survey_id"
             info="Die erfassten Flächen werden als Positionen übernommen."
           >
-            <Select id="site_survey_id" name="site_survey_id" required>
+            <Select id="site_survey_id" name="site_survey_id" required defaultValue={preferredSurveyId ?? ""}>
               <option value="">Besichtigung auswählen</option>
               {surveys.map((survey) => (
                 <option key={survey.id} value={survey.id}>
