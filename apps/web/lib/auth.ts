@@ -1,11 +1,35 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { landingPathForRole } from '@/lib/landing';
 
+/**
+ * Which of the three apps the visitor was heading for.
+ *
+ * Carried into the sign-in URL so a cleaner opening the installed phone app
+ * sees a screen written for them rather than the office pitch. It is a copy
+ * hint and nothing else: the session still decides what anybody may open, and
+ * a hand-typed value changes only which sentence is shown.
+ */
+async function requestedApp(): Promise<'team' | 'portal' | null> {
+  try {
+    const path = (await headers()).get('x-pathname') ?? '';
+    if (path.startsWith('/mitarbeiter')) return 'team';
+    if (path.startsWith('/portal')) return 'portal';
+  } catch {
+    // Header access can throw outside a request scope; the office copy is the
+    // right default there.
+  }
+  return null;
+}
+
 export async function requireUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  if (!user) {
+    const app = await requestedApp();
+    redirect(app ? `/login?app=${app}` : '/login');
+  }
   return { supabase, user };
 }
 

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { FileText, Lock, ReceiptText } from 'lucide-react';
-import { BackLink, Badge, Card, DataRow, PageHeader } from '@/components/ui';
+import { BookOpen, FileText, Lock, ReceiptText } from 'lucide-react';
+import { BackLink, Badge, ButtonLink, Card, DataRow, PageHeader } from '@/components/ui';
 import { CalculationKpiBand } from '@/components/kalkulation/kpi-band';
 import { CalculationLineEditor, RemoveLineButton } from '@/components/kalkulation/line-editor';
 import {
@@ -125,53 +125,116 @@ export default async function CalculationPage({
       {tab === 'leistung' && (
         <div className="space-y-4">
           <Card className="overflow-hidden">
-            <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5">Positionen</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+              <h2 className="text-[15px] font-semibold">Leistungspositionen</h2>
+              {isDraft && (
+                <ButtonLink href="/dashboard/kalkulation/leistungskatalog" variant="outline" size="sm">
+                  <BookOpen className="size-4" aria-hidden="true" />
+                  Aus Katalog hinzufügen
+                </ButtonLink>
+              )}
+            </div>
+
             {calculation.lines.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground sm:px-5">
+              <p className="border-t border-border/70 px-4 py-6 text-sm text-muted-foreground sm:px-5">
                 Noch keine Position erfasst.
               </p>
             ) : (
-              <ul className="mt-3">
-                {calculation.lines.map((line) =>
-                  lineRow(
-                    line,
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium">
-                          {line.area_name} · {line.service_name}
-                        </p>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                          {line.quantity.toLocaleString('de-DE')} {unitLabels[line.calculation_unit]}
-                          {' · '}
-                          {/* "2× pro Woche" reads right; "1× vierteljährlich"
-                              does not, so the count only appears where it is a
-                              real choice. */}
+              /*
+                A real table, because an office reads down a column: every
+                Richtleistung under every other one, every monthly total in the
+                same place. It scrolls sideways on a narrow screen rather than
+                collapsing into cards — a calculation that reflows loses exactly
+                the comparison it exists to support.
+              */
+              <div className="overflow-x-auto border-t border-border/70">
+                <table className="w-full min-w-[60rem] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-border/70 bg-subtle text-start">
+                      <th scope="col" className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground sm:px-5">Bereich / Raum</th>
+                      <th scope="col" className="px-3 py-2.5 text-start text-xs font-medium text-muted-foreground">Leistung</th>
+                      <th scope="col" className="px-3 py-2.5 text-end text-xs font-medium text-muted-foreground">Menge</th>
+                      <th scope="col" className="px-3 py-2.5 text-start text-xs font-medium text-muted-foreground">Einheit</th>
+                      <th scope="col" className="px-3 py-2.5 text-end text-xs font-medium text-muted-foreground">Richtleistung</th>
+                      <th scope="col" className="px-3 py-2.5 text-start text-xs font-medium text-muted-foreground">Turnus</th>
+                      <th scope="col" className="px-3 py-2.5 text-end text-xs font-medium text-muted-foreground">Std./Mon.</th>
+                      <th scope="col" className="px-3 py-2.5 text-end text-xs font-medium text-muted-foreground">€/Monat</th>
+                      {isDraft && <th scope="col" className="w-12 px-2 py-2.5"><span className="sr-only">Aktionen</span></th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70">
+                    {calculation.lines.map((line) => (
+                      <tr key={line.id} className="align-top transition-colors hover:bg-subtle/60">
+                        <td className="px-4 py-3 font-medium sm:px-5">
+                          {line.area_name}
+                          {line.service_weekdays && line.service_weekdays.length > 0 && (
+                            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                              {line.service_weekdays
+                                .map((day) => weekdayLabels.find((entry) => entry.value === day)?.short ?? day)
+                                .join(', ')}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          {line.service_name}
+                          {line.override_reason && (
+                            <span className="mt-0.5 block text-xs font-medium text-warning">
+                              Zeit manuell: {line.override_reason}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-end tabular-nums">{line.quantity.toLocaleString('de-DE')}</td>
+                        <td className="px-3 py-3 text-muted-foreground">{unitLabels[line.calculation_unit]}</td>
+                        <td className="px-3 py-3 text-end tabular-nums text-muted-foreground">
+                          {line.productivity_per_hour != null
+                            ? `${line.productivity_per_hour.toLocaleString('de-DE')} m²/h`
+                            : line.minutes_per_unit != null
+                              ? `${line.minutes_per_unit.toLocaleString('de-DE')} Min.`
+                              : '–'}
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground">
                           {line.frequency === 'PRO_WOCHE' || line.frequency === 'PRO_MONAT'
                             ? `${line.frequency_count.toLocaleString('de-DE')}× ${frequencyLabels[line.frequency]}`
                             : frequencyLabels[line.frequency]}
-                          {line.productivity_per_hour != null &&
-                            ` · ${line.productivity_per_hour.toLocaleString('de-DE')} m²/h`}
-                          {line.service_weekdays && line.service_weekdays.length > 0 &&
-                            ` · ${line.service_weekdays
-                              .map((day) => weekdayLabels.find((entry) => entry.value === day)?.short ?? day)
-                              .join(', ')}`}
-                        </p>
-                        {line.override_reason && (
-                          <p className="mt-1 text-sm text-warning">
-                            Zeit manuell gesetzt: {line.override_reason}
-                          </p>
+                        </td>
+                        <td className="px-3 py-3 text-end tabular-nums">
+                          {line.frequency === 'EINMALIG'
+                            ? '–'
+                            : (line.monthly_minutes / 60).toLocaleString('de-DE', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-3 py-3 text-end font-medium tabular-nums">
+                          {money(
+                            line.frequency === 'EINMALIG' ? line.one_off_price_cents : line.proposed_price_cents_month,
+                            currency,
+                          )}
+                        </td>
+                        {isDraft && (
+                          <td className="px-2 py-2">
+                            <RemoveLineButton
+                              action={removeCalculationLine.bind(null, id, line.id)}
+                              label={`${line.area_name} · ${line.service_name}`}
+                            />
+                          </td>
                         )}
-                      </div>
-                      {isDraft && (
-                        <RemoveLineButton
-                          action={removeCalculationLine.bind(null, id, line.id)}
-                          label={`${line.area_name} · ${line.service_name}`}
-                        />
-                      )}
-                    </div>,
-                  ),
-                )}
-              </ul>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-border bg-subtle font-semibold">
+                      <td className="px-4 py-3 sm:px-5" colSpan={6}>
+                        Gesamt
+                      </td>
+                      <td className="px-3 py-3 text-end tabular-nums">
+                        {(calculation.monthly_minutes / 60).toLocaleString('de-DE', { maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-3 py-3 text-end tabular-nums">
+                        {money(calculation.selling_price_cents_month, currency)}
+                      </td>
+                      {isDraft && <td />}
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             )}
           </Card>
 

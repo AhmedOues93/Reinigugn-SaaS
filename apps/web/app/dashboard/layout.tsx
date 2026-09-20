@@ -7,7 +7,7 @@ import { landingPathForRole } from '@/lib/landing';
 import { cookieLocale } from '@/lib/i18n-server';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, membership, supabase } = await getCurrentCompany();
+  const { user, membership, supabase, profile } = await getCurrentCompany();
   if (!membership) redirect('/onboarding');
   const company = membership.companies as unknown as { name: string } | null;
   if (!company) redirect('/onboarding');
@@ -30,6 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       branding={branding}
       companyName={company.name}
       email={user.email ?? 'Konto'}
+      displayName={[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
       role={membership.role as 'OWNER' | 'OFFICE'}
       locale={locale}
       unreadNotifications={unreadNotifications ?? 0}

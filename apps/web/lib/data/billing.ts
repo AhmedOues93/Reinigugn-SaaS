@@ -234,6 +234,40 @@ export async function getBillingSummary() {
   };
 }
 
+export type MonthlyRevenue = { month: number; cents: number };
+
+/**
+ * Invoiced revenue per calendar month.
+ *
+ * Counts invoices that were actually issued — a draft is a document nobody has
+ * seen and a cancelled one is revenue that never existed, so neither belongs in
+ * a revenue chart. Dated by `issue_date` rather than payment, because this
+ * answers "what did we bill" and the finance panel beside it answers "what came
+ * in". Months with no invoice stay at zero rather than being dropped, so the
+ * bars keep an even rhythm across the year.
+ */
+export async function getMonthlyRevenue(year: number): Promise<MonthlyRevenue[]> {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('issue_date, gross_total_cents')
+    .eq('company_id', company.id)
+    .in('status', ['ISSUED', 'PAID'])
+    .not('issue_date', 'is', null)
+    .gte('issue_date', `${year}-01-01`)
+    .lte('issue_date', `${year}-12-31`);
+  if (error) throw new Error('Die Umsatzentwicklung konnte nicht geladen werden.');
+
+  const months = Array.from({ length: 12 }, (_, index) => ({ month: index + 1, cents: 0 }));
+  for (const invoice of data ?? []) {
+    // The date is a plain `date` column in ISO form; slicing beats constructing
+    // a Date, which would drag the runtime's timezone into a calendar question.
+    const month = Number(invoice.issue_date!.slice(5, 7));
+    if (month >= 1 && month <= 12) months[month - 1].cents += invoice.gross_total_cents ?? 0;
+  }
+  return months;
+}
+
 export type OfficeActionItems = {
   /** Finished work the customer has been asked to accept and has not yet. */
   awaitingAcceptance: number;

@@ -2,13 +2,14 @@ import Link from 'next/link';
 import {
   AlertTriangle,
   CalendarClock,
-  ChevronRight,
+  CheckCircle2,
   ClipboardCheck,
   MailWarning,
   Receipt,
   UserRoundX,
 } from 'lucide-react';
 import { cn } from '@reinigung/ui';
+import { CardLink, SectionCard } from '@/components/ui';
 import type { OfficeActionItems } from '@/lib/data/billing';
 
 /**
@@ -71,38 +72,58 @@ export function OfficeActionPanel({ items }: { items: OfficeActionItems }) {
     },
   ].filter((entry) => entry.count > 0);
 
-  if (entries.length === 0) return null;
-
   return (
-    <section aria-labelledby="actions-title" className="mb-6">
-      <h2 id="actions-title" className="mb-2.5 text-[15px] font-semibold">
-        Zu erledigen
-      </h2>
-      <ul className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card">
-        {entries.map((entry) => (
-          <li key={entry.href + entry.label} className="border-b border-border/70 last:border-0">
-            <Link
-              href={entry.href}
-              className="flex min-h-touch items-center gap-3 px-4 py-3 transition-colors hover:bg-subtle sm:px-5 md:min-h-0"
-            >
-              <span
-                className={cn(
-                  'grid size-8 shrink-0 place-items-center rounded-lg',
-                  entry.tone === 'danger' && 'bg-danger-soft text-danger',
-                  entry.tone === 'warning' && 'bg-warning-soft text-warning',
-                  entry.tone === 'primary' && 'bg-primary-soft text-primary',
-                )}
+    <SectionCard
+      title="Offene Aufgaben"
+      action={<CardLink href="/dashboard/leistungsnachweise">Alle anzeigen</CardLink>}
+      flush
+    >
+      {entries.length === 0 ? (
+        <p className="flex items-center gap-2.5 px-5 pb-5 pt-1 text-sm text-success">
+          <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+          Nichts offen – alles im grünen Bereich.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border/70 border-t border-border/70">
+          {entries.map((entry) => (
+            <li key={entry.href + entry.label}>
+              <Link
+                href={entry.href}
+                className="group flex min-h-touch items-start gap-3 px-5 py-3 transition-colors hover:bg-subtle md:min-h-0"
               >
-                <entry.icon className="size-4" aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1 text-[15px] leading-6">
-                <span className="font-semibold tabular-nums">{entry.count}</span> {entry.label}
-              </span>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+                <span
+                  className={cn(
+                    'mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg',
+                    entry.tone === 'danger' && 'bg-danger-soft text-danger',
+                    entry.tone === 'warning' && 'bg-warning-soft text-warning',
+                    entry.tone === 'primary' && 'bg-primary-soft text-primary',
+                  )}
+                >
+                  <entry.icon className="size-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1 text-sm leading-6 group-hover:text-primary">
+                  <span className="font-semibold tabular-nums">{entry.count}</span> {entry.label}
+                </span>
+                {/*
+                  Urgency comes from what the item is, not from a field somebody
+                  typed: a disputed service blocks an invoice, an expired
+                  invitation does not. Shown as a word as well as a colour.
+                */}
+                <span
+                  className={cn(
+                    'mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                    entry.tone === 'danger' && 'bg-danger-soft text-danger',
+                    entry.tone === 'warning' && 'bg-warning-soft text-warning',
+                    entry.tone === 'primary' && 'bg-primary-soft text-primary',
+                  )}
+                >
+                  {entry.tone === 'danger' ? 'Hoch' : entry.tone === 'warning' ? 'Mittel' : 'Niedrig'}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SectionCard>
   );
 }

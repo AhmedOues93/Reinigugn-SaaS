@@ -82,6 +82,55 @@ export async function getDashboardMetrics() {
   return { todayJobs: todayJobs ?? 0, plannedToday: plannedToday ?? 0, employeesScheduled: new Set((assignments ?? []).map((assignment) => assignment.member_id)).size, weekJobs: weekJobs ?? 0, activeWorkers: activeWorkers ?? 0, workedMinutes: (completedEntries ?? []).reduce((total, entry) => total + (entry.duration_minutes ?? 0), 0), openComplaints: openComplaints ?? 0, overdueComplaints: overdueComplaints ?? 0, recentQualityIssues: recentQualityIssues ?? 0, vacationToday: vacationToday ?? 0, sickToday: sickToday ?? 0, openVacationRequests: openVacationRequests ?? 0, affectedAbsenceJobs: (affectedAssignments ?? []).length };
 }
 
+export type JobStatusDistribution = {
+  planned: number;
+  confirmed: number;
+  inProgress: number;
+  completed: number;
+  total: number;
+};
+
+/**
+ * Where this month's visits stand, as counts by lifecycle state.
+ *
+ * Scoped to the current month rather than all time: a donut over every job the
+ * company has ever run converges on "almost everything is finished" and stops
+ * telling anybody anything. CANCELLED and MISSED are left out on purpose —
+ * they are not stages of the same progression, and folding them in would make
+ * the ring read as though the work were still somewhere in the pipeline.
+ */
+export async function getJobStatusDistribution(): Promise<JobStatusDistribution> {
+  const { supabase, company } = await requireStaffCompany();
+  const today = berlinDateKey();
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const monthEnd = `${today.slice(0, 7)}-31`;
+
+  const count = async (status: string) => {
+    const { count: value } = await supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', company.id)
+      .eq('status', status)
+      .gte('scheduled_date', monthStart)
+      .lte('scheduled_date', monthEnd);
+    return value ?? 0;
+  };
+
+  const [planned, confirmed, inProgress, completed] = await Promise.all([
+    count('PLANNED'),
+    count('CONFIRMED'),
+    count('IN_PROGRESS'),
+    count('COMPLETED'),
+  ]);
+  return {
+    planned,
+    confirmed,
+    inProgress,
+    completed,
+    total: planned + confirmed + inProgress + completed,
+  };
+}
+
 /**
  * Today's visits for the office overview: when, where, who, and whether the
  * clock is running. One query; the page derives lanes from it.

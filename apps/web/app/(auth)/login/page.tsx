@@ -6,18 +6,33 @@ import { AuthField, AuthForm, AuthSubmit } from '@/components/auth-form';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
-  const [{ error, message }, locale] = await Promise.all([searchParams, currentLocale()]);
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string; app?: string }>;
+}) {
+  const [{ error, message, app }, locale] = await Promise.all([searchParams, currentLocale()]);
+
+  /*
+   * Who is signing in. Set when somebody is bounced out of the field app or the
+   * portal, so they are greeted in their own terms instead of being sold an
+   * office product. It changes wording and layout only — every account still
+   * lands wherever its role belongs.
+   */
+  const variant = app === 'team' ? 'employee' : app === 'portal' ? 'portal' : 'office';
 
   return (
     <AuthShell
       locale={locale}
-      title={t(locale, 'auth.signInTitle')}
-      description={t(locale, 'auth.signInSubtitle')}
+      variant={variant}
+      title={t(locale, variant === 'office' ? 'auth.signInTitle' : 'auth.welcomeBack')}
+      description={t(locale, variant === 'employee' ? 'auth.signInEmployee' : variant === 'portal' ? 'auth.signInPortal' : 'auth.signInSubtitle')}
       footer={
-        <>
-          {t(locale, 'auth.noAccount')} <AuthFooterLink href="/signup">{t(locale, 'auth.signUp')}</AuthFooterLink>
-        </>
+        variant === 'office' ? (
+          <>
+            {t(locale, 'auth.noAccount')} <AuthFooterLink href="/signup">{t(locale, 'auth.signUp')}</AuthFooterLink>
+          </>
+        ) : undefined
       }
     >
       <AuthForm action={login} locale={locale}>
@@ -35,7 +50,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               href="/forgot-password"
               /* Inline beside the label, so it cannot be 44px tall without
                  pushing the field around; 24px is the accessible floor. */
-              className="inline-flex min-h-6 items-center rounded-sm text-[13px] font-medium text-primary underline-offset-4 hover:underline"
+              className="inline-flex min-h-6 items-center rounded-sm text-[13px] font-medium text-highlight underline-offset-4 hover:underline"
             >
               {t(locale, 'auth.forgotLink')}
             </Link>

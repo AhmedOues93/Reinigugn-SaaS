@@ -17,7 +17,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-[inset_0_1px_0_0_rgb(255_255_255/0.14),0_1px_2px_0_rgb(11_42_51/0.2)] hover:bg-[hsl(189_80%_23%)]',
+          'bg-primary text-primary-foreground shadow-[inset_0_1px_0_0_rgb(255_255_255/0.14),0_1px_2px_0_rgb(15_31_33/0.2)] hover:bg-[hsl(162_88%_21%)]',
         outline:
           'border border-input bg-card text-foreground shadow-card hover:border-foreground/25 hover:bg-subtle',
         ghost: 'text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground',
@@ -154,7 +154,7 @@ export function Card({ className, children, ...props }: HTMLAttributes<HTMLEleme
   return (
     <section
       className={cn(
-        'rounded-xl border border-border/80 bg-card text-card-foreground shadow-card',
+        'rounded-card border border-border/80 bg-card text-card-foreground shadow-card',
         className,
       )}
       {...props}
@@ -428,6 +428,158 @@ export function StatBand({
         );
       })}
     </dl>
+  );
+}
+
+/**
+ * One key figure as its own card, with the thing it counts drawn beside it.
+ *
+ * `StatBand` groups four figures into a single hairline-separated band and is
+ * still the right answer inside a dense page. This is the dashboard form: fewer
+ * figures, more room, each one a door to the screen it came from. The icon is
+ * decorative — the label already says what the number is — so it never carries
+ * meaning on its own.
+ */
+export function StatCard({
+  label,
+  value,
+  note,
+  href,
+  icon,
+  tone,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  note?: React.ReactNode;
+  href?: string;
+  icon?: React.ReactNode;
+  tone?: 'primary' | 'info' | 'success' | 'warning' | 'danger';
+  className?: string;
+}) {
+  const tones = {
+    primary: 'bg-primary-soft text-primary',
+    info: 'bg-info-soft text-info',
+    success: 'bg-success-soft text-success',
+    warning: 'bg-warning-soft text-warning',
+    danger: 'bg-danger-soft text-danger',
+  } as const;
+
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-medium text-muted-foreground">{label}</p>
+          <p className="mt-2 text-[1.75rem] font-semibold leading-none tracking-tight tabular-nums">
+            {value}
+          </p>
+        </div>
+        {icon && (
+          <span
+            className={cn(
+              'grid size-10 shrink-0 place-items-center rounded-xl [&_svg]:size-[18px]',
+              tones[tone ?? 'primary'],
+            )}
+            aria-hidden="true"
+          >
+            {icon}
+          </span>
+        )}
+      </div>
+      {note && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">{note}</p>
+      )}
+    </>
+  );
+
+  if (!href) {
+    return (
+      <div className={cn('rounded-card border border-border/80 bg-card p-5 shadow-card', className)}>
+        {body}
+      </div>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'group relative rounded-card border border-border/80 bg-card p-5 shadow-card transition-colors hover:border-primary/30 hover:bg-subtle',
+        className,
+      )}
+    >
+      {body}
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        className="absolute bottom-4 end-4 size-4 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180"
+      >
+        <path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Link>
+  );
+}
+
+/**
+ * A titled panel on the dashboard: heading, an optional way to see everything,
+ * and a body that decides its own padding. `flush` is for panels whose body is
+ * a list that should meet the card edge.
+ */
+export function SectionCard({
+  title,
+  action,
+  children,
+  flush = false,
+  className,
+  bodyClassName,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  flush?: boolean;
+  className?: string;
+  bodyClassName?: string;
+}) {
+  return (
+    <section className={cn('flex flex-col rounded-card border border-border/80 bg-card shadow-card', className)}>
+      <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
+        <h2 className="text-[15px] font-semibold">{title}</h2>
+        {action}
+      </div>
+      <div className={cn('min-w-0 flex-1', flush ? '' : 'px-5 pb-5', bodyClassName)}>{children}</div>
+    </section>
+  );
+}
+
+/** The "Alle anzeigen" link that sits in a `SectionCard` heading. */
+export function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="shrink-0 rounded text-[13px] font-medium text-primary underline-offset-4 hover:underline"
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * One tile in the Schnellaktionen grid. Always a real route — a dashboard
+ * shortcut that opens nothing teaches people to stop pressing the shortcuts.
+ */
+export function QuickAction({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-touch items-center gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 py-3 text-sm font-medium transition-colors hover:border-primary/30 hover:bg-primary-soft/50"
+    >
+      <span className="text-muted-foreground transition-colors group-hover:text-primary [&_svg]:size-[18px]" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <svg viewBox="0 0 16 16" aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-primary rtl:rotate-180">
+        <path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Link>
   );
 }
 
