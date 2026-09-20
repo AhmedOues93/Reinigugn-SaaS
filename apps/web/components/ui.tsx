@@ -477,7 +477,7 @@ export function StatCard({
         {icon && (
           <span
             className={cn(
-              'grid size-10 shrink-0 place-items-center rounded-xl [&_svg]:size-[18px]',
+              'grid size-9 shrink-0 place-items-center rounded-xl [&_svg]:size-[18px] [&_svg]:stroke-[2.25]',
               tones[tone ?? 'primary'],
             )}
             aria-hidden="true"
