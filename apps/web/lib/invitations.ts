@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto';
 
-export const invitationCookieName = 'sauberwerk_invitation';
+export const invitationCookieName = 'reinplan_invitation';
 
 export type InvitationPreview = {
   email: string;
