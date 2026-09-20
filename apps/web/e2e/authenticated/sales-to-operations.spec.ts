@@ -50,12 +50,12 @@ test.describe('sales pipeline', () => {
 
     // --- Leistungsverzeichnis + Kalkulation --------------------------------
     // Areas are the calculation's input: square metres, minutes, frequency.
-    await page.locator('input[name=name]').first().fill('Büroflächen');
+    await page.locator('select[name=name]').first().selectOption({ label: 'Büro- und Besprechungsräume' });
     await page.locator('input[name=area_sqm]').first().fill('320');
-    await page.locator('input[name=services_per_week]').first().fill('3');
+    await page.locator('select[name=services_per_week]').first().selectOption('3');
     await page.locator('input[name=minutes_per_service]').first().fill('120');
     await page.getByRole('button', { name: /fläche|hinzufügen/i }).first().click();
-    await expect(page.getByText('Büroflächen').first()).toBeVisible();
+    await expect(page.getByText('Büro- und Besprechungsräume').first()).toBeVisible();
 
     await page.getByRole('button', { name: /abschließen|abgeschlossen/i }).first().click();
 
