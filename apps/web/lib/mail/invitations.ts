@@ -59,10 +59,13 @@ export const mailService: TransactionalMailService = {
 
     // Nothing configured: hand the link back rather than pretending to send.
     if (!mailConfigured()) {
+      const local = appEnvironment() === 'local';
       return {
         delivered: false,
-        developmentUrl: url,
-        detail: 'Kein E-Mail-Versand eingerichtet — Link manuell weitergeben.',
+        developmentUrl: local ? url : undefined,
+        detail: local
+          ? 'Kein E-Mail-Versand eingerichtet — Link manuell weitergeben.'
+          : 'E-Mail-Versand ist für diese Umgebung nicht eingerichtet.',
       };
     }
 
