@@ -1,4 +1,5 @@
 import { requireStaffCompany } from '@/lib/auth';
+import { berlinDateKey } from '@/lib/date';
 
 export type MemberFilter = 'all' | 'INVITED' | 'ACTIVE' | 'DISABLED';
 export type RoleFilter = 'all' | 'OFFICE' | 'EMPLOYEE';
@@ -137,4 +138,35 @@ export async function getEmployee(id: string) {
   const detailsByProfile = await employeeDetailsByProfile(supabase, company.id, [data.profile_id]);
   const detail = detailsByProfile.get(data.profile_id);
   return { ...data, employee_details: detail ? [detail] : [] };
+}
+
+
+export async function getEmployeeMonthlyWorkSummary(memberId: string, month?: string) {
+  const { supabase, company } = await requireStaffCompany();
+  const today = berlinDateKey();
+  const monthKey = /^\d{4}-\d{2}$/.test(month ?? '') ? month! : today.slice(0, 7);
+  const [year, monthNumber] = monthKey.split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  const from = `${monthKey}-01`;
+  const to = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
+  const { data, error } = await supabase
+    .from('job_time_entries')
+    .select('id, started_at, finished_at, duration_minutes, break_minutes, jobs!inner(company_id, title, scheduled_date, cleaning_objects(name), customers(name))')
+    .eq('jobs.company_id', company.id)
+    .eq('member_id', memberId)
+    .gte('started_at', `${from}T00:00:00Z`)
+    .lte('started_at', `${to}T23:59:59Z`)
+    .order('started_at', { ascending: false });
+  if (error) throw new Error('Arbeitszeiten konnten nicht geladen werden.');
+  const entries = data ?? [];
+  const workedMinutes = entries.reduce(
+    (sum, entry) => sum + Math.max(0, Number(entry.duration_minutes ?? 0) - Number(entry.break_minutes ?? 0)),
+    0,
+  );
+  return {
+    monthKey,
+    entries,
+    workedMinutes,
+    daysWorked: new Set(entries.map((entry) => entry.started_at.slice(0, 10))).size,
+  };
 }
