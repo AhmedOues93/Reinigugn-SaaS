@@ -155,13 +155,13 @@ function OfficePitch({ locale }: { locale: Locale }) {
       </h2>
       <p className="mt-5 max-w-[38ch] text-[15px] leading-7 text-white/70">{t(locale, 'auth.tagline')}</p>
 
-      <ul className="mt-10 grid max-w-[34rem] grid-cols-3 gap-x-5 gap-y-6">
+      <ul className="mt-10 grid max-w-[30rem] grid-cols-3 gap-x-3 gap-y-4">
         {capabilities.map(({ icon: Icon, label }) => (
           <li key={label} className="min-w-0">
-            <span className="grid size-[3.25rem] place-items-center rounded-2xl border border-white/15 bg-white/[0.07]">
-              <Icon className="size-[22px] text-white" aria-hidden="true" />
+            <span className="grid size-12 place-items-center rounded-xl border border-white/15 bg-white/[0.07]">
+              <Icon className="size-[21px] text-white" strokeWidth={2.35} aria-hidden="true" />
             </span>
-            <span className="mt-3 block text-[13px] font-medium leading-[1.35] text-white/85">{label}</span>
+            <span className="mt-2.5 block text-[13px] font-semibold leading-[1.35] text-white/85">{label}</span>
           </li>
         ))}
       </ul>
