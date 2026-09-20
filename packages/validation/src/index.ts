@@ -100,7 +100,10 @@ const employeeMasterDataSchema = z.object({
   weekly_hours: optionalHours,
   employment_start_date: optionalDate,
   employment_end_date: optionalDate,
-  employment_type: z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
+  employment_type: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
+  ),
   preferred_language: supportedLocaleSchema.default('de'),
   notes: optionalText(4_000, 'Die Notizen'),
 });
