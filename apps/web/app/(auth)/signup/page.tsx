@@ -23,10 +23,10 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
       <AuthForm action={signUp} locale={locale}>
         <AuthMessage error={error} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <AuthField name="first_name" autoComplete="given-name" label="Vorname" locale={locale} icon={<UserRound />} />
-          <AuthField name="last_name" autoComplete="family-name" label="Nachname" locale={locale} icon={<UserRound />} />
+          <AuthField name="first_name" rule="required" autoComplete="given-name" label="Vorname" locale={locale} icon={<UserRound />} />
+          <AuthField name="last_name" rule="required" autoComplete="family-name" label="Nachname" locale={locale} icon={<UserRound />} />
         </div>
-        <AuthField name="company_name" autoComplete="organization" label="Firmenname" locale={locale} icon={<Building2 />} />
+        <AuthField name="company_name" rule="required" autoComplete="organization" label="Firmenname" locale={locale} icon={<Building2 />} />
         <AuthField name="email" type="email" rule="email" autoComplete="email" label={t(locale, 'auth.email')} locale={locale} icon={<Mail />} />
         <AuthField
           name="password"
