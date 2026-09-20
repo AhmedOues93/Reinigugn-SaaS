@@ -26,7 +26,7 @@ export function CompanyBrand({
     <span className={cn('font-semibold tracking-tight', size === 'sm' ? 'text-base' : 'text-lg')}>
       {branding?.name ?? (
         <>
-          Sauber<span className="text-primary">Werk</span>
+          Rein<span className="text-primary">Plan</span>
         </>
       )}
     </span>
@@ -34,7 +34,7 @@ export function CompanyBrand({
 
   const wrapperClass = cn('flex min-h-11 items-center gap-2', className);
   return href ? (
-    <Link href={href} className={wrapperClass} aria-label={branding?.name ?? 'SauberWerk'}>
+    <Link href={href} className={wrapperClass} aria-label={branding?.name ?? 'ReinPlan'}>
       {content}
     </Link>
   ) : (
@@ -46,7 +46,7 @@ export function CompanyBrand({
 export function ProductBrand({ className }: { className?: string }) {
   return (
     <span className={cn('text-lg font-semibold tracking-tight', className)}>
-      Sauber<span className="text-primary">Werk</span>
+      Rein<span className="text-primary">Plan</span>
     </span>
   );
 }
