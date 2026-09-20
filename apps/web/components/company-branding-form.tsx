@@ -30,7 +30,7 @@ export function CompanyBrandingForm({
       <FormMessage status={removeState.status} message={removeState.message} />
 
       <div className="flex flex-wrap items-center gap-4">
-        <div className="grid h-20 w-40 place-items-center rounded-md border bg-muted p-2">
+        <div className="grid h-20 w-40 place-items-center rounded-xl border border-border/80 bg-subtle p-2">
           {logoUrl ? (
             <img src={logoUrl} alt="Firmenlogo" className="max-h-16 max-w-full object-contain" />
           ) : (
@@ -48,7 +48,7 @@ export function CompanyBrandingForm({
         <label className="block text-sm font-medium">
           Logo (PNG, JPG, WebP oder SVG, max. 2 MB)
           <input
-            className="mt-1.5 block w-full text-sm file:min-h-11 file:rounded-md file:border-0 file:bg-muted file:px-4 file:text-sm file:font-medium"
+            className="mt-1.5 block w-full rounded-lg border border-input bg-card px-3 py-2 text-sm file:me-3 file:min-h-9 file:rounded-md file:border-0 file:bg-muted file:px-3 file:text-sm file:font-medium hover:border-foreground/30"
             type="file"
             name="logo"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -57,7 +57,7 @@ export function CompanyBrandingForm({
         <label className="block text-sm font-medium">
           Akzentfarbe
           <input
-            className="mt-1.5 h-11 w-24 rounded-md border bg-card px-2"
+            className="mt-1.5 h-11 w-24 cursor-pointer rounded-lg border border-input bg-card p-1.5"
             type="color"
             name="brand_color"
             defaultValue={brandColor ?? '#0f766e'}
