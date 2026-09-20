@@ -131,7 +131,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur-md lg:ms-[264px]">
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 lg:ms-[264px]">
         <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center gap-2 px-4 sm:px-6 lg:px-8">
           <DashboardNav locale={locale} unread={unreadNotifications} mobile branding={branding} companyName={companyName} />
           <div className="min-w-0 lg:hidden [&_span]:block [&_span]:truncate">
