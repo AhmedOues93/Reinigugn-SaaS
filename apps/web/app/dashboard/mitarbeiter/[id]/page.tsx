@@ -153,9 +153,9 @@ export default async function EmployeeDetailPage({
       />
 
       {employee.status === 'INVITED' && (
-        <Notice tone="info" title="Einladung offen" className="mb-6">
-          Das Konto wird erst nach Annahme der Einladung angelegt. Arbeits- und Einsatzdaten können
-          bis dahin bewusst noch leer sein und werden nicht geschätzt oder vorbefüllt.
+        <Notice tone="neutral" title="Einladung offen" className="mb-6">
+          Die Stammdaten sind bereits gespeichert. Der persönliche App-Zugang wird aktiv, sobald
+          der Mitarbeiter die Einladung per E-Mail annimmt.
         </Notice>
       )}
 
