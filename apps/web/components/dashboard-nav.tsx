@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Settings, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { CompanyBrand } from '@/components/company-brand';
 import { navGroups, navIcons } from '@/components/dashboard-shell';
@@ -31,6 +31,7 @@ export function DashboardNav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const closeButton = useRef<HTMLButtonElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
 
@@ -89,13 +90,39 @@ export function DashboardNav({
     );
   };
 
+  const primary = navGroups[0];
+  const secondary = navGroups[1];
+  const secondaryActive = secondary.items.some((entry) => isActive(entry.href));
+
   const list = (
-    <div className="space-y-5">
-      {navGroups.map((group) => (
-        <div key={group.label}>
-          <p className="px-3 pb-1.5 text-[11.5px] font-medium text-ink-muted/70">{t(locale, group.label)}</p>
-          <ul className="space-y-0.5">
-            {group.items.map((entry) => (
+    <div className="space-y-3">
+      <div>
+        <p className="px-3 pb-1.5 text-[11.5px] font-medium text-ink-muted/70">{t(locale, primary.label)}</p>
+        <ul className="space-y-0.5">
+          {primary.items.map((entry) => (
+            <li key={entry.href}>
+              {item(
+                entry.href,
+                t(locale, entry.label),
+                navIcons[entry.icon as keyof typeof navIcons],
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="border-t border-ink-line pt-3">
+        <button
+          type="button"
+          onClick={() => setMoreOpen((value) => !value)}
+          aria-expanded={moreOpen || secondaryActive}
+          className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-white/[0.05] hover:text-white max-lg:min-h-touch"
+        >
+          <span className="truncate">Mehr</span>
+          <ChevronDown className={cn('ms-auto size-4 transition-transform', (moreOpen || secondaryActive) && 'rotate-180')} aria-hidden="true" />
+        </button>
+        {(moreOpen || secondaryActive) && (
+          <ul className="mt-1 space-y-0.5">
+            {secondary.items.map((entry) => (
               <li key={entry.href}>
                 {item(
                   entry.href,
@@ -106,9 +133,8 @@ export function DashboardNav({
               </li>
             ))}
           </ul>
-        </div>
-      ))}
-      <div className="border-t border-ink-line pt-4">{item('/dashboard/settings', t(locale, 'nav.settings'), Settings)}</div>
+        )}
+      </div>
     </div>
   );
 
