@@ -111,6 +111,15 @@ export function DashboardNav({
         </ul>
       </div>
       <div className="border-t border-ink-line pt-3">
+        {secondary.items.some((entry) => entry.icon === 'messages') && (
+          <div className="mb-2">
+            {(() => {
+              const entry = secondary.items.find((itemEntry) => itemEntry.icon === 'messages')!;
+              return item(entry.href, t(locale, entry.label), navIcons[entry.icon as keyof typeof navIcons], unread);
+            })()}
+          </div>
+        )}
+        <div className="border-t border-ink-line pt-2">
         <button
           type="button"
           onClick={() => setMoreOpen((value) => !value)}
@@ -122,7 +131,7 @@ export function DashboardNav({
         </button>
         {(moreOpen || secondaryActive) && (
           <ul className="mt-1 space-y-0.5">
-            {secondary.items.map((entry) => (
+            {secondary.items.filter((entry) => entry.icon !== 'messages').map((entry) => (
               <li key={entry.href}>
                 {item(
                   entry.href,
@@ -134,6 +143,7 @@ export function DashboardNav({
             ))}
           </ul>
         )}
+        </div>
       </div>
     </div>
   );
