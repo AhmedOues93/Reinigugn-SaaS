@@ -33,7 +33,16 @@ export async function inviteEmployee(_: FormState, formData: FormData): Promise<
     if (masterDataError) return failure('Die Einladung wurde erstellt, aber die Arbeitsdaten konnten nicht gespeichert werden.');
     const delivery = await mailService.sendInvitation({ to: parsed.data.email, companyName: company.name, firstName: parsed.data.first_name, role: parsed.data.role, token });
     revalidatePath('/dashboard/mitarbeiter');
-    return { status: 'success', id: invitation.member_id, message: delivery.developmentUrl ? 'Einladung erstellt. In der lokalen Entwicklung steht der Link unten bereit.' : 'Einladung wurde erstellt.', invitationUrl: delivery.developmentUrl };
+    return {
+      status: 'success',
+      id: invitation.member_id,
+      message: delivery.delivered
+        ? 'Einladung wurde per E-Mail versendet.'
+        : delivery.developmentUrl
+          ? 'Einladung erstellt. Der lokale Link kann bei Bedarf angezeigt werden.'
+          : 'Mitarbeiter wurde angelegt, aber die Einladungs-E-Mail konnte nicht versendet werden.',
+      invitationUrl: delivery.developmentUrl,
+    };
   } catch { return failure('Die Einladung konnte nicht erstellt werden.'); }
 }
 
