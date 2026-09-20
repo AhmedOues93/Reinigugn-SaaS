@@ -1,6 +1,6 @@
 export const supportedLocales = ['de', 'en', 'ar', 'tr', 'uk', 'ru'] as const;
 export type Locale = (typeof supportedLocales)[number];
-export const localeCookie = 'sauberwerk_locale';
+export const localeCookie = 'reinplan_locale';
 export const defaultLocale: Locale = 'de';
 
 const rtlLocales: readonly Locale[] = ['ar'];
@@ -35,6 +35,7 @@ export function localeTag(locale: Locale) {
 }
 
 const de = {
+  'nav.sales': 'Vertrieb',
   'nav.dashboard': 'Dashboard',
   'nav.customers': 'Kunden',
   'nav.objects': 'Objekte',
