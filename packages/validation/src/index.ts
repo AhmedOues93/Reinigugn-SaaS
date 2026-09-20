@@ -91,10 +91,9 @@ export const supportedLocaleSchema = z.enum(['de', 'en', 'ar', 'tr', 'uk'], {
 
 export const employeeRoleSchema = z.enum(['OFFICE', 'EMPLOYEE'], { errorMap: () => ({ message: 'Bitte wähle eine gültige Rolle.' }) });
 
-export const employeeInvitationSchema = z.object({
+const employeeMasterDataSchema = z.object({
   first_name: z.string().trim().min(1, 'Bitte gib einen Vornamen ein.').max(120, 'Der Vorname ist zu lang.'),
   last_name: z.string().trim().min(1, 'Bitte gib einen Nachnamen ein.').max(120, 'Der Nachname ist zu lang.'),
-  email: emailSchema,
   phone: optionalText(64, 'Die Telefonnummer'),
   role: employeeRoleSchema,
   employee_number: optionalText(64, 'Die Personalnummer'),
@@ -104,9 +103,28 @@ export const employeeInvitationSchema = z.object({
   employment_type: z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
   preferred_language: supportedLocaleSchema.default('de'),
   notes: optionalText(4_000, 'Die Notizen'),
-}).refine((value) => !value.employment_end_date || !value.employment_start_date || value.employment_end_date >= value.employment_start_date, { message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.', path: ['employment_end_date'] });
+});
 
-export const employeeUpdateSchema = employeeInvitationSchema;
+function employmentDatesAreValid(value: { employment_start_date?: string; employment_end_date?: string }) {
+  return !value.employment_end_date || !value.employment_start_date || value.employment_end_date >= value.employment_start_date;
+}
+
+export const employeeInvitationSchema = employeeMasterDataSchema
+  .extend({ email: emailSchema })
+  .refine(employmentDatesAreValid, {
+    message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.',
+    path: ['employment_end_date'],
+  });
+
+/**
+ * Editing an existing employee must not require a hidden e-mail field. The
+ * login address belongs to the invitation/account and is shown read-only in
+ * the form; employment master data can still be maintained before acceptance.
+ */
+export const employeeUpdateSchema = employeeMasterDataSchema.refine(employmentDatesAreValid, {
+  message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.',
+  path: ['employment_end_date'],
+});
 
 export const customerPortalInvitationSchema = z.object({
   first_name: z.string().trim().min(1, 'Bitte gib einen Vornamen ein.').max(120, 'Der Vorname ist zu lang.'),
