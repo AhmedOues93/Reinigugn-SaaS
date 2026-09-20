@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileSignature,
-  FileText,
   Inbox,
   Receipt,
   TrendingUp,
@@ -128,7 +127,7 @@ export default async function DashboardPage() {
         {/* ================= main column ================= */}
         <div className="min-w-0 space-y-5">
           {/* --- A. What the company looks after --------------------------- */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <StatCard
               label={t(locale, 'dashboard.activeCustomers')}
               value={portfolio.customers}
