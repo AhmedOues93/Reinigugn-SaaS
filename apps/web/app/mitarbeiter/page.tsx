@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, CalendarCheck2, CheckCircle2, ChevronRight, MapPin, Navigation } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { EmptyState } from '@/components/ui';
-import { employeeLocale, listMyTodayAndUpcoming, requireEmployee } from '@/lib/data/employee';
+import { employeeLocale, getMyMonthlyWorkSummary, listMyTodayAndUpcoming, requireEmployee } from '@/lib/data/employee';
 import { formatDate, formatTime, formatTimeRange } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
@@ -19,10 +19,11 @@ function stateOf(job: Job) {
 }
 
 export default async function EmployeeTodayPage() {
-  const [{ profile }, locale, { today, upcoming, todayKey }] = await Promise.all([
+  const [{ profile }, locale, { today, upcoming, todayKey }, workMonth] = await Promise.all([
     requireEmployee(),
     employeeLocale(),
     listMyTodayAndUpcoming(),
+    getMyMonthlyWorkSummary(),
   ]);
   const done = today.filter((job) => stateOf(job) === 'done').length;
   const current = today.find((job) => ['running', 'paused'].includes(stateOf(job))) ?? today.find((job) => stateOf(job) === 'open') ?? null;
@@ -44,6 +45,12 @@ export default async function EmployeeTodayPage() {
           {profile?.first_name ? t(locale, 'emp.today.greeting', { name: profile.first_name }) : t(locale, 'emp.tab.today')}
         </h1>
       </header>
+
+      <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card">
+        <div className="p-3.5 text-center"><p className="text-xl font-semibold tabular-nums">{Math.floor(workMonth.workedMinutes / 60)}:{String(workMonth.workedMinutes % 60).padStart(2, '0')}</p><p className="mt-1 text-xs text-muted-foreground">Stunden im Monat</p></div>
+        <div className="border-x border-border/70 p-3.5 text-center"><p className="text-xl font-semibold tabular-nums">{workMonth.daysWorked}</p><p className="mt-1 text-xs text-muted-foreground">Arbeitstage</p></div>
+        <div className="p-3.5 text-center"><p className="text-xl font-semibold tabular-nums">{workMonth.entries.length}</p><p className="mt-1 text-xs text-muted-foreground">Zeiteinträge</p></div>
+      </section>
 
       {today.length === 0 ? (
         <EmptyState icon={<CalendarCheck2 />} title={t(locale, 'emp.today.noJobs')} body={t(locale, 'emp.today.noJobsBody')} className="rounded-3xl" />
