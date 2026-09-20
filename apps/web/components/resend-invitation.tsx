@@ -10,6 +10,7 @@ export function ResendInvitation({ memberId }: { memberId: string }) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState<string>();
   const [url, setUrl] = useState<string>();
+  const [showUrl, setShowUrl] = useState(false);
 
   function resend() {
     startTransition(async () => {
@@ -17,6 +18,7 @@ export function ResendInvitation({ memberId }: { memberId: string }) {
       setStatus(result.status);
       setMessage(result.message);
       setUrl(result.status === 'success' ? result.invitationUrl : undefined);
+      setShowUrl(false);
     });
   }
 
@@ -27,9 +29,13 @@ export function ResendInvitation({ memberId }: { memberId: string }) {
       </Button>
       <FormMessage status={status} message={message} />
       {url && (
-        <a className="block break-all text-sm text-primary underline" href={url}>
-          {url}
-        </a>
+        <div className="rounded-md border border-warning/20 bg-warning-soft p-3 text-sm">
+          <p className="text-warning">Lokaler Entwicklungslink. In Produktion wird die Einladung per E-Mail zugestellt.</p>
+          <Button type="button" variant="ghost" className="mt-2" onClick={() => setShowUrl((value) => !value)}>
+            {showUrl ? 'Link ausblenden' : 'Link zeigen'}
+          </Button>
+          {showUrl && <a className="mt-2 block break-all text-primary underline" href={url}>{url}</a>}
+        </div>
       )}
     </div>
   );
