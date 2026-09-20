@@ -10,7 +10,12 @@ import { createCalculation } from '../actions';
  * areas become positions and the m² finally drive the time instead of being
  * recorded and ignored — or from a blank sheet for an existing customer.
  */
-export default async function NewCalculationPage() {
+export default async function NewCalculationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ survey?: string }>;
+}) {
+  const { survey: preferredSurveyId } = await searchParams;
   const [customers, catalog, surveys] = await Promise.all([
     listCustomerOptions(),
     listCatalogItems(),
@@ -27,6 +32,7 @@ export default async function NewCalculationPage() {
         action={createCalculation}
         customers={customers}
         catalog={catalog}
+        preferredSurveyId={preferredSurveyId}
         surveys={surveys.map((survey) => ({
           id: survey.id,
           label: [survey.site_name, survey.city].filter(Boolean).join(' · ') || 'Besichtigung',
