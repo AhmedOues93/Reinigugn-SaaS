@@ -174,6 +174,12 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             action={scheduleSurvey.bind(null, lead.id)}
             locale={locale}
             surveyors={surveyors}
+            defaults={{
+              siteName: lead.organisation,
+              street: lead.street ?? '',
+              postalCode: lead.postal_code ?? '',
+              city: lead.city ?? '',
+            }}
           />
         </Card>
       )}
