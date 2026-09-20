@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input } from '@/components/ui';
+import { Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
@@ -39,6 +39,22 @@ export function AcceptQuoteForm({ action, locale, showSchedule }: { action: Acti
       <FormMessage status={state.status} message={state.message} />
       <h2 className="font-semibold">{t(locale, 'sales.accept.title')}</h2>
       <p className="text-sm text-muted-foreground">{t(locale, 'sales.accept.body')}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Auftragsart" htmlFor="order_type">
+          <Select id="order_type" name="order_type" defaultValue={showSchedule ? 'DAUERAUFTRAG' : 'EINMALAUFTRAG'}>
+            <option value="EINMALAUFTRAG">Einmalauftrag</option>
+            <option value="BEFRISTET">Befristeter Auftrag</option>
+            <option value="DAUERAUFTRAG">Laufender Auftrag</option>
+          </Select>
+        </Field>
+        <Field label="Kundenabnahme" htmlFor="acceptance_policy">
+          <Select id="acceptance_policy" name="acceptance_policy" defaultValue="KEINE_ABNAHME_ERFORDERLICH">
+            <option value="KEINE_ABNAHME_ERFORDERLICH">Keine Abnahme erforderlich</option>
+            <option value="DIGITALE_BESTAETIGUNG">Digitale Bestätigung</option>
+            <option value="UNTERSCHRIFT">Unterschrift erforderlich</option>
+          </Select>
+        </Field>
+      </div>
 
       {showSchedule ? (
         <>
