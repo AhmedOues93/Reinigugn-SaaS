@@ -83,7 +83,7 @@ export function AuthShell({
             photograph is a hole punched in the image; this sits in the same
             light as the building behind it.
           */}
-          <section className="auth-surface relative rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-6 text-center shadow-glass backdrop-blur-xl sm:p-9">
+          <section className="auth-surface relative rounded-[1.5rem] border border-white/10 bg-[#071d24]/75 p-6 text-center shadow-glass backdrop-blur-2xl sm:p-9">
             <BrandMark className="mx-auto size-11 text-highlight" />
             <p className="mt-3 text-[1.35rem] font-semibold tracking-tight text-white">
               <ProductBrand className="text-[1.35rem] text-white [&_span]:text-highlight" />
