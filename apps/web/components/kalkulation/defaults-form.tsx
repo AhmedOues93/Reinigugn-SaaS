@@ -31,7 +31,7 @@ export function CalculationDefaultsForm({
   const [state, formAction] = useActionState(action, initialFormState);
   const unset = defaults.wage_cents_per_hour === 0;
   const [step, setStep] = useState(0);
-  const steps = ['Personalkosten', 'Produktive Zeit', 'Betriebskosten', 'Preisziel'] as const;
+  const steps = ['Personalkosten', 'Produktive Zeit', 'Auftragskosten', 'Preis & Marge'] as const;
 
   return (
     <form action={formAction} className="space-y-7">
@@ -39,7 +39,7 @@ export function CalculationDefaultsForm({
 
       {unset && (
         <p className="border-s-2 border-primary bg-primary/[0.035] px-3 py-2 text-sm leading-5 text-foreground">
-          Noch keine eigenen Kalkulationswerte hinterlegt. Startwerte dienen nur als Orientierung und sollten mit den Betriebsdaten geprüft werden.
+          Einmal einrichten, danach rechnet ReinPlan automatisch. Die vorgeschlagenen Werte sind Startwerte, keine verbindlichen Branchenwerte. Sie können sie später jederzeit an Ihren Betrieb anpassen.
         </p>
       )}
 
