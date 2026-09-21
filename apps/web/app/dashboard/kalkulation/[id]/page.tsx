@@ -32,12 +32,10 @@ import {
 } from '../actions';
 
 const tabs = [
-  { key: 'leistung', label: 'Leistung' },
-  { key: 'zeit', label: 'Zeit' },
-  { key: 'kosten', label: 'Kosten' },
+  { key: 'leistung', label: 'Leistungen' },
+  { key: 'kalkulation', label: 'Kalkulation' },
   { key: 'preis', label: 'Preis' },
-  { key: 'wirtschaftlichkeit', label: 'Wirtschaftlichkeit' },
-  { key: 'dokumente', label: 'Dokumente' },
+  { key: 'angebot', label: 'Angebot' },
 ] as const;
 
 type TabKey = (typeof tabs)[number]['key'];
@@ -66,7 +64,7 @@ export default async function CalculationPage({
 
   const [calculation, catalog] = await Promise.all([getCalculation(id), listCatalogItems()]);
   if (!calculation) notFound();
-  const verzeichnis = tab === 'dokumente' ? await getLeistungsverzeichnis(id) : [];
+  const verzeichnis = tab === 'angebot' ? await getLeistungsverzeichnis(id) : [];
 
   const isDraft = calculation.status === 'ENTWURF';
   const currency = calculation.currency;
@@ -110,6 +108,18 @@ export default async function CalculationPage({
       />
 
       <CalculationKpiBand calculation={calculation} />
+
+      <div className="mb-4 rounded-xl border border-border bg-card p-3 shadow-card">
+        <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
+          {tabs.map((entry, index) => (
+            <div key={entry.key}>
+              <span className={tab === entry.key ? 'text-primary' : 'text-muted-foreground'}>
+                {index + 1}. {entry.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <FilterTabs
         className="mb-4"
@@ -248,7 +258,7 @@ export default async function CalculationPage({
       )}
 
       {/* --- Zeit: how the productivity became hours ------------------------- */}
-      {tab === 'zeit' && (
+      {tab === 'kalkulation' && (
         <Card className="overflow-hidden">
           <h2 className="px-4 pt-4 text-[15px] font-semibold sm:px-5">Zeitbedarf</h2>
           <p className="px-4 pb-1 pt-1 text-sm text-muted-foreground sm:px-5">
@@ -288,7 +298,7 @@ export default async function CalculationPage({
       )}
 
       {/* --- Kosten: the cost side, component by component ------------------- */}
-      {tab === 'kosten' && (
+      {tab === 'kalkulation' && (
         <div className="space-y-4">
           <Card className="p-5">
             <h2 className="text-[15px] font-semibold">Personalkosten je produktiver Stunde</h2>
@@ -527,7 +537,7 @@ export default async function CalculationPage({
       )}
 
       {/* --- Wirtschaftlichkeit: the year, and the floor under the price ----- */}
-      {tab === 'wirtschaftlichkeit' && (
+      {tab === 'preis' && (
         <div className="space-y-4">
           <Card className="p-5">
             <h2 className="text-[15px] font-semibold">Erwartete Wirtschaftlichkeit</h2>
@@ -575,7 +585,7 @@ export default async function CalculationPage({
       )}
 
       {/* --- Dokumente: what leaves the building ----------------------------- */}
-      {tab === 'dokumente' && (
+      {tab === 'angebot' && (
         <div className="space-y-4">
           <Card className="overflow-hidden">
             <div className="px-4 pt-4 sm:px-5">
