@@ -82,12 +82,26 @@ export async function requestPasswordReset(formData: FormData) {
 }
 
 export async function updatePassword(formData: FormData) {
+  const jar = await cookies();
+  if (jar.get('reinplan_password_recovery')?.value !== '1') {
+    withMessage('/forgot-password', 'error', 'Bitte fordere zuerst einen neuen Passwort-Link per E-Mail an.');
+  }
+
   const parsed = passwordSchema.safeParse(formData.get('password'));
   if (!parsed.success) withMessage('/reset-password', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
+  const confirmation = String(formData.get('password_confirmation') ?? '');
+  if (confirmation !== parsed.data) withMessage('/reset-password', 'error', 'Die Passwörter stimmen nicht überein.');
+
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) withMessage('/forgot-password', 'error', 'Der Wiederherstellungslink ist ungültig oder abgelaufen.');
+
   const { error } = await supabase.auth.updateUser({ password: parsed.data });
   if (error) withMessage('/reset-password', 'error', 'Das Passwort konnte nicht aktualisiert werden.');
-  redirect('/dashboard');
+
+  jar.delete('reinplan_password_recovery');
+  await supabase.auth.signOut();
+  redirect('/login?message=Passwort%20wurde%20geändert.%20Bitte%20melde%20dich%20mit%20dem%20neuen%20Passwort%20an.');
 }
 
 export async function createCompany(formData: FormData) {
