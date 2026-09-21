@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
 
 export type QuotePdfInput = {
   quoteNumber: string;
@@ -79,7 +79,7 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
     }
   }
 
-  const pages = [];
+  const pages: PDFPage[] = [];
   let page = pdf.addPage([A4.width, A4.height]);
   pages.push(page);
   let y = A4.height - top;
