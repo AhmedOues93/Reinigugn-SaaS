@@ -1,5 +1,5 @@
 import { ClipboardCheck, Plus, Repeat } from 'lucide-react';
-import { listJobs, listActiveEmployeeOptions, type JobStatusFilter } from '@/lib/data/jobs';
+import { listJobs, listAssignableEmployeeOptions, type JobStatusFilter } from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
@@ -49,7 +49,7 @@ export default async function JobsPage({
     listJobs({ from: query.from, to: query.to, customerId: query.customer, objectId: query.object, memberId: query.employee, status: currentStatus }),
     listCustomerOptions(),
     listCleaningObjectOptions(),
-    listActiveEmployeeOptions(),
+    listAssignableEmployeeOptions(),
   ]);
   const filtered = Boolean(query.from || query.to || query.customer || query.object || query.employee) || currentStatus !== 'all';
 
