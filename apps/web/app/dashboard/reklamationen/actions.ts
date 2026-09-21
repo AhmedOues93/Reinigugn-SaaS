@@ -31,9 +31,34 @@ export async function updateComplaint(id: string, _: FormState, formData: FormDa
   const parsed = complaintSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
-    const { supabase, company } = await requireStaffCompany();
+    const { supabase, company, membership } = await requireStaffCompany();
+    const { data: previous, error: readError } = await supabase
+      .from('complaints')
+      .select('status')
+      .eq('company_id', company.id)
+      .eq('id', id)
+      .maybeSingle();
+    if (readError || !previous) return failure('Die Reklamation konnte nicht geladen werden.');
+
     const { error } = await supabase.from('complaints').update(clean(parsed.data)).eq('company_id', company.id).eq('id', id);
     if (error) return failure('Die Reklamation konnte nicht aktualisiert werden.');
+
+    if (previous.status !== parsed.data.status && membership) {
+      const labels: Record<string, string> = {
+        OPEN: 'Offen',
+        IN_PROGRESS: 'In Bearbeitung',
+        RESOLVED: 'Gelöst',
+        CLOSED: 'Geschlossen',
+      };
+      await supabase.from('complaint_updates').insert({
+        company_id: company.id,
+        complaint_id: id,
+        author_member_id: membership.id,
+        status: parsed.data.status,
+        note: `Status geändert: ${labels[previous.status] ?? previous.status} → ${labels[parsed.data.status] ?? parsed.data.status}`,
+      });
+    }
+
     revalidateOperations(parsed.data.cleaning_object_id); revalidatePath(`/dashboard/reklamationen/${id}`);
     return { status: 'success', id };
   } catch { return failure('Die Reklamation konnte nicht aktualisiert werden.'); }
