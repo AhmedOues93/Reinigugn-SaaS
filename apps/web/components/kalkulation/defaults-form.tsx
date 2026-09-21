@@ -31,6 +31,7 @@ export function CalculationDefaultsForm({
   const [state, formAction] = useActionState(action, initialFormState);
   const unset = defaults.wage_cents_per_hour === 0;
   const [step, setStep] = useState(0);
+  const [visitedStep, setVisitedStep] = useState(0);
   const steps = ['Personalkosten', 'Produktive Zeit', 'Auftragskosten', 'Preis & Marge'] as const;
 
   return (
@@ -46,7 +47,7 @@ export function CalculationDefaultsForm({
       <div className="border-b border-border/80 pb-4">
         <div className="grid grid-cols-4 gap-1.5">
           {steps.map((label, index) => (
-            <button key={label} type="button" onClick={() => setStep(index)} className="min-w-0 text-start">
+            <button key={label} type="button" onClick={() => { setStep(index); setVisitedStep((value) => Math.max(value, index)); }} className="min-w-0 text-start">
               <span className={`block h-1.5 rounded-full ${index <= step ? 'bg-primary' : 'bg-muted'}`} />
               <span className={`mt-2 hidden truncate text-xs sm:block ${index === step ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{label}</span>
             </button>
@@ -56,6 +57,7 @@ export function CalculationDefaultsForm({
 
       <div className="overflow-hidden">
         <CostingFields defaults={defaults} step={step} />
+        <input type="hidden" name="wizard_visited_step" value={visitedStep} />
       </div>
 
       <p className="text-sm leading-6 text-muted-foreground">
@@ -66,7 +68,7 @@ export function CalculationDefaultsForm({
       <div className="flex items-center justify-between border-t border-border/80 pt-5">
         <Button type="button" variant="ghost" disabled={step === 0} onClick={() => setStep((value) => Math.max(0, value - 1))}><ArrowLeft className="size-4" /> Zurück</Button>
         {step < steps.length - 1 ? (
-          <Button type="button" onClick={() => setStep((value) => Math.min(steps.length - 1, value + 1))}>Weiter <ArrowRight className="size-4" /></Button>
+          <Button type="button" onClick={() => { setStep((value) => Math.min(steps.length - 1, value + 1)); setVisitedStep((value) => Math.min(steps.length - 1, Math.max(value, step + 1))); }}>Weiter <ArrowRight className="size-4" /></Button>
         ) : (
           <SubmitButton><Check className="size-4" /> Grundlagen speichern</SubmitButton>
         )}
