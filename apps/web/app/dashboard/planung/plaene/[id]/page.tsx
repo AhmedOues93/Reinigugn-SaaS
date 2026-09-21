@@ -74,6 +74,20 @@ export default async function ScheduleDetailPage({
         }
       />
 
+      {schedule.is_active && team.length === 0 && (
+        <Notice tone="warning" className="mb-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold">Noch keine Stammbesetzung</p>
+              <p className="mt-1 text-sm">Der Plan ist aktiv und erzeugt Einsätze, aber es ist noch kein festes Team hinterlegt.</p>
+            </div>
+            <ButtonLink href={`/dashboard/planung/plaene/${id}/bearbeiten`} variant="outline">
+              Team zuweisen
+            </ButtonLink>
+          </div>
+        </Notice>
+      )}
+
       <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="space-y-6">
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
