@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowRight, ClipboardList, FileText } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import {
   BackLink,
   Badge,
+  ButtonLink,
   Card,
   CardHeader,
   DataRow,
@@ -65,7 +66,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </p>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
         <Card className="p-5">
           <h2 className="mb-2 font-semibold">{t(locale, 'sales.lead.contact')}</h2>
           <dl className="divide-y divide-border">
@@ -85,15 +86,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </dl>
           {lead.notes && (
             <p className="break-anywhere mt-4 whitespace-pre-wrap text-sm text-muted-foreground">
-              {lead.notes}
+              {lead.notes.replace(/^\[TESTDATEN\]\s*/i, '')}
             </p>
           )}
         </Card>
 
         {!decided && (
           <Card className="p-5">
-            <h2 className="mb-4 font-semibold">{t(locale, 'common.status')}</h2>
-            <LeadStatusActions action={setLeadStatus.bind(null, lead.id)} locale={locale} />
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, 'common.status')}</p>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <Badge tone={leadStatusTone[lead.status as LeadStatus]}>{t(locale, `sales.status.${lead.status}`)}</Badge>
+              <LeadStatusActions action={setLeadStatus.bind(null, lead.id)} locale={locale} />
+            </div>
           </Card>
         )}
       </div>
@@ -121,9 +125,12 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                       {formatDateTime(locale, survey.scheduled_at)}
                     </p>
                   </div>
-                  <Badge tone={survey.status === 'COMPLETED' ? 'success' : 'warning'}>
-                    {t(locale, `sales.survey.status.${survey.status}`)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={survey.status === 'COMPLETED' ? 'success' : 'warning'}>
+                      {t(locale, `sales.survey.status.${survey.status}`)}
+                    </Badge>
+                    <span className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold">Ansehen</span>
+                  </div>
                 </Link>
               </li>
             ))}
@@ -147,13 +154,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     </p>
                     <p className="mt-1 truncate text-sm text-muted-foreground">{quote.title}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold tabular-nums">
-                      {formatMoney(locale, quote.gross_total_cents, quote.currency)}
-                    </span>
-                    <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
-                      {t(locale, `sales.quote.status.${quote.status}`)}
-                    </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold tabular-nums">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</span>
+                    <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>{t(locale, `sales.quote.status.${quote.status}`)}</Badge>
+                    <span className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold">Ansehen</span>
                   </div>
                 </Link>
               </li>
@@ -165,11 +169,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       {!decided && (
         <Card className="mt-5 p-5">
           <h2 className="mb-1 font-semibold">{t(locale, 'sales.survey.new')}</h2>
-          <p className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <FileText className="size-4" aria-hidden="true" />
-            {t(locale, 'sales.leads.subtitle')}
-            <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
-          </p>
+          <p className="mb-4 text-sm text-muted-foreground">Termin und Objektangaben in zwei kurzen Schritten erfassen.</p>
           <SurveyForm
             action={scheduleSurvey.bind(null, lead.id)}
             locale={locale}
