@@ -1,32 +1,35 @@
--- Harden helper functions flagged by the database advisor.
--- These helpers do not need caller-controlled schemas; pin resolution to
--- pg_catalog/public without changing their behaviour or grants.
+-- Harden helper functions that already exist at this point in the migration
+-- history. Some costing helpers are introduced by Phase 21 (20261003), so this
+-- migration intentionally discovers functions by name instead of assuming a
+-- later signature exists already.
 
-alter function public.calculate_line_minutes(calculation_unit, numeric, numeric, numeric, numeric)
-  set search_path = pg_catalog, public;
-alter function public.calculate_services_per_month(calculation_frequency, numeric)
-  set search_path = pg_catalog, public;
-alter function public.cost_to_month(bigint, cost_basis, numeric, numeric, numeric)
-  set search_path = pg_catalog, public;
-alter function public.derive_productive_rate_bp(numeric, numeric, integer, integer, integer, integer, numeric)
-  set search_path = pg_catalog, public;
-alter function public.frequency_label(calculation_frequency, numeric)
-  set search_path = pg_catalog, public;
-alter function public.is_allowed_absence_document_path(text)
-  set search_path = pg_catalog, public;
-alter function public.is_allowed_avatar_path(text)
-  set search_path = pg_catalog, public;
-alter function public.is_allowed_branding_path(text)
-  set search_path = pg_catalog, public;
-alter function public.is_supported_locale(text)
-  set search_path = pg_catalog, public;
-alter function public.margin_bp(bigint, bigint)
-  set search_path = pg_catalog, public;
-alter function public.markup_bp(bigint, bigint)
-  set search_path = pg_catalog, public;
-alter function public.personnel_cost_per_hour(bigint, integer, integer, integer)
-  set search_path = pg_catalog, public;
-alter function public.price_from_margin(bigint, integer)
-  set search_path = pg_catalog, public;
-alter function public.weeks_per_month()
-  set search_path = pg_catalog, public;
+do $$
+declare
+  fn record;
+begin
+  for fn in
+    select p.oid::regprocedure as signature
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = any (array[
+        'calculate_line_minutes',
+        'calculate_services_per_month',
+        'personnel_cost_per_hour',
+        'cost_to_month',
+        'price_from_margin',
+        'margin_bp',
+        'markup_bp',
+        'is_allowed_absence_document_path',
+        'is_supported_locale',
+        'is_allowed_branding_path',
+        'is_allowed_avatar_path',
+        'weeks_per_month',
+        'derive_productive_rate_bp',
+        'frequency_label'
+      ])
+  loop
+    execute format('alter function %s set search_path = pg_catalog, public', fn.signature);
+  end loop;
+end;
+$$;
