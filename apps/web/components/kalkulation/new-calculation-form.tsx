@@ -12,12 +12,14 @@ type Option = { id: string; name?: string; label?: string };
 export function NewCalculationForm({
   action,
   customers,
+  objects,
   catalog,
   surveys,
   preferredSurveyId,
 }: {
   action: Action;
   customers: Option[];
+  objects: { id: string; customerId: string; name: string }[];
   catalog: CatalogItem[];
   surveys: { id: string; label: string }[];
   preferredSurveyId?: string;
@@ -25,6 +27,7 @@ export function NewCalculationForm({
   const [state, formAction] = useActionState(action, initialFormState);
   const [fromSurvey, setFromSurvey] = useState(Boolean(preferredSurveyId));
   const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>('NEW');
+  const [customerId, setCustomerId] = useState('');
 
   return (
     <form action={formAction} className="space-y-7">
@@ -47,11 +50,19 @@ export function NewCalculationForm({
             </div>
             {customerMode === 'EXISTING' ? (
               <Field label="Kunde" htmlFor="customer_id">
-                <Select id="customer_id" name="customer_id" required>
+                <Select id="customer_id" name="customer_id" required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
                   <option value="">Kunde auswählen</option>
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name ?? customer.label}</option>)}
                 </Select>
               </Field>
+              {customerId && objects.some((object) => object.customerId === customerId) && (
+                <Field label="Objekt" htmlFor="cleaning_object_id" info="Optional. Wählen Sie ein bestehendes Objekt, damit bei Annahme kein Duplikat entsteht.">
+                  <Select id="cleaning_object_id" name="cleaning_object_id" defaultValue="">
+                    <option value="">Neues Objekt für dieses Angebot</option>
+                    {objects.filter((object) => object.customerId === customerId).map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+                  </Select>
+                </Field>
+              )}
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field className="sm:col-span-2" label="Firma / Kunde" htmlFor="organisation"><Input id="organisation" name="organisation" required minLength={2} maxLength={160} /></Field>
