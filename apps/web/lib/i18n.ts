@@ -968,6 +968,7 @@ const en: Dictionary = {
   'emp.absence.auUpload': 'Upload certificate',
   'emp.absence.auUploaded': 'The document was stored securely.',
   'emp.absence.auView': 'View certificate',
+  'emp.absence.reviewNote': 'Office feedback',
   'emp.absence.auLabel': 'Sickness certificate',
 
   'auth.signInTitle': 'Sign in',
@@ -1544,6 +1545,7 @@ const ar: Dictionary = {
   'emp.absence.auUpload': 'رفع الشهادة',
   'emp.absence.auUploaded': 'تم حفظ المستند بأمان.',
   'emp.absence.auView': 'عرض الشهادة',
+  'emp.absence.reviewNote': 'ملاحظة من المكتب',
   'emp.absence.auLabel': 'شهادة مرضية',
 
   'auth.signInTitle': 'تسجيل الدخول',
@@ -2697,6 +2699,7 @@ const uk: Dictionary = {
   'emp.absence.auUpload': 'Завантажити довідку',
   'emp.absence.auUploaded': 'Документ збережено безпечно.',
   'emp.absence.auView': 'Переглянути довідку',
+  'emp.absence.reviewNote': 'Відповідь офісу',
   'emp.absence.auLabel': 'Лікарняний листок',
 
   'auth.signInTitle': 'Увійти',
@@ -3264,6 +3267,7 @@ const ru: Dictionary = {
   'emp.absence.auUpload': 'Загрузить справку',
   'emp.absence.auUploaded': 'Документ надёжно сохранён.',
   'emp.absence.auView': 'Просмотреть справку',
+  'emp.absence.reviewNote': 'Ответ офиса',
   'emp.absence.auLabel': 'Больничный лист',
   'auth.signInTitle': 'Вход',
   'auth.signInSubtitle': 'Войдите в учётную запись вашей компании.',
