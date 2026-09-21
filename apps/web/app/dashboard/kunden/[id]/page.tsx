@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Building2, Mail, MapPin, Pencil, Phone, Plus, Receipt, User } from 'lucide-react';
 import { getCustomer, listCustomerObjects } from '@/lib/data/customers';
+import { listQuotes } from '@/lib/data/sales';
 import { listInvoices } from '@/lib/data/billing';
 import { BackLink, ButtonLink, Notice, PageHeader, Section } from '@/components/ui';
 import { ComplaintHistory } from '@/components/complaint-history';
@@ -27,12 +28,14 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
   const { success } = await searchParams;
   const customer = await getCustomer(id);
   if (!customer) notFound();
-  const [objects, portalContacts, portalInvitations, invoices] = await Promise.all([
+  const [objects, portalContacts, portalInvitations, invoices, allQuotes] = await Promise.all([
     listCustomerObjects(customer.id),
     listPortalContacts(customer.id),
     listPendingPortalInvitations(customer.id),
     listInvoices({ customerId: customer.id }),
+    listQuotes('all'),
   ]);
+  const quotes = allQuotes.filter((quote) => quote.customer_id === customer.id);
   const open = invoices.filter((invoice) => invoice.displayStatus === 'ISSUED' || invoice.displayStatus === 'OVERDUE');
   const openCents = open.reduce((total, invoice) => total + invoice.gross_total_cents, 0);
   const address = [customer.billing_address, [customer.postal_code, customer.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
@@ -141,6 +144,30 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
                         <span className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-sm">Ansehen</span>
                       </span>
                     </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+
+          <Section
+            title="Angebote"
+            action={<ButtonLink href={`/dashboard/kalkulation/neu?kunde=${customer.id}`} variant="outline" size="sm"><Plus className="size-4" aria-hidden="true" />Angebot erstellen</ButtonLink>}
+          >
+            {quotes.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-foreground/15 px-4 py-5 text-sm text-muted-foreground">Noch keine Angebote für diesen Kunden.</p>
+            ) : (
+              <ul className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
+                {quotes.slice(0, 6).map((quote) => (
+                  <li key={quote.id} className="border-b border-border/70 p-3 last:border-0 sm:flex sm:items-center sm:gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{quote.quote_number ?? 'Entwurf'} · {quote.title}</p>
+                      <p className="text-sm text-muted-foreground">{formatMoney('de', quote.gross_total_cents, quote.currency)}</p>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 sm:mt-0">
+                      <ButtonLink href={`/dashboard/vertrieb/angebote/${quote.id}`} variant="outline" size="sm">Ansehen</ButtonLink>
+                      {quote.status !== 'DRAFT' && <ButtonLink href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" variant="outline" size="sm">PDF</ButtonLink>}
+                    </div>
                   </li>
                 ))}
               </ul>
