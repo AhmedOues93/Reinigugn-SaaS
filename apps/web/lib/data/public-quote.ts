@@ -40,5 +40,5 @@ export async function getPublicQuote(token: string): Promise<PublicQuote | null>
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('get_public_quote', { p_token: token });
   if (error || !data || typeof data !== 'object') return null;
-  return data as PublicQuote;
+  return data as unknown as PublicQuote;
 }
