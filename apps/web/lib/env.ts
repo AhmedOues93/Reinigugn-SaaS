@@ -64,13 +64,26 @@ export const supabasePublishableKey = () =>
  * on a deployed environment would send customers and employees a link that
  * resolves to their own machine.
  */
+function isLocalOrigin(value: string) {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch {
+    return false;
+  }
+}
+
 export function siteUrl(): string {
-  const configured = publicEnv.NEXT_PUBLIC_SITE_URL;
-  if (configured) return configured.replace(/\/+$/, '');
-  // Netlify exposes the canonical production origin as URL on the server.
-  // This prevents invitation links from ever falling back to localhost when
-  // NEXT_PUBLIC_SITE_URL was accidentally omitted from a Netlify deployment.
-  if (publicEnv.NETLIFY_URL) return publicEnv.NETLIFY_URL.replace(/\/+$/, '');
+  const configured = publicEnv.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '');
+  const netlify = publicEnv.NETLIFY_URL?.replace(/\/+$/, '');
+
+  // A deployed Netlify site must never emit localhost links. This also repairs
+  // an accidentally copied local NEXT_PUBLIC_SITE_URL in the hosting settings:
+  // Netlify's canonical URL wins over a local origin.
+  if (netlify && (!configured || isLocalOrigin(configured))) return netlify;
+  if (configured) return configured;
+  if (netlify) return netlify;
+
   if (appEnvironment() !== 'local') {
     throw new Error(
       'Konfiguration fehlt: NEXT_PUBLIC_SITE_URL muss außerhalb der lokalen Entwicklung gesetzt sein, ' +
