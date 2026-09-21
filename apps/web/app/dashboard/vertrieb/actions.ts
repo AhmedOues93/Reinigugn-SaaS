@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { createInvitationToken, hashInvitationToken } from '@/lib/invitations';
+import { quotePublicUrl, sendQuoteMail } from '@/lib/mail/quotes';
+import { renderStaffQuotePdf } from '@/lib/sales/quote-pdf-data';
 
 /**
  * Sales actions. Each confirms an OWNER/OFFICE session and then calls a
@@ -28,6 +31,60 @@ function toCents(value: FormDataEntryValue | null): number | null {
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1_000_000) return null;
   return Math.round(parsed * 100);
+}
+
+type StaffContext = Awaited<ReturnType<typeof requireStaffCompany>>;
+
+async function deliverQuoteToCustomer(context: StaffContext, quoteId: string) {
+  const { supabase, company } = context;
+  const { data: quote, error: quoteError } = await supabase
+    .from('quotes')
+    .select('id, quote_number, status, title, recipient_snapshot, valid_until')
+    .eq('id', quoteId)
+    .eq('company_id', company.id)
+    .maybeSingle();
+
+  if (quoteError || !quote || quote.status !== 'SENT' || !quote.quote_number) {
+    throw new Error('Quote is not ready for customer delivery');
+  }
+
+  const token = createInvitationToken();
+  const accessExpires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { error: accessError } = await supabase.rpc('set_quote_public_access', {
+    p_quote_id: quoteId,
+    p_token_hash: hashInvitationToken(token),
+    p_expires_at: accessExpires,
+  });
+  if (accessError) throw new Error('Customer access could not be created');
+
+  const snapshot = quote.recipient_snapshot as Record<string, unknown> | null;
+  const email = typeof snapshot?.email === 'string' ? snapshot.email.trim() : '';
+  const url = quotePublicUrl(token);
+  if (!email) {
+    return { url, delivered: false, detail: 'Keine Kunden-E-Mail im Angebot hinterlegt.' };
+  }
+
+  let pdf: Awaited<ReturnType<typeof renderStaffQuotePdf>> = null;
+  try {
+    pdf = await renderStaffQuotePdf(quoteId);
+  } catch {
+    pdf = null;
+  }
+
+  const delivery = await sendQuoteMail({
+    to: email,
+    companyName: company.name,
+    quoteNumber: quote.quote_number,
+    title: quote.title,
+    token,
+    pdf: pdf ? { filename: pdf.fileName, bytes: pdf.bytes } : null,
+  });
+
+  return {
+    url,
+    delivered: delivery.status === 'SENT',
+    detail: delivery.detail,
+  };
 }
 
 export async function createLead(_: FormState, formData: FormData): Promise<FormState> {
@@ -273,19 +330,48 @@ export async function removeQuoteLine(quoteId: string, lineId: string): Promise<
 
 export async function sendQuote(quoteId: string, _: FormState, __: FormData): Promise<FormState> {
   try {
-    const { supabase } = await requireStaffCompany();
-    const { data, error } = await supabase.rpc('send_quote', { p_quote_id: quoteId });
+    const context = await requireStaffCompany();
+    const { data, error } = await context.supabase.rpc('send_quote', { p_quote_id: quoteId });
     if (error) {
       return failure(
         error.message.includes('at least one line')
           ? 'Ein Angebot braucht mindestens eine Position.'
-          : 'Das Angebot konnte nicht gesendet werden.',
+          : 'Das Angebot konnte nicht freigegeben werden.',
       );
     }
+
+    const delivery = await deliverQuoteToCustomer(context, quoteId);
     revalidateSales([`/dashboard/vertrieb/angebote/${quoteId}`]);
-    return { status: 'success', message: `Angebot ${data} wurde gesendet.` };
+    return {
+      status: 'success',
+      message: delivery.delivered
+        ? `Angebot ${data} wurde per E-Mail gesendet.`
+        : `Angebot ${data} wurde freigegeben. Der Kundenlink kann manuell geteilt werden.`,
+      invitationUrl: delivery.url,
+    };
   } catch {
-    return failure('Das Angebot konnte nicht gesendet werden.');
+    return failure('Das Angebot konnte nicht freigegeben werden.');
+  }
+}
+
+export async function resendQuoteToCustomer(
+  quoteId: string,
+  _: FormState,
+  __: FormData,
+): Promise<FormState> {
+  try {
+    const context = await requireStaffCompany();
+    const delivery = await deliverQuoteToCustomer(context, quoteId);
+    revalidateSales([`/dashboard/vertrieb/angebote/${quoteId}`]);
+    return {
+      status: 'success',
+      message: delivery.delivered
+        ? 'Kundenlink und PDF wurden erneut per E-Mail gesendet.'
+        : 'Ein neuer Kundenlink wurde erstellt und kann manuell geteilt werden.',
+      invitationUrl: delivery.url,
+    };
+  } catch {
+    return failure('Der Kundenlink konnte nicht erstellt werden.');
   }
 }
 
