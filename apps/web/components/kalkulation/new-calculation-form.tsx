@@ -96,14 +96,14 @@ export function NewCalculationForm({
             </div>
             {customerMode === 'EXISTING' ? (
               <>
-              <Field label="Kunde" htmlFor="customer_id">
+              <Field label={t(locale, 'sales.quote.selectCustomer')} htmlFor="customer_id">
                 <Select id="customer_id" name="customer_id" required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
                   <option value="">{t(locale, 'sales.quote.selectCustomer')}</option>
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name ?? customer.label}</option>)}
                 </Select>
               </Field>
                 {customerId && objects.some((object) => object.customerId === customerId) && (
-                  <Field label="Objekt" htmlFor="cleaning_object_id" info="Optional. Wählen Sie ein bestehendes Objekt, damit bei Annahme kein Duplikat entsteht.">
+                  <Field label={t(locale, 'sales.quote.selectObject')} htmlFor="cleaning_object_id" info={t(locale, 'sales.quote.objectReuseInfo')}>
                     <Select id="cleaning_object_id" name="cleaning_object_id" value={cleaningObjectId} onChange={(event) => setCleaningObjectId(event.target.value)}>
                       <option value="">{t(locale, 'sales.quote.newObject')}</option>
                       {objects.filter((object) => object.customerId === customerId).map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
@@ -149,11 +149,11 @@ export function NewCalculationForm({
           <div className="flex flex-wrap gap-4 text-sm">
             <label className="flex items-center gap-2">
               <input type="radio" name="source" value="survey" checked={fromSurvey} onChange={() => setFromSurvey(true)} />
-              Daten aus Besichtigung übernehmen
+              {t(locale, 'sales.quote.fromSurvey')}
             </label>
             <label className="flex items-center gap-2">
               <input type="radio" name="source" value="blank" checked={!fromSurvey} onChange={() => setFromSurvey(false)} />
-              Angaben direkt erfassen
+              {t(locale, 'sales.quote.directInput')}
             </label>
           </div>
         )}
@@ -185,8 +185,8 @@ export function NewCalculationForm({
         </div>
         {!fromSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t(locale, 'sales.quote.cleaningType')} htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue=""><option value="">{t(locale, 'sales.quote.open')}</option><option>Unterhaltsreinigung</option><option>Büroreinigung</option><option>Grundreinigung</option><option>Glasreinigung</option><option>Treppenhausreinigung</option><option>Sanitärreinigung</option><option>Sonderreinigung</option></Select></Field>
-            <Field label={t(locale, 'sales.quote.frequency')} htmlFor="frequency"><Select id="frequency" name="frequency" defaultValue=""><option value="">{t(locale, 'sales.quote.open')}</option><option>Einmalig</option><option>1x wöchentlich</option><option>2x wöchentlich</option><option>3x wöchentlich</option><option>5x wöchentlich</option><option>Monatlich</option></Select></Field>
+            <Field label={t(locale, 'sales.quote.cleaningType')} htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue=""><option value="">{t(locale, 'sales.quote.open')}</option><option value="Unterhaltsreinigung">{t(locale, 'sales.cleaning.MAINTENANCE')}</option><option value="Büroreinigung">{t(locale, 'sales.cleaning.OFFICE')}</option><option value="Grundreinigung">{t(locale, 'sales.cleaning.DEEP')}</option><option value="Glasreinigung">{t(locale, 'sales.cleaning.GLASS')}</option><option value="Treppenhausreinigung">{t(locale, 'sales.cleaning.STAIRCASE')}</option><option value="Sanitärreinigung">{t(locale, 'sales.cleaning.SANITARY')}</option><option value="Sonderreinigung">{t(locale, 'sales.cleaning.SPECIAL')}</option></Select></Field>
+            <Field label={t(locale, 'sales.quote.frequency')} htmlFor="frequency"><Select id="frequency" name="frequency" defaultValue=""><option value="">{t(locale, 'sales.quote.open')}</option><option value="Einmalig">{t(locale, 'sales.frequency.ONCE')}</option><option value="1x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_1')}</option><option value="2x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_2')}</option><option value="3x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_3')}</option><option value="5x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_5')}</option><option value="Monatlich">{t(locale, 'sales.frequency.MONTHLY')}</option></Select></Field>
             <Field label={t(locale, 'sales.quote.desiredStart')} htmlFor="desired_start"><Input id="desired_start" name="desired_start" type="date" /></Field>
           </div>
         )}
@@ -207,7 +207,7 @@ export function NewCalculationForm({
 
         {catalog.length === 0 && (
           <p className="rounded-lg border border-border bg-muted/30 px-3.5 py-3 text-sm leading-6 text-muted-foreground">
-            Noch keine Leistungsvorlage vorhanden. Sie können direkt fortfahren und die Leistungen im nächsten Schritt erfassen.
+            {t(locale, 'sales.quote.noTemplate')}
           </p>
         )}
       </section>
@@ -218,14 +218,14 @@ export function NewCalculationForm({
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, 'sales.quote.reviewCustomer')}</p>
             <p className="mt-1 font-semibold">
-              {fromSurvey ? 'Aus Besichtigung übernommen' : customerMode === 'EXISTING' ? (selectedCustomerName || t(locale, 'sales.quote.customerModeExisting')) : t(locale, 'sales.quote.customerModeNew')}
+              {fromSurvey ? t(locale, 'sales.quote.fromSurveyShort') : customerMode === 'EXISTING' ? (selectedCustomerName || t(locale, 'sales.quote.customerModeExisting')) : t(locale, 'sales.quote.customerModeNew')}
             </p>
             {selectedObjectName && <p className="mt-1 text-sm text-muted-foreground">{selectedObjectName}</p>}
           </div>
           <div className="border-t border-border pt-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, 'sales.quote.reviewNext')}</p>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              ReinPlan legt die Kalkulation an. Dort prüfst du Zeit, Kosten und Preis und erstellst danach das Angebot.
+              {t(locale, 'sales.quote.reviewBody')}
             </p>
           </div>
         </div>
@@ -236,12 +236,12 @@ export function NewCalculationForm({
           <span />
         ) : (
           <Button type="button" variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)}>
-            <ChevronLeft className="size-4" />Zurück
+            <ChevronLeft className="size-4" />{t(locale, 'sales.quote.back')}
           </Button>
         )}
         {step < 3 ? (
           <Button type="button" onClick={nextStep}>
-            Weiter<ChevronRight className="size-4" />
+            {t(locale, 'sales.quote.next')}<ChevronRight className="size-4" />
           </Button>
         ) : (
           <SubmitButton locale={locale}>{t(locale, 'sales.quote.toCalculation')}</SubmitButton>
