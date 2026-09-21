@@ -14,7 +14,7 @@ import { getCompanyBranding } from '@/lib/data/branding';
 import { getCalculationDefaults } from '@/lib/data/kalkulation';
 import { getCompanyProfile, getOnboardingStatus } from '@/lib/data/onboarding';
 import { requireStaffCompany } from '@/lib/auth';
-import { updateCompanyBranding, removeCompanyLogo } from '../settings/actions';
+import { removeCompanyLogo } from '../settings/actions';
 import { finishOnboarding, saveCompanyProfile, saveCostingDefaults, saveOnboardingBranding, saveServiceFocus, skipOnboarding } from './actions';
 
 const steps = [
