@@ -33,7 +33,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
           </ButtonLink>
         }
       />
-      <SalesSectionNav active="angebote" />
+      <SalesSectionNav active="angebote" locale={locale} />
       <FilterTabs
         className="mb-4"
         label={t(locale, 'common.status')}
