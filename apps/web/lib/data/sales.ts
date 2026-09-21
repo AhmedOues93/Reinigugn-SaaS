@@ -22,7 +22,7 @@ export async function getLead(id: string) {
   const { data, error } = await supabase
     .from('leads')
     .select(
-      'id, status, organisation, contact_person, email, phone, street, postal_code, city, source, notes, created_at, converted_customer_id, lost_reason',
+      'id, status, organisation, contact_person, email, phone, street, postal_code, city, source, notes, created_at, converted_customer_id, lost_reason, customer_id, cleaning_object_id, cleaning_type, desired_start, frequency, preferred_time',
     )
     .eq('company_id', company.id)
     .eq('id', id)
