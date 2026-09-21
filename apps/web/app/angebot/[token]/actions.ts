@@ -26,3 +26,22 @@ export async function acceptPublicQuote(token: string, formData: FormData) {
   }
   redirect(`/angebot/${encodeURIComponent(token)}?accepted=1`);
 }
+
+
+export async function declinePublicQuote(token: string, formData: FormData) {
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (reason.length > 1000) {
+    redirect(`/angebot/${encodeURIComponent(token)}?error=decline-note`);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('decline_public_quote', {
+    p_token: token,
+    p_reason: reason || null,
+  });
+
+  if (error) {
+    redirect(`/angebot/${encodeURIComponent(token)}?error=decline`);
+  }
+  redirect(`/angebot/${encodeURIComponent(token)}?declined=1`);
+}
