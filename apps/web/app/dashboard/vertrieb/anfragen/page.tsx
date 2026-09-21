@@ -61,6 +61,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         rows={leads}
         rowKey={(lead) => lead.id}
         rowHref={(lead) => `/dashboard/vertrieb/anfragen/${lead.id}`}
+        rowActions={(lead) => <ButtonLink href={`/dashboard/vertrieb/anfragen/${lead.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           { key: 'org', header: 'Organisation', mobile: 'title', cell: (lead) => lead.organisation },
           { key: 'contact', header: 'Ansprechperson', mobile: 'subtitle', cell: (lead) => lead.contact_person || '—' },
