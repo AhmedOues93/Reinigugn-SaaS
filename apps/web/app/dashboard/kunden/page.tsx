@@ -49,6 +49,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         rows={customers}
         rowKey={(customer) => customer.id}
         rowHref={(customer) => `/dashboard/kunden/${customer.id}`}
+        rowActions={(customer) => <ButtonLink href={`/dashboard/kunden/${customer.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           {
             key: 'name',
