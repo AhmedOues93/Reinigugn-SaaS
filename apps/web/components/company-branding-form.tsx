@@ -7,15 +7,16 @@ import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 
-export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor }: {
+export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor, companyName = 'Ihr Unternehmen' }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   removeAction: (state: FormState, formData: FormData) => Promise<FormState>;
   logoUrl: string | null;
   brandColor: string | null;
+  companyName?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [removeState, removeFormAction] = useActionState(removeAction, initialFormState);
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(true);
   const [color, setColor] = useState(brandColor ?? '#0f766e');
 
   return (
@@ -49,16 +50,16 @@ export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor 
 
           <div className="flex flex-wrap items-center gap-3">
             <SubmitButton>Branding speichern</SubmitButton>
-            <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}><Eye className="size-4" /> Dokumentvorschau</Button>
+            <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}><Eye className="size-4" /> {preview ? 'Vorschau ausblenden' : 'Vorschau anzeigen'}</Button>
             {logoUrl && <button formAction={removeFormAction} className="inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Trash2 className="size-4" /> Logo entfernen</button>}
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/80 bg-subtle/40 p-3">
+        <div className={`${preview ? 'block' : 'hidden lg:block'} rounded-xl border border-border/80 bg-subtle/40 p-3`}>
           <div className="aspect-[210/297] overflow-hidden rounded-lg border bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3 border-b pb-3">
               <div className="grid h-10 w-24 place-items-center">
-                {logoUrl ? <img src={logoUrl} alt="Firmenlogo" className="max-h-10 max-w-full object-contain" /> : <span className="text-[9px] font-semibold text-gray-500">MUSTERFIRMA</span>}
+                {logoUrl ? <img src={logoUrl} alt="Firmenlogo" className="max-h-10 max-w-full object-contain" /> : <span className="max-w-full truncate text-[9px] font-semibold text-gray-500">{companyName}</span>}
               </div>
               <span className="text-[8px] text-gray-400">ANGEBOT</span>
             </div>
@@ -68,7 +69,7 @@ export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor 
             <div className="mt-5 space-y-2">{[92, 78, 86, 64].map((width) => <div key={width} className="h-1.5 rounded bg-gray-100" style={{ width: `${width}%` }} />)}</div>
             <div className="mt-6 rounded border border-gray-100 p-2"><div className="h-1.5 w-20 rounded bg-gray-200" /><div className="mt-2 h-1.5 w-full rounded bg-gray-100" /><div className="mt-1.5 h-1.5 w-4/5 rounded bg-gray-100" /></div>
           </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">{preview ? 'Dokumentvorschau · Angebot / Rechnung' : 'Live-Vorschau der Markenwirkung'}</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">Layoutvorschau · echte Angebots- und Rechnungsdaten erscheinen erst im jeweiligen Dokument</p>
         </div>
       </form>
     </div>
