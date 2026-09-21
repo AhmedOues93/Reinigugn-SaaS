@@ -75,15 +75,7 @@ export async function createLead(_: FormState, formData: FormData): Promise<Form
       return failure('Bitte geben Sie einen Firmen- oder Objektnamen an.');
     }
 
-    const structuredNotes = [
-      cleaningType && `Reinigungsart: ${cleaningType}`,
-      frequency && `Turnus: ${frequency}`,
-      preferredTime && `Bevorzugte Ausführungszeit: ${preferredTime}`,
-      desiredStart && `Gewünschter Start: ${desiredStart}`,
-      String(formData.get('notes') ?? '').trim(),
-    ].filter(Boolean).join('\n');
-
-    const { data, error } = await supabase.rpc('create_lead', {
+    const { data, error } = await supabase.rpc('create_lead_v2', {
       p_organisation: organisation,
       p_contact_person: contactPerson,
       p_email: email,
@@ -91,8 +83,14 @@ export async function createLead(_: FormState, formData: FormData): Promise<Form
       p_street: street,
       p_postal_code: postalCode,
       p_city: city,
-      p_source: customerMode === 'EXISTING' ? 'Bestandskunde' : String(formData.get('source') ?? ''),
-      p_notes: structuredNotes,
+      p_source: String(formData.get('source') ?? '').trim() || null,
+      p_notes: String(formData.get('notes') ?? '').trim() || null,
+      p_customer_id: customerMode === 'EXISTING' ? customerId : null,
+      p_cleaning_object_id: null,
+      p_cleaning_type: cleaningType || null,
+      p_desired_start: desiredStart || null,
+      p_frequency: frequency || null,
+      p_preferred_time: preferredTime || null,
     });
     if (error || !data) return failure('Die Anfrage konnte nicht angelegt werden.');
 
