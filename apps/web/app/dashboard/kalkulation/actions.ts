@@ -185,19 +185,51 @@ export async function saveCatalogItem(
 
 export async function createCalculation(_: FormState, formData: FormData): Promise<FormState> {
   const title = String(formData.get('title') ?? '').trim();
+  const customerMode = String(formData.get('customer_mode') ?? 'EXISTING');
   const customerId = String(formData.get('customer_id') ?? '').trim() || null;
   const surveyId = String(formData.get('site_survey_id') ?? '').trim() || null;
   const catalogItemId = String(formData.get('catalog_item_id') ?? '').trim() || null;
 
-  if (title.length < 2) return failure('Bitte gib eine Bezeichnung für die Kalkulation an.');
-  if (!customerId && !surveyId) return failure('Bitte wähle einen Kunden oder eine Besichtigung aus.');
+  if (title.length < 2) return failure('Bitte gib eine Bezeichnung für das Angebot an.');
+  if (!surveyId && customerMode === 'EXISTING' && !customerId) return failure('Bitte wähle einen Kunden aus.');
 
   let newId: string;
   try {
     const { supabase } = await requireStaffCompany();
+    let leadId: string | null = null;
+
+    if (!surveyId && customerMode === 'NEW') {
+      const organisation = String(formData.get('organisation') ?? '').trim();
+      if (organisation.length < 2) return failure('Bitte gib einen Firmen- oder Kundennamen an.');
+
+      const cleaningType = String(formData.get('cleaning_type') ?? '').trim();
+      const frequency = String(formData.get('frequency') ?? '').trim();
+      const desiredStart = String(formData.get('desired_start') ?? '').trim();
+      const notes = [
+        cleaningType && `Reinigungsart: ${cleaningType}`,
+        frequency && `Turnus: ${frequency}`,
+        desiredStart && `Gewünschter Start: ${desiredStart}`,
+        String(formData.get('notes') ?? '').trim(),
+      ].filter(Boolean).join('\n');
+
+      const { data: createdLead, error: leadError } = await supabase.rpc('create_lead', {
+        p_organisation: organisation,
+        p_contact_person: String(formData.get('contact_person') ?? '').trim(),
+        p_email: String(formData.get('email') ?? '').trim(),
+        p_phone: String(formData.get('phone') ?? '').trim(),
+        p_street: String(formData.get('street') ?? '').trim(),
+        p_postal_code: String(formData.get('postal_code') ?? '').trim(),
+        p_city: String(formData.get('city') ?? '').trim(),
+        p_source: String(formData.get('source_detail') ?? '').trim() || 'Direktangebot',
+        p_notes: notes,
+      });
+      if (leadError || !createdLead) return failure('Der Interessent konnte nicht gespeichert werden.');
+      leadId = createdLead as string;
+    }
+
     const { data, error } = await supabase.rpc('create_calculation', {
       p_title: title,
-      p_lead_id: null,
+      p_lead_id: leadId,
       p_customer_id: customerId,
       p_site_survey_id: surveyId,
       p_cleaning_object_id: String(formData.get('cleaning_object_id') ?? '').trim() || null,
