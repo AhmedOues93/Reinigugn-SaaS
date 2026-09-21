@@ -26,15 +26,23 @@ begin
 end
 $$;
 
--- Re-assert the exact anonymous allow-list.
-revoke execute on function public.get_invitation_preview(text) from public;
-grant execute on function public.get_invitation_preview(text) to anon, authenticated;
-
-revoke execute on function public.get_invitation_state(text) from public;
-grant execute on function public.get_invitation_state(text) to anon, authenticated;
-
-revoke execute on function public.get_public_quote(text) from public;
-grant execute on function public.get_public_quote(text) to anon, authenticated;
-
-revoke execute on function public.accept_public_quote(text, text, text) from public;
-grant execute on function public.accept_public_quote(text, text, text) to anon, authenticated;
+-- The public endpoints are created by later migrations on a fresh database.
+-- Re-assert privileges only for signatures that already exist at this point.
+do $$
+declare
+  signature text;
+begin
+  foreach signature in array array[
+    'public.get_invitation_preview(text)',
+    'public.get_invitation_state(text)',
+    'public.get_public_quote(text)',
+    'public.accept_public_quote(text,text,text)'
+  ]
+  loop
+    if to_regprocedure(signature) is not null then
+      execute format('revoke execute on function %s from public', signature);
+      execute format('grant execute on function %s to anon, authenticated', signature);
+    end if;
+  end loop;
+end
+$$;
