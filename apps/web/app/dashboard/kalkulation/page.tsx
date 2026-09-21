@@ -54,7 +54,7 @@ export default async function CalculationsPage({
         }
       />
 
-      <SalesSectionNav active="kalkulationen" />
+      <SalesSectionNav active="kalkulationen" locale={locale} />
 
       <FilterTabs
         className="mb-4"
