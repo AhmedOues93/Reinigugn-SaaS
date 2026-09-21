@@ -32,14 +32,16 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {quote.status !== 'DRAFT' && (
-              <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted">
-                <Eye className="size-4" aria-hidden="true" />
-                Vorschau
-              </a>
-              <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf?download=1`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
-                <Download className="size-4" aria-hidden="true" />
-                PDF herunterladen
-              </a>
+              <>
+                <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted">
+                  <Eye className="size-4" aria-hidden="true" />
+                  Vorschau
+                </a>
+                <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf?download=1`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
+                  <Download className="size-4" aria-hidden="true" />
+                  PDF herunterladen
+                </a>
+              </>
             )}
             <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
               {t(locale, `sales.quote.status.${quote.status}`)}
