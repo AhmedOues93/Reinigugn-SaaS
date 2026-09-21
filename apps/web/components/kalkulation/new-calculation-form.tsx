@@ -55,14 +55,16 @@ export function NewCalculationForm({
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name ?? customer.label}</option>)}
                 </Select>
               </Field>
-              {customerId && objects.some((object) => object.customerId === customerId) && (
-                <Field label="Objekt" htmlFor="cleaning_object_id" info="Optional. Wählen Sie ein bestehendes Objekt, damit bei Annahme kein Duplikat entsteht.">
-                  <Select id="cleaning_object_id" name="cleaning_object_id" defaultValue="">
-                    <option value="">Neues Objekt für dieses Angebot</option>
-                    {objects.filter((object) => object.customerId === customerId).map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
-                  </Select>
-                </Field>
-              )}
+              <>
+                {customerId && objects.some((object) => object.customerId === customerId) && (
+                  <Field label="Objekt" htmlFor="cleaning_object_id" info="Optional. Wählen Sie ein bestehendes Objekt, damit bei Annahme kein Duplikat entsteht.">
+                    <Select id="cleaning_object_id" name="cleaning_object_id" defaultValue="">
+                      <option value="">Neues Objekt für dieses Angebot</option>
+                      {objects.filter((object) => object.customerId === customerId).map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
+                    </Select>
+                  </Field>
+                )}
+              </>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field className="sm:col-span-2" label="Firma / Kunde" htmlFor="organisation"><Input id="organisation" name="organisation" required minLength={2} maxLength={160} /></Field>
