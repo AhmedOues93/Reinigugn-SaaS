@@ -16,9 +16,9 @@ import { createCalculation } from '../actions';
 export default async function NewCalculationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ survey?: string }>;
+  searchParams: Promise<{ survey?: string; kunde?: string; objekt?: string }>;
 }) {
-  const { survey: preferredSurveyId } = await searchParams;
+  const { survey: preferredSurveyId, kunde: preferredCustomerId, objekt: preferredObjectId } = await searchParams;
   const defaults = await getCalculationDefaults();
   if (defaults.wage_cents_per_hour === 0) {
     redirect(`/dashboard/kalkulation/grundlagen?next=${encodeURIComponent(preferredSurveyId ? `/dashboard/kalkulation/neu?survey=${preferredSurveyId}` : '/dashboard/kalkulation/neu')}`);
@@ -42,6 +42,8 @@ export default async function NewCalculationPage({
         objects={objects.map((object) => ({ id: object.id, customerId: object.customer_id, name: object.name }))}
         catalog={catalog}
         preferredSurveyId={preferredSurveyId}
+        preferredCustomerId={preferredCustomerId}
+        preferredObjectId={preferredObjectId}
         surveys={surveys.map((survey) => ({
           id: survey.id,
           label: [survey.site_name, survey.city].filter(Boolean).join(' · ') || 'Besichtigung',
