@@ -209,11 +209,13 @@ export function BrandingStep({
   removeAction,
   logoUrl,
   brandColor,
+  companyName,
 }: {
   action: Action;
   removeAction: Action;
   logoUrl: string | null;
   brandColor: string | null;
+  companyName: string;
 }) {
   return (
     <div className="space-y-6">
@@ -229,6 +231,7 @@ export function BrandingStep({
         removeAction={removeAction}
         logoUrl={logoUrl}
         brandColor={brandColor}
+        companyName={companyName}
         submitLabel="Speichern und weiter"
       />
     </div>
