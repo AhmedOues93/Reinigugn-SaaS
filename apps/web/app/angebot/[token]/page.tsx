@@ -26,6 +26,11 @@ export default async function PublicQuotePage({
     snapshotValue(quote.recipient_snapshot, 'name') ??
     snapshotValue(quote.recipient_snapshot, 'organisation') ??
     'Kunde';
+  const objectName = snapshotValue(quote.recipient_snapshot, 'object_name');
+  const objectAddress = [
+    snapshotValue(quote.recipient_snapshot, 'object_street'),
+    [snapshotValue(quote.recipient_snapshot, 'object_postal_code'), snapshotValue(quote.recipient_snapshot, 'object_city')].filter(Boolean).join(' '),
+  ].filter(Boolean).join(', ');
   const accepted = quote.status === 'ACCEPTED';
   const declined = quote.status === 'DECLINED';
   const expired =
@@ -78,6 +83,13 @@ export default async function PublicQuotePage({
 
         <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-card sm:p-7">
           <h2 className="text-lg font-semibold">{quote.title}</h2>
+          {objectName && (
+            <div className="mt-3 rounded-xl border border-border/80 bg-muted/20 px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Objekt</p>
+              <p className="mt-1 font-medium">{objectName}</p>
+              {objectAddress && <p className="mt-1 text-sm text-muted-foreground">{objectAddress}</p>}
+            </div>
+          )}
           {quote.intro && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{quote.intro}</p>}
 
           <div className="mt-6 space-y-2">
