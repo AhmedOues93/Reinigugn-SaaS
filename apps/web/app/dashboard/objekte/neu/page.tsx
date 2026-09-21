@@ -17,7 +17,7 @@ export default async function NewObjectPage({
 
   return (
     <FormPage
-      back={{ href: '/dashboard/objekte', label: 'Objekte' }}
+      back={customer ? { href: `/dashboard/kunden/${customer}`, label: 'Kunde' } : { href: '/dashboard/objekte', label: 'Objekte' }}
       title="Objekt anlegen"
       description="Ein Reinigungsobjekt gehört immer zu einem Kunden."
       stickyActions
