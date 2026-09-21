@@ -9,9 +9,9 @@ import {
 } from '@/lib/data/employee';
 
 export const metadata: Metadata = {
-  title: 'SauberWerk',
+  title: 'ReinPlan',
   manifest: '/mitarbeiter/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'SauberWerk' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'ReinPlan' },
 };
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
