@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { updateCompanyBranding } from '../settings/actions';
 
 /**
  * First-run setup writes.
@@ -205,6 +206,19 @@ export async function saveServiceFocus(
         ? `${seeded} Leistungen in den Katalog übernommen. Alle Werte sind bearbeitbar.`
         : 'Schwerpunkte gespeichert.',
   };
+}
+
+/** Step 5: save branding before advancing; Weiter is never local-only. */
+export async function saveOnboardingBranding(
+  nextStep: string | null,
+  state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const result = await updateCompanyBranding(state, formData);
+  if (result.status !== 'success') return result;
+  await markStep('branding');
+  if (nextStep) redirect(`/dashboard/einrichtung?schritt=${nextStep}`);
+  return result;
 }
 
 /** Step 6: done. The wizard does not reappear. */
