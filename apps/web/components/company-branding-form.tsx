@@ -7,12 +7,13 @@ import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 
-export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor, companyName = 'Ihr Unternehmen' }: {
+export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor, companyName = 'Ihr Unternehmen', submitLabel = 'Branding speichern' }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   removeAction: (state: FormState, formData: FormData) => Promise<FormState>;
   logoUrl: string | null;
   brandColor: string | null;
   companyName?: string;
+  submitLabel?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [removeState, removeFormAction] = useActionState(removeAction, initialFormState);
@@ -49,7 +50,7 @@ export function CompanyBrandingForm({ action, removeAction, logoUrl, brandColor,
           <p className="text-sm leading-6 text-muted-foreground">Logo und Akzentfarbe werden in Navigation, Kundenportal und Geschäftsdokumenten verwendet. Der Inhalt bleibt schwarz, weiß und grau; die Akzentfarbe markiert nur Marke und wichtige Aktionen.</p>
 
           <div className="flex flex-wrap items-center gap-3">
-            <SubmitButton>Branding speichern</SubmitButton>
+            <SubmitButton>{submitLabel}</SubmitButton>
             <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}><Eye className="size-4" /> {preview ? 'Vorschau ausblenden' : 'Vorschau anzeigen'}</Button>
             {logoUrl && <button formAction={removeFormAction} className="inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Trash2 className="size-4" /> Logo entfernen</button>}
           </div>
