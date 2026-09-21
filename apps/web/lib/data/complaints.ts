@@ -63,7 +63,7 @@ export async function getQualityInspection(id: string) {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('quality_inspections')
-    .select('id, cleaning_object_id, job_id, inspected_at, result, score, criteria, notes, follow_up_required, created_at, cleaning_objects(id, name), jobs(id, title, scheduled_date), company_members!quality_inspections_inspector_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
+    .select('id, cleaning_object_id, job_id, inspected_at, result, score, criteria, notes, follow_up_required, created_at, cleaning_objects(id, name, customer_id), jobs(id, title, scheduled_date), company_members!quality_inspections_inspector_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
     .eq('company_id', company.id)
     .eq('id', id)
     .maybeSingle();
