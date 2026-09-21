@@ -46,7 +46,12 @@ async function runTimeAction(jobId: string, operation: TimeOperation): Promise<F
   if (!context) return denied();
   const locale = await employeeLocaleSafe();
   const { error } = await context.supabase.rpc(operation, { p_job_id: jobId });
-  if (error) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (error) {
+    if (operation === 'stop_my_job' && error.message.includes('Required checklist items are incomplete')) {
+      return { status: 'error', message: 'Bitte erledige zuerst alle Pflichtpunkte der Checkliste.' };
+    }
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
   revalidateEmployee(jobId);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/arbeitszeiten');
