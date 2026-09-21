@@ -384,3 +384,4 @@ export function QuoteFromCalculationForm({
       </div>
     </form>
   );
+}
