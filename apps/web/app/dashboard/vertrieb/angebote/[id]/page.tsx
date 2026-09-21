@@ -85,7 +85,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 className="inline-flex min-h-touch items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium hover:bg-muted"
               >
                 <CalendarDays className="size-4" aria-hidden="true" />
-                Planung vervollständigen
+                Einsatz planen
               </Link>
             )}
           </div>
