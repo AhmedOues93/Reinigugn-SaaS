@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Field, FormSection, Input } from '@/components/ui';
+import { Field, FormSection, Input, Select } from '@/components/ui';
 import { deriveProductiveRateBp, formatBp, type CalculationDefaults } from '@/lib/kalkulation';
 
 const euro = (cents: number) => (cents / 100).toFixed(2).replace('.', ',');
@@ -26,6 +26,10 @@ export function CostingFields({ defaults, step }: { defaults: CalculationDefault
   // second gets its own figures back.
   const configured = defaults.wage_cents_per_hour > 0 || defaults.productive_rate_bp !== 10000;
   const [manual, setManual] = useState(configured ? defaults.productive_rate_is_manual : false);
+  const [wagePreset, setWagePreset] = useState(configured ? 'custom' : '15.00');
+  const [ancillaryPreset, setAncillaryPreset] = useState(configured ? 'custom' : '25');
+  const [overheadPreset, setOverheadPreset] = useState(configured ? 'custom' : '15');
+  const [marginPreset, setMarginPreset] = useState(configured ? 'custom' : '10');
 
   const start = {
     weekly_hours: configured ? defaults.weekly_hours : 39,
@@ -60,14 +64,30 @@ export function CostingFields({ defaults, step }: { defaults: CalculationDefault
             htmlFor="wage"
             info="Mischsatz Ihrer Reinigungskräfte, nicht das Gehalt einer bestimmten Person."
           >
-            <Input id="wage" name="wage" inputMode="decimal" required defaultValue={euro(defaults.wage_cents_per_hour)} />
+            <Select value={wagePreset} onChange={(event) => setWagePreset(event.target.value)}>
+              <option value="15.00">15,00 € / Std. – Startvorschlag</option>
+              <option value="16.00">16,00 € / Std.</option>
+              <option value="17.00">17,00 € / Std.</option>
+              <option value="18.00">18,00 € / Std.</option>
+              <option value="custom">Sonstiges / eigener Wert</option>
+            </Select>
+            {wagePreset === 'custom' && <Input id="wage" name="wage" inputMode="decimal" required defaultValue={euro(defaults.wage_cents_per_hour)} />}
+            {wagePreset !== 'custom' && <input type="hidden" name="wage" value={wagePreset} />}
           </Field>
           <Field
             label="Arbeitgebernebenkosten (%)"
             htmlFor="ancillary"
             info="Arbeitgeberanteil zur Sozialversicherung, Umlagen, Berufsgenossenschaft — als Zuschlag auf den Lohn."
           >
-            <Input id="ancillary" name="ancillary" inputMode="decimal" required defaultValue={percent(defaults.ancillary_rate_bp)} />
+            <Select value={ancillaryPreset} onChange={(event) => setAncillaryPreset(event.target.value)}>
+              <option value="25">25 % – Startvorschlag</option>
+              <option value="30">30 %</option>
+              <option value="35">35 %</option>
+              <option value="40">40 %</option>
+              <option value="custom">Sonstiges / eigener Wert</option>
+            </Select>
+            {ancillaryPreset === 'custom' && <Input id="ancillary" name="ancillary" inputMode="decimal" required defaultValue={percent(defaults.ancillary_rate_bp)} />}
+            {ancillaryPreset !== 'custom' && <input type="hidden" name="ancillary" value={ancillaryPreset} />}
           </Field>
         </div>
       </FormSection></div>
@@ -216,26 +236,42 @@ export function CostingFields({ defaults, step }: { defaults: CalculationDefault
       </FormSection></div>
 
       <div className={step == null || step === 3 ? 'block' : 'hidden'}><FormSection
-        title="Zuschläge"
-        description="Diese Zuschläge decken Verwaltung und die angestrebte Marge in neuen Kalkulationen ab."
+        title="Preis & Marge"
+        description="Hier legen Sie fest, wie allgemeine Betriebskosten und Ihr gewünschter Gewinn in neue Preise einfließen."
       >
         <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
           <Field label="Gemeinkostenzuschlag (%)" htmlFor="overhead" info="Verwaltung, Büro, Fahrzeuge, Versicherungen — alles, was nicht einem einzelnen Auftrag zugeordnet wird.">
-            <Input id="overhead" name="overhead" inputMode="decimal" required defaultValue={percent(defaults.overhead_rate_bp)} />
+            <Select value={overheadPreset} onChange={(event) => setOverheadPreset(event.target.value)}>
+              <option value="15">15 % – Startvorschlag</option>
+              <option value="20">20 %</option>
+              <option value="25">25 %</option>
+              <option value="30">30 %</option>
+              <option value="custom">Sonstiges / eigener Wert</option>
+            </Select>
+            {overheadPreset === 'custom' && <Input id="overhead" name="overhead" inputMode="decimal" required defaultValue={percent(defaults.overhead_rate_bp)} />}
+            {overheadPreset !== 'custom' && <input type="hidden" name="overhead" value={overheadPreset} />}
           </Field>
           <Field
             label="Zielmarge (%)"
             htmlFor="margin"
             info="Marge, nicht Aufschlag: Anteil am Verkaufspreis. Preis = Kosten ÷ (1 − Marge)."
           >
-            <Input id="margin" name="margin" inputMode="decimal" required defaultValue={percent(defaults.target_margin_bp)} />
+            <Select value={marginPreset} onChange={(event) => setMarginPreset(event.target.value)}>
+              <option value="10">10 % – Startvorschlag</option>
+              <option value="12.5">12,5 %</option>
+              <option value="15">15 %</option>
+              <option value="20">20 %</option>
+              <option value="custom">Sonstiges / eigener Wert</option>
+            </Select>
+            {marginPreset === 'custom' && <Input id="margin" name="margin" inputMode="decimal" required defaultValue={percent(defaults.target_margin_bp)} />}
+            {marginPreset !== 'custom' && <input type="hidden" name="margin" value={marginPreset} />}
           </Field>
         </div>
       </FormSection></div>
 
       <div className={step == null || step === 2 ? 'block' : 'hidden'}><FormSection
-        title="Sachkosten"
-        description="Startwerte pro Einsatz oder Monat. In einzelnen Kalkulationen weiterhin anpassbar."
+        title="Auftragskosten"
+        description="Typische Zusatzkosten eines Einsatzes. 0 ist völlig in Ordnung; konkrete Werte können später pro Auftrag angepasst werden."
       >
         <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
           <Field
