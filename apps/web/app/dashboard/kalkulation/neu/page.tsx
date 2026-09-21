@@ -30,8 +30,8 @@ export default async function NewCalculationPage({
 
   return (
     <FormPage
-      back={{ href: '/dashboard/kalkulation', label: 'Kalkulation' }}
-      title="Neue Kalkulation"
+      back={{ href: '/dashboard/vertrieb/anfragen', label: 'Vertrieb' }}
+      title="Neues Angebot"
       width="narrow"
     >
       <NewCalculationForm
