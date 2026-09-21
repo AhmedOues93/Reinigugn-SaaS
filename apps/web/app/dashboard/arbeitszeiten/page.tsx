@@ -1,5 +1,5 @@
-import { Clock3 } from 'lucide-react';
-import { Badge, Button, EmptyState, Input, PageHeader, Select, StatBand } from '@/components/ui';
+import { Clock3, Download } from 'lucide-react';
+import { Badge, Button, ButtonLink, EmptyState, Input, PageHeader, Select, StatBand } from '@/components/ui';
 import { DataTable, FilterBar } from '@/components/data-table';
 import { listTimeEntries } from '@/lib/data/time-entries';
 import { listActiveEmployeeOptions } from '@/lib/data/jobs';
@@ -38,7 +38,19 @@ export default async function TimeEntriesPage({
 
   return (
     <>
-      <PageHeader title="Arbeitszeiten" description="Erfasste Einsatzzeiten aus der Mitarbeiter-App – netto, nach Abzug der Pausen." />
+      <PageHeader
+        title="Arbeitszeiten"
+        description="Erfasste Einsatzzeiten aus der Mitarbeiter-App – netto, nach Abzug der Pausen."
+        actions={
+          <ButtonLink
+            href={`/dashboard/arbeitszeiten/export?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&employee=${encodeURIComponent(query.employee ?? '')}&customer=${encodeURIComponent(query.customer ?? '')}&object=${encodeURIComponent(query.object ?? '')}`}
+            variant="outline"
+          >
+            <Download className="size-4" />
+            CSV exportieren
+          </ButtonLink>
+        }
+      />
 
       <FilterBar>
         <Input name="from" type="date" defaultValue={from} aria-label="Von" />
