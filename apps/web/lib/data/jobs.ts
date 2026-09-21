@@ -3,12 +3,15 @@ import { addDays, berlinDateKey } from '@/lib/date';
 
 export type JobStatusFilter = 'all' | 'PLANNED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
-export async function listActiveEmployeeOptions() {
+export async function listAssignableEmployeeOptions() {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('company_members')
-    .select('id, profiles!company_members_profile_id_fkey(first_name, last_name)')
-    .eq('company_id', company.id).eq('role', 'EMPLOYEE').eq('status', 'ACTIVE').order('created_at');
+    .select('id, status, invited_first_name, invited_last_name, profiles!company_members_profile_id_fkey(first_name, last_name)')
+    .eq('company_id', company.id)
+    .eq('role', 'EMPLOYEE')
+    .in('status', ['INVITED', 'ACTIVE'])
+    .order('created_at');
   if (error) throw new Error('Mitarbeiter konnten nicht geladen werden.');
   return data ?? [];
 }
