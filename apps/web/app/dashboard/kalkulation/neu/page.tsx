@@ -25,7 +25,7 @@ export default async function NewCalculationPage({
   }
   const [customers, objects, catalog, surveys] = await Promise.all([
     listCustomerOptions(),
-    listCleaningObjects(),
+    listCleaningObjects({}),
     listCatalogItems(),
     listSurveys('COMPLETED').catch(() => []),
   ]);
