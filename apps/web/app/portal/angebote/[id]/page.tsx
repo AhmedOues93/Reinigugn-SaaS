@@ -2,8 +2,10 @@ import { FileDown } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { Badge, ButtonLink } from '@/components/ui';
 import { PortalPageHeader } from '@/components/portal/portal-shell';
+import { PortalQuoteDecision } from '@/components/portal/quote-decision';
 import { getPortalQuote } from '@/lib/data/portal-quotes';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
+import { acceptPortalQuote, declinePortalQuote } from '../actions';
 
 const labels = {
   SENT: 'Offen',
@@ -69,10 +71,21 @@ export default async function PortalQuoteDetailPage({ params }: { params: Promis
         </section>
       )}
 
+      {quote.status === 'DECLINED' && (
+        <section className="mt-4 rounded-2xl border border-danger/20 bg-card p-5 shadow-card">
+          <h2 className="font-semibold">Angebot abgelehnt</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Ihre Entscheidung wurde gespeichert.
+          </p>
+          {quote.decline_reason && <p className="mt-3 rounded-lg bg-muted/40 p-3 text-sm">{quote.decline_reason}</p>}
+        </section>
+      )}
+
       {quote.status === 'SENT' && (
-        <p className="mt-4 rounded-xl border border-border bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
-          Zur digitalen Annahme verwenden Sie bitte den sicheren Link aus der Angebots-E-Mail.
-        </p>
+        <PortalQuoteDecision
+          acceptAction={acceptPortalQuote.bind(null, quote.id)}
+          declineAction={declinePortalQuote.bind(null, quote.id)}
+        />
       )}
     </div>
   );
