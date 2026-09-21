@@ -289,7 +289,7 @@ export function FinaliseCalculationAction({ action }: { action: Action }) {
     <form action={formAction}>
       <SubmitButton variant="outline">
         <Lock className="size-4" aria-hidden="true" />
-        Festschreiben
+        Kalkulation abschließen
       </SubmitButton>
       {state.message && (
         <div className="mt-2 max-w-sm">
