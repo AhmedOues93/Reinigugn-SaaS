@@ -1,4 +1,4 @@
-import { Download, Plus, Receipt } from 'lucide-react';
+import { FileDown, Plus, Receipt } from 'lucide-react';
 import { ButtonLink, EmptyState, FilterTabs, PageHeader, StatBand } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
@@ -72,11 +72,11 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
                 href={`/dashboard/abrechnung/${invoice.id}/pdf?inline=1`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary max-md:size-touch"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted max-md:min-h-11"
                 aria-label={`PDF ${invoice.invoice_number} ansehen`}
-                title="PDF ansehen"
               >
-                <Download className="size-4" aria-hidden="true" />
+                <FileDown className="size-4" aria-hidden="true" />
+                PDF
               </a>
             )}
           </div>
