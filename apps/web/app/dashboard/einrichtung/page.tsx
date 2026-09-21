@@ -119,6 +119,7 @@ export default async function SetupPage({
             removeAction={removeCompanyLogo}
             logoUrl={branding?.logoUrl ?? null}
             brandColor={branding?.brandColor ?? null}
+            companyName={company.name}
             nextHref={`/dashboard/einrichtung?schritt=${next ?? 'abschluss'}`}
           />
         )}
