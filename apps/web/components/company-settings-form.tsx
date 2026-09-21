@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button, Field, Input, Select } from '@/components/ui';
@@ -22,12 +23,47 @@ export function CompanySettingsForm({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [step, setStep] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const router = useRouter();
   const chosenFocus = new Set(serviceFocus);
   const directorWasSet = Boolean(String(company.managing_director ?? '').trim());
   const vatWasSet = company.default_vat_rate_basis_points != null;
 
+  useEffect(() => {
+    if (state.status === 'success') { setEditing(false); setStep(0); router.refresh(); }
+  }, [router, state.status]);
+
   const next = () => setStep((value) => Math.min(value + 1, steps.length - 1));
   const back = () => setStep((value) => Math.max(value - 1, 0));
+
+  if (!editing) {
+    const address = [company.street, [company.postal_code, company.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return (
+      <div className="space-y-5">
+        <FormMessage status={state.status} message={state.message} />
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Firmendaten</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Gespeicherte Unternehmens- und Rechnungsdaten.</p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+            <Pencil className="size-4" aria-hidden="true" /> Bearbeiten
+          </Button>
+        </div>
+        <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+          <div><dt className="text-xs text-muted-foreground">Unternehmen</dt><dd className="mt-1 font-medium">{String(company.name ?? '—')}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Rechtsform</dt><dd className="mt-1">{String(company.legal_form ?? '—')}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-xs text-muted-foreground">Anschrift</dt><dd className="mt-1">{address || '—'}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">E-Mail</dt><dd className="mt-1 break-all">{String(company.email ?? '—')}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Telefon</dt><dd className="mt-1">{String(company.phone ?? '—')}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Steuer</dt><dd className="mt-1">{String(company.vat_id ?? company.tax_number ?? '—')}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Zahlungsziel</dt><dd className="mt-1">{company.default_payment_terms_days != null ? String(company.default_payment_terms_days) + ' Tage' : '—'}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">IBAN</dt><dd className="mt-1">{String(company.iban ?? '—')}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Sprache / Zeitzone</dt><dd className="mt-1">{String(company.default_language ?? 'de').toUpperCase()} · {String(company.timezone ?? 'Europe/Berlin')}</dd></div>
+        </dl>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-6">
@@ -159,15 +195,15 @@ export function CompanySettingsForm({
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-border/80 pt-5">
-        <Button type="button" variant="ghost" onClick={back} disabled={step === 0}>
-          <ArrowLeft className="size-4" aria-hidden="true" /> Zurück
+        <Button type="button" variant="ghost" onClick={() => step === 0 ? setEditing(false) : back()}>
+          <ArrowLeft className="size-4" aria-hidden="true" /> {step === 0 ? 'Abbrechen' : 'Zurück'}
         </Button>
         {step < steps.length - 1 ? (
           <Button type="button" onClick={next}>
             Weiter <ArrowRight className="size-4" aria-hidden="true" />
           </Button>
         ) : (
-          <SubmitButton><Check className="size-4" aria-hidden="true" /> Firmendaten speichern</SubmitButton>
+          <SubmitButton><Check className="size-4" aria-hidden="true" /> Änderungen speichern</SubmitButton>
         )}
       </div>
     </form>
