@@ -136,7 +136,10 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
                           {[object.street, object.postal_code, object.city].filter(Boolean).join(', ') || 'Keine Adresse'}
                         </span>
                       </span>
-                      {!object.is_active && <StatusBadge isActive={false} />}
+                      <span className="relative z-10 ms-auto flex shrink-0 items-center gap-2">
+                        {!object.is_active && <StatusBadge isActive={false} />}
+                        <span className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-sm">Ansehen</span>
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -169,6 +172,7 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
                       </span>
                       <span className="text-sm font-semibold tabular-nums">{formatMoney('de', invoice.gross_total_cents, invoice.currency)}</span>
                       <InvoiceStatusBadge status={invoice.displayStatus} locale="de" />
+                      <span className="relative z-10 inline-flex min-h-10 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-sm">Ansehen</span>
                     </Link>
                   </li>
                 ))}
