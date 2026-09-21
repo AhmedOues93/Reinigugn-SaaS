@@ -69,9 +69,12 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
             <ButtonLink href={`/dashboard/abrechnung/${invoice.id}`} variant="outline">Öffnen</ButtonLink>
             {invoice.status !== 'DRAFT' && (
               <a
-                href={`/dashboard/abrechnung/${invoice.id}/pdf`}
+                href={`/dashboard/abrechnung/${invoice.id}/pdf?inline=1`}
+                target="_blank"
+                rel="noreferrer"
                 className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary max-md:size-touch"
-                aria-label={`PDF ${invoice.invoice_number} herunterladen`}
+                aria-label={`PDF ${invoice.invoice_number} ansehen`}
+                title="PDF ansehen"
               >
                 <Download className="size-4" aria-hidden="true" />
               </a>
