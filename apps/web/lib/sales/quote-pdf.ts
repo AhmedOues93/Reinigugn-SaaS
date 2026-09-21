@@ -117,6 +117,13 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
     [str(input.recipient, 'postal_code'), str(input.recipient, 'city')].filter(Boolean).join(' '),
   ].filter((v): v is string => Boolean(v));
   recipient.forEach((v, i) => draw(v, mx, y - i * 13, { font: i === 0 ? bold : regular, size: 10 }));
+
+  const objectDetails = [
+    str(input.recipient, 'object_name'),
+    str(input.recipient, 'object_street'),
+    [str(input.recipient, 'object_postal_code'), str(input.recipient, 'object_city')].filter(Boolean).join(' '),
+  ].filter((v): v is string => Boolean(v));
+
   draw('Angebotsnr.', A4.width - mx - 170, y, { size: 8.5, color: muted });
   draw(input.quoteNumber, A4.width - mx, y, { font: bold, size: 9, right: true });
   draw('Datum', A4.width - mx - 170, y - 14, { size: 8.5, color: muted });
@@ -124,6 +131,13 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   draw('Gültig bis', A4.width - mx - 170, y - 28, { size: 8.5, color: muted });
   draw(date(input.validUntil), A4.width - mx, y - 28, { size: 9, right: true });
   y -= Math.max(70, recipient.length * 13 + 28);
+
+  if (objectDetails.length > 0) {
+    draw('Objekt', mx, y, { font: bold, size: 8.5, color: muted });
+    y -= 14;
+    objectDetails.forEach((v, i) => draw(v, mx, y - i * 12, { size: 9.2 }));
+    y -= objectDetails.length * 12 + 10;
+  }
 
   draw(`Angebot ${input.quoteNumber}`, mx, y, { font: bold, size: 16, color: ink });
   y -= 20;
@@ -181,7 +195,9 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
     y -= 24;
   }
 
-  const terms = `Dieses Angebot ist bis ${date(input.validUntil)} gültig. Preise verstehen sich zuzüglich der ausgewiesenen Umsatzsteuer. Leistungsumfang und Turnus ergeben sich aus den oben aufgeführten Positionen.`;
+  const paymentDays = Number(input.company?.default_payment_terms_days ?? 0);
+  const paymentText = paymentDays > 0 ? ` Zahlungsziel: ${paymentDays} Tage.` : '';
+  const terms = `Dieses Angebot ist bis ${date(input.validUntil)} gültig. Preise verstehen sich zuzüglich der ausgewiesenen Umsatzsteuer. Leistungsumfang und Turnus ergeben sich aus den oben aufgeführten Positionen.${paymentText}`;
   for (const l of wrap(terms, regular, 8.8, width)) { draw(l, mx, y, { size: 8.8, color: muted }); y -= 12; }
 
   pages.forEach((p, i) => {
@@ -192,6 +208,7 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
       str(input.company, 'tax_number') ? `St-Nr.: ${str(input.company, 'tax_number')}` : null,
       str(input.company, 'vat_id') ? `USt-IdNr.: ${str(input.company, 'vat_id')}` : null,
       str(input.company, 'iban') ? `IBAN: ${str(input.company, 'iban')}` : null,
+      str(input.company, 'bic') ? `BIC: ${str(input.company, 'bic')}` : null,
     ].filter((v): v is string => Boolean(v)).join(' · ');
     p.drawText(safe(footer), { x: mx, y: footerY, font: regular, size: 7.2, color: muted });
     const pn = `Seite ${i + 1} von ${pages.length}`;
