@@ -1,4 +1,4 @@
-import { Inbox, Plus } from 'lucide-react';
+import { FilePlus2, Inbox, Plus } from 'lucide-react';
 import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
 import { leadStatusTone, listLeads, type LeadStatus } from '@/lib/data/sales';
@@ -20,12 +20,18 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Vertrieb"
-        description="Von der Anfrage bis zum angenommenen Angebot – ein durchgängiger Vorgang ohne doppelte Dateneingabe."
+        description="Angebote direkt erstellen. Anfragen bleiben für frühe Kontakte und offene Interessenten verfügbar."
         actions={
-          <ButtonLink href="/dashboard/vertrieb/anfragen/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            {t(locale, 'sales.leads.new')}
-          </ButtonLink>
+          <>
+            <ButtonLink href="/dashboard/kalkulation/neu">
+              <FilePlus2 className="size-4" aria-hidden="true" />
+              Neues Angebot
+            </ButtonLink>
+            <ButtonLink href="/dashboard/vertrieb/anfragen/neu" variant="outline">
+              <Plus className="size-4" aria-hidden="true" />
+              Anfrage erfassen
+            </ButtonLink>
+          </>
         }
       />
       <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-2 sm:grid-cols-4">
