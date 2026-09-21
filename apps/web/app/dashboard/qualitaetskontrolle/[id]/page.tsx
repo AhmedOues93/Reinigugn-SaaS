@@ -25,7 +25,7 @@ export default async function QualityInspectionDetailPage({
   ]);
   if (!inspection) notFound();
 
-  const object = first(inspection.cleaning_objects as never) as { id?: string; name?: string } | null;
+  const object = first(inspection.cleaning_objects as never) as { id?: string; name?: string; customer_id?: string } | null;
   const job = first(inspection.jobs as never) as { id?: string; title?: string; scheduled_date?: string } | null;
   const inspectorMember = first(inspection.company_members as never) as {
     profiles?: { first_name?: string | null; last_name?: string | null } | { first_name?: string | null; last_name?: string | null }[] | null;
@@ -51,7 +51,10 @@ export default async function QualityInspectionDetailPage({
         }
         actions={
           inspection.follow_up_required && object?.id ? (
-            <ButtonLink href="/dashboard/reklamationen/neu" variant="outline">
+            <ButtonLink
+              href={`/dashboard/reklamationen/neu?kunde=${encodeURIComponent(object.customer_id ?? '')}&objekt=${encodeURIComponent(object.id)}&auftrag=${encodeURIComponent(job?.id ?? '')}&titel=${encodeURIComponent('Nacharbeit Qualitätskontrolle')}`}
+              variant="outline"
+            >
               <TriangleAlert className="size-4" />
               Reklamation erfassen
             </ButtonLink>
