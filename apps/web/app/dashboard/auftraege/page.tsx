@@ -119,6 +119,7 @@ export default async function JobsPage({
         rows={jobs}
         rowKey={(job) => job.id}
         rowHref={(job) => `/dashboard/auftraege/${job.id}`}
+        rowActions={(job) => <ButtonLink href={`/dashboard/auftraege/${job.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           {
             key: 'date',
