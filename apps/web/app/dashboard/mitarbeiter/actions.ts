@@ -68,7 +68,12 @@ export async function resendEmployeeInvitation(memberId: string): Promise<FormSt
     const token = createInvitationToken();
     const { data, error } = await supabase.rpc('resend_company_invitation', { p_member_id: memberId, p_token_hash: hashInvitationToken(token), p_expires_at: invitationExpiresAt() });
     const invitation = data?.[0];
-    if (error || !invitation) return failure('Die Einladung konnte nicht erneut versendet werden.');
+    if (error || !invitation) {
+      if (error?.message?.includes('Invitation resend cooldown active')) {
+        return failure('Bitte warte mindestens 60 Sekunden, bevor du die Einladung erneut sendest.');
+      }
+      return failure('Die Einladung konnte nicht erneut versendet werden.');
+    }
     const employee = await supabase.from('company_members').select('invited_first_name, role').eq('id', memberId).single();
     const delivery = await mailService.sendInvitation({ to: invitation.email, companyName: company.name, firstName: employee.data?.invited_first_name ?? 'Teammitglied', role: employee.data?.role ?? 'EMPLOYEE', token });
     let authFallbackSent = false;
