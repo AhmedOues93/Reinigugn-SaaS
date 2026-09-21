@@ -68,6 +68,7 @@ export default async function CalculationsPage({
         rows={rows}
         rowKey={(row) => row.id}
         rowHref={(row) => `/dashboard/kalkulation/${row.id}`}
+        rowActions={(row) => <ButtonLink href={`/dashboard/kalkulation/${row.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           {
             key: 'title',
