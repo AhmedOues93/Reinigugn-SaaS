@@ -32,6 +32,7 @@ export type PublicQuote = {
   accepted_at: string | null;
   accepted_by_name: string | null;
   acceptance_note: string | null;
+  decline_reason?: string | null;
   lines: PublicQuoteLine[];
 };
 
