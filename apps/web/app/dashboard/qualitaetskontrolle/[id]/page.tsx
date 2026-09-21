@@ -34,7 +34,7 @@ export default async function QualityInspectionDetailPage({
     profiles?: { first_name?: string | null; last_name?: string | null } | { first_name?: string | null; last_name?: string | null }[] | null;
   } | null;
   const profile = first(inspectorMember?.profiles ?? null);
-  const inspector = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || t(locale, 'nav.groupOverview');
+  const inspector = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || t(locale, 'emp.messages.office');
   const criteria = Array.isArray(inspection.criteria) ? inspection.criteria : [];
 
   return (
