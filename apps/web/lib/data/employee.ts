@@ -125,7 +125,7 @@ export async function listMyAbsences() {
   const { supabase, membership } = await requireEmployee();
   const { data, error } = await supabase
     .from('employee_absences')
-    .select('id, absence_type, status, decision, reviewed_at, start_date, end_date, note, au_storage_path, created_at')
+    .select('id, absence_type, status, decision, reviewed_at, review_note, start_date, end_date, note, au_storage_path, created_at')
     .eq('member_id', membership.id)
     .order('start_date', { ascending: false });
   if (error) throw new Error('Abwesenheiten konnten nicht geladen werden.');
