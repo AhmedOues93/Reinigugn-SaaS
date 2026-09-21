@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage } from 'pdf-lib';
 
 export type QuotePdfInput = {
   quoteNumber: string;
@@ -13,6 +13,7 @@ export type QuotePdfInput = {
   recurringNetMonthlyCents: number;
   recipient: Record<string, unknown> | null;
   company: Record<string, unknown> | null;
+  logo?: { bytes: Uint8Array; type: 'png' | 'jpg' } | null;
   lines: {
     position: number;
     description: string;
@@ -69,6 +70,15 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   pdf.setProducer('ReinPlan');
   pdf.setLanguage('de-DE');
 
+  let logo: PDFImage | null = null;
+  if (input.logo) {
+    try {
+      logo = input.logo.type === 'png' ? await pdf.embedPng(input.logo.bytes) : await pdf.embedJpg(input.logo.bytes);
+    } catch {
+      logo = null;
+    }
+  }
+
   const pages = [];
   let page = pdf.addPage([A4.width, A4.height]);
   pages.push(page);
@@ -84,7 +94,12 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   };
 
   const companyName = str(input.company, 'name') ?? '';
-  draw(companyName, mx, y, { font: bold, size: 17, color: ink });
+  if (logo) {
+    const scale = Math.min(150 / logo.width, 42 / logo.height, 1);
+    page.drawImage(logo, { x: mx, y: y - logo.height * scale + 8, width: logo.width * scale, height: logo.height * scale });
+  } else {
+    draw(companyName, mx, y, { font: bold, size: 17, color: ink });
+  }
   const right = [
     str(input.company, 'street'),
     [str(input.company, 'postal_code'), str(input.company, 'city')].filter(Boolean).join(' '),
