@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { Badge, Button, ButtonLink, Field, Input, Textarea } from '@/components/ui';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { getPublicQuote } from '@/lib/data/public-quote';
-import { acceptPublicQuote } from './actions';
+import { acceptPublicQuote, declinePublicQuote } from './actions';
 
 function snapshotValue(snapshot: Record<string, unknown> | null, key: string) {
   const value = snapshot?.[key];
@@ -15,7 +15,7 @@ export default async function PublicQuotePage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ accepted?: string; error?: string }>;
+  searchParams: Promise<{ accepted?: string; declined?: string; error?: string }>;
 }) {
   const [{ token }, query] = await Promise.all([params, searchParams]);
   const quote = await getPublicQuote(token);
@@ -27,17 +27,22 @@ export default async function PublicQuotePage({
     snapshotValue(quote.recipient_snapshot, 'organisation') ??
     'Kunde';
   const accepted = quote.status === 'ACCEPTED';
+  const declined = quote.status === 'DECLINED';
   const expired =
-    !accepted && Boolean(quote.valid_until) && new Date(`${quote.valid_until}T23:59:59+02:00`) < new Date();
+    !accepted && !declined && Boolean(quote.valid_until) && new Date(`${quote.valid_until}T23:59:59+02:00`) < new Date();
 
   const errorText =
     query.error === 'name'
       ? 'Bitte geben Sie Ihren Namen an.'
       : query.error === 'note'
         ? 'Der Hinweis darf maximal 1.000 Zeichen enthalten.'
-        : query.error
-          ? 'Das Angebot konnte nicht angenommen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an den Anbieter.'
-          : null;
+        : query.error === 'decline-note'
+          ? 'Der Ablehnungsgrund darf maximal 1.000 Zeichen enthalten.'
+          : query.error === 'decline'
+            ? 'Das Angebot konnte nicht abgelehnt werden. Bitte laden Sie die Seite neu.'
+            : query.error
+              ? 'Das Angebot konnte nicht angenommen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an den Anbieter.'
+              : null;
 
   return (
     <main className="min-h-[100dvh] bg-muted/30 px-4 py-6 text-foreground sm:px-6 sm:py-10">
@@ -55,8 +60,8 @@ export default async function PublicQuotePage({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={accepted ? 'success' : expired ? 'warning' : 'primary'}>
-                {accepted ? 'Angenommen' : expired ? 'Abgelaufen' : 'Offen'}
+              <Badge tone={accepted ? 'success' : declined ? 'danger' : expired ? 'warning' : 'primary'}>
+                {accepted ? 'Angenommen' : declined ? 'Abgelehnt' : expired ? 'Abgelaufen' : 'Offen'}
               </Badge>
               <ButtonLink
                 href={`/angebot/${encodeURIComponent(token)}/pdf`}
@@ -134,6 +139,14 @@ export default async function PublicQuotePage({
               </div>
             </div>
           </section>
+        ) : declined ? (
+          <section className="mt-5 rounded-2xl border border-danger/20 bg-card p-5 shadow-card sm:p-7">
+            <h2 className="font-semibold">Angebot abgelehnt</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Ihre Entscheidung wurde gespeichert.
+            </p>
+            {quote.decline_reason && <p className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-sm">{quote.decline_reason}</p>}
+          </section>
         ) : expired ? (
           <section className="mt-5 rounded-2xl border border-border/80 bg-card p-5 shadow-card sm:p-7">
             <h2 className="font-semibold">Angebot abgelaufen</h2>
@@ -171,6 +184,16 @@ export default async function PublicQuotePage({
               </Field>
               <Button type="submit" size="block">Angebot verbindlich annehmen</Button>
             </form>
+
+            <details className="mt-5 border-t border-border pt-5">
+              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">Angebot ablehnen</summary>
+              <form action={declinePublicQuote.bind(null, token)} className="mt-4 space-y-4">
+                <Field label="Grund" htmlFor="decline-reason" optional>
+                  <Textarea id="decline-reason" name="reason" maxLength={1000} placeholder="Optionaler Grund für die Ablehnung" />
+                </Field>
+                <Button type="submit" variant="outline">Angebot ablehnen</Button>
+              </form>
+            </details>
           </section>
         )}
 
