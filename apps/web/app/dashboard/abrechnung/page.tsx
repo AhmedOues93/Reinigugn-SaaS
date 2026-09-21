@@ -64,17 +64,20 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         rows={invoices}
         rowKey={(invoice) => invoice.id}
         rowHref={(invoice) => `/dashboard/abrechnung/${invoice.id}`}
-        rowActions={(invoice) =>
-          invoice.status !== 'DRAFT' ? (
-            <a
-              href={`/dashboard/abrechnung/${invoice.id}/pdf`}
-              className="relative z-10 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary max-md:size-touch"
-              aria-label={`PDF ${invoice.invoice_number} herunterladen`}
-            >
-              <Download className="size-4" aria-hidden="true" />
-            </a>
-          ) : null
-        }
+        rowActions={(invoice) => (
+          <div className="relative z-10 flex items-center gap-2">
+            <ButtonLink href={`/dashboard/abrechnung/${invoice.id}`} variant="outline">Öffnen</ButtonLink>
+            {invoice.status !== 'DRAFT' && (
+              <a
+                href={`/dashboard/abrechnung/${invoice.id}/pdf`}
+                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary max-md:size-touch"
+                aria-label={`PDF ${invoice.invoice_number} herunterladen`}
+              >
+                <Download className="size-4" aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        )}
         columns={[
           {
             key: 'number',
