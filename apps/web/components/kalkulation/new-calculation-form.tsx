@@ -28,6 +28,7 @@ export function NewCalculationForm({
   const [fromSurvey, setFromSurvey] = useState(Boolean(preferredSurveyId));
   const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>('NEW');
   const [customerId, setCustomerId] = useState('');
+  const [cleaningObjectId, setCleaningObjectId] = useState('');
 
   return (
     <form action={formAction} className="space-y-7">
@@ -58,11 +59,27 @@ export function NewCalculationForm({
               </Field>
                 {customerId && objects.some((object) => object.customerId === customerId) && (
                   <Field label="Objekt" htmlFor="cleaning_object_id" info="Optional. Wählen Sie ein bestehendes Objekt, damit bei Annahme kein Duplikat entsteht.">
-                    <Select id="cleaning_object_id" name="cleaning_object_id" defaultValue="">
+                    <Select id="cleaning_object_id" name="cleaning_object_id" value={cleaningObjectId} onChange={(event) => setCleaningObjectId(event.target.value)}>
                       <option value="">Neues Objekt für dieses Angebot</option>
                       {objects.filter((object) => object.customerId === customerId).map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
                     </Select>
                   </Field>
+                )}
+                {customerId && !cleaningObjectId && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field className="sm:col-span-2" label="Objektname" htmlFor="object_name">
+                      <Input id="object_name" name="object_name" required minLength={2} maxLength={160} placeholder="z. B. Büro Köln Innenstadt" />
+                    </Field>
+                    <Field className="sm:col-span-2" label="Straße und Hausnummer" htmlFor="object_street">
+                      <Input id="object_street" name="object_street" required maxLength={160} />
+                    </Field>
+                    <Field label="PLZ" htmlFor="object_postal_code">
+                      <Input id="object_postal_code" name="object_postal_code" required maxLength={16} />
+                    </Field>
+                    <Field label="Ort" htmlFor="object_city">
+                      <Input id="object_city" name="object_city" required maxLength={120} />
+                    </Field>
+                  </div>
                 )}
               </>
             ) : (
@@ -116,7 +133,7 @@ export function NewCalculationForm({
         </FormSection>
 
       <FormSection title="2. Leistungen">
-        {customerMode === 'NEW' && !fromSurvey && (
+        {!fromSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Reinigungsart" htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue=""><option value="">Noch offen</option><option>Unterhaltsreinigung</option><option>Büroreinigung</option><option>Grundreinigung</option><option>Glasreinigung</option><option>Treppenhausreinigung</option><option>Sanitärreinigung</option><option>Sonderreinigung</option></Select></Field>
             <Field label="Turnus" htmlFor="frequency"><Select id="frequency" name="frequency" defaultValue=""><option value="">Noch offen</option><option>Einmalig</option><option>1x wöchentlich</option><option>2x wöchentlich</option><option>3x wöchentlich</option><option>5x wöchentlich</option><option>Monatlich</option></Select></Field>
