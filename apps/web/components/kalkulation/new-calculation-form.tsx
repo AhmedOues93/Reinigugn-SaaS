@@ -20,6 +20,8 @@ export function NewCalculationForm({
   preferredSurveyId,
   preferredCustomerId,
   preferredObjectId,
+  preferredLeadId,
+  leadDefaults,
   locale,
 }: {
   action: Action;
@@ -30,6 +32,19 @@ export function NewCalculationForm({
   preferredSurveyId?: string;
   preferredCustomerId?: string;
   preferredObjectId?: string;
+  preferredLeadId?: string;
+  leadDefaults?: {
+    organisation: string;
+    contactPerson: string;
+    email: string;
+    phone: string;
+    street: string;
+    postalCode: string;
+    city: string;
+    cleaningType: string;
+    desiredStart: string;
+    frequency: string;
+  };
   locale: Locale;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
@@ -62,6 +77,7 @@ export function NewCalculationForm({
   return (
     <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
+      {preferredLeadId && <input type="hidden" name="lead_id" value={preferredLeadId} />}
 
       <div className="mx-auto max-w-2xl rounded-xl border border-border bg-muted/25 p-3">
         <div className="grid grid-cols-3 gap-2 text-center text-xs font-medium">
@@ -80,7 +96,33 @@ export function NewCalculationForm({
           <h2 className="font-semibold">{t(locale, 'sales.quote.stepCustomer')}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t(locale, 'sales.quote.newSubtitle')}</p>
         </div>
-        {!fromSurvey && (
+        {!fromSurvey && preferredLeadId && leadDefaults ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-muted/25 p-4">
+              <p className="font-semibold">{leadDefaults.organisation}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {[leadDefaults.contactPerson, leadDefaults.email, leadDefaults.phone].filter(Boolean).join(' · ') || '—'}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {[leadDefaults.street, leadDefaults.postalCode, leadDefaults.city].filter(Boolean).join(', ') || '—'}
+              </p>
+            </div>
+            <input type="hidden" name="customer_mode" value={preferredCustomerId ? 'EXISTING' : 'NEW'} />
+            {preferredCustomerId && <input type="hidden" name="customer_id" value={preferredCustomerId} />}
+            {preferredObjectId && <input type="hidden" name="cleaning_object_id" value={preferredObjectId} />}
+            {!preferredCustomerId && (
+              <>
+                <input type="hidden" name="organisation" value={leadDefaults.organisation} />
+                <input type="hidden" name="contact_person" value={leadDefaults.contactPerson} />
+                <input type="hidden" name="email" value={leadDefaults.email} />
+                <input type="hidden" name="phone" value={leadDefaults.phone} />
+                <input type="hidden" name="street" value={leadDefaults.street} />
+                <input type="hidden" name="postal_code" value={leadDefaults.postalCode} />
+                <input type="hidden" name="city" value={leadDefaults.city} />
+              </>
+            )}
+          </div>
+        ) : !fromSurvey ? (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="cursor-pointer rounded-xl border border-border p-4 has-[:checked]:border-primary">
@@ -139,10 +181,10 @@ export function NewCalculationForm({
               </div>
             )}
           </>
-        )}
+        ) : null}
 
         <Field label={t(locale, 'sales.quote.label')} htmlFor="title" info={t(locale, 'sales.quote.labelInfo')}>
-          <Input id="title" name="title" required minLength={2} maxLength={160} placeholder={t(locale, 'sales.quote.label')} />
+          <Input id="title" name="title" required minLength={2} maxLength={160} defaultValue={leadDefaults?.organisation ?? ''} placeholder={t(locale, 'sales.quote.label')} />
         </Field>
 
         {surveys.length > 0 && (
@@ -185,9 +227,9 @@ export function NewCalculationForm({
         </div>
         {!fromSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t(locale, 'sales.quote.cleaningType')} htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue=""><option value="">{t(locale, 'sales.quote.open')}</option><option value="Unterhaltsreinigung">{t(locale, 'sales.cleaning.MAINTENANCE')}</option><option value="Büroreinigung">{t(locale, 'sales.cleaning.OFFICE')}</option><option value="Grundreinigung">{t(locale, 'sales.cleaning.DEEP')}</option><option value="Glasreinigung">{t(locale, 'sales.cleaning.GLASS')}</option><option value="Treppenhausreinigung">{t(locale, 'sales.cleaning.STAIRCASE')}</option><option value="Sanitärreinigung">{t(locale, 'sales.cleaning.SANITARY')}</option><option value="Sonderreinigung">{t(locale, 'sales.cleaning.SPECIAL')}</option></Select></Field>
-            <Field label={t(locale, 'sales.quote.frequency')} htmlFor="frequency"><Select id="frequency" name="frequency" defaultValue=""><option value="">{t(locale, 'sales.quote.open')}</option><option value="Einmalig">{t(locale, 'sales.frequency.ONCE')}</option><option value="1x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_1')}</option><option value="2x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_2')}</option><option value="3x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_3')}</option><option value="5x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_5')}</option><option value="Monatlich">{t(locale, 'sales.frequency.MONTHLY')}</option></Select></Field>
-            <Field label={t(locale, 'sales.quote.desiredStart')} htmlFor="desired_start"><Input id="desired_start" name="desired_start" type="date" /></Field>
+            <Field label={t(locale, 'sales.quote.cleaningType')} htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue={leadDefaults?.cleaningType ?? ''}><option value="">{t(locale, 'sales.quote.open')}</option><option value="Unterhaltsreinigung">{t(locale, 'sales.cleaning.MAINTENANCE')}</option><option value="Büroreinigung">{t(locale, 'sales.cleaning.OFFICE')}</option><option value="Grundreinigung">{t(locale, 'sales.cleaning.DEEP')}</option><option value="Glasreinigung">{t(locale, 'sales.cleaning.GLASS')}</option><option value="Treppenhausreinigung">{t(locale, 'sales.cleaning.STAIRCASE')}</option><option value="Sanitärreinigung">{t(locale, 'sales.cleaning.SANITARY')}</option><option value="Sonderreinigung">{t(locale, 'sales.cleaning.SPECIAL')}</option></Select></Field>
+            <Field label={t(locale, 'sales.quote.frequency')} htmlFor="frequency"><Select id="frequency" name="frequency" defaultValue={leadDefaults?.frequency ?? ''}><option value="">{t(locale, 'sales.quote.open')}</option><option value="Einmalig">{t(locale, 'sales.frequency.ONCE')}</option><option value="1x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_1')}</option><option value="2x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_2')}</option><option value="3x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_3')}</option><option value="5x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_5')}</option><option value="Monatlich">{t(locale, 'sales.frequency.MONTHLY')}</option></Select></Field>
+            <Field label={t(locale, 'sales.quote.desiredStart')} htmlFor="desired_start"><Input id="desired_start" name="desired_start" type="date" defaultValue={leadDefaults?.desiredStart ?? ''} /></Field>
           </div>
         )}
         <Field
