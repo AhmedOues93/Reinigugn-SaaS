@@ -128,6 +128,20 @@ export async function setEmployeeActive(memberId: string, isActive: boolean) {
   } catch { return { error: 'Der Mitarbeiterstatus konnte nicht aktualisiert werden.' }; }
 }
 
+export async function deletePendingEmployee(memberId: string) {
+  try {
+    const { supabase } = await requireStaffCompany();
+    const { error } = await supabase.rpc('delete_pending_company_member', { p_member_id: memberId });
+    if (error) {
+      return { error: 'Die offene Einladung kann nicht gelöscht werden. Falls bereits Einsätze zugeordnet sind, zuerst diese Zuordnung entfernen.' };
+    }
+    revalidatePath('/dashboard/mitarbeiter');
+    return { error: null };
+  } catch {
+    return { error: 'Die offene Einladung konnte nicht gelöscht werden.' };
+  }
+}
+
 async function invitationTokenFromCookie() {
   const token = (await cookies()).get(invitationCookieName)?.value;
   const parsed = invitationTokenSchema.safeParse(token);
