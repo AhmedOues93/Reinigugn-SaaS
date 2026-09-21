@@ -4,7 +4,7 @@ import { useActionState, useMemo, useState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
-import type { Locale } from '@/lib/i18n';
+import { t, type Locale } from '@/lib/i18n';
 
 type CustomerOption = {
   id: string;
@@ -20,7 +20,7 @@ type CustomerOption = {
 
 export function LeadForm({
   action,
-  locale: _locale,
+  locale,
   customers,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
@@ -39,8 +39,8 @@ export function LeadForm({
 
       <div className="rounded-xl border border-border bg-muted/25 p-3">
         <div className="flex items-center justify-between gap-3 text-xs font-medium">
-          <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>1. Kunde</span>
-          <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. Bedarf</span>
+          <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>{'1. ' + t(locale, 'sales.lead.stepCustomer')}</span>
+          <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>{'2. ' + t(locale, 'sales.lead.stepNeed')}</span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
           <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '50%' : '100%' }} />
@@ -50,13 +50,13 @@ export function LeadForm({
       <div className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
       <section className="space-y-4">
         <div>
-          <h2 className="text-base font-semibold">Kunde</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Bestehende Kundendaten nicht doppelt erfassen.</p>
+          <h2 className="text-base font-semibold">{t(locale, 'sales.lead.stepCustomer')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t(locale, 'sales.lead.newSubtitle')}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            ['NEW', 'Neuer Interessent', 'Kontaktdaten einmalig erfassen'],
-            ['EXISTING', 'Bestehender Kunde', 'Kunde auswählen und Daten übernehmen'],
+            ['NEW', t(locale, 'sales.lead.newProspect'), t(locale, 'sales.lead.newProspectBody')],
+            ['EXISTING', t(locale, 'sales.lead.existingCustomer'), t(locale, 'sales.lead.existingCustomerBody')],
           ].map(([value, title, description]) => (
             <label key={value} className="cursor-pointer rounded-xl border border-border p-4 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.04]">
               <input
@@ -75,9 +75,9 @@ export function LeadForm({
 
         {customerMode === 'EXISTING' ? (
           <div className="space-y-3">
-            <Field label="Kunde auswählen" htmlFor="customer_id">
+            <Field label={t(locale, 'sales.lead.selectCustomer')} htmlFor="customer_id">
               <Select id="customer_id" name="customer_id" required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
-                <option value="">Kunde auswählen...</option>
+                <option value="">{t(locale, 'sales.lead.selectCustomer')}</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}{customer.customer_number ? ` · ${customer.customer_number}` : ''}
@@ -89,50 +89,50 @@ export function LeadForm({
               <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm">
                 <p className="font-semibold">{selected.name}</p>
                 <p className="mt-1 text-muted-foreground">
-                  {[selected.contact_person, selected.email, selected.phone].filter(Boolean).join(' · ') || 'Keine Kontaktdaten hinterlegt'}
+                  {[selected.contact_person, selected.email, selected.phone].filter(Boolean).join(' · ') || t(locale, 'sales.lead.noContact')}
                 </p>
                 <p className="mt-1 text-muted-foreground">
-                  {[selected.billing_address, selected.postal_code, selected.city].filter(Boolean).join(', ') || 'Keine Adresse hinterlegt'}
+                  {[selected.billing_address, selected.postal_code, selected.city].filter(Boolean).join(', ') || t(locale, 'sales.lead.noAddress')}
                 </p>
-                <p className="mt-2 text-xs text-muted-foreground">Diese Stammdaten werden übernommen und hier nicht erneut bearbeitet.</p>
+                <p className="mt-2 text-xs text-muted-foreground">{t(locale, 'sales.lead.reuseHint')}</p>
               </div>
             )}
           </div>
         ) : (
           <div className="space-y-4">
-            <Field label="Firma / Organisation" htmlFor="organisation">
+            <Field label={t(locale, 'sales.lead.organisation')} htmlFor="organisation">
               <Input id="organisation" name="organisation" required minLength={2} maxLength={160} autoComplete="organization" />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Ansprechperson" htmlFor="contact_person">
+              <Field label={t(locale, 'sales.lead.contact')} htmlFor="contact_person">
                 <Input id="contact_person" name="contact_person" maxLength={160} autoComplete="name" />
               </Field>
-              <Field label="E-Mail" htmlFor="email">
+              <Field label={t(locale, 'sales.quote.email')} htmlFor="email">
                 <Input id="email" name="email" type="email" maxLength={160} autoComplete="email" />
               </Field>
-              <Field label="Telefon" htmlFor="phone">
+              <Field label={t(locale, 'sales.quote.phone')} htmlFor="phone">
                 <Input id="phone" name="phone" maxLength={64} autoComplete="tel" />
               </Field>
-              <Field label="Wie kam die Anfrage?" htmlFor="source">
+              <Field label={t(locale, 'sales.lead.howReceived')} htmlFor="source">
                 <Select id="source" name="source" defaultValue="">
-                  <option value="">Bitte wählen...</option>
-                  <option value="Telefon">Telefon</option>
-                  <option value="E-Mail">E-Mail</option>
-                  <option value="Website">Website</option>
-                  <option value="Empfehlung">Empfehlung</option>
-                  <option value="Ausschreibung">Ausschreibung</option>
-                  <option value="Sonstiges">Sonstiges</option>
+                  <option value="">{t(locale, 'sales.lead.select')}</option>
+                  <option value="Telefon">{t(locale, 'sales.lead.sourcePhone')}</option>
+                  <option value="E-Mail">{t(locale, 'sales.lead.sourceEmail')}</option>
+                  <option value="Website">{t(locale, 'sales.lead.sourceWebsite')}</option>
+                  <option value="Empfehlung">{t(locale, 'sales.lead.sourceReferral')}</option>
+                  <option value="Ausschreibung">{t(locale, 'sales.lead.sourceTender')}</option>
+                  <option value="Sonstiges">{t(locale, 'sales.lead.sourceOther')}</option>
                 </Select>
               </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field className="sm:col-span-3" label="Straße und Hausnummer" htmlFor="street">
+              <Field className="sm:col-span-3" label={t(locale, 'sales.quote.street')} htmlFor="street">
                 <Input id="street" name="street" maxLength={160} autoComplete="street-address" />
               </Field>
-              <Field label="PLZ" htmlFor="postal_code">
+              <Field label={t(locale, 'sales.quote.postalCode')} htmlFor="postal_code">
                 <Input id="postal_code" name="postal_code" maxLength={16} autoComplete="postal-code" inputMode="numeric" />
               </Field>
-              <Field className="sm:col-span-2" label="Ort" htmlFor="city">
+              <Field className="sm:col-span-2" label={t(locale, 'sales.quote.city')} htmlFor="city">
                 <Input id="city" name="city" maxLength={120} autoComplete="address-level2" />
               </Field>
             </div>
@@ -144,65 +144,65 @@ export function LeadForm({
       <div className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
       <section className="space-y-4">
         <div>
-          <h2 className="text-base font-semibold">Bedarf</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Mit Auswahlfeldern schnell erfassen. Details kommen bei der Besichtigung.</p>
+          <h2 className="text-base font-semibold">{t(locale, 'sales.lead.needTitle')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t(locale, 'sales.lead.needBody')}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Reinigungsart" htmlFor="cleaning_type">
+          <Field label={t(locale, 'sales.quote.cleaningType')} htmlFor="cleaning_type">
             <Select id="cleaning_type" name="cleaning_type" defaultValue="">
-              <option value="">Noch offen</option>
-              <option>Unterhaltsreinigung</option>
-              <option>Büroreinigung</option>
-              <option>Grundreinigung</option>
-              <option>Glasreinigung</option>
-              <option>Bauendreinigung</option>
-              <option>Treppenhausreinigung</option>
-              <option>Sanitärreinigung</option>
-              <option>Sonderreinigung</option>
+              <option value="">{t(locale, 'sales.quote.open')}</option>
+              <option value="Unterhaltsreinigung">{t(locale, 'sales.cleaning.MAINTENANCE')}</option>
+              <option value="Büroreinigung">{t(locale, 'sales.cleaning.OFFICE')}</option>
+              <option value="Grundreinigung">{t(locale, 'sales.cleaning.DEEP')}</option>
+              <option value="Glasreinigung">{t(locale, 'sales.cleaning.GLASS')}</option>
+              <option value="Bauendreinigung">Bauendreinigung</option>
+              <option value="Treppenhausreinigung">{t(locale, 'sales.cleaning.STAIRCASE')}</option>
+              <option value="Sanitärreinigung">{t(locale, 'sales.cleaning.SANITARY')}</option>
+              <option value="Sonderreinigung">{t(locale, 'sales.cleaning.SPECIAL')}</option>
             </Select>
           </Field>
-          <Field label="Turnus" htmlFor="frequency">
+          <Field label={t(locale, 'sales.quote.frequency')} htmlFor="frequency">
             <Select id="frequency" name="frequency" defaultValue="">
               <option value="">Noch offen</option>
-              <option value="Einmalig">Einmalig</option>
-              <option value="1x wöchentlich">1x wöchentlich</option>
-              <option value="2x wöchentlich">2x wöchentlich</option>
-              <option value="3x wöchentlich">3x wöchentlich</option>
-              <option value="5x wöchentlich">5x wöchentlich</option>
+              <option value="Einmalig">{t(locale, 'sales.frequency.ONCE')}</option>
+              <option value="1x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_1')}</option>
+              <option value="2x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_2')}</option>
+              <option value="3x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_3')}</option>
+              <option value="5x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_5')}</option>
               <option value="14-täglich">14-täglich</option>
-              <option value="Monatlich">Monatlich</option>
+              <option value="Monatlich">{t(locale, 'sales.frequency.MONTHLY')}</option>
               <option value="Individuell">Individuell</option>
             </Select>
           </Field>
-          <Field label="Bevorzugte Ausführungszeit" htmlFor="preferred_time">
+          <Field label={t(locale, 'sales.lead.preferredTime')} htmlFor="preferred_time">
             <Select id="preferred_time" name="preferred_time" defaultValue="">
-              <option value="">Noch offen / flexibel</option>
-              <option>Morgens</option>
-              <option>Tagsüber</option>
-              <option>Abends</option>
-              <option>Nach Geschäftsschluss</option>
+              <option value="">{t(locale, 'sales.lead.timeOpen')}</option>
+              <option value="Morgens">{t(locale, 'sales.lead.timeMorning')}</option>
+              <option value="Tagsüber">{t(locale, 'sales.lead.timeDay')}</option>
+              <option value="Abends">{t(locale, 'sales.lead.timeEvening')}</option>
+              <option value="Nach Geschäftsschluss">{t(locale, 'sales.lead.timeAfterHours')}</option>
             </Select>
           </Field>
-          <Field label="Gewünschter Start" htmlFor="desired_start">
+          <Field label={t(locale, 'sales.lead.desiredStart')} htmlFor="desired_start">
             <Input id="desired_start" name="desired_start" type="date" />
           </Field>
         </div>
-        <Field label="Kurze Notiz (optional)" htmlFor="notes">
-          <Textarea id="notes" name="notes" maxLength={3000} placeholder="Nur Besonderheiten, die für die weitere Bearbeitung wichtig sind." />
+        <Field label={t(locale, 'sales.lead.shortNote')} htmlFor="notes">
+          <Textarea id="notes" name="notes" maxLength={3000} placeholder={t(locale, 'sales.lead.shortNotePlaceholder')} />
         </Field>
       </section>
       </div>
 
       <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
         {step === 2 ? (
-          <Button type="button" variant="outline" onClick={() => setStep(1)}>Zurück</Button>
+          <Button type="button" variant="outline" onClick={() => setStep(1)}>{t(locale, 'sales.quote.back')}</Button>
         ) : (
           <span />
         )}
         {step === 1 ? (
-          <Button type="button" onClick={() => setStep(2)}>Weiter</Button>
+          <Button type="button" onClick={() => setStep(2)}>{t(locale, 'sales.quote.next')}</Button>
         ) : (
-          <SubmitButton locale={_locale}>Anfrage anlegen</SubmitButton>
+          <SubmitButton locale={locale}>{t(locale, 'sales.lead.create')}</SubmitButton>
         )}
       </div>
     </form>
