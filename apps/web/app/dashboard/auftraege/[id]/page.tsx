@@ -72,7 +72,7 @@ export default async function JobDetailPage({
   ];
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-5xl">
       <BackLink href="/dashboard/auftraege">Aufträge</BackLink>
       {success && (
         <Notice tone="success" className="mb-5">
@@ -110,7 +110,7 @@ export default async function JobDetailPage({
         }
       />
 
-      <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="space-y-6">
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
             <h2 className="mb-4 text-[15px] font-semibold">Kunde &amp; Objekt</h2>
@@ -195,21 +195,24 @@ export default async function JobDetailPage({
             description={
               record.timeEntries.length > 0
                 ? `${record.timeEntries.length} Erfassung${record.timeEntries.length === 1 ? '' : 'en'}`
-                : undefined
+                : 'Noch keine Zeiterfassung'
             }
           >
-            <DataTable
-              rows={record.timeEntries}
-              columns={columns}
-              rowKey={(entry) => entry.id}
-              caption="Erfasste Arbeitszeiten"
-              empty={
-                <EmptyState
-                  title="Noch keine Arbeitszeit erfasst"
-                  body="Sobald jemand vor Ort einstempelt, erscheint die Zeit hier."
-                />
-              }
-            />
+            {record.timeEntries.length > 0 ? (
+              <DataTable
+                rows={record.timeEntries}
+                columns={columns}
+                rowKey={(entry) => entry.id}
+                caption="Erfasste Arbeitszeiten"
+              />
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-4">
+                <p className="text-sm font-medium">Noch keine Arbeitszeit erfasst</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sobald ein Mitarbeiter den Einsatz startet, erscheint die Zeit hier.
+                </p>
+              </div>
+            )}
           </Section>
 
           {record.checklistItems.length > 0 && (
