@@ -61,6 +61,12 @@ export default async function EmployeeAbsencePage() {
                   {formatDate(locale, absence.start_date)} – {formatDate(locale, absence.end_date)}
                 </p>
                 {absence.note && <p className="mt-2 text-sm text-muted-foreground">{absence.note}</p>}
+                {absence.review_note && (
+                  <div className="mt-3 rounded-lg bg-muted/40 px-3 py-2">
+                    <p className="text-xs font-medium text-muted-foreground">{t(locale, 'emp.absence.reviewNote')}</p>
+                    <p className="mt-1 text-sm leading-6">{absence.review_note}</p>
+                  </div>
+                )}
                 {documentUrls.has(absence.id) && (
                   <a
                     className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
