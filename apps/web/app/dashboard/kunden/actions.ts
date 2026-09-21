@@ -94,7 +94,9 @@ export async function inviteCustomerPortalContact(customerId: string, _: FormSta
         : authFallbackSent
           ? 'Portal-Einladung wurde über die verifizierte Supabase-E-Mail versendet.'
           : `Portalzugang wurde angelegt, aber keine E-Mail konnte versendet werden.${authFallbackError ? ` ${authFallbackError}` : ''}`,
-      invitationUrl: !delivery.delivered && !authFallbackSent ? delivery.developmentUrl : undefined,
+      invitationUrl: !delivery.delivered && !authFallbackSent
+        ? (delivery.developmentUrl ?? appUrl(`/einladung/start?token=${encodeURIComponent(token)}`))
+        : undefined,
     };
   } catch {
     return validationError('Der Portalzugang konnte nicht eingeladen werden.');
