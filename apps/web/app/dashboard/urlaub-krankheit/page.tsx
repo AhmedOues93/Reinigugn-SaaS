@@ -3,6 +3,7 @@ import { CalendarDays, CalendarOff, ClipboardCheck, ExternalLink, Stethoscope, U
 import { cn } from '@reinigung/ui';
 import { Badge, EmptyState, PageHeader, Section, Select, type Tone } from '@/components/ui';
 import { SubmitButton } from '@/components/form-controls';
+import { AbsenceReviewActions } from '@/components/absence-review-actions';
 import { requireStaffCompany } from '@/lib/auth';
 import { listAffectedAssignments } from '@/lib/data/absences';
 import { formatDate, formatDateTime } from '@/lib/format';
@@ -15,6 +16,7 @@ type Absence = {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   decision: 'REPORTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
   reviewed_at: string | null;
+  review_note: string | null;
   start_date: string;
   end_date: string;
   note: string | null;
@@ -49,7 +51,7 @@ export default async function AbsencePage() {
   const { data: rawAbsences, error } = await supabase
     .from('employee_absences')
     .select(
-      'id, member_id, absence_type, status, decision, reviewed_at, start_date, end_date, note, au_storage_path, company_members!employee_absences_member_id_fkey(profiles!company_members_profile_id_fkey(first_name,last_name))',
+      'id, member_id, absence_type, status, decision, reviewed_at, review_note, start_date, end_date, note, au_storage_path, company_members!employee_absences_member_id_fkey(profiles!company_members_profile_id_fkey(first_name,last_name))',
     )
     .eq('company_id', company.id)
     .order('created_at', { ascending: false });
@@ -101,6 +103,11 @@ export default async function AbsencePage() {
                   {absence.note}
                 </p>
               )}
+              {absence.review_note && (
+                <p className="break-anywhere mt-2 rounded-lg bg-muted/40 px-3 py-2 text-sm leading-6 text-muted-foreground">
+                  Entscheidung: {absence.review_note}
+                </p>
+              )}
               {documentUrl && (
                 <a
                   className="mt-2 inline-flex min-h-touch items-center gap-1.5 text-sm font-medium text-primary hover:underline md:min-h-9"
@@ -125,16 +132,10 @@ export default async function AbsencePage() {
               )}
             </span>
             {isVacation && absence.status === 'PENDING' && (
-              <>
-                <form action={reviewAbsence.bind(null, absence.id, true)}>
-                  <SubmitButton size="sm">Genehmigen</SubmitButton>
-                </form>
-                <form action={reviewAbsence.bind(null, absence.id, false)}>
-                  <SubmitButton size="sm" variant="outline">
-                    Ablehnen
-                  </SubmitButton>
-                </form>
-              </>
+              <AbsenceReviewActions
+                approveAction={reviewAbsence.bind(null, absence.id, true)}
+                rejectAction={reviewAbsence.bind(null, absence.id, false)}
+              />
             )}
           </div>
         </div>
