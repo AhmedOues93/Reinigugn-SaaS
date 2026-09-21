@@ -16,6 +16,19 @@ export async function listAssignableEmployeeOptions() {
   return data ?? [];
 }
 
+export async function listActiveEmployeeOptions() {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase
+    .from('company_members')
+    .select('id, status, invited_first_name, invited_last_name, profiles!company_members_profile_id_fkey(first_name, last_name)')
+    .eq('company_id', company.id)
+    .eq('role', 'EMPLOYEE')
+    .eq('status', 'ACTIVE')
+    .order('created_at');
+  if (error) throw new Error('Mitarbeiter konnten nicht geladen werden.');
+  return data ?? [];
+}
+
 export async function listJobs({ from, to, customerId, objectId, memberId, status = 'all' }: { from?: string; to?: string; customerId?: string; objectId?: string; memberId?: string; status?: JobStatusFilter }) {
   const { supabase, company } = await requireStaffCompany();
   let query = supabase
