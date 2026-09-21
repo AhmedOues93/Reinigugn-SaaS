@@ -56,13 +56,19 @@ export default async function QualityInspectionsPage({
             key: 'object',
             header: 'Objekt',
             mobile: 'title',
-            cell: (inspection) => first(inspection.cleaning_objects as never)?.name ?? 'Objekt',
+            cell: (inspection) => {
+              const object = first(inspection.cleaning_objects as { name?: string } | { name?: string }[] | null);
+              return object?.name ?? 'Objekt';
+            },
           },
           {
             key: 'job',
             header: 'Einsatz',
             mobile: 'subtitle',
-            cell: (inspection) => first(inspection.jobs as never)?.title ?? 'Objektkontrolle',
+            cell: (inspection) => {
+              const job = first(inspection.jobs as { title?: string } | { title?: string }[] | null);
+              return job?.title ?? 'Objektkontrolle';
+            },
           },
           {
             key: 'date',
