@@ -384,37 +384,3 @@ export function QuoteFromCalculationForm({
       </div>
     </form>
   );
-}: {
-  action: Action;
-  defaultTitle: string;
-}) {
-  const [state, formAction] = useActionState(action, initialFormState);
-  return (
-    <form action={formAction} className="mt-3 space-y-4">
-      <FormMessage status={state.status} message={state.message} />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Titel" htmlFor="quote-title">
-          <Input id="quote-title" name="title" defaultValue={defaultTitle} maxLength={160} />
-        </Field>
-        <Field
-          label="Abrechnungsart"
-          htmlFor="billing_mode"
-          info="Bestimmt, wie später abgerechnet wird. Nur bei „Nach Stunden“ darf die erfasste Arbeitszeit die Rechnungsmenge bestimmen."
-        >
-          <Select id="billing_mode" name="billing_mode" defaultValue="MONATSPAUSCHALE">
-            <option value="MONATSPAUSCHALE">Monatspauschale</option>
-            <option value="PAUSCHALE_PRO_EINSATZ">Pauschale je Einsatz</option>
-            <option value="STUNDENSATZ">Nach Stunden</option>
-          </Select>
-        </Field>
-        <Field label="Gültig für (Tage)" htmlFor="valid_days">
-          <Input id="valid_days" name="valid_days" type="number" min={1} max={365} defaultValue={30} />
-        </Field>
-      </div>
-      <SubmitButton>
-        <ReceiptText className="size-4" aria-hidden="true" />
-        Angebot aus Kalkulation erstellen
-      </SubmitButton>
-    </form>
-  );
-}
