@@ -1,9 +1,9 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { CopyPlus, Lock, ReceiptText } from 'lucide-react';
+import { CopyPlus, Lock, ReceiptText, X } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input, Select } from '@/components/ui';
+import { Button, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { deriveProductiveRateBp, formatBp, type Calculation } from '@/lib/kalkulation';
 
@@ -320,6 +320,70 @@ export function ReviseCalculationAction({ action }: { action: () => Promise<void
 export function QuoteFromCalculationForm({
   action,
   defaultTitle,
+}: {
+  action: Action;
+  defaultTitle: string;
+}) {
+  const [state, formAction] = useActionState(action, initialFormState);
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <div className="mt-3">
+        <p className="text-sm leading-6 text-muted-foreground">
+          Die Kalkulation ist festgeschrieben. Jetzt kannst du daraus das Kundenangebot erstellen.
+        </p>
+        <Button type="button" className="mt-4" onClick={() => setOpen(true)}>
+          <ReceiptText className="size-4" aria-hidden="true" />
+          Angebot erstellen
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="mt-3 space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="font-semibold">Angebot vorbereiten</p>
+          <p className="mt-1 text-sm text-muted-foreground">Titel, Abrechnung und Gültigkeit prüfen.</p>
+        </div>
+        <Button type="button" variant="ghost" className="size-9 p-0" onClick={() => setOpen(false)} aria-label="Schließen">
+          <X className="size-4" />
+        </Button>
+      </div>
+      <FormMessage status={state.status} message={state.message} />
+      <Field label="Titel" htmlFor="quote-title">
+        <Input id="quote-title" name="title" defaultValue={defaultTitle} maxLength={160} />
+      </Field>
+      <Field
+        label="Abrechnungsart"
+        htmlFor="billing_mode"
+        info="Bestimmt, wie später abgerechnet wird. Bei Stundenabrechnung darf die erfasste Arbeitszeit die Rechnungsmenge bestimmen."
+      >
+        <Select id="billing_mode" name="billing_mode" defaultValue="MONATSPAUSCHALE">
+          <option value="MONATSPAUSCHALE">Monatspauschale</option>
+          <option value="PAUSCHALE_PRO_EINSATZ">Pauschale je Einsatz</option>
+          <option value="STUNDENSATZ">Nach Stunden</option>
+        </Select>
+      </Field>
+      <Field label="Gültigkeit" htmlFor="valid_days">
+        <Select id="valid_days" name="valid_days" defaultValue="30">
+          <option value="14">14 Tage</option>
+          <option value="30">30 Tage</option>
+          <option value="60">60 Tage</option>
+          <option value="90">90 Tage</option>
+        </Select>
+      </Field>
+      <div className="flex flex-wrap gap-2">
+        <SubmitButton>
+          <ReceiptText className="size-4" aria-hidden="true" />
+          Angebot anlegen
+        </SubmitButton>
+        <Button type="button" variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
+      </div>
+    </form>
+  );
 }: {
   action: Action;
   defaultTitle: string;
