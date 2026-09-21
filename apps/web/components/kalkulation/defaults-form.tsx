@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button } from '@/components/ui';
@@ -24,11 +25,17 @@ type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 export function CalculationDefaultsForm({
   action,
   defaults,
+  nextHref,
 }: {
   action: Action;
   defaults: CalculationDefaults;
+  nextHref?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const router = useRouter();
+  useEffect(() => {
+    if (state.status === 'success' && nextHref) router.push(nextHref);
+  }, [state.status, nextHref, router]);
   const unset = defaults.wage_cents_per_hour === 0;
   const [step, setStep] = useState(0);
   const [visitedStep, setVisitedStep] = useState(0);
@@ -40,7 +47,7 @@ export function CalculationDefaultsForm({
 
       {unset && (
         <p className="border-s-2 border-primary bg-primary/[0.035] px-3 py-2 text-sm leading-5 text-foreground">
-          Einmal einrichten, danach rechnet ReinPlan automatisch. Die vorgeschlagenen Werte sind Startwerte, keine verbindlichen Branchenwerte. Sie können sie später jederzeit an Ihren Betrieb anpassen.
+          Vor der ersten Kalkulation richten Sie einmal Ihre betrieblichen Kalkulationsgrundlagen ein. Danach kehren Sie automatisch zur Kalkulation zurück. Die Werte bleiben später jederzeit anpassbar.
         </p>
       )}
 
