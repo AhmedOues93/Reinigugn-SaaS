@@ -1,4 +1,6 @@
 import { FormPage } from '@/components/ui';
+import { redirect } from 'next/navigation';
+import { getCalculationDefaults } from '@/lib/data/kalkulation';
 import { NewCalculationForm } from '@/components/kalkulation/new-calculation-form';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCatalogItems } from '@/lib/data/kalkulation';
@@ -16,6 +18,10 @@ export default async function NewCalculationPage({
   searchParams: Promise<{ survey?: string }>;
 }) {
   const { survey: preferredSurveyId } = await searchParams;
+  const defaults = await getCalculationDefaults();
+  if (defaults.wage_cents_per_hour === 0) {
+    redirect(`/dashboard/kalkulation/grundlagen?next=${encodeURIComponent(preferredSurveyId ? `/dashboard/kalkulation/neu?survey=${preferredSurveyId}` : '/dashboard/kalkulation/neu')}`);
+  }
   const [customers, catalog, surveys] = await Promise.all([
     listCustomerOptions(),
     listCatalogItems(),
