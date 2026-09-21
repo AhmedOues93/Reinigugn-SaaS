@@ -81,7 +81,7 @@ export function NewCalculationForm({
           info="Wird auf die übernommenen Flächen angewendet — Einheit, Richtleistung und Materialansatz als Vorschlag. Pro Position änderbar."
         >
           <Select id="catalog_item_id" name="catalog_item_id" defaultValue={catalog[0]?.id ?? ''}>
-            <option value="">Ohne Vorgabe</option>
+            <option value="">Individuelle Leistung – Zeit später manuell erfassen</option>
             {catalog.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.category ? `${item.category} · ${item.name}` : item.name}
@@ -92,9 +92,7 @@ export function NewCalculationForm({
 
         {catalog.length === 0 && (
           <p className="rounded-lg border border-info/25 bg-info-soft px-3.5 py-3 text-sm leading-6 text-info">
-            Im Leistungskatalog ist noch nichts hinterlegt. Ohne Richtleistung muss die Zeit je
-            Position von Hand eingetragen werden — das funktioniert, ist aber mehr Arbeit und
-            weniger vergleichbar.
+            Im Leistungskatalog ist noch keine Standardleistung hinterlegt. Sie können trotzdem fortfahren; die Zeit wird dann pro Position manuell erfasst. Für schnellere Kalkulationen können später Vorlagen im Leistungskatalog angelegt werden.
           </p>
         )}
       </FormSection>
