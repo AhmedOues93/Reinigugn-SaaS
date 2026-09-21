@@ -209,13 +209,11 @@ export function BrandingStep({
   removeAction,
   logoUrl,
   brandColor,
-  nextHref,
 }: {
   action: Action;
   removeAction: Action;
   logoUrl: string | null;
   brandColor: string | null;
-  nextHref: string;
 }) {
   return (
     <div className="space-y-6">
@@ -231,16 +229,8 @@ export function BrandingStep({
         removeAction={removeAction}
         logoUrl={logoUrl}
         brandColor={brandColor}
+        submitLabel="Speichern und weiter"
       />
-      <div className="flex justify-end">
-        <Link
-          href={nextHref}
-          className="inline-flex min-h-touch items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 md:min-h-10"
-        >
-          Weiter
-          <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
-        </Link>
-      </div>
     </div>
   );
 }
