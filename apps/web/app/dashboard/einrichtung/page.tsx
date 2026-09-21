@@ -15,7 +15,7 @@ import { getCalculationDefaults } from '@/lib/data/kalkulation';
 import { getCompanyProfile, getOnboardingStatus } from '@/lib/data/onboarding';
 import { requireStaffCompany } from '@/lib/auth';
 import { updateCompanyBranding, removeCompanyLogo } from '../settings/actions';
-import { finishOnboarding, saveCompanyProfile, saveCostingDefaults, saveServiceFocus, skipOnboarding } from './actions';
+import { finishOnboarding, saveCompanyProfile, saveCostingDefaults, saveOnboardingBranding, saveServiceFocus, skipOnboarding } from './actions';
 
 const steps = [
   { key: 'unternehmen', label: 'Unternehmen' },
@@ -115,12 +115,11 @@ export default async function SetupPage({
         )}
         {current === 'branding' && (
           <BrandingStep
-            action={updateCompanyBranding}
+            action={saveOnboardingBranding.bind(null, next)}
             removeAction={removeCompanyLogo}
             logoUrl={branding?.logoUrl ?? null}
             brandColor={branding?.brandColor ?? null}
             companyName={company.name}
-            nextHref={`/dashboard/einrichtung?schritt=${next ?? 'abschluss'}`}
           />
         )}
         {current === 'abschluss' && (
