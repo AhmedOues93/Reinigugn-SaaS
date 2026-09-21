@@ -1,8 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input, Select } from '@/components/ui';
+import { Mail, Send, X } from 'lucide-react';
+import { Button, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
@@ -22,18 +23,44 @@ function CustomerLink({ url }: { url?: string }) {
 
 export function SendQuoteForm({ action, locale, disabled }: { action: Action; locale: Locale; disabled: boolean }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const [open, setOpen] = useState(false);
+
+  if (!open && state.status !== 'success') {
+    return (
+      <div>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Erst beim Senden erhält das Angebot seine Nummer und wird unveränderlich.
+        </p>
+        {disabled ? (
+          <p className="mt-3 text-sm text-warning">Ein Angebot braucht mindestens eine Position.</p>
+        ) : (
+          <Button type="button" className="mt-4" onClick={() => setOpen(true)}>
+            <Send className="size-4" />
+            Angebot senden
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Angebot senden</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            ReinPlan vergibt die Angebotsnummer, erstellt den sicheren Kundenlink und sendet PDF + Link per E-Mail, wenn eine Kundenadresse vorhanden ist.
+          </p>
+        </div>
+        {state.status !== 'success' && (
+          <Button type="button" variant="ghost" className="size-9 p-0" onClick={() => setOpen(false)} aria-label="Schließen">
+            <X className="size-4" />
+          </Button>
+        )}
+      </div>
       <FormMessage status={state.status} message={state.message} />
       <CustomerLink url={state.invitationUrl} />
-      <p className="text-sm text-muted-foreground">
-        Beim Senden erhält das Angebot seine Nummer, wird unveränderlich und bekommt einen sicheren Kundenlink.
-      </p>
-      {disabled ? (
-        <p className="text-sm text-warning">Ein Angebot braucht mindestens eine Position.</p>
-      ) : (
-        <SubmitButton locale={locale}>{t(locale, 'sales.quote.send')}</SubmitButton>
-      )}
+      {state.status !== 'success' && <SubmitButton locale={locale}><Send className="size-4" />Jetzt senden</SubmitButton>}
     </form>
   );
 }
@@ -41,16 +68,21 @@ export function SendQuoteForm({ action, locale, disabled }: { action: Action; lo
 export function ShareQuoteForm({ action, locale }: { action: Action; locale: Locale }) {
   const [state, formAction] = useActionState(action, initialFormState);
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-4">
       <FormMessage status={state.status} message={state.message} />
       <CustomerLink url={state.invitationUrl} />
-      <div>
-        <h2 className="font-semibold">Kundenfreigabe</h2>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          Erstellt einen neuen sicheren Link. Wenn eine Kunden-E-Mail hinterlegt und der Versand eingerichtet ist, werden Link und PDF per E-Mail gesendet.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Kundenfreigabe</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Sendet einen neuen sicheren Link und das PDF erneut an den Kunden.
+          </p>
+        </div>
+        <SubmitButton locale={locale} variant="outline">
+          <Mail className="size-4" />
+          Erneut senden
+        </SubmitButton>
       </div>
-      <SubmitButton locale={locale}>Kundenlink senden</SubmitButton>
     </form>
   );
 }
