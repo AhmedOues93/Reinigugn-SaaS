@@ -60,7 +60,7 @@ export function NewCalculationForm({
     <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
 
-      <div className="rounded-xl border border-border bg-muted/25 p-3">
+      <div className="mx-auto max-w-2xl rounded-xl border border-border bg-muted/25 p-3">
         <div className="grid grid-cols-3 gap-2 text-center text-xs font-medium">
           <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>1. Kunde</span>
           <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. Leistungen</span>
@@ -71,7 +71,7 @@ export function NewCalculationForm({
         </div>
       </div>
 
-      <div data-step="1" className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
+      <div data-step="1" className={step === 1 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 1}>
       <FormSection title="Kunde / Objekt">
         {!fromSurvey && (
           <>
@@ -171,7 +171,7 @@ export function NewCalculationForm({
         </FormSection>
       </div>
 
-      <div data-step="2" className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
+      <div data-step="2" className={step === 2 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 2}>
       <FormSection title="Leistungen">
         {!fromSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -203,7 +203,7 @@ export function NewCalculationForm({
       </FormSection>
       </div>
 
-      <div data-step="3" className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
+      <div data-step="3" className={step === 3 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 3}>
         <div className="space-y-4 rounded-xl border border-border bg-card p-5">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Kunde</p>
@@ -221,7 +221,7 @@ export function NewCalculationForm({
         </div>
       </div>
 
-      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+      <div className="sticky bottom-3 z-10 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
         {step === 1 ? (
           <span />
         ) : (
