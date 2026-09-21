@@ -389,6 +389,7 @@ const de = {
   'emp.absence.auUpload': 'AU hochladen',
   'emp.absence.auUploaded': 'Das Dokument wurde sicher gespeichert.',
   'emp.absence.auView': 'AU-Dokument anzeigen',
+  'emp.absence.reviewNote': 'Rückmeldung vom Büro',
   'emp.absence.auLabel': 'Arbeitsunfähigkeitsbescheinigung',
 
   'auth.signInTitle': 'Anmelden',
@@ -2119,6 +2120,7 @@ const tr: Dictionary = {
   'emp.absence.auUpload': 'Rapor yükle',
   'emp.absence.auUploaded': 'Belge güvenli şekilde kaydedildi.',
   'emp.absence.auView': 'Raporu görüntüle',
+  'emp.absence.reviewNote': 'Ofis geri bildirimi',
   'emp.absence.auLabel': 'İstirahat raporu',
 
   'auth.signInTitle': 'Giriş yap',
