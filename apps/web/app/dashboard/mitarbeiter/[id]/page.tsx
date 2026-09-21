@@ -7,6 +7,7 @@ import { BackLink, ButtonLink, DataRow, Notice, PageHeader, Section } from '@/co
 import { AccountStateBadge, RoleBadge } from '@/components/member-badges';
 import { StatusToggle } from '@/components/status-toggle';
 import { ResendInvitation } from '@/components/resend-invitation';
+import { DeletePendingEmployee } from '@/components/delete-pending-employee';
 import { setEmployeeActive } from '../actions';
 import { startThreadWithEmployee } from '@/app/dashboard/nachrichten/actions';
 import { StaffNewThreadForm } from '@/components/staff-new-thread-form';
@@ -141,7 +142,10 @@ export default async function EmployeeDetailPage({
                 Bearbeiten
               </ButtonLink>
               {employee.status === 'INVITED' ? (
-                <ResendInvitation memberId={employee.id} />
+                <>
+                  <ResendInvitation memberId={employee.id} />
+                  <DeletePendingEmployee memberId={employee.id} />
+                </>
               ) : (
                 <StatusToggle
                   id={employee.id}
