@@ -66,12 +66,13 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
               <Receipt className="size-4" aria-hidden="true" />
               Rechnung erstellen
             </ButtonLink>
+            <StatusToggle id={customer.id} isActive={customer.is_active} noun="Kunde" action={setCustomerActive} />
           </>
         }
       />
 
-      <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="space-y-6">
+      <div className="grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="space-y-4">
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
             <h2 className="mb-4 text-[15px] font-semibold">Kontakt & Rechnungsadresse</h2>
             <ul className="space-y-3">
@@ -101,16 +102,13 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
           {customer.notes && (
             <section>
               <h2 className="mb-2 text-[15px] font-semibold">Interne Notizen</h2>
-              <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{customer.notes}</p>
+              <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{customer.notes.replace(/^\[TESTDATEN\]\s*/i, '')}</p>
             </section>
           )}
 
-          <div>
-            <StatusToggle id={customer.id} isActive={customer.is_active} noun="Kunde" action={setCustomerActive} />
-          </div>
         </aside>
 
-        <div className="min-w-0 space-y-8">
+        <div className="min-w-0 space-y-5">
           <Section
             title={`Objekte (${objects.length})`}
             action={
