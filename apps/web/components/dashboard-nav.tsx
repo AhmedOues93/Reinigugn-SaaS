@@ -126,7 +126,7 @@ export function DashboardNav({
           aria-expanded={moreOpen || secondaryActive}
           className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-white/[0.05] hover:text-white max-lg:min-h-touch"
         >
-          <span className="truncate">Mehr</span>
+          <span className="truncate">{locale === 'de' ? 'Mehr' : locale === 'en' ? 'More' : locale === 'ar' ? 'المزيد' : locale === 'tr' ? 'Daha fazla' : locale === 'uk' ? 'Більше' : 'Ещё'}</span>
           <ChevronDown className={cn('ms-auto size-4 transition-transform', (moreOpen || secondaryActive) && 'rotate-180')} aria-hidden="true" />
         </button>
         {(moreOpen || secondaryActive) && (
