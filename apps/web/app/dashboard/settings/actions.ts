@@ -115,13 +115,13 @@ export async function updateCompanyBranding(_: FormState, formData: FormData): P
       const { error: uploadError } = await supabase.storage
         .from('company-branding')
         .upload(storagePath, file, { contentType: file.type, upsert: false });
-      if (uploadError) return { status: 'error', message: 'Das Logo konnte nicht hochgeladen werden.' };
+      if (uploadError) return { status: 'error', message: `Das Logo konnte nicht hochgeladen werden: ${uploadError.message}` };
     }
 
     const { error } = await supabase.rpc('set_company_branding', { p_storage_path: storagePath, p_brand_color: brandColor });
     if (error) {
       if (storagePath) await supabase.storage.from('company-branding').remove([storagePath]);
-      return { status: 'error', message: 'Das Branding konnte nicht gespeichert werden.' };
+      return { status: 'error', message: `Das Branding konnte nicht gespeichert werden: ${error.message}` };
     }
 
     revalidatePath('/dashboard', 'layout');
