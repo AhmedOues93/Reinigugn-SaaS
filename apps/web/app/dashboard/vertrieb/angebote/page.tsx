@@ -47,6 +47,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
         rows={quotes}
         rowKey={(quote) => quote.id}
         rowHref={(quote) => `/dashboard/vertrieb/angebote/${quote.id}`}
+        rowActions={(quote) => <ButtonLink href={`/dashboard/vertrieb/angebote/${quote.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           {
             key: 'owner',
