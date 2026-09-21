@@ -7,9 +7,12 @@ import { Button, Input, Select, Textarea } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
 const weekdays = [['Montag', 1], ['Dienstag', 2], ['Mittwoch', 3], ['Donnerstag', 4], ['Freitag', 5], ['Samstag', 6], ['Sonntag', 7]] as const;
-type Option = { id: string; name: string; customer_id?: string }; type Rule = { id?: string; weekday: number; planned_start_time: string; planned_end_time: string; is_active?: boolean }; type Employee = { id: string; profiles: { first_name: string | null; last_name: string | null } | { first_name: string | null; last_name: string | null }[] | null };
+type Option = { id: string; name: string; customer_id?: string }; type Rule = { id?: string; weekday: number; planned_start_time: string; planned_end_time: string; is_active?: boolean }; type Employee = { id: string; status?: string; invited_first_name?: string | null; invited_last_name?: string | null; profiles: { first_name: string | null; last_name: string | null } | { first_name: string | null; last_name: string | null }[] | null };
 type ScheduleRecord = { id?: string; customer_id?: string; cleaning_object_id?: string; checklist_template_id?: string | null; name?: string; description?: string | null; valid_from?: string; valid_until?: string | null; acceptance_policy?: string | null; billing_mode?: string | null; schedule_rules?: Rule[]; service_schedule_assignments?: { member_id: string }[] }; type ScheduleAction = (state: FormState, data: FormData) => Promise<FormState>;
-function employeeName(employee: Employee) { const p = Array.isArray(employee.profiles) ? employee.profiles[0] : employee.profiles; return [p?.first_name, p?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter'; }
+function employeeName(employee: Employee) {
+  const profile = Array.isArray(employee.profiles) ? employee.profiles[0] : employee.profiles;
+  return [profile?.first_name ?? employee.invited_first_name, profile?.last_name ?? employee.invited_last_name].filter(Boolean).join(' ') || 'Mitarbeiter';
+}
 
 export function ScheduleForm({ schedule, customers, objects, employees, templates, action, submitLabel }: { schedule?: ScheduleRecord; customers: Option[]; objects: Option[]; employees: Employee[]; templates: { id: string; name: string }[]; action: ScheduleAction; submitLabel: string }) {
   const [state, formAction] = useActionState(action, initialFormState); const router = useRouter(); const [customerId, setCustomerId] = useState(schedule?.customer_id ?? ''); const rules = schedule?.schedule_rules ?? []; const assigned = new Set(schedule?.service_schedule_assignments?.map((item) => item.member_id) ?? []);
