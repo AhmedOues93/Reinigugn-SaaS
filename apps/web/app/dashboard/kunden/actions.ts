@@ -6,6 +6,7 @@ import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
 import { createInvitationToken, hashInvitationToken, invitationExpiresAt } from '@/lib/invitations';
 import { mailService } from '@/lib/mail/invitations';
+import { appUrl } from '@/lib/utils';
 
 function validationError(message: string): FormState { return { status: 'error', message }; }
 
@@ -71,13 +72,29 @@ export async function inviteCustomerPortalContact(customerId: string, _: FormSta
       role: 'CUSTOMER',
       token,
     });
+    let authFallbackSent = false;
+    let authFallbackError: string | null = null;
+    if (!delivery.delivered) {
+      const invitationNext = `/einladung/start?token=${encodeURIComponent(token)}`;
+      const { error: fallbackError } = await supabase.auth.signInWithOtp({
+        email: parsed.data.email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(invitationNext)}`),
+        },
+      });
+      authFallbackSent = !fallbackError;
+      authFallbackError = fallbackError?.message ?? null;
+    }
     revalidatePath(`/dashboard/kunden/${customerId}`);
     return {
-      status: 'success',
-      message: delivery.developmentUrl
-        ? 'Einladung erstellt. In der lokalen Entwicklung steht der Link unten bereit.'
-        : 'Einladung wurde erstellt.',
-      invitationUrl: delivery.developmentUrl,
+      status: delivery.delivered || authFallbackSent ? 'success' : 'error',
+      message: delivery.delivered
+        ? 'Portal-Einladung wurde per E-Mail versendet.'
+        : authFallbackSent
+          ? 'Portal-Einladung wurde über die verifizierte Supabase-E-Mail versendet.'
+          : `Portalzugang wurde angelegt, aber keine E-Mail konnte versendet werden.${authFallbackError ? ` ${authFallbackError}` : ''}`,
+      invitationUrl: !delivery.delivered && !authFallbackSent ? delivery.developmentUrl : undefined,
     };
   } catch {
     return validationError('Der Portalzugang konnte nicht eingeladen werden.');
