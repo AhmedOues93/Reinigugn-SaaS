@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ClipboardList } from 'lucide-react';
 import { Badge, ButtonLink, Card, EmptyState, PageHeader } from '@/components/ui';
+import { SalesSectionNav } from '@/components/sales/sales-section-nav';
 import { listSurveys } from '@/lib/data/sales';
 import { formatDateTime } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -16,6 +17,7 @@ export default async function SurveysPage() {
   return (
     <>
       <PageHeader title={t(locale, 'sales.surveys.title')} />
+      <SalesSectionNav active="besichtigungen" />
       {surveys.length === 0 ? (
         <EmptyState icon={<ClipboardList className="size-5" />} title={t(locale, 'sales.survey.empty')} />
       ) : (
