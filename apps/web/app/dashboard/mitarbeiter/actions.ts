@@ -132,8 +132,10 @@ async function invitationTokenFromCookie() {
 
 export async function signUpFromInvitation(_: FormState, formData: FormData): Promise<FormState> {
   const password = passwordSchema.safeParse(formData.get('password'));
+  const confirmation = String(formData.get('password_confirmation') ?? '');
   const token = await invitationTokenFromCookie();
   if (!password.success) return failure(password.error.issues[0]?.message ?? 'Bitte prüfe dein Passwort.');
+  if (password.data !== confirmation) return failure('Die Passwörter stimmen nicht überein.');
   if (!token) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
   const supabase = await createClient();
   const { data: previewData } = await supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle();
