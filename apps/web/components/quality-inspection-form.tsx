@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Field, Input, Select } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { initialFormState, type FormState } from '@/lib/actions';
@@ -12,15 +13,26 @@ type Job = { id: string; cleaning_object_id: string; title: string; scheduled_da
 export function QualityInspectionForm({ objects, jobs, action }: { objects: { id: string; name: string }[]; jobs: Job[]; action: Action }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [objectId, setObjectId] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const relevantJobs = useMemo(() => jobs.filter((job) => !objectId || job.cleaning_object_id === objectId), [jobs, objectId]);
 
   useEffect(() => { if (state.status === 'success') router.push('/dashboard/qualitaetskontrolle'); }, [router, state]);
 
+  function nextStep() {
+    const container = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
+    const fields = Array.from(container?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea') ?? []);
+    const invalid = fields.find((field) => !field.checkValidity());
+    if (invalid) { invalid.reportValidity(); return; }
+    setStep(2);
+  }
+
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="rounded-xl border border-border bg-muted/25 p-3"><div className="grid grid-cols-2 gap-2 text-center text-xs font-medium"><span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>1. Objekt</span><span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. Ergebnis</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border"><div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '50%' : '100%' }} /></div></div>
+      <div data-step="1" className={step === 1 ? 'grid gap-5 sm:grid-cols-2' : 'hidden'}>
         <Field label="Objekt *" htmlFor="quality-object">
           <Select id="quality-object" name="cleaning_object_id" required value={objectId} onChange={(event) => setObjectId(event.target.value)}>
             <option value="" disabled>Objekt auswählen</option>
@@ -36,6 +48,8 @@ export function QualityInspectionForm({ objects, jobs, action }: { objects: { id
         <Field label="Prüfdatum *" htmlFor="quality-date">
           <Input id="quality-date" name="inspected_at" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required />
         </Field>
+      </div>
+      <div data-step="2" className={step === 2 ? 'grid gap-5 sm:grid-cols-2' : 'hidden'}>
         <Field label="Ergebnis" htmlFor="quality-result">
           <Select id="quality-result" name="result" defaultValue="PASS">
             <option value="PASS">Bestanden</option>
@@ -56,9 +70,9 @@ export function QualityInspectionForm({ objects, jobs, action }: { objects: { id
           <textarea id="quality-notes" className="min-h-24 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" name="notes" maxLength={4000} placeholder="Abweichungen, Vereinbarungen oder Hinweise dokumentieren" />
         </Field>
       </div>
-      <div className="flex justify-end gap-3 border-t border-border/80 pt-5">
-        <Button type="button" variant="ghost" onClick={() => router.back()}>Abbrechen</Button>
-        <SubmitButton>Kontrolle speichern</SubmitButton>
+      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+        <Button type="button" variant="outline" onClick={() => step === 1 ? router.back() : setStep(1)}>{step === 1 ? 'Abbrechen' : <><ChevronLeft className="size-4" />Zurück</>}</Button>
+        {step === 1 ? <Button type="button" onClick={nextStep}>Weiter<ChevronRight className="size-4" /></Button> : <SubmitButton>Kontrolle speichern</SubmitButton>}
       </div>
     </form>
   );
