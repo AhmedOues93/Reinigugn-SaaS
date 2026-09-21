@@ -41,7 +41,7 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
   const address = [customer.billing_address, [customer.postal_code, customer.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-5xl">
       <BackLink href="/dashboard/kunden">Kunden</BackLink>
       {success && (
         <Notice tone="success" className="mb-5">
