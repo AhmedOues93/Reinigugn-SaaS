@@ -32,7 +32,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {quote.status !== 'DRAFT' && (
-              <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted">
+              <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_self" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted">
                 <FileDown className="size-4" aria-hidden="true" />
                 PDF ansehen
               </a>
