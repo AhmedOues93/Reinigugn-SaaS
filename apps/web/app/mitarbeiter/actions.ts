@@ -48,7 +48,7 @@ async function runTimeAction(jobId: string, operation: TimeOperation): Promise<F
   const { error } = await context.supabase.rpc(operation, { p_job_id: jobId });
   if (error) {
     if (operation === 'stop_my_job' && error.message.includes('Required checklist items are incomplete')) {
-      return { status: 'error', message: 'Bitte erledige zuerst alle Pflichtpunkte der Checkliste.' };
+      return { status: 'error', message: t(locale, 'emp.job.requiredBeforeFinish') };
     }
     return { status: 'error', message: t(locale, 'common.errorBody') };
   }
