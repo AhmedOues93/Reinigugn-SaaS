@@ -4,9 +4,11 @@ import { getCurrentCompany, requireOwnerCompany } from '@/lib/auth';
 import { CompanySettingsForm } from '@/components/company-settings-form';
 import { CompanyBrandingForm } from '@/components/company-branding-form';
 import { AccountPasswordForm } from '@/components/account-password-form';
+import { MailHealthPanel } from '@/components/mail-health-panel';
 import { getCompanyBranding } from '@/lib/data/branding';
 import { getQuote, listQuotes } from '@/lib/data/sales';
-import { removeCompanyLogo, updateCompanyBranding, updateCompanySettings } from './actions';
+import { configuredProvider, mailConfigured } from '@/lib/mail/transport';
+import { removeCompanyLogo, sendOwnerTestEmail, updateCompanyBranding, updateCompanySettings } from './actions';
 
 export default async function SettingsPage() {
   const { membership, supabase } = await getCurrentCompany();
@@ -83,10 +85,21 @@ export default async function SettingsPage() {
         />
       </div>
 
-      <Section title="Konto und Sicherheit" description="Ändere dein persönliches Anmeldepasswort.">
+      <Section title="Konto und Sicherheit" description="Passwort und Anmelde-E-Mail sicher verwalten.">
         <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
           <AccountPasswordForm />
         </div>
+      </Section>
+
+      <Section
+        title="E-Mail-Versand"
+        description="Einladungen, Passwort-Mails, Angebote und Rechnungen zuverlässig zustellen."
+      >
+        <MailHealthPanel
+          configured={mailConfigured()}
+          provider={configuredProvider()}
+          action={sendOwnerTestEmail}
+        />
       </Section>
 
       <Section
