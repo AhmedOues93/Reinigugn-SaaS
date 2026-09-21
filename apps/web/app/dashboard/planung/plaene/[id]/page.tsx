@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pencil } from 'lucide-react';
+import { Pencil, WandSparkles } from 'lucide-react';
 import { getServiceSchedule, listJobs } from '@/lib/data/jobs';
 import { BackLink, ButtonLink, DataRow, Notice, PageHeader, Section } from '@/components/ui';
 import { StatusBadge } from '@/components/status-badge';
@@ -37,6 +37,8 @@ export default async function ScheduleDetailPage({
       return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
     })
     .filter(Boolean);
+  const activeRules = schedule.schedule_rules.filter((rule) => rule.is_active !== false);
+  const setupPending = !schedule.is_active && activeRules.length === 0;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -52,7 +54,7 @@ export default async function ScheduleDetailPage({
         description={schedule.description ?? undefined}
         meta={
           <>
-            <StatusBadge isActive={schedule.is_active} />
+            {setupPending ? <span className="rounded-full bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning">Planung offen</span> : <StatusBadge isActive={schedule.is_active} />}
             <span className="text-sm text-muted-foreground">
               {[customer?.name, object?.name].filter(Boolean).join(' · ') || 'Keine Zuordnung'}
             </span>
@@ -60,9 +62,9 @@ export default async function ScheduleDetailPage({
         }
         actions={
           <>
-            <ButtonLink href={`/dashboard/planung/plaene/${id}/bearbeiten`} variant="outline">
-              <Pencil className="size-4" aria-hidden="true" />
-              Bearbeiten
+            <ButtonLink href={`/dashboard/planung/plaene/${id}/bearbeiten`} variant={setupPending ? 'default' : 'outline'}>
+              {setupPending ? <WandSparkles className="size-4" aria-hidden="true" /> : <Pencil className="size-4" aria-hidden="true" />}
+              {setupPending ? 'Planung einrichten' : 'Bearbeiten'}
             </ButtonLink>
             <StatusToggle
               id={id}
@@ -73,6 +75,22 @@ export default async function ScheduleDetailPage({
           </>
         }
       />
+
+      {setupPending && (
+        <Notice tone="warning" className="mb-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold">Angebot angenommen – Planung noch offen</p>
+              <p className="mt-1 text-sm">
+                Lege Wochentage, Uhrzeiten und Stammbesetzung fest. Erst danach erzeugt ReinPlan die Einsätze für das Team.
+              </p>
+            </div>
+            <ButtonLink href={`/dashboard/planung/plaene/${id}/bearbeiten`}>
+              Planung einrichten
+            </ButtonLink>
+          </div>
+        </Notice>
+      )}
 
       {schedule.is_active && team.length === 0 && (
         <Notice tone="warning" className="mb-5">
@@ -92,7 +110,11 @@ export default async function ScheduleDetailPage({
         <aside className="space-y-6">
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
             <h2 className="mb-4 text-[15px] font-semibold">Rhythmus</h2>
-            <WeekRhythm rules={schedule.schedule_rules} />
+            {activeRules.length > 0 ? (
+              <WeekRhythm rules={activeRules} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Noch kein Rhythmus festgelegt.</p>
+            )}
             <dl className="mt-5 divide-y divide-border/70 border-t border-border/70">
               <DataRow label="Gültig ab" value={formatDate('de', schedule.valid_from)} />
               <DataRow
