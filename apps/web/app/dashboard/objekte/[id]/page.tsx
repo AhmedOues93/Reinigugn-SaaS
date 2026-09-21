@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { KeyRound, MapPin, Pencil, Phone, SprayCan, StickyNote, User } from 'lucide-react';
+import { FilePlus2, KeyRound, MapPin, Pencil, Phone, SprayCan, StickyNote, User } from 'lucide-react';
 import { getCleaningObject } from '@/lib/data/cleaning-objects';
 import { BackLink, ButtonLink, Notice, PageHeader } from '@/components/ui';
 import { ComplaintHistory } from '@/components/complaint-history';
@@ -50,7 +50,7 @@ export default async function ObjectDetailPage({
     .join(', ');
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-5xl">
       <BackLink href="/dashboard/objekte">Objekte</BackLink>
       {success && (
         <Notice tone="success" className="mb-5">
@@ -75,6 +75,12 @@ export default async function ObjectDetailPage({
         }
         actions={
           <>
+            {customer && (
+              <ButtonLink href={`/dashboard/kalkulation/neu?kunde=${customer.id}&objekt=${object.id}`}>
+                <FilePlus2 className="size-4" aria-hidden="true" />
+                Angebot erstellen
+              </ButtonLink>
+            )}
             <ButtonLink href={`/dashboard/objekte/${object.id}/bearbeiten`} variant="outline">
               <Pencil className="size-4" aria-hidden="true" />
               Bearbeiten
