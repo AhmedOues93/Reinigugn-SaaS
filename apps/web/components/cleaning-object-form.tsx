@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type FormState, initialFormState } from '@/lib/actions';
 import { Button, Field, FormSection, Input, Select, Textarea } from '@/components/ui';
@@ -25,13 +25,22 @@ export function CleaningObjectForm({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   useEffect(() => {
     if (state.status === 'success' && state.id) router.push(`/dashboard/objekte/${state.id}?success=${encodeURIComponent('Objekt wurde gespeichert.')}`);
   }, [router, state]);
 
+  function nextStep() {
+    const container = formRef.current?.querySelector<HTMLElement>('[data-step="' + step + '"]');
+    const fields = Array.from(container?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea') ?? []);
+    const invalid = fields.find((field) => !field.checkValidity());
+    if (invalid) { invalid.reportValidity(); return; }
+    setStep((Math.min(4, step + 1)) as 1 | 2 | 3 | 4);
+  }
+
   return (
-    <form action={formAction}>
+    <form ref={formRef} action={formAction}>
       <FormMessage status={state.status} message={state.message} />
 
       <div className="mb-5 rounded-xl border border-border bg-muted/25 p-3">
@@ -47,7 +56,7 @@ export function CleaningObjectForm({
         </div>
       </div>
 
-      <div className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
+      <div data-step="1" className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
       <FormSection title="Allgemein">
         <Field label="Kunde" htmlFor="customer_id" className="sm:col-span-2">
           <Select id="customer_id" name="customer_id" defaultValue={object?.customer_id ?? ''} required>
@@ -87,7 +96,7 @@ export function CleaningObjectForm({
       </FormSection>
       </div>
 
-      <div className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
+      <div data-step="2" className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
       <FormSection title="Adresse">
         <Field label="Straße und Hausnummer" htmlFor="street" className="sm:col-span-2">
           <Input id="street" name="street" defaultValue={object?.street ?? ''} maxLength={240} />
@@ -104,7 +113,7 @@ export function CleaningObjectForm({
       </FormSection>
       </div>
 
-      <div className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
+      <div data-step="3" className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
       <FormSection title="Kontakt vor Ort" description="Sieht das Reinigungsteam im Einsatz.">
         <Field label="Vorname" htmlFor="contact_first_name">
           <Input id="contact_first_name" name="contact_first_name" defaultValue={object?.contact_first_name ?? ''} maxLength={120} />
@@ -121,7 +130,7 @@ export function CleaningObjectForm({
       </FormSection>
       </div>
 
-      <div className={step === 4 ? 'block' : 'hidden'} aria-hidden={step !== 4}>
+      <div data-step="4" className={step === 4 ? 'block' : 'hidden'} aria-hidden={step !== 4}>
       <FormSection title="Vor Ort" description="Was das Team für den Einsatz wissen muss.">
         <Field label="Fläche in m²" htmlFor="area_sqm" optional>
           <Input id="area_sqm" name="area_sqm" type="number" min="0.01" step="0.01" defaultValue={object?.area_sqm ?? ''} />
@@ -150,7 +159,7 @@ export function CleaningObjectForm({
           {step === 1 ? 'Abbrechen' : 'Zurück'}
         </Button>
         {step < 4 ? (
-          <Button type="button" onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4)}>
+          <Button type="button" onClick={nextStep}>
             Weiter
           </Button>
         ) : (
