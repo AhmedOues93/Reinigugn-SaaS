@@ -154,7 +154,7 @@ export function DataTable<T>({
                 <div className="min-w-0">
                   <p className="break-anywhere font-semibold text-foreground">
                     {href ? (
-                      <Link href={href} className="after:absolute after:inset-0 after:rounded-xl after:content-['']">
+                      <Link href={href} className="rounded-sm underline-offset-4 hover:text-primary hover:underline">
                         {titleColumn.cell(row)}
                       </Link>
                     ) : (
