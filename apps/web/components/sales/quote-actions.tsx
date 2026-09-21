@@ -8,19 +8,49 @@ import { t, type Locale } from '@/lib/i18n';
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
+function CustomerLink({ url }: { url?: string }) {
+  if (!url) return null;
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+      <p className="font-medium">Kundenlink</p>
+      <a href={url} target="_blank" rel="noreferrer" className="mt-1 block break-all text-primary underline underline-offset-4">
+        {url}
+      </a>
+    </div>
+  );
+}
+
 export function SendQuoteForm({ action, locale, disabled }: { action: Action; locale: Locale; disabled: boolean }) {
   const [state, formAction] = useActionState(action, initialFormState);
   return (
     <form action={formAction} className="space-y-3">
       <FormMessage status={state.status} message={state.message} />
+      <CustomerLink url={state.invitationUrl} />
       <p className="text-sm text-muted-foreground">
-        Beim Senden erhält das Angebot seine Nummer und ist danach unveränderlich.
+        Beim Senden erhält das Angebot seine Nummer, wird unveränderlich und bekommt einen sicheren Kundenlink.
       </p>
       {disabled ? (
         <p className="text-sm text-warning">Ein Angebot braucht mindestens eine Position.</p>
       ) : (
         <SubmitButton locale={locale}>{t(locale, 'sales.quote.send')}</SubmitButton>
       )}
+    </form>
+  );
+}
+
+export function ShareQuoteForm({ action, locale }: { action: Action; locale: Locale }) {
+  const [state, formAction] = useActionState(action, initialFormState);
+  return (
+    <form action={formAction} className="space-y-3">
+      <FormMessage status={state.status} message={state.message} />
+      <CustomerLink url={state.invitationUrl} />
+      <div>
+        <h2 className="font-semibold">Kundenfreigabe</h2>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          Erstellt einen neuen sicheren Link. Wenn eine Kunden-E-Mail hinterlegt und der Versand eingerichtet ist, werden Link und PDF per E-Mail gesendet.
+        </p>
+      </div>
+      <SubmitButton locale={locale}>Kundenlink senden</SubmitButton>
     </form>
   );
 }
