@@ -34,17 +34,19 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           </>
         }
       />
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-2 sm:grid-cols-4">
+      <div className="mb-5 overflow-x-auto rounded-xl border border-border bg-card p-1.5">
+        <nav className="flex min-w-max items-center gap-1" aria-label="Vertrieb Bereiche">
         {[
           ['Anfragen', '/dashboard/vertrieb/anfragen'],
           ['Besichtigungen', '/dashboard/vertrieb/besichtigungen'],
           ['Kalkulationen', '/dashboard/kalkulation'],
           ['Angebote', '/dashboard/vertrieb/angebote'],
         ].map(([label, href]) => (
-          <ButtonLink key={href} href={href} variant={href === '/dashboard/vertrieb/anfragen' ? 'default' : 'ghost'}>
+          <ButtonLink key={href} href={href} variant={href === '/dashboard/vertrieb/anfragen' ? 'default' : 'ghost'} className="shrink-0 px-3">
             {label}
           </ButtonLink>
         ))}
+        </nav>
       </div>
       <FilterTabs
         className="mb-4"
