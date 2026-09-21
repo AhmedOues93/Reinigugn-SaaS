@@ -26,5 +26,5 @@ export async function getPortalQuote(id: string): Promise<PublicQuote | null> {
   const { data, error } = await supabase.rpc('get_my_portal_quote', { p_quote_id: id });
   if (error) throw new Error('Angebot konnte nicht geladen werden.');
   if (!data || typeof data !== 'object') return null;
-  return data as PublicQuote;
+  return data as unknown as PublicQuote;
 }
