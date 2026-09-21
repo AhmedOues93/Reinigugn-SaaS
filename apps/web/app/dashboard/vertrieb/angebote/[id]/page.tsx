@@ -3,12 +3,12 @@ import { notFound } from 'next/navigation';
 import { Building2, CalendarDays, FileDown, Users } from 'lucide-react';
 import { BackLink, Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
 import { QuoteLineEditor } from '@/components/sales/quote-line-editor';
-import { AcceptQuoteForm, DeclineQuoteForm, SendQuoteForm } from '@/components/sales/quote-actions';
+import { DeclineQuoteForm, SendQuoteForm, ShareQuoteForm } from '@/components/sales/quote-actions';
 import { getQuote, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
-import { acceptQuote, addQuoteLine, declineQuote, removeQuoteLine, sendQuote } from '../../actions';
+import { addQuoteLine, declineQuote, removeQuoteLine, resendQuoteToCustomer, sendQuote } from '../../actions';
 
 function first<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -21,7 +21,6 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const owner = first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—';
   const isDraft = quote.status === 'DRAFT';
-  const hasRecurring = quote.lines.some((line) => line.recurrence !== 'ONE_OFF');
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -155,10 +154,9 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         )}
         {quote.status === 'SENT' && (
           <div className="space-y-8">
-            <AcceptQuoteForm
-              action={acceptQuote.bind(null, quote.id)}
+            <ShareQuoteForm
+              action={resendQuoteToCustomer.bind(null, quote.id)}
               locale={locale}
-              showSchedule={hasRecurring}
             />
             <div className="border-t border-border pt-6">
               <DeclineQuoteForm action={declineQuote.bind(null, quote.id)} locale={locale} />
