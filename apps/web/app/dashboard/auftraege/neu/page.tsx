@@ -8,10 +8,22 @@ import { createJob } from '../actions';
 
 export default async function NewJobPage() {
   const [customers, objects, employees, templates] = await Promise.all([
-    listCustomerOptions(),
-    listCleaningObjectOptions(),
-    listAssignableEmployeeOptions(),
-    listActiveChecklistTemplateOptions(),
+    listCustomerOptions().catch((error) => {
+      console.error('NewJobPage customers', error);
+      return [];
+    }),
+    listCleaningObjectOptions().catch((error) => {
+      console.error('NewJobPage objects', error);
+      return [];
+    }),
+    listAssignableEmployeeOptions().catch((error) => {
+      console.error('NewJobPage employees', error);
+      return [];
+    }),
+    listActiveChecklistTemplateOptions().catch((error) => {
+      console.error('NewJobPage templates', error);
+      return [];
+    }),
   ]);
 
   return (
