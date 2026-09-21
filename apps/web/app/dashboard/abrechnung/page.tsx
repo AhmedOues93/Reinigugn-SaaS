@@ -70,8 +70,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
             {invoice.status !== 'DRAFT' && (
               <a
                 href={`/dashboard/abrechnung/${invoice.id}/pdf?inline=1`}
-                target="_blank"
-                rel="noreferrer"
+                target="_self"
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted max-md:min-h-11"
                 aria-label={`PDF ${invoice.invoice_number} ansehen`}
               >
