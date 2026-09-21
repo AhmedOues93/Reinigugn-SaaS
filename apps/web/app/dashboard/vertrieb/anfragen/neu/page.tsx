@@ -13,8 +13,8 @@ export default async function NewLeadPage() {
     <div className="mx-auto max-w-3xl">
       <BackLink href="/dashboard/vertrieb/anfragen">{t(locale, 'sales.leads.title')}</BackLink>
       <PageHeader
-        title="Neue Anfrage"
-        description="Kunde auswählen oder neuen Interessenten erfassen. Stammdaten werden nicht doppelt eingegeben."
+        title={t(locale, 'sales.lead.newTitle')}
+        description={t(locale, 'sales.lead.newSubtitle')}
       />
       <Card className="p-5 sm:p-7">
         <LeadForm action={createLead} locale={locale} customers={activeCustomers} />
