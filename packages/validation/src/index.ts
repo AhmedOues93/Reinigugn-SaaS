@@ -85,7 +85,7 @@ const optionalDate = z.preprocess(
 
 /** The five product locales, kept in one place so the schemas, the UI and the
  * database language constraints cannot drift apart. */
-export const supportedLocaleSchema = z.enum(['de', 'en', 'ar', 'tr', 'uk'], {
+export const supportedLocaleSchema = z.enum(['de', 'en', 'ar', 'tr', 'uk', 'ru'], {
   errorMap: () => ({ message: 'Bitte wähle eine unterstützte Sprache.' }),
 });
 
