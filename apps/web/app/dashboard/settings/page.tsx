@@ -61,6 +61,7 @@ export default async function SettingsPage() {
             removeAction={removeCompanyLogo}
             logoUrl={branding?.logoUrl ?? null}
             brandColor={branding?.brandColor ?? null}
+            companyName={data?.name ?? company.name}
           />
         </div>
       </Section>
