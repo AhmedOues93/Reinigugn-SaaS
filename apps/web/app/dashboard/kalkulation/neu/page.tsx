@@ -51,7 +51,7 @@ export default async function NewCalculationPage({
         preferredObjectId={preferredObjectId}
         surveys={surveys.map((survey) => ({
           id: survey.id,
-          label: [survey.site_name, survey.city].filter(Boolean).join(' · ') || 'Besichtigung',
+          label: [survey.site_name, survey.city].filter(Boolean).join(' · ') || t(locale, 'sales.quote.survey'),
         }))}
       />
     </FormPage>
