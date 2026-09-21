@@ -1,6 +1,7 @@
 import { FileDown, FileSignature, Plus } from 'lucide-react';
 import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
+import { SalesSectionNav } from '@/components/sales/sales-section-nav';
 import { listQuotes, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
 import { formatDate, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -32,13 +33,7 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
           </ButtonLink>
         }
       />
-      <div className="mb-5 overflow-x-auto rounded-xl border border-border bg-card p-1.5">
-        <nav className="flex min-w-max items-center gap-1" aria-label="Vertrieb Bereiche">
-          {[['Anfragen','/dashboard/vertrieb/anfragen'],['Besichtigungen','/dashboard/vertrieb/besichtigungen'],['Kalkulationen','/dashboard/kalkulation'],['Angebote','/dashboard/vertrieb/angebote']].map(([label, href]) => (
-            <ButtonLink key={href} href={href} variant={href === '/dashboard/vertrieb/angebote' ? 'default' : 'ghost'} className="shrink-0 px-3">{label}</ButtonLink>
-          ))}
-        </nav>
-      </div>
+      <SalesSectionNav active="angebote" />
       <FilterTabs
         className="mb-4"
         label={t(locale, 'common.status')}
