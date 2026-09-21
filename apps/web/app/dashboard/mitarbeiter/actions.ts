@@ -55,8 +55,17 @@ export async function resendEmployeeInvitation(memberId: string): Promise<FormSt
     if (error || !invitation) return failure('Die Einladung konnte nicht erneut versendet werden.');
     const employee = await supabase.from('company_members').select('invited_first_name, role').eq('id', memberId).single();
     const delivery = await mailService.sendInvitation({ to: invitation.email, companyName: company.name, firstName: employee.data?.invited_first_name ?? 'Teammitglied', role: employee.data?.role ?? 'EMPLOYEE', token });
+    revalidatePath('/dashboard/mitarbeiter');
     revalidatePath(`/dashboard/mitarbeiter/${memberId}`);
-    return { status: 'success', message: delivery.developmentUrl ? 'Einladung wurde erneürt.' : 'Einladung wurde erneut versendet.', invitationUrl: delivery.developmentUrl };
+    return {
+      status: delivery.delivered || delivery.developmentUrl ? 'success' : 'error',
+      message: delivery.delivered
+        ? 'Einladung wurde erneut per E-Mail versendet.'
+        : delivery.developmentUrl
+          ? 'Einladung wurde erneuert. Der lokale Link kann bei Bedarf angezeigt werden.'
+          : 'Die Einladung wurde erneuert, aber die E-Mail konnte nicht versendet werden.',
+      invitationUrl: delivery.developmentUrl,
+    };
   } catch { return failure('Die Einladung konnte nicht erneut versendet werden.'); }
 }
 
@@ -116,10 +125,12 @@ async function completeInvitationFromCookie(): Promise<FormState> {
   if (!user) return failure('Bitte melde dich zuerst an.');
   const { data: previewData } = await supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle();
   const preview = previewData as InvitationPreview | null;
-  const { error } = await supabase.rpc('complete_company_invitation', { p_token: token });
+  const { data: acceptedMemberId, error } = await supabase.rpc('complete_company_invitation', { p_token: token });
   if (error) return failure('Die Einladung konnte nicht angenommen werden. Stelle sicher, dass du mit der eingeladenen E-Mail-Adresse angemeldet bist.');
   (await cookies()).delete(invitationCookieName);
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/mitarbeiter');
+  if (acceptedMemberId) revalidatePath(`/dashboard/mitarbeiter/${acceptedMemberId}`);
   // Land on the surface that belongs to the accepted role, not always the dashboard.
   return { status: 'success', id: 'accepted', redirectTo: landingPathForRole(preview?.role) };
 }
