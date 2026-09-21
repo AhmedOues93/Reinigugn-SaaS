@@ -7,8 +7,8 @@ import { NextResponse } from 'next/server';
 export function GET() {
   return NextResponse.json(
     {
-      name: 'SauberWerk Mitarbeiter',
-      short_name: 'SauberWerk',
+      name: 'ReinPlan Mitarbeiter',
+      short_name: 'ReinPlan',
       description: 'Einsätze, Zeiterfassung und Nachweise für Reinigungskräfte.',
       start_url: '/mitarbeiter',
       scope: '/mitarbeiter',
