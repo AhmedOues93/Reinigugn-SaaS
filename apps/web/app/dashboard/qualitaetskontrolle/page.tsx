@@ -1,15 +1,102 @@
-import { Plus } from 'lucide-react';
-import { ButtonLink, Card, EmptyState, PageHeader } from '@/components/ui';
-import { JobPhotoGallery } from '@/components/job-photo-gallery';
-import { JobPhotoUpload } from '@/components/job-photo-upload';
+import { Plus, ShieldCheck } from 'lucide-react';
+import { Badge, ButtonLink, Card, EmptyState, PageHeader } from '@/components/ui';
+import { DataTable } from '@/components/data-table';
 import { QualityInspectionForm } from '@/components/quality-inspection-form';
 import { listComplaintFormOptions, listQualityInspections } from '@/lib/data/complaints';
-import { listOperationalPhotos } from '@/lib/data/operational-photos';
-import { createQualityInspection, deleteOperationalPhoto, uploadOperationalPhoto } from '../reklamationen/actions';
+import { formatDate } from '@/lib/format';
+import { createQualityInspection } from '../reklamationen/actions';
 
-function first<T>(value: T | T[] | null) { return Array.isArray(value) ? value[0] ?? null : value; }
-export default async function QualityInspectionsPage({ searchParams }: { searchParams: Promise<{ neu?: string }> }) {
-  const { neu } = await searchParams; const [inspections, options] = await Promise.all([listQualityInspections(), listComplaintFormOptions()]);
-  const photos = await Promise.all(inspections.map((inspection) => listOperationalPhotos('QUALITY_INSPECTION', inspection.id)));
-  return <div><PageHeader title="Qualitätskontrolle" description="Objektbegehungen mit Ergebnis, Punktzahl, Nacharbeit und Fotos." actions={<ButtonLink href="/dashboard/qualitaetskontrolle?neu=1"><Plus className="size-4" aria-hidden="true" />Kontrolle erfassen</ButtonLink>} />{neu === '1' && <Card className="mb-6 p-6"><h2 className="font-semibold">Neue Qualitätskontrolle</h2><div className="mt-5"><QualityInspectionForm objects={options.objects} jobs={options.jobs} action={createQualityInspection} /></div></Card>}<Card className="overflow-hidden">{inspections.length === 0 ? <EmptyState title="Keine Qualitätskontrollen" body="Dokumentieren Sie Ergebnisse direkt nach der Objektprüfung." /> : <div className="divide-y">{inspections.map((inspection, index) => { const object = first(inspection.cleaning_objects as never) as { name?: string } | null; const job = first(inspection.jobs as never) as { title?: string } | null; return <div className="p-5" key={inspection.id}><div className="flex flex-wrap justify-between gap-3"><div><p className="font-medium">{object?.name ?? 'Objekt'}</p><p className="mt-1 text-sm text-muted-foreground">{job?.title ?? 'Objektkontrolle'}</p></div><div className={`rounded px-2 py-1 text-xs font-medium ${inspection.result === 'PASS' ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>{inspection.result === 'PASS' ? 'Bestanden' : 'Nicht bestanden'}{inspection.score != null ? ` · ${inspection.score}/100` : ''}</div></div><p className="mt-3 text-sm text-foreground">{inspection.notes || 'Keine Notizen hinterlegt.'}</p>{inspection.follow_up_required && <p className="mt-2 text-xs font-medium text-warning">Nacharbeit erforderlich</p>}<div className="mt-5"><JobPhotoUpload action={uploadOperationalPhoto.bind(null, 'QUALITY_INSPECTION', inspection.id)} checklistItems={[]} /><JobPhotoGallery photos={photos[index] ?? []} deletablePhotoIds={(photos[index] ?? []).map((photo) => photo.id)} deleteAction={deleteOperationalPhoto} /></div></div>; })}</div>}</Card></div>;
+function first<T>(value: T | T[] | null) {
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
+
+type Inspection = Awaited<ReturnType<typeof listQualityInspections>>[number];
+
+export default async function QualityInspectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ neu?: string }>;
+}) {
+  const { neu } = await searchParams;
+  const [inspections, options] = await Promise.all([
+    listQualityInspections(),
+    listComplaintFormOptions(),
+  ]);
+
+  return (
+    <div>
+      <PageHeader
+        title="Qualitätskontrolle"
+        description="Objektprüfungen dokumentieren, Abweichungen erkennen und Nacharbeit gezielt auslösen."
+        actions={
+          <ButtonLink href="/dashboard/qualitaetskontrolle?neu=1">
+            <Plus className="size-4" aria-hidden="true" />
+            Kontrolle erfassen
+          </ButtonLink>
+        }
+      />
+
+      {neu === '1' && (
+        <Card className="mb-6 p-5 sm:p-6">
+          <QualityInspectionForm
+            objects={options.objects}
+            jobs={options.jobs}
+            action={createQualityInspection}
+          />
+        </Card>
+      )}
+
+      <DataTable<Inspection>
+        caption="Qualitätskontrollen"
+        rows={inspections}
+        rowKey={(inspection) => inspection.id}
+        rowHref={(inspection) => `/dashboard/qualitaetskontrolle/${inspection.id}`}
+        columns={[
+          {
+            key: 'object',
+            header: 'Objekt',
+            mobile: 'title',
+            cell: (inspection) => first(inspection.cleaning_objects as never)?.name ?? 'Objekt',
+          },
+          {
+            key: 'job',
+            header: 'Einsatz',
+            mobile: 'subtitle',
+            cell: (inspection) => first(inspection.jobs as never)?.title ?? 'Objektkontrolle',
+          },
+          {
+            key: 'date',
+            header: 'Prüfdatum',
+            cell: (inspection) => formatDate('de', inspection.inspected_at),
+          },
+          {
+            key: 'score',
+            header: 'Bewertung',
+            align: 'end',
+            cell: (inspection) => (inspection.score != null ? `${inspection.score}/100` : '—'),
+          },
+          {
+            key: 'result',
+            header: 'Ergebnis',
+            mobile: 'status',
+            cell: (inspection) => (
+              <span className="inline-flex flex-wrap justify-end gap-1">
+                <Badge tone={inspection.result === 'PASS' ? 'success' : 'danger'}>
+                  {inspection.result === 'PASS' ? 'Bestanden' : 'Nicht bestanden'}
+                </Badge>
+                {inspection.follow_up_required && <Badge tone="warning">Nacharbeit</Badge>}
+              </span>
+            ),
+          },
+        ]}
+        empty={
+          <EmptyState
+            icon={<ShieldCheck />}
+            title="Keine Qualitätskontrollen"
+            body="Erfassen Sie Prüfungen direkt nach einer Objektbegehung."
+          />
+        }
+      />
+    </div>
+  );
 }
