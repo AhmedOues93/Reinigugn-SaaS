@@ -32,7 +32,7 @@ export function QualityInspectionForm({ objects, jobs, action, locale }: { objec
   return (
     <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
-      <div className="rounded-xl border border-border bg-muted/25 p-3"><div className="grid grid-cols-2 gap-2 text-center text-xs font-medium"><span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>{t(locale, 'quality.stepObject')}</span><span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. {t(locale, 'quality.stepResult')}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border"><div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '50%' : '100%' }} /></div></div>
+      <div className="rounded-xl border border-border bg-muted/25 p-3"><div className="grid grid-cols-2 gap-2 text-center text-xs font-medium"><span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>1. {t(locale, 'quality.stepObject')}</span><span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. {t(locale, 'quality.stepResult')}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border"><div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '50%' : '100%' }} /></div></div>
       <div data-step="1" className={step === 1 ? 'grid gap-5 sm:grid-cols-2' : 'hidden'}>
         <Field label={t(locale, 'quality.object') + ' *'} htmlFor="quality-object">
           <Select id="quality-object" name="cleaning_object_id" required value={objectId} onChange={(event) => setObjectId(event.target.value)}>
