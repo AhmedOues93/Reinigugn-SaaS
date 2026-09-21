@@ -7,6 +7,8 @@ import { listCleaningObjects } from '@/lib/data/cleaning-objects';
 import { listCatalogItems } from '@/lib/data/kalkulation';
 import { listSurveys } from '@/lib/data/sales';
 import { createCalculation } from '../actions';
+import { t } from '@/lib/i18n';
+import { currentLocale } from '@/lib/i18n-server';
 
 /**
  * A calculation starts either from a Besichtigung — in which case the measured
@@ -19,6 +21,7 @@ export default async function NewCalculationPage({
   searchParams: Promise<{ survey?: string; kunde?: string; objekt?: string }>;
 }) {
   const { survey: preferredSurveyId, kunde: preferredCustomerId, objekt: preferredObjectId } = await searchParams;
+  const locale = await currentLocale();
   const defaults = await getCalculationDefaults();
   if (defaults.wage_cents_per_hour === 0) {
     redirect(`/dashboard/kalkulation/grundlagen?next=${encodeURIComponent(preferredSurveyId ? `/dashboard/kalkulation/neu?survey=${preferredSurveyId}` : '/dashboard/kalkulation/neu')}`);
@@ -32,12 +35,14 @@ export default async function NewCalculationPage({
 
   return (
     <FormPage
-      back={{ href: '/dashboard/vertrieb/anfragen', label: 'Vertrieb' }}
-      title="Neues Angebot"
+      back={{ href: '/dashboard/vertrieb/angebote', label: t(locale, 'sales.quotes.title') }}
+      title={t(locale, 'sales.quote.newTitle')}
+      description={t(locale, 'sales.quote.newSubtitle')}
       width="narrow"
     >
       <NewCalculationForm
         action={createCalculation}
+        locale={locale}
         customers={customers}
         objects={objects.map((object) => ({ id: object.id, customerId: object.customer_id, name: object.name }))}
         catalog={catalog}
