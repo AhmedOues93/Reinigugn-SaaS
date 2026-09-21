@@ -3,14 +3,14 @@ import { FormPage } from '@/components/ui';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
-import { listActiveEmployeeOptions } from '@/lib/data/jobs';
+import { listAssignableEmployeeOptions } from '@/lib/data/jobs';
 import { createJob } from '../actions';
 
 export default async function NewJobPage() {
   const [customers, objects, employees, templates] = await Promise.all([
     listCustomerOptions(),
     listCleaningObjectOptions(),
-    listActiveEmployeeOptions(),
+    listAssignableEmployeeOptions(),
     listActiveChecklistTemplateOptions(),
   ]);
 
