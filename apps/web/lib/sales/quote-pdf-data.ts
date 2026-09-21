@@ -1,8 +1,12 @@
+import { requireStaffCompany } from '@/lib/auth';
+import { fetchLogo } from '@/lib/billing/invoice-pdf';
+import { getCompanyBranding } from '@/lib/data/branding';
 import { getQuote } from '@/lib/data/sales';
 import { renderQuotePdf, quoteFileName } from '@/lib/sales/quote-pdf';
 
 export async function renderStaffQuotePdf(id: string) {
-  const quote = await getQuote(id);
+  const { company } = await requireStaffCompany();
+  const [quote, branding] = await Promise.all([getQuote(id), getCompanyBranding(company.id)]);
   if (!quote || !quote.quote_number || quote.status === 'DRAFT') return null;
   return {
     bytes: await renderQuotePdf({
@@ -18,6 +22,7 @@ export async function renderStaffQuotePdf(id: string) {
       recurringNetMonthlyCents: quote.recurring_net_monthly_cents,
       recipient: quote.recipient_snapshot as Record<string, unknown> | null,
       company: quote.company_snapshot as Record<string, unknown> | null,
+      logo: await fetchLogo(branding?.logoUrl ?? null),
       lines: quote.lines,
     }),
     fileName: quoteFileName(quote.quote_number),
