@@ -55,7 +55,9 @@ export async function inviteEmployee(_: FormState, formData: FormData): Promise<
         : authFallbackSent
           ? 'Einladung wurde über die verifizierte Supabase-E-Mail versendet.'
           : `Mitarbeiter wurde angelegt, aber keine Einladungs-E-Mail konnte versendet werden.${authFallbackError ? ` ${authFallbackError}` : ''}`,
-      invitationUrl: !delivery.delivered && !authFallbackSent ? delivery.developmentUrl : undefined,
+      invitationUrl: !delivery.delivered && !authFallbackSent
+        ? (delivery.developmentUrl ?? appUrl(`/einladung/start?token=${encodeURIComponent(token)}`))
+        : undefined,
     };
   } catch { return failure('Die Einladung konnte nicht erstellt werden.'); }
 }
@@ -92,7 +94,9 @@ export async function resendEmployeeInvitation(memberId: string): Promise<FormSt
         : authFallbackSent
           ? 'Einladung wurde erneut über die verifizierte Supabase-E-Mail versendet.'
           : `Die Einladung wurde erneuert, aber keine E-Mail konnte versendet werden.${authFallbackError ? ` ${authFallbackError}` : ''}`,
-      invitationUrl: !delivery.delivered && !authFallbackSent ? delivery.developmentUrl : undefined,
+      invitationUrl: !delivery.delivered && !authFallbackSent
+        ? (delivery.developmentUrl ?? appUrl(`/einladung/start?token=${encodeURIComponent(token)}`))
+        : undefined,
     };
   } catch { return failure('Die Einladung konnte nicht erneut versendet werden.'); }
 }
