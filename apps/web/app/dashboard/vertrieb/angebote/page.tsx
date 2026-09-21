@@ -24,11 +24,11 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader
         title={t(locale, 'sales.quotes.title')}
-        description="Angebote entstehen aus einer Besichtigung. Ein angenommenes Angebot legt Kunde, Objekt und Reinigungsplan an."
+        description="Angebote direkt aus Kunde, Objekt und Leistungen erstellen. Eine Anfrage oder Besichtigung ist nur bei Bedarf vorgeschaltet."
         actions={
-          <ButtonLink href="/dashboard/vertrieb/besichtigungen" variant="outline">
+          <ButtonLink href="/dashboard/kalkulation/neu">
             <Plus className="size-4" aria-hidden="true" />
-            Aus Besichtigung erstellen
+            Neues Angebot
           </ButtonLink>
         }
       />
