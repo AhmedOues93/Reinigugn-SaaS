@@ -5,7 +5,7 @@ import { NewCalculationForm } from '@/components/kalkulation/new-calculation-for
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjects } from '@/lib/data/cleaning-objects';
 import { listCatalogItems } from '@/lib/data/kalkulation';
-import { listSurveys } from '@/lib/data/sales';
+import { getLead, listSurveys } from '@/lib/data/sales';
 import { createCalculation } from '../actions';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
@@ -18,20 +18,34 @@ import { currentLocale } from '@/lib/i18n-server';
 export default async function NewCalculationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ survey?: string; kunde?: string; objekt?: string }>;
+  searchParams: Promise<{ survey?: string; kunde?: string; objekt?: string; anfrage?: string }>;
 }) {
-  const { survey: preferredSurveyId, kunde: preferredCustomerId, objekt: preferredObjectId } = await searchParams;
+  const {
+    survey: preferredSurveyId,
+    kunde: preferredCustomerId,
+    objekt: preferredObjectId,
+    anfrage: preferredLeadId,
+  } = await searchParams;
   const locale = await currentLocale();
   const defaults = await getCalculationDefaults();
   if (defaults.wage_cents_per_hour === 0) {
     redirect(`/dashboard/kalkulation/grundlagen?next=${encodeURIComponent(preferredSurveyId ? `/dashboard/kalkulation/neu?survey=${preferredSurveyId}` : '/dashboard/kalkulation/neu')}`);
   }
-  const [customers, objects, catalog, surveys] = await Promise.all([
+  const [customers, objects, catalog, surveys, lead] = await Promise.all([
     listCustomerOptions(),
     listCleaningObjects({}),
     listCatalogItems(),
     listSurveys('COMPLETED').catch(() => []),
+    preferredLeadId ? getLead(preferredLeadId) : Promise.resolve(null),
   ]);
+
+  const leadSurvey =
+    preferredLeadId && !preferredSurveyId
+      ? surveys.find((survey) => survey.lead_id === preferredLeadId && survey.status === 'COMPLETED')
+      : null;
+  const effectiveSurveyId = preferredSurveyId ?? leadSurvey?.id;
+  const effectiveCustomerId = preferredCustomerId ?? lead?.customer_id ?? undefined;
+  const effectiveObjectId = preferredObjectId ?? lead?.cleaning_object_id ?? undefined;
 
   return (
     <FormPage
@@ -46,9 +60,22 @@ export default async function NewCalculationPage({
         customers={customers}
         objects={objects.map((object) => ({ id: object.id, customerId: object.customer_id, name: object.name }))}
         catalog={catalog}
-        preferredSurveyId={preferredSurveyId}
-        preferredCustomerId={preferredCustomerId}
-        preferredObjectId={preferredObjectId}
+        preferredSurveyId={effectiveSurveyId}
+        preferredCustomerId={effectiveCustomerId}
+        preferredObjectId={effectiveObjectId}
+        preferredLeadId={preferredLeadId}
+        leadDefaults={lead ? {
+          organisation: lead.organisation,
+          contactPerson: lead.contact_person ?? '',
+          email: lead.email ?? '',
+          phone: lead.phone ?? '',
+          street: lead.street ?? '',
+          postalCode: lead.postal_code ?? '',
+          city: lead.city ?? '',
+          cleaningType: lead.cleaning_type ?? '',
+          desiredStart: lead.desired_start ?? '',
+          frequency: lead.frequency ?? '',
+        } : undefined}
         surveys={surveys.map((survey) => ({
           id: survey.id,
           label: [survey.site_name, survey.city].filter(Boolean).join(' · ') || t(locale, 'sales.quote.survey'),
