@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Building2, CalendarDays, Users } from 'lucide-react';
+import { Building2, CalendarDays, FileDown, Users } from 'lucide-react';
 import { BackLink, Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
 import { QuoteLineEditor } from '@/components/sales/quote-line-editor';
 import { AcceptQuoteForm, DeclineQuoteForm, SendQuoteForm } from '@/components/sales/quote-actions';
@@ -31,9 +31,17 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         title={quote.quote_number ?? t(locale, 'billing.draft')}
         description={`${owner} · ${quote.title}`}
         actions={
-          <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
-            {t(locale, `sales.quote.status.${quote.status}`)}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            {quote.status !== 'DRAFT' && (
+              <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted">
+                <FileDown className="size-4" aria-hidden="true" />
+                PDF ansehen
+              </a>
+            )}
+            <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
+              {t(locale, `sales.quote.status.${quote.status}`)}
+            </Badge>
+          </div>
         }
       />
 
