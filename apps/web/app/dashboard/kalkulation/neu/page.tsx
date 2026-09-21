@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCalculationDefaults } from '@/lib/data/kalkulation';
 import { NewCalculationForm } from '@/components/kalkulation/new-calculation-form';
 import { listCustomerOptions } from '@/lib/data/customers';
+import { listCleaningObjects } from '@/lib/data/cleaning-objects';
 import { listCatalogItems } from '@/lib/data/kalkulation';
 import { listSurveys } from '@/lib/data/sales';
 import { createCalculation } from '../actions';
@@ -22,8 +23,9 @@ export default async function NewCalculationPage({
   if (defaults.wage_cents_per_hour === 0) {
     redirect(`/dashboard/kalkulation/grundlagen?next=${encodeURIComponent(preferredSurveyId ? `/dashboard/kalkulation/neu?survey=${preferredSurveyId}` : '/dashboard/kalkulation/neu')}`);
   }
-  const [customers, catalog, surveys] = await Promise.all([
+  const [customers, objects, catalog, surveys] = await Promise.all([
     listCustomerOptions(),
+    listCleaningObjects(),
     listCatalogItems(),
     listSurveys('COMPLETED').catch(() => []),
   ]);
@@ -37,6 +39,7 @@ export default async function NewCalculationPage({
       <NewCalculationForm
         action={createCalculation}
         customers={customers}
+        objects={objects.map((object) => ({ id: object.id, customerId: object.customer_id, name: object.name }))}
         catalog={catalog}
         preferredSurveyId={preferredSurveyId}
         surveys={surveys.map((survey) => ({
