@@ -7,11 +7,14 @@ import { Button, Input, Select, Textarea } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
 type Option = { id: string; name: string; customer_id?: string; is_active?: boolean };
-type Employee = { id: string; profiles: { first_name: string | null; last_name: string | null } | { first_name: string | null; last_name: string | null }[] | null };
+type Employee = { id: string; status?: string; invited_first_name?: string | null; invited_last_name?: string | null; profiles: { first_name: string | null; last_name: string | null } | { first_name: string | null; last_name: string | null }[] | null };
 type JobRecord = { id?: string; customer_id?: string; cleaning_object_id?: string; checklist_template_id?: string | null; title?: string; description?: string | null; scheduled_date?: string; planned_start_at?: string; planned_end_at?: string; status?: string; priority?: string; internal_notes?: string | null; employee_instructions?: string | null; job_assignments?: { member_id: string }[] };
 type JobAction = (state: FormState, data: FormData) => Promise<FormState>;
 function time(value?: string) { return value ? new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Berlin' }).format(new Date(value)) : ''; }
-function employeeName(employee: Employee) { const profile = Array.isArray(employee.profiles) ? employee.profiles[0] : employee.profiles; return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter'; }
+function employeeName(employee: Employee) {
+  const profile = Array.isArray(employee.profiles) ? employee.profiles[0] : employee.profiles;
+  return [profile?.first_name ?? employee.invited_first_name, profile?.last_name ?? employee.invited_last_name].filter(Boolean).join(' ') || 'Mitarbeiter';
+}
 
 export function JobForm({ job, customers, objects, employees, templates, action, submitLabel }: { job?: JobRecord; customers: Option[]; objects: Option[]; employees: Employee[]; templates: { id: string; name: string }[]; action: JobAction; submitLabel: string }) {
   const [state, formAction] = useActionState(action, initialFormState); const router = useRouter(); const [customerId, setCustomerId] = useState(job?.customer_id ?? '');
