@@ -5,6 +5,7 @@ import { CompanySettingsForm } from '@/components/company-settings-form';
 import { CompanyBrandingForm } from '@/components/company-branding-form';
 import { AccountPasswordForm } from '@/components/account-password-form';
 import { getCompanyBranding } from '@/lib/data/branding';
+import { getQuote, listQuotes } from '@/lib/data/sales';
 import { removeCompanyLogo, updateCompanyBranding, updateCompanySettings } from './actions';
 
 export default async function SettingsPage() {
@@ -22,7 +23,7 @@ export default async function SettingsPage() {
         <Notice tone="neutral" icon={<ShieldCheck />} title="Nur für den Inhaber">
           Firmendaten dürfen nur durch den Inhaber des Unternehmens bearbeitet werden.
         </Notice>
-        <Section title="Konto und Sicherheit" description="Ändere dein persönliches Anmeldepasswort.">
+        <Section title="Konto und Sicherheit" description="Passwort und Anmelde-E-Mail sicher verwalten.">
           <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
             <AccountPasswordForm />
           </div>
@@ -39,7 +40,32 @@ export default async function SettingsPage() {
     )
     .eq('id', company.id)
     .single();
-  const branding = await getCompanyBranding(company.id);
+  const [branding, recentQuotes] = await Promise.all([
+    getCompanyBranding(company.id),
+    listQuotes('all'),
+  ]);
+  const previewSource = recentQuotes[0] ? await getQuote(recentQuotes[0].id) : null;
+  const recipient = previewSource?.recipient_snapshot && typeof previewSource.recipient_snapshot === 'object'
+    ? previewSource.recipient_snapshot as Record<string, unknown>
+    : null;
+  const previewQuote = previewSource ? {
+    quote_number: previewSource.quote_number,
+    title: previewSource.title,
+    currency: previewSource.currency,
+    net_total_cents: previewSource.net_total_cents,
+    vat_total_cents: previewSource.vat_total_cents,
+    gross_total_cents: previewSource.gross_total_cents,
+    valid_until: previewSource.valid_until,
+    recipient_name: String(recipient?.name ?? recipient?.company_name ?? 'Kunde'),
+    recipient_address: [recipient?.street, recipient?.postal_code, recipient?.city].filter(Boolean).join(' '),
+    lines: previewSource.lines.map((line) => ({
+      description: line.description,
+      quantity: Number(line.quantity),
+      unit: line.unit,
+      unit_price_cents: line.unit_price_cents,
+      gross_amount_cents: line.gross_amount_cents,
+    })),
+  } : null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-10">
@@ -74,6 +100,7 @@ export default async function SettingsPage() {
             logoUrl={branding?.logoUrl ?? null}
             brandColor={branding?.brandColor ?? null}
             companyName={data?.name ?? company.name}
+            previewQuote={previewQuote}
           />
         </div>
       </Section>
