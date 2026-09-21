@@ -120,8 +120,8 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
   pdf.setTitle(`${title} ${input.invoiceNumber}`);
   pdf.setAuthor(safe(companyName));
   pdf.setSubject(`${title} ${input.invoiceNumber}`);
-  pdf.setCreator('SauberWerk');
-  pdf.setProducer('SauberWerk');
+  pdf.setCreator('ReinPlan');
+  pdf.setProducer('ReinPlan');
   pdf.setLanguage('de-DE');
 
   let logo: PDFImage | null = null;
