@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { JobForm } from '@/components/job-form';
 import { FormPage } from '@/components/ui';
-import { getJob, listActiveEmployeeOptions } from '@/lib/data/jobs';
+import { getJob, listAssignableEmployeeOptions } from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
@@ -13,7 +13,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
     getJob(id),
     listCustomerOptions(),
     listCleaningObjectOptions(),
-    listActiveEmployeeOptions(),
+    listAssignableEmployeeOptions(),
     listActiveChecklistTemplateOptions(),
   ]);
   if (!job) notFound();
