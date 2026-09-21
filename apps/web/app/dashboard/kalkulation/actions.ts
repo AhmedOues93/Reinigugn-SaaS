@@ -205,14 +205,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
       const cleaningType = String(formData.get('cleaning_type') ?? '').trim();
       const frequency = String(formData.get('frequency') ?? '').trim();
       const desiredStart = String(formData.get('desired_start') ?? '').trim();
-      const notes = [
-        cleaningType && `Reinigungsart: ${cleaningType}`,
-        frequency && `Turnus: ${frequency}`,
-        desiredStart && `Gewünschter Start: ${desiredStart}`,
-        String(formData.get('notes') ?? '').trim(),
-      ].filter(Boolean).join('\n');
-
-      const { data: createdLead, error: leadError } = await supabase.rpc('create_lead', {
+      const { data: createdLead, error: leadError } = await supabase.rpc('create_lead_v2', {
         p_organisation: organisation,
         p_contact_person: String(formData.get('contact_person') ?? '').trim(),
         p_email: String(formData.get('email') ?? '').trim(),
@@ -221,7 +214,13 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
         p_postal_code: String(formData.get('postal_code') ?? '').trim(),
         p_city: String(formData.get('city') ?? '').trim(),
         p_source: String(formData.get('source_detail') ?? '').trim() || 'Direktangebot',
-        p_notes: notes,
+        p_notes: String(formData.get('notes') ?? '').trim() || null,
+        p_customer_id: null,
+        p_cleaning_object_id: null,
+        p_cleaning_type: cleaningType || null,
+        p_desired_start: desiredStart || null,
+        p_frequency: frequency || null,
+        p_preferred_time: null,
       });
       if (leadError || !createdLead) return failure('Der Interessent konnte nicht gespeichert werden.');
       leadId = createdLead as string;
