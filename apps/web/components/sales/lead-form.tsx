@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input, Select, Textarea } from '@/components/ui';
+import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import type { Locale } from '@/lib/i18n';
 
@@ -30,12 +30,24 @@ export function LeadForm({
   const [state, formAction] = useActionState(action, initialFormState);
   const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>('NEW');
   const [customerId, setCustomerId] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
   const selected = useMemo(() => customers.find((customer) => customer.id === customerId), [customers, customerId]);
 
   return (
     <form action={formAction} className="space-y-7">
       <FormMessage status={state.status} message={state.message} />
 
+      <div className="rounded-xl border border-border bg-muted/25 p-3">
+        <div className="flex items-center justify-between gap-3 text-xs font-medium">
+          <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>1. Kunde</span>
+          <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. Bedarf</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
+          <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '50%' : '100%' }} />
+        </div>
+      </div>
+
+      <div className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
       <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">Kunde</h2>
@@ -127,8 +139,10 @@ export function LeadForm({
           </div>
         )}
       </section>
+      </div>
 
-      <section className="space-y-4 border-t border-border pt-6">
+      <div className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
+      <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold">Bedarf</h2>
           <p className="mt-1 text-sm text-muted-foreground">Mit Auswahlfeldern schnell erfassen. Details kommen bei der Besichtigung.</p>
@@ -177,8 +191,20 @@ export function LeadForm({
           <Textarea id="notes" name="notes" maxLength={3000} placeholder="Nur Besonderheiten, die für die weitere Bearbeitung wichtig sind." />
         </Field>
       </section>
+      </div>
 
-      <SubmitButton locale={_locale}>Anfrage anlegen</SubmitButton>
+      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+        {step === 2 ? (
+          <Button type="button" variant="outline" onClick={() => setStep(1)}>Zurück</Button>
+        ) : (
+          <span />
+        )}
+        {step === 1 ? (
+          <Button type="button" onClick={() => setStep(2)}>Weiter</Button>
+        ) : (
+          <SubmitButton locale={_locale}>Anfrage anlegen</SubmitButton>
+        )}
+      </div>
     </form>
   );
 }
