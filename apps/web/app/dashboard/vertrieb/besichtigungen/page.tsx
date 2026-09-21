@@ -17,7 +17,7 @@ export default async function SurveysPage() {
   return (
     <>
       <PageHeader title={t(locale, 'sales.surveys.title')} />
-      <SalesSectionNav active="besichtigungen" />
+      <SalesSectionNav active="besichtigungen" locale={locale} />
       {surveys.length === 0 ? (
         <EmptyState icon={<ClipboardList className="size-5" />} title={t(locale, 'sales.survey.empty')} />
       ) : (
