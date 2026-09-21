@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CalendarRange, ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import {
-  listActiveEmployeeOptions,
+  listAssignableEmployeeOptions,
   listJobs,
   listSchedulesRunningOut,
   type JobStatusFilter,
@@ -87,7 +87,7 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
     }),
     listCustomerOptions(),
     listCleaningObjectOptions(),
-    listActiveEmployeeOptions(),
+    listAssignableEmployeeOptions(),
     listAffectedAssignments(start, end),
     listSchedulesRunningOut(),
   ]);
