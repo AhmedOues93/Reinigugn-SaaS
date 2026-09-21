@@ -175,9 +175,19 @@ export async function acceptInvitation(_: FormState, formData: FormData): Promis
   if (!password.success) return failure(password.error.issues[0]?.message ?? 'Bitte prüfe dein Passwort.');
   if (password.data !== confirmation) return failure('Die Passwörter stimmen nicht überein.');
 
+  const token = await invitationTokenFromCookie();
+  if (!token) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) return failure('Bitte öffne zuerst den verifizierten Link aus deiner E-Mail.');
+  const [{ data: { user } }, { data: previewData }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle(),
+  ]);
+  const preview = previewData as InvitationPreview | null;
+  if (!user?.email || !preview) return failure('Bitte öffne zuerst den verifizierten Link aus deiner E-Mail.');
+  if (user.email.toLocaleLowerCase() !== preview.email.toLocaleLowerCase()) {
+    return failure(`Bitte öffne die Einladung mit ${preview.email}.`);
+  }
 
   const { error } = await supabase.auth.updateUser({ password: password.data });
   if (error) return failure('Das Passwort konnte nicht gespeichert werden.');
