@@ -1,8 +1,9 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, FormActions, FormSection, Input, Select } from '@/components/ui';
+import { Button, Field, FormSection, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import type { CatalogItem } from '@/lib/kalkulation';
 
@@ -16,6 +17,8 @@ export function NewCalculationForm({
   catalog,
   surveys,
   preferredSurveyId,
+  preferredCustomerId,
+  preferredObjectId,
 }: {
   action: Action;
   customers: Option[];
@@ -23,18 +26,41 @@ export function NewCalculationForm({
   catalog: CatalogItem[];
   surveys: { id: string; label: string }[];
   preferredSurveyId?: string;
+  preferredCustomerId?: string;
+  preferredObjectId?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [fromSurvey, setFromSurvey] = useState(Boolean(preferredSurveyId));
-  const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>('NEW');
-  const [customerId, setCustomerId] = useState('');
-  const [cleaningObjectId, setCleaningObjectId] = useState('');
+  const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>(preferredCustomerId ? 'EXISTING' : 'NEW');
+  const [customerId, setCustomerId] = useState(preferredCustomerId ?? '');
+  const [cleaningObjectId, setCleaningObjectId] = useState(preferredObjectId ?? '');
+  const selectedCustomerName = useMemo(
+    () => customers.find((customer) => customer.id === customerId)?.name ?? customers.find((customer) => customer.id === customerId)?.label ?? '',
+    [customerId, customers],
+  );
+  const selectedObjectName = useMemo(
+    () => objects.find((object) => object.id === cleaningObjectId)?.name ?? '',
+    [cleaningObjectId, objects],
+  );
 
   return (
-    <form action={formAction} className="space-y-7">
+    <form action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
 
-      <FormSection title="1. Kunde / Objekt">
+      <div className="rounded-xl border border-border bg-muted/25 p-3">
+        <div className="grid grid-cols-3 gap-2 text-center text-xs font-medium">
+          <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>1. Kunde</span>
+          <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>2. Leistungen</span>
+          <span className={step === 3 ? 'text-primary' : 'text-muted-foreground'}>3. Prüfen</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
+          <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '33.33%' : step === 2 ? '66.66%' : '100%' }} />
+        </div>
+      </div>
+
+      <div className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
+      <FormSection title="Kunde / Objekt">
         {!fromSurvey && (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -131,8 +157,10 @@ export function NewCalculationForm({
         ) : null}
 
         </FormSection>
+      </div>
 
-      <FormSection title="2. Leistungen">
+      <div className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
+      <FormSection title="Leistungen">
         {!fromSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Reinigungsart" htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue=""><option value="">Noch offen</option><option>Unterhaltsreinigung</option><option>Büroreinigung</option><option>Grundreinigung</option><option>Glasreinigung</option><option>Treppenhausreinigung</option><option>Sanitärreinigung</option><option>Sonderreinigung</option></Select></Field>
@@ -161,10 +189,42 @@ export function NewCalculationForm({
           </p>
         )}
       </FormSection>
+      </div>
 
-      <FormActions>
-        <SubmitButton>Weiter zur Kalkulation</SubmitButton>
-      </FormActions>
+      <div className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
+        <div className="space-y-4 rounded-xl border border-border bg-card p-5">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Kunde</p>
+            <p className="mt-1 font-semibold">
+              {fromSurvey ? 'Aus Besichtigung übernommen' : customerMode === 'EXISTING' ? (selectedCustomerName || 'Bestehender Kunde') : 'Neuer Kunde'}
+            </p>
+            {selectedObjectName && <p className="mt-1 text-sm text-muted-foreground">{selectedObjectName}</p>}
+          </div>
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nächster Schritt</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              ReinPlan legt die Kalkulation an. Dort prüfst du Zeit, Kosten und Preis und erstellst danach das Angebot.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+        {step === 1 ? (
+          <span />
+        ) : (
+          <Button type="button" variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)}>
+            <ChevronLeft className="size-4" />Zurück
+          </Button>
+        )}
+        {step < 3 ? (
+          <Button type="button" onClick={() => setStep((step + 1) as 1 | 2 | 3)}>
+            Weiter<ChevronRight className="size-4" />
+          </Button>
+        ) : (
+          <SubmitButton>Zur Kalkulation</SubmitButton>
+        )}
+      </div>
     </form>
   );
 }
