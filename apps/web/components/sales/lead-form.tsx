@@ -155,7 +155,7 @@ export function LeadForm({
               <option value="Büroreinigung">{t(locale, 'sales.cleaning.OFFICE')}</option>
               <option value="Grundreinigung">{t(locale, 'sales.cleaning.DEEP')}</option>
               <option value="Glasreinigung">{t(locale, 'sales.cleaning.GLASS')}</option>
-              <option value="Bauendreinigung">Bauendreinigung</option>
+              <option value="Bauendreinigung">{t(locale, 'sales.cleaning.CONSTRUCTION')}</option>
               <option value="Treppenhausreinigung">{t(locale, 'sales.cleaning.STAIRCASE')}</option>
               <option value="Sanitärreinigung">{t(locale, 'sales.cleaning.SANITARY')}</option>
               <option value="Sonderreinigung">{t(locale, 'sales.cleaning.SPECIAL')}</option>
