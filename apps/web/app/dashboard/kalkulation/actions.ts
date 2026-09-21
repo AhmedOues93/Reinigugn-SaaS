@@ -189,6 +189,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
   const customerId = String(formData.get('customer_id') ?? '').trim() || null;
   const surveyId = String(formData.get('site_survey_id') ?? '').trim() || null;
   const catalogItemId = String(formData.get('catalog_item_id') ?? '').trim() || null;
+  let cleaningObjectId = String(formData.get('cleaning_object_id') ?? '').trim() || null;
 
   if (title.length < 2) return failure('Bitte gib eine Bezeichnung für das Angebot an.');
   if (!surveyId && customerMode === 'EXISTING' && !customerId) return failure('Bitte wähle einen Kunden aus.');
@@ -197,6 +198,42 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
   try {
     const { supabase } = await requireStaffCompany();
     let leadId: string | null = null;
+
+    if (!surveyId && customerMode === 'EXISTING' && customerId && !cleaningObjectId) {
+      const objectName = String(formData.get('object_name') ?? '').trim();
+      const objectStreet = String(formData.get('object_street') ?? '').trim();
+      const objectPostalCode = String(formData.get('object_postal_code') ?? '').trim();
+      const objectCity = String(formData.get('object_city') ?? '').trim();
+
+      if (objectName.length < 2) return failure('Bitte gib einen Objektnamen an.');
+      if (!objectStreet || !objectPostalCode || !objectCity) {
+        return failure('Bitte vervollständige die Objektadresse.');
+      }
+
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('company_id', company.id)
+        .eq('id', customerId)
+        .maybeSingle();
+      if (customerError || !customer) return failure('Der ausgewählte Kunde ist nicht verfügbar.');
+
+      const { data: createdObject, error: objectError } = await supabase
+        .from('cleaning_objects')
+        .insert({
+          company_id: company.id,
+          customer_id: customerId,
+          name: objectName,
+          street: objectStreet,
+          postal_code: objectPostalCode,
+          city: objectCity,
+          is_active: false,
+        })
+        .select('id')
+        .single();
+      if (objectError || !createdObject) return failure('Das neue Objekt konnte nicht gespeichert werden.');
+      cleaningObjectId = createdObject.id;
+    }
 
     if (!surveyId && customerMode === 'NEW') {
       const organisation = String(formData.get('organisation') ?? '').trim();
@@ -231,7 +268,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
       p_lead_id: leadId,
       p_customer_id: customerId,
       p_site_survey_id: surveyId,
-      p_cleaning_object_id: String(formData.get('cleaning_object_id') ?? '').trim() || null,
+      p_cleaning_object_id: cleaningObjectId,
       p_catalog_item_id: catalogItemId,
     });
     if (error || !data) return failure('Die Kalkulation konnte nicht angelegt werden.');
