@@ -64,7 +64,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </p>
           <p className="mb-3 mt-1 text-sm text-success/80">
             {quote.accepted_by_name ? `Angenommen von ${quote.accepted_by_name}. ` : ''}
-            Die Stammdaten wurden übernommen. Prüfen Sie jetzt Team und Einsatzplanung – Mitarbeiter werden nicht automatisch zugewiesen.
+            Kunde und Objekt wurden übernommen. Prüfen Sie jetzt den erzeugten Plan und weisen Sie bei Bedarf ein Team zu.
           </p>
           {quote.acceptance_note && (
             <p className="mb-3 rounded-lg border border-success/20 bg-card/70 px-3 py-2 text-sm text-foreground">
