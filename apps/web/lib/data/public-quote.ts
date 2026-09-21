@@ -16,7 +16,7 @@ export type PublicQuoteLine = {
 export type PublicQuote = {
   id: string;
   quote_number: string;
-  status: 'SENT' | 'ACCEPTED';
+  status: 'SENT' | 'ACCEPTED' | 'DECLINED';
   title: string;
   intro: string | null;
   recipient_snapshot: Record<string, unknown> | null;
