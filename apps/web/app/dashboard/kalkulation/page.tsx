@@ -1,6 +1,7 @@
 import { Calculator, Plus, Settings2, SquareStack } from 'lucide-react';
 import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
+import { SalesSectionNav } from '@/components/sales/sales-section-nav';
 import {
   formatBp,
   formatMinutes,
@@ -52,6 +53,8 @@ export default async function CalculationsPage({
           </>
         }
       />
+
+      <SalesSectionNav active="kalkulationen" />
 
       <FilterTabs
         className="mb-4"
