@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button, Field, FormSection, Input, Select } from '@/components/ui';
@@ -30,6 +30,7 @@ export function NewCalculationForm({
   preferredObjectId?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [fromSurvey, setFromSurvey] = useState(Boolean(preferredSurveyId));
   const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>(preferredCustomerId ? 'EXISTING' : 'NEW');
@@ -44,8 +45,19 @@ export function NewCalculationForm({
     [cleaningObjectId, objects],
   );
 
+  function nextStep() {
+    const container = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
+    const fields = Array.from(container?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea') ?? []);
+    const invalid = fields.find((field) => !field.checkValidity());
+    if (invalid) {
+      invalid.reportValidity();
+      return;
+    }
+    setStep((Math.min(3, step + 1)) as 1 | 2 | 3);
+  }
+
   return (
-    <form action={formAction} className="space-y-5">
+    <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
 
       <div className="rounded-xl border border-border bg-muted/25 p-3">
@@ -59,7 +71,7 @@ export function NewCalculationForm({
         </div>
       </div>
 
-      <div className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
+      <div data-step="1" className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
       <FormSection title="Kunde / Objekt">
         {!fromSurvey && (
           <>
@@ -159,7 +171,7 @@ export function NewCalculationForm({
         </FormSection>
       </div>
 
-      <div className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
+      <div data-step="2" className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
       <FormSection title="Leistungen">
         {!fromSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -191,7 +203,7 @@ export function NewCalculationForm({
       </FormSection>
       </div>
 
-      <div className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
+      <div data-step="3" className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
         <div className="space-y-4 rounded-xl border border-border bg-card p-5">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Kunde</p>
@@ -218,7 +230,7 @@ export function NewCalculationForm({
           </Button>
         )}
         {step < 3 ? (
-          <Button type="button" onClick={() => setStep((step + 1) as 1 | 2 | 3)}>
+          <Button type="button" onClick={nextStep}>
             Weiter<ChevronRight className="size-4" />
           </Button>
         ) : (
