@@ -196,7 +196,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
 
   let newId: string;
   try {
-    const { supabase } = await requireStaffCompany();
+    const { supabase, company } = await requireStaffCompany();
     let leadId: string | null = null;
 
     if (!surveyId && customerMode === 'EXISTING' && customerId && !cleaningObjectId) {
