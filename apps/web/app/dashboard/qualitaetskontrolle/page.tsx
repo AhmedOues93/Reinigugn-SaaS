@@ -5,6 +5,8 @@ import { QualityInspectionForm } from '@/components/quality-inspection-form';
 import { listComplaintFormOptions, listQualityInspections } from '@/lib/data/complaints';
 import { formatDate } from '@/lib/format';
 import { createQualityInspection } from '../reklamationen/actions';
+import { t } from '@/lib/i18n';
+import { currentLocale } from '@/lib/i18n-server';
 
 function first<T>(value: T | T[] | null) {
   return Array.isArray(value) ? value[0] ?? null : value;
@@ -18,7 +20,8 @@ export default async function QualityInspectionsPage({
   searchParams: Promise<{ neu?: string }>;
 }) {
   const { neu } = await searchParams;
-  const [inspections, options] = await Promise.all([
+  const [locale, inspections, options] = await Promise.all([
+    currentLocale(),
     listQualityInspections(),
     listComplaintFormOptions(),
   ]);
@@ -26,12 +29,12 @@ export default async function QualityInspectionsPage({
   return (
     <div>
       <PageHeader
-        title="Qualitätskontrolle"
-        description="Objektprüfungen dokumentieren, Abweichungen erkennen und Nacharbeit gezielt auslösen."
+        title={t(locale, 'quality.title')}
+        description={t(locale, 'quality.description')}
         actions={
           <ButtonLink href="/dashboard/qualitaetskontrolle?neu=1">
             <Plus className="size-4" aria-hidden="true" />
-            Kontrolle erfassen
+            {t(locale, 'quality.new')}
           </ButtonLink>
         }
       />
@@ -42,55 +45,56 @@ export default async function QualityInspectionsPage({
             objects={options.objects}
             jobs={options.jobs}
             action={createQualityInspection}
+            locale={locale}
           />
         </Card>
       )}
 
       <DataTable<Inspection>
-        caption="Qualitätskontrollen"
+        caption={t(locale, 'quality.caption')}
         rows={inspections}
         rowKey={(inspection) => inspection.id}
         rowHref={(inspection) => `/dashboard/qualitaetskontrolle/${inspection.id}`}
         columns={[
           {
             key: 'object',
-            header: 'Objekt',
+            header: t(locale, 'quality.object'),
             mobile: 'title',
             cell: (inspection) => {
               const object = first(inspection.cleaning_objects as { name?: string } | { name?: string }[] | null);
-              return object?.name ?? 'Objekt';
+              return object?.name ?? t(locale, 'quality.object');
             },
           },
           {
             key: 'job',
-            header: 'Einsatz',
+            header: t(locale, 'quality.job'),
             mobile: 'subtitle',
             cell: (inspection) => {
               const job = first(inspection.jobs as { title?: string } | { title?: string }[] | null);
-              return job?.title ?? 'Objektkontrolle';
+              return job?.title ?? t(locale, 'quality.objectInspection');
             },
           },
           {
             key: 'date',
-            header: 'Prüfdatum',
-            cell: (inspection) => formatDate('de', inspection.inspected_at),
+            header: t(locale, 'quality.inspectedAt'),
+            cell: (inspection) => formatDate(locale, inspection.inspected_at),
           },
           {
             key: 'score',
-            header: 'Bewertung',
+            header: t(locale, 'quality.score'),
             align: 'end',
             cell: (inspection) => (inspection.score != null ? `${inspection.score}/100` : '—'),
           },
           {
             key: 'result',
-            header: 'Ergebnis',
+            header: t(locale, 'quality.result'),
             mobile: 'status',
             cell: (inspection) => (
               <span className="inline-flex flex-wrap justify-end gap-1">
                 <Badge tone={inspection.result === 'PASS' ? 'success' : 'danger'}>
-                  {inspection.result === 'PASS' ? 'Bestanden' : 'Nicht bestanden'}
+                  {inspection.result === 'PASS' ? t(locale, 'quality.passed') : t(locale, 'quality.failed')}
                 </Badge>
-                {inspection.follow_up_required && <Badge tone="warning">Nacharbeit</Badge>}
+                {inspection.follow_up_required && <Badge tone="warning">{t(locale, 'quality.followUp')}</Badge>}
               </span>
             ),
           },
@@ -98,8 +102,8 @@ export default async function QualityInspectionsPage({
         empty={
           <EmptyState
             icon={<ShieldCheck />}
-            title="Keine Qualitätskontrollen"
-            body="Erfassen Sie Prüfungen direkt nach einer Objektbegehung."
+            title={t(locale, 'quality.emptyTitle')}
+            body={t(locale, 'quality.emptyBody')}
           />
         }
       />
