@@ -187,6 +187,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
   const title = String(formData.get('title') ?? '').trim();
   const customerMode = String(formData.get('customer_mode') ?? 'EXISTING');
   const customerId = String(formData.get('customer_id') ?? '').trim() || null;
+  const existingLeadId = String(formData.get('lead_id') ?? '').trim() || null;
   const surveyId = String(formData.get('site_survey_id') ?? '').trim() || null;
   const catalogItemId = String(formData.get('catalog_item_id') ?? '').trim() || null;
   let cleaningObjectId = String(formData.get('cleaning_object_id') ?? '').trim() || null;
@@ -197,7 +198,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
   let newId: string;
   try {
     const { supabase, company } = await requireStaffCompany();
-    let leadId: string | null = null;
+    let leadId: string | null = existingLeadId;
 
     if (!surveyId && customerMode === 'EXISTING' && customerId && !cleaningObjectId) {
       const objectName = String(formData.get('object_name') ?? '').trim();
@@ -235,7 +236,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
       cleaningObjectId = createdObject.id;
     }
 
-    if (!surveyId && customerMode === 'NEW') {
+    if (!surveyId && customerMode === 'NEW' && !leadId) {
       const organisation = String(formData.get('organisation') ?? '').trim();
       if (organisation.length < 2) return failure('Bitte gib einen Firmen- oder Kundennamen an.');
 
