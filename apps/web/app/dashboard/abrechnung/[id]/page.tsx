@@ -75,7 +75,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     { label: 'Bezahlt', done: invoice.status === 'PAID', at: invoice.paid_at },
   ];
   const current = steps.findIndex((step) => !step.done);
-  const pdfHref = `/dashboard/abrechnung/${invoice.id}/pdf`;
+  const pdfHref = `/dashboard/abrechnung/${invoice.id}/pdf?download=1`;
 
   return (
     <div className="mx-auto max-w-6xl">
