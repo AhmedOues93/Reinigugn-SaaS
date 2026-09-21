@@ -1,3 +1,5 @@
+import { fetchLogo } from '@/lib/billing/invoice-pdf';
+import { portalBranding } from '@/lib/data/portal';
 import { getPortalQuote } from '@/lib/data/portal-quotes';
 import { quoteFileName, renderQuotePdf } from '@/lib/sales/quote-pdf';
 
@@ -8,7 +10,7 @@ export async function GET(
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return new Response('Nicht gefunden', { status: 404 });
 
-  const quote = await getPortalQuote(id);
+  const [quote, branding] = await Promise.all([getPortalQuote(id), portalBranding()]);
   if (!quote) return new Response('Nicht gefunden', { status: 404 });
 
   const bytes = await renderQuotePdf({
@@ -24,6 +26,7 @@ export async function GET(
     recurringNetMonthlyCents: Number(quote.recurring_net_monthly_cents),
     recipient: quote.recipient_snapshot,
     company: quote.company_snapshot,
+    logo: await fetchLogo(branding?.logoUrl ?? null),
     lines: quote.lines.map((line) => ({
       ...line,
       quantity: Number(line.quantity),
