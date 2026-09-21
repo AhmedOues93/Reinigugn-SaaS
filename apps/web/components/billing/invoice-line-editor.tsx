@@ -145,7 +145,7 @@ export function InvoiceLineEditor({
         <input type="hidden" name="service_schedule_id" />
 
         <Field label="Beschreibung" htmlFor="line-description">
-          <Input id="line-description" name="description" maxLength={500} required />
+          <Input id="line-description" name="description" placeholder="z. B. Unterhaltsreinigung Bürofläche" autoComplete="off" maxLength={500} required />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-4">
@@ -161,10 +161,12 @@ export function InvoiceLineEditor({
             />
           </Field>
           <Field label="Einheit" htmlFor="line-unit">
-            <Input id="line-unit" name="unit" defaultValue="Std" maxLength={20} />
+            <Select id="line-unit" name="unit" defaultValue="Std">
+              <option value="Std">Stunde</option><option value="Monat">Monat</option><option value="Einsatz">Einsatz</option><option value="m²">m²</option><option value="Stück">Stück</option><option value="Pauschal">Pauschal</option>
+            </Select>
           </Field>
           <Field label={t(locale, 'billing.unitPrice')} htmlFor="line-price">
-            <Input id="line-price" name="unit_price" type="number" step="0.01" min="0" required />
+            <Input id="line-price" name="unit_price" type="number" inputMode="decimal" step="0.01" min="0" placeholder="z. B. 45,00" required />
           </Field>
           <Field label={`${t(locale, 'billing.vatRate')} %`} htmlFor="line-vat" info="Regelsatz 19 %. Für steuerfreie oder abweichende Leistungen den Satz anpassen; die Beträge berechnet die Datenbank.">
             <Input
