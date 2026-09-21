@@ -57,7 +57,7 @@ async function deliverQuoteToCustomer(context: StaffContext, quoteId: string) {
   });
   if (accessError) throw new Error('Customer access could not be created');
 
-  const snapshot = quote.recipient_snapshot as Record<string, unknown> | null;
+  const snapshot = quote.recipient_snapshot as unknown as Record<string, unknown> | null;
   const email = typeof snapshot?.email === 'string' ? snapshot.email.trim() : '';
   const url = quotePublicUrl(token);
   if (!email) {
