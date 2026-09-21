@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { type FormState } from '@/lib/actions';
 import { isLocale } from '@/lib/i18n';
 import { requireOwnerCompany } from '@/lib/auth';
+import { sendMail } from '@/lib/mail/transport';
 
 function databaseFailure(prefix: string, error: { message?: string | null; code?: string | null }) {
   // A generic "could not save" turns an actionable schema/RPC problem into a
@@ -144,5 +145,38 @@ export async function removeCompanyLogo(_: FormState, __: FormData): Promise<For
     return { status: 'success', message: 'Logo entfernt.' };
   } catch {
     return { status: 'error', message: 'Nur Inhaber dürfen das Branding bearbeiten.' };
+  }
+}
+
+
+export async function sendOwnerTestEmail(_: FormState, __: FormData): Promise<FormState> {
+  try {
+    const { supabase, company } = await requireOwnerCompany();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) return { status: 'error', message: 'Für dieses Konto ist keine Anmelde-E-Mail verfügbar.' };
+
+    const result = await sendMail({
+      to: user.email,
+      subject: 'ReinPlan E-Mail-Test · ' + company.name,
+      text:
+        'Hallo,\n\n' +
+        'der E-Mail-Versand für ' + company.name + ' funktioniert.\n\n' +
+        'Diese Testnachricht wurde aus ReinPlan gesendet.\n',
+      idempotencyKey: 'mail-health-' + company.id + '-' + new Date().toISOString().slice(0, 13),
+    });
+
+    if (result.status !== 'SENT') {
+      return { status: 'error', message: result.detail };
+    }
+
+    return {
+      status: 'success',
+      message: 'Test-E-Mail wurde an ' + user.email + ' gesendet. ' + result.detail,
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Die Test-E-Mail konnte nicht gesendet werden.',
+    };
   }
 }
