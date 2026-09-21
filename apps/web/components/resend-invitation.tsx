@@ -17,7 +17,7 @@ export function ResendInvitation({ memberId }: { memberId: string }) {
       const result = await resendEmployeeInvitation(memberId);
       setStatus(result.status);
       setMessage(result.message);
-      setUrl(result.status === 'success' ? result.invitationUrl : undefined);
+      setUrl(result.invitationUrl);
       setShowUrl(false);
     });
   }
@@ -30,7 +30,9 @@ export function ResendInvitation({ memberId }: { memberId: string }) {
       <FormMessage status={status} message={message} />
       {url && (
         <div className="rounded-md border border-warning/20 bg-warning-soft p-3 text-sm">
-          <p className="text-warning">Lokaler Entwicklungslink. In Produktion wird die Einladung per E-Mail zugestellt.</p>
+          <p className="text-warning">
+            Notfall-Link: Die E-Mail konnte nicht zugestellt werden. Teile diesen Link nur direkt mit der eingeladenen Person.
+          </p>
           <Button type="button" variant="ghost" className="mt-2" onClick={() => setShowUrl((value) => !value)}>
             {showUrl ? 'Link ausblenden' : 'Link zeigen'}
           </Button>
