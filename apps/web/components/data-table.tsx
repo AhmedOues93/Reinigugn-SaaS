@@ -123,7 +123,7 @@ export function DataTable<T>({
                     <td className="whitespace-nowrap py-2 pe-3 text-end">
                       <div className="flex items-center justify-end gap-1">
                         {rowActions?.(row)}
-                        {href && (
+                        {href && !rowActions && (
                           <Link
                             href={href}
                             tabIndex={-1}
@@ -188,7 +188,7 @@ export function DataTable<T>({
               {actions || href ? (
                 <div className="relative z-10 mt-3 flex flex-wrap gap-2 border-t border-border/70 pt-3">
                   {actions}
-                  {href && (
+                  {href && !actions && (
                     <Link
                       href={href}
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"

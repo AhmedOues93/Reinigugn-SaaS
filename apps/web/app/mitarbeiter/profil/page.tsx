@@ -6,6 +6,7 @@ import { initialsOf } from '@/components/employee/avatar';
 import { EmployeeLanguagePicker } from '@/components/employee/language-picker';
 import { EmployeeLogoutButton } from '@/components/employee/logout-button';
 import { EmployeeContactForm } from '@/components/employee/contact-form';
+import { AccountPasswordForm } from '@/components/account-password-form';
 import { logout } from '@/app/(auth)/actions';
 import { employeeLocale, getMyEmployeeProfile } from '@/lib/data/employee';
 import { formatDate } from '@/lib/format';
@@ -59,6 +60,14 @@ export default async function EmployeeProfilePage() {
         <Card className="p-5">
           <h2 className="text-base font-semibold tracking-tight">{t(locale, 'emp.profile.language')}</h2>
           <EmployeeLanguagePicker locale={locale} action={setMyAppLanguage} />
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="text-base font-semibold tracking-tight">Konto und Sicherheit</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Passwort ändern oder einen Reset-Link per E-Mail anfordern.</p>
+          <div className="mt-4">
+            <AccountPasswordForm />
+          </div>
         </Card>
 
         <div className="pt-1">

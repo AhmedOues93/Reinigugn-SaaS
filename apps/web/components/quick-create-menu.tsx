@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, CalendarPlus, ChevronDown, ClipboardPlus, Inbox, MessageSquareWarning, Plus, Receipt, UserPlus, Users } from 'lucide-react';
+import { ChevronDown, Inbox, Plus, UserPlus, Users } from 'lucide-react';
 
 /**
  * The office's most frequent "new" actions in one place, so starting work never
@@ -12,7 +12,6 @@ import { Building2, CalendarPlus, ChevronDown, ClipboardPlus, Inbox, MessageSqua
 const actions = [
   { href: '/dashboard/vertrieb/anfragen/neu', label: 'Anfrage', hint: 'Interessent oder Bestandskunde', icon: Inbox },
   { href: '/dashboard/kunden/neu', label: 'Kunde', hint: 'Stammdaten direkt anlegen', icon: Users },
-  { href: '/dashboard/auftraege/neu', label: 'Einsatz', hint: 'Einmaligen Einsatz planen', icon: ClipboardPlus },
   { href: '/dashboard/mitarbeiter/neu', label: 'Mitarbeiter', hint: 'Einladung senden', icon: UserPlus },
 ];
 

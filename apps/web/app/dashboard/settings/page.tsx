@@ -3,6 +3,7 @@ import { Notice, PageHeader, Section } from '@/components/ui';
 import { getCurrentCompany, requireOwnerCompany } from '@/lib/auth';
 import { CompanySettingsForm } from '@/components/company-settings-form';
 import { CompanyBrandingForm } from '@/components/company-branding-form';
+import { AccountPasswordForm } from '@/components/account-password-form';
 import { getCompanyBranding } from '@/lib/data/branding';
 import { removeCompanyLogo, updateCompanyBranding, updateCompanySettings } from './actions';
 
@@ -21,6 +22,11 @@ export default async function SettingsPage() {
         <Notice tone="neutral" icon={<ShieldCheck />} title="Nur für den Inhaber">
           Firmendaten dürfen nur durch den Inhaber des Unternehmens bearbeitet werden.
         </Notice>
+        <Section title="Konto und Sicherheit" description="Ändere dein persönliches Anmeldepasswort.">
+          <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+            <AccountPasswordForm />
+          </div>
+        </Section>
       </div>
     );
   }
@@ -50,6 +56,12 @@ export default async function SettingsPage() {
           action={updateCompanySettings}
         />
       </div>
+
+      <Section title="Konto und Sicherheit" description="Ändere dein persönliches Anmeldepasswort.">
+        <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+          <AccountPasswordForm />
+        </div>
+      </Section>
 
       <Section
         title="Logo und Farbe"
