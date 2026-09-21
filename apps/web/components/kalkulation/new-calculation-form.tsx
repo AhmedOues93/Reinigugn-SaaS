@@ -49,13 +49,13 @@ export function NewCalculationForm({
               </label>
             </div>
             {customerMode === 'EXISTING' ? (
+              <>
               <Field label="Kunde" htmlFor="customer_id">
                 <Select id="customer_id" name="customer_id" required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
                   <option value="">Kunde auswählen</option>
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name ?? customer.label}</option>)}
                 </Select>
               </Field>
-              <>
                 {customerId && objects.some((object) => object.customerId === customerId) && (
                   <Field label="Objekt" htmlFor="cleaning_object_id" info="Optional. Wählen Sie ein bestehendes Objekt, damit bei Annahme kein Duplikat entsteht.">
                     <Select id="cleaning_object_id" name="cleaning_object_id" defaultValue="">
