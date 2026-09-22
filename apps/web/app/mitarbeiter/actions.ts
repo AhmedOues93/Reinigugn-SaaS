@@ -9,6 +9,8 @@ import { employeeLocale } from '@/lib/data/employee';
 import { isLocale, localeCookie, t } from '@/lib/i18n';
 import { cookies } from 'next/headers';
 import { jobPhotoExtension, validateJobPhotoFile } from '@/lib/photo-validation';
+import { sendMail } from '@/lib/mail/transport';
+import { appUrl } from '@/lib/utils';
 
 /**
  * Every employee action resolves the membership from the session and refuses any
@@ -38,6 +40,60 @@ async function employeeLocaleSafe() {
   }
 }
 
+type PortalAcceptanceMailTarget = {
+  service_record_id: string;
+  customer_id: string;
+  customer_name: string;
+  job_title: string;
+  scheduled_date: string;
+  recipient_email: string;
+  recipient_name: string | null;
+  request_sent_at: string | null;
+  reminder_sent_at: string | null;
+};
+
+async function sendPortalAcceptanceRequest(
+  context: NonNullable<Awaited<ReturnType<typeof employeeContext>>>,
+  jobId: string,
+) {
+  const { data, error } = await context.supabase.rpc('get_portal_acceptance_mail_target', { p_job_id: jobId });
+  if (error) {
+    console.error('portal acceptance mail target failed', error.message);
+    return;
+  }
+  const target = (Array.isArray(data) ? data[0] : data) as PortalAcceptanceMailTarget | null;
+  if (!target?.recipient_email || target.request_sent_at) return;
+
+  const { data: company } = await context.supabase
+    .from('companies')
+    .select('name')
+    .eq('id', context.membership.company_id)
+    .maybeSingle();
+
+  const companyName = company?.name ?? 'ReinPlan';
+  const result = await sendMail({
+    to: target.recipient_email,
+    subject: `Abnahme erforderlich: ${target.job_title}`,
+    text:
+      `Guten Tag${target.recipient_name ? ` ${target.recipient_name}` : ''},\n\n` +
+      `${companyName} hat die Leistung „${target.job_title}“ abgeschlossen. ` +
+      `Bitte prüfen und bestätigen Sie den Leistungsnachweis im Kundenportal.\n\n` +
+      `${appUrl(`/portal/leistungen/${jobId}`)}\n\n` +
+      `Mit freundlichen Grüßen\n${companyName}`,
+    idempotencyKey: `acceptance-request-${target.service_record_id}`,
+  });
+
+  if (result.status !== 'SENT') {
+    console.error('portal acceptance request not sent', result.detail);
+    return;
+  }
+
+  const { error: recordError } = await context.supabase.rpc('record_portal_acceptance_mail', {
+    p_job_id: jobId,
+    p_kind: 'REQUEST',
+  });
+  if (recordError) console.error('portal acceptance request audit failed', recordError.message);
+}
 type TimeOperation = 'start_my_job' | 'stop_my_job' | 'pause_my_job' | 'resume_my_job';
 const timeMessages = { start_my_job: 'emp.job.started', stop_my_job: 'emp.job.stopped', pause_my_job: 'emp.job.pauseStarted', resume_my_job: 'emp.job.resumed' } as const;
 
@@ -52,9 +108,19 @@ async function runTimeAction(jobId: string, operation: TimeOperation): Promise<F
     }
     return { status: 'error', message: t(locale, 'common.errorBody') };
   }
+  if (operation === 'stop_my_job') {
+    try {
+      await sendPortalAcceptanceRequest(context, jobId);
+    } catch (mailError) {
+      console.error('portal acceptance request failed', mailError);
+    }
+  }
+
   revalidateEmployee(jobId);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/arbeitszeiten');
+  revalidatePath('/dashboard/leistungsnachweise');
+  revalidatePath('/portal/leistungen');
   return { status: 'success', message: t(locale, timeMessages[operation]) };
 }
 
