@@ -43,6 +43,12 @@ export function ServiceAcceptancePanel({
       const ratio = window.devicePixelRatio || 1;
       const { width, height } = canvas.getBoundingClientRect();
       if (!width || !height) return;
+      // Writing to canvas.width wipes the bitmap. Turning the phone while
+      // signing therefore used to blank the pad on screen while the hidden
+      // field still held the pre-rotation image: the customer saw an empty box
+      // and the employee submitted a signature nobody could check. Carry the
+      // existing ink across the resize instead.
+      const previous = inkRef.current ? canvas.toDataURL('image/png') : null;
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
       const context = canvas.getContext('2d');
@@ -52,6 +58,14 @@ export function ServiceAcceptancePanel({
       context.lineCap = 'round';
       context.lineJoin = 'round';
       context.strokeStyle = '#1f2937';
+      if (previous) {
+        const image = new window.Image();
+        image.onload = () => {
+          context.drawImage(image, 0, 0, width, height);
+          if (signatureRef.current) signatureRef.current.value = canvas.toDataURL('image/png');
+        };
+        image.src = previous;
+      }
     };
     resize();
     window.addEventListener('resize', resize);

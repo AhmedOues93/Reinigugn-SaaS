@@ -16,6 +16,7 @@ import { getMyAssignedJob } from '@/lib/data/jobs';
 import { listMyJobPhotos } from '@/lib/data/job-photos';
 import { formatDate, formatTimeRange } from '@/lib/format';
 import { t } from '@/lib/i18n';
+import { stripDemoPrefix } from '@/lib/demo-label';
 import {
   completeMyChecklistItem,
   confirmOnSiteAcceptance,
@@ -57,7 +58,6 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
   const editable = ['PLANNED', 'CONFIRMED', 'IN_PROGRESS'].includes(job.status);
   const address = [object?.street, [object?.postal_code, object?.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   const breaks = (entry?.job_time_breaks ?? []) as { started_at: string; ended_at: string | null }[];
-  const cleanDemoPrefix = (value?: string | null) => value?.replace(/^TESTDATEN\s*[–-]\s*/i, '').trim() ?? '';
 
   return (
     <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
@@ -122,7 +122,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
             <FileImage className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
             <div className="min-w-0">
               <h2 className="text-sm font-semibold">{t(locale, 'emp.job.instructions')}</h2>
-              <p className="break-anywhere mt-1 whitespace-pre-wrap text-[15px] leading-6 text-muted-foreground">{cleanDemoPrefix(job.employee_instructions)}</p>
+              <p className="break-anywhere mt-1 whitespace-pre-wrap text-[15px] leading-6 text-muted-foreground">{stripDemoPrefix(job.employee_instructions)}</p>
             </div>
           </section>
         )}
@@ -153,7 +153,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                 <KeyRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{t(locale, 'emp.job.access')}</p>
-                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{cleanDemoPrefix(object.access_instructions)}</p>
+                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{stripDemoPrefix(object.access_instructions)}</p>
                 </div>
               </li>
             )}
@@ -180,7 +180,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                 <Sparkles className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{t(locale, 'emp.job.cleaningNotes')}</p>
-                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{cleanDemoPrefix(object.cleaning_instructions)}</p>
+                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{stripDemoPrefix(object.cleaning_instructions)}</p>
                 </div>
               </li>
             )}

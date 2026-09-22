@@ -23,6 +23,7 @@ import {
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
+import { stripDemoPrefix } from '@/lib/demo-label';
 import { scheduleSurvey, setLeadStatus } from '../../actions';
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -156,7 +157,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </dl>
           {lead.notes && (
             <p className="break-anywhere mt-4 whitespace-pre-wrap text-sm text-muted-foreground">
-              {lead.notes.replace(/^\[TESTDATEN\]\s*/i, '')}
+              {stripDemoPrefix(lead.notes)}
             </p>
           )}
         </Card>

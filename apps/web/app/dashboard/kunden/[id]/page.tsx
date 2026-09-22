@@ -13,6 +13,7 @@ import { PortalAccessPanel } from '@/components/portal-access-panel';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
 import { listPendingPortalInvitations, listPortalContacts } from '@/lib/data/portal-access';
 import { formatDate, formatMoney } from '@/lib/format';
+import { stripDemoPrefix } from '@/lib/demo-label';
 import { inviteCustomerPortalContact, setCustomerActive } from '../actions';
 
 function Line({ icon: Icon, children }: { icon: typeof User; children: React.ReactNode }) {
@@ -115,7 +116,7 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
           {customer.notes && (
             <section>
               <h2 className="mb-2 text-[15px] font-semibold">Interne Notizen</h2>
-              <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{customer.notes.replace(/^\[TESTDATEN\]\s*/i, '')}</p>
+              <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{stripDemoPrefix(customer.notes)}</p>
             </section>
           )}
 
