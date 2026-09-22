@@ -70,7 +70,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   const steps = [
     { label: 'Entwurf', done: true, at: null as string | null },
-    { label: 'Festgeschrieben', done: !isDraft, at: invoice.issue_date },
+    { label: 'Ausgestellt', done: !isDraft, at: invoice.issue_date },
     { label: 'Versendet', done: Boolean(invoice.sent_at), at: invoice.sent_at },
     { label: 'Bezahlt', done: invoice.status === 'PAID', at: invoice.paid_at },
   ];
@@ -81,7 +81,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-6xl">
       <BackLink href="/dashboard/abrechnung">{t(locale, 'billing.title')}</BackLink>
 
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-[1.75rem] font-semibold tabular-nums leading-tight">
@@ -113,7 +113,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
       {/* Lifecycle. Cancelled invoices keep their history but show the stop. */}
       {invoice.status !== 'CANCELLED' ? (
-        <ol className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/80 bg-border/80 shadow-card sm:grid-cols-4" aria-label="Rechnungsverlauf">
+        <ol className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/80 bg-border/80 shadow-card sm:grid-cols-4" aria-label="Rechnungsverlauf">
           {steps.map((step, index) => (
             <li
               key={step.label}
@@ -153,8 +153,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         </Notice>
       )}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-6">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-5">
           {isDraft && billableJobs.length > 0 && (
             <AddAllBillableAction action={addAllBillableJobs.bind(null, invoice.id)} count={billableJobs.length} />
           )}
@@ -162,7 +162,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Card>
             <div className="flex items-center justify-between gap-3 border-b border-border/80 px-5 py-4">
               <h2 className="text-[15px] font-semibold">{t(locale, 'billing.lines')}</h2>
-              <span className="text-sm text-muted-foreground">{invoice.lines.length} Positionen</span>
+              <span className="text-sm text-muted-foreground">{invoice.lines.length} {invoice.lines.length === 1 ? 'Leistung' : 'Leistungen'}</span>
             </div>
             <div className="p-5">
               {isDraft ? (
@@ -252,7 +252,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Card className="p-5">
             <h2 className="mb-4 text-[15px] font-semibold">
               {isDraft
-                ? 'Festschreiben'
+                ? 'Rechnung ausstellen'
                 : invoice.status === 'ISSUED'
                   ? invoice.sent_at
                     ? 'Zahlung erfassen'
@@ -337,7 +337,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Card className="px-5 py-2">
             <dl className="divide-y divide-border/70">
               <DataRow label={t(locale, 'billing.issueDate')} value={invoice.issue_date ? formatDate(locale, invoice.issue_date) : '—'} />
-              <DataRow label={t(locale, 'billing.dueDate')} value={invoice.due_date ? formatDate(locale, invoice.due_date) : `${invoice.payment_terms_days} Tage nach Festschreibung`} />
+              <DataRow label={t(locale, 'billing.dueDate')} value={invoice.due_date ? formatDate(locale, invoice.due_date) : `${invoice.payment_terms_days} Tage nach Ausstellung`} />
               <DataRow label="Versendet" value={invoice.sent_at ? formatDate(locale, invoice.sent_at) : '—'} />
               <DataRow label="Im Kundenportal" value={isDraft ? 'Nein (Entwurf)' : 'Sichtbar'} />
             </dl>
