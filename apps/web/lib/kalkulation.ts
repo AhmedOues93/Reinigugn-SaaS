@@ -145,9 +145,9 @@ export function deriveProductiveRateBp(input: {
  * swallowed, so a future gap cannot silently disappear from the screen.
  */
 export const incompleteReasonLabels: Record<string, string> = {
-  KEINE_POSITIONEN: 'Es ist noch keine Position erfasst.',
+  KEINE_POSITIONEN: 'Es ist noch keine Leistung erfasst.',
   KEIN_LOHN: 'Es ist kein Kalkulationslohn hinterlegt — die Personalkosten sind deshalb null.',
-  KEINE_ZEIT: 'Aus den Positionen ergibt sich keine Arbeitszeit.',
+  KEINE_ZEIT: 'Aus den Leistungen ergibt sich keine Arbeitszeit.',
   KEINE_ZIELMARGE: 'Es ist weder eine Zielmarge noch ein Verkaufspreis hinterlegt.',
   KEIN_PREIS: 'Es ergibt sich kein Verkaufspreis.',
 };
