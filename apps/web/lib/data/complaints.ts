@@ -21,12 +21,21 @@ export async function getComplaint(id: string) {
   ]);
   if (error || employeesError) throw new Error('Reklamation konnte nicht geladen werden.');
   if (!complaint) return null;
-  const { data: updates, error: updatesError } = await supabase
-    .from('complaint_updates')
-    .select('id, status, note, created_at, company_members!complaint_updates_author_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
-    .eq('complaint_id', id).order('created_at', { ascending: false });
-  if (updatesError) throw new Error('Reklamationsverlauf konnte nicht geladen werden.');
-  return { complaint, updates: updates ?? [], employees: employees ?? [] };
+  const [{ data: updates, error: updatesError }, { data: jobAssignments, error: assignmentsError }] = await Promise.all([
+    supabase
+      .from('complaint_updates')
+      .select('id, status, note, created_at, company_members!complaint_updates_author_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
+      .eq('complaint_id', id)
+      .order('created_at', { ascending: false }),
+    complaint.job_id
+      ? supabase
+          .from('job_assignments')
+          .select('member_id, company_members!job_assignments_member_id_fkey(id, profiles!company_members_profile_id_fkey(first_name, last_name))')
+          .eq('job_id', complaint.job_id)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (updatesError || assignmentsError) throw new Error('Reklamationsverlauf konnte nicht geladen werden.');
+  return { complaint, updates: updates ?? [], employees: employees ?? [], jobAssignments: jobAssignments ?? [] };
 }
 
 export async function listComplaintFormOptions() {
