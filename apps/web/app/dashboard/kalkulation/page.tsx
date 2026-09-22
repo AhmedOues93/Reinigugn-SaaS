@@ -10,6 +10,7 @@ import {
   type CalculationStatus,
 } from '@/lib/data/kalkulation';
 import { formatDate, formatMoney } from '@/lib/format';
+import { currentLocale } from '@/lib/i18n-server';
 
 const filters: { key: CalculationStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'Alle' },
@@ -29,7 +30,7 @@ export default async function CalculationsPage({
 }) {
   const query = await searchParams;
   const active = filters.find((entry) => entry.key === query.status)?.key ?? 'all';
-  const rows = await listCalculations(active === 'all' ? undefined : active);
+  const [rows, locale] = await Promise.all([listCalculations(active === 'all' ? undefined : active), currentLocale()]);
 
   return (
     <>
