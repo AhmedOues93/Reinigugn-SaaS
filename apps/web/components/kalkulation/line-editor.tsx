@@ -48,6 +48,7 @@ export function CalculationLineEditor({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [unit, setUnit] = useState<CalculationUnit>(line?.calculation_unit ?? 'QM');
+  const [catalogItemId, setCatalogItemId] = useState(line?.catalog_item_id ?? '');
   const [frequency, setFrequency] = useState<CalculationFrequency>(line?.frequency ?? 'PRO_WOCHE');
   const [showOverride, setShowOverride] = useState(line?.minutes_override != null);
   const countable = countableFrequencies.includes(frequency);
@@ -62,6 +63,7 @@ export function CalculationLineEditor({
       const field = form.elements.namedItem(name);
       if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) field.value = value;
     };
+    setCatalogItemId(id);
     setUnit(item.calculation_unit);
     set('service_name', item.name);
     set('calculation_unit', item.calculation_unit);
@@ -76,15 +78,34 @@ export function CalculationLineEditor({
       <FormMessage status={state.status} message={state.message} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Bereich / Raum" htmlFor="area_name">
-          <Input id="area_name" name="area_name" required maxLength={160} defaultValue={line?.area_name ?? ''} />
+        <Field
+          label="Bereich / Raumbezeichnung"
+          htmlFor="area_name"
+          info="Wo wird die Leistung ausgeführt? Zum Beispiel „3. OG · Besprechungsraum“."
+        >
+          <Input
+            id="area_name"
+            name="area_name"
+            required
+            maxLength={160}
+            defaultValue={line?.area_name ?? ''}
+            placeholder="z. B. 3. OG · Besprechungsraum"
+          />
         </Field>
-        <Field label="Leistung aus dem Katalog" htmlFor="catalog_item_id" info="Übernimmt Einheit, Richtleistung und Materialansatz als Vorschlag.">
+        <Field
+          label="Leistung auswählen"
+          htmlFor="catalog_item_id"
+          info="Eine Vorlage übernimmt Einheit, Richtleistung und Materialansatz. Für Sonderleistungen „Frei erfassen“ wählen."
+        >
           <Select
             id="catalog_item_id"
             name="catalog_item_id"
-            defaultValue={line?.catalog_item_id ?? ''}
-            onChange={(event) => applyCatalogItem(event.target.value, event.target.form)}
+            value={catalogItemId}
+            onChange={(event) => {
+              const id = event.target.value;
+              setCatalogItemId(id);
+              if (id) applyCatalogItem(id, event.target.form);
+            }}
           >
             <option value="">Frei erfassen</option>
             {catalog.map((item) => (
@@ -94,9 +115,20 @@ export function CalculationLineEditor({
             ))}
           </Select>
         </Field>
-        <Field label="Leistung" htmlFor="service_name">
-          <Input id="service_name" name="service_name" required maxLength={160} defaultValue={line?.service_name ?? ''} />
-        </Field>
+        {catalogItemId ? (
+          <input type="hidden" id="service_name" name="service_name" defaultValue={line?.service_name ?? ''} />
+        ) : (
+          <Field label="Leistung" htmlFor="service_name" info="Nur nötig, wenn keine Vorlage aus dem Katalog verwendet wird.">
+            <Input
+              id="service_name"
+              name="service_name"
+              required
+              maxLength={160}
+              defaultValue={line?.service_name ?? ''}
+              placeholder="z. B. Sonderreinigung Empfang"
+            />
+          </Field>
+        )}
         <Field label="Einheit" htmlFor="calculation_unit">
           <Select
             id="calculation_unit"
