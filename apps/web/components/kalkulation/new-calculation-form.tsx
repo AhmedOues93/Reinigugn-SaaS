@@ -28,7 +28,7 @@ export function NewCalculationForm({
   customers: Option[];
   objects: { id: string; customerId: string; name: string }[];
   catalog: CatalogItem[];
-  surveys: { id: string; label: string }[];
+  surveys: { id: string; label: string; customerId: string | null; leadId: string | null }[];
   preferredSurveyId?: string;
   preferredCustomerId?: string;
   preferredObjectId?: string;
@@ -53,7 +53,12 @@ export function NewCalculationForm({
   const [fromSurvey, setFromSurvey] = useState(Boolean(preferredSurveyId));
   const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>(preferredCustomerId ? 'EXISTING' : 'NEW');
   const [customerId, setCustomerId] = useState(preferredCustomerId ?? '');
-  const [cleaningObjectId, setCleaningObjectId] = useState(preferredObjectId ?? '');
+  const initialCustomerObjects = preferredCustomerId
+    ? objects.filter((object) => object.customerId === preferredCustomerId)
+    : [];
+  const [cleaningObjectId, setCleaningObjectId] = useState(
+    preferredObjectId ?? (initialCustomerObjects.length === 1 ? initialCustomerObjects[0].id : ''),
+  );
   const selectedCustomerName = useMemo(
     () => customers.find((customer) => customer.id === customerId)?.name ?? customers.find((customer) => customer.id === customerId)?.label ?? '',
     [customerId, customers],
@@ -62,6 +67,19 @@ export function NewCalculationForm({
     () => objects.find((object) => object.id === cleaningObjectId)?.name ?? '',
     [cleaningObjectId, objects],
   );
+  const customerObjects = useMemo(
+    () => objects.filter((object) => object.customerId === customerId),
+    [customerId, objects],
+  );
+  const relevantSurveys = useMemo(
+    () =>
+      surveys.filter((survey) => {
+        if (preferredLeadId && survey.leadId === preferredLeadId) return true;
+        return Boolean(customerId && survey.customerId === customerId);
+      }),
+    [customerId, preferredLeadId, surveys],
+  );
+  const usingSurvey = fromSurvey && relevantSurveys.length > 0;
 
   function nextStep() {
     const container = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
@@ -79,25 +97,22 @@ export function NewCalculationForm({
       <FormMessage status={state.status} message={state.message} />
       {preferredLeadId && <input type="hidden" name="lead_id" value={preferredLeadId} />}
 
-      <div className="mx-auto max-w-2xl rounded-xl border border-border bg-muted/25 p-3">
-        <div className="grid grid-cols-3 gap-2 text-center text-xs font-medium">
-          <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>{'1. ' + t(locale, 'sales.quote.stepCustomer')}</span>
-          <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>{'2. ' + t(locale, 'sales.quote.stepService')}</span>
-          <span className={step === 3 ? 'text-primary' : 'text-muted-foreground'}>{'3. ' + t(locale, 'sales.quote.stepReview')}</span>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-          <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '33.33%' : step === 2 ? '66.66%' : '100%' }} />
+      <div className="mx-auto max-w-2xl">
+        <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
+          <span className={step === 1 ? 'rounded-md bg-card px-2 py-2 text-primary shadow-sm' : 'px-2 py-2 text-muted-foreground'}>1. Kunde & Objekt</span>
+          <span className={step === 2 ? 'rounded-md bg-card px-2 py-2 text-primary shadow-sm' : 'px-2 py-2 text-muted-foreground'}>2. Leistung</span>
+          <span className={step === 3 ? 'rounded-md bg-card px-2 py-2 text-primary shadow-sm' : 'px-2 py-2 text-muted-foreground'}>3. Prüfen</span>
         </div>
       </div>
 
       <div data-step="1" className={step === 1 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 1}>
-      <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
-        <div className="mb-5">
+      <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
+        <div className="mb-4">
           <h2 className="font-semibold">{t(locale, 'sales.quote.stepCustomer')}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t(locale, 'sales.quote.newSubtitle')}</p>
         </div>
-        {!fromSurvey && preferredLeadId && leadDefaults ? (
-          <div className="space-y-4">
+        {!usingSurvey && preferredLeadId && leadDefaults ? (
+          <div className="space-y-3">
             <div className="rounded-xl border border-border bg-muted/25 p-4">
               <p className="font-semibold">{leadDefaults.organisation}</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -109,7 +124,6 @@ export function NewCalculationForm({
             </div>
             <input type="hidden" name="customer_mode" value={preferredCustomerId ? 'EXISTING' : 'NEW'} />
             {preferredCustomerId && <input type="hidden" name="customer_id" value={preferredCustomerId} />}
-            {preferredObjectId && <input type="hidden" name="cleaning_object_id" value={preferredObjectId} />}
             {!preferredCustomerId && (
               <>
                 <input type="hidden" name="organisation" value={leadDefaults.organisation} />
@@ -119,6 +133,44 @@ export function NewCalculationForm({
                 <input type="hidden" name="street" value={leadDefaults.street} />
                 <input type="hidden" name="postal_code" value={leadDefaults.postalCode} />
                 <input type="hidden" name="city" value={leadDefaults.city} />
+              </>
+            )}
+            {preferredCustomerId && (
+              <>
+                {customerObjects.length > 0 && (
+                  <Field label="Objekt" htmlFor="lead_cleaning_object_id" info="Bestehendes Objekt verwenden oder ein neues anlegen.">
+                    <Select
+                      id="lead_cleaning_object_id"
+                      name="cleaning_object_id"
+                      value={cleaningObjectId}
+                      onChange={(event) => {
+                        setCleaningObjectId(event.target.value);
+                        setFromSurvey(false);
+                      }}
+                    >
+                      <option value="">Neues Objekt</option>
+                      {customerObjects.map((object) => (
+                        <option key={object.id} value={object.id}>{object.name}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                )}
+                {!cleaningObjectId && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field className="sm:col-span-2" label="Objektname" htmlFor="lead_object_name">
+                      <Input id="lead_object_name" name="object_name" required minLength={2} maxLength={160} defaultValue={leadDefaults.organisation} />
+                    </Field>
+                    <Field className="sm:col-span-2" label="Straße und Hausnummer" htmlFor="lead_object_street">
+                      <Input id="lead_object_street" name="object_street" required maxLength={160} defaultValue={leadDefaults.street} />
+                    </Field>
+                    <Field label="PLZ" htmlFor="lead_object_postal_code">
+                      <Input id="lead_object_postal_code" name="object_postal_code" required maxLength={16} defaultValue={leadDefaults.postalCode} />
+                    </Field>
+                    <Field label="Ort" htmlFor="lead_object_city">
+                      <Input id="lead_object_city" name="object_city" required maxLength={120} defaultValue={leadDefaults.city} />
+                    </Field>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -139,14 +191,21 @@ export function NewCalculationForm({
             {customerMode === 'EXISTING' ? (
               <>
               <Field label={t(locale, 'sales.quote.selectCustomer')} htmlFor="customer_id">
-                <Select id="customer_id" name="customer_id" required value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+                <Select id="customer_id" name="customer_id" required value={customerId} onChange={(event) => {
+                  setCustomerId(event.target.value);
+                  setCleaningObjectId('');
+                  setFromSurvey(false);
+                }}>
                   <option value="">{t(locale, 'sales.quote.selectCustomer')}</option>
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name ?? customer.label}</option>)}
                 </Select>
               </Field>
                 {customerId && objects.some((object) => object.customerId === customerId) && (
                   <Field label={t(locale, 'sales.quote.selectObject')} htmlFor="cleaning_object_id" info={t(locale, 'sales.quote.objectReuseInfo')}>
-                    <Select id="cleaning_object_id" name="cleaning_object_id" value={cleaningObjectId} onChange={(event) => setCleaningObjectId(event.target.value)}>
+                    <Select id="cleaning_object_id" name="cleaning_object_id" value={cleaningObjectId} onChange={(event) => {
+                      setCleaningObjectId(event.target.value);
+                      setFromSurvey(false);
+                    }}>
                       <option value="">{t(locale, 'sales.quote.newObject')}</option>
                       {objects.filter((object) => object.customerId === customerId).map((object) => <option key={object.id} value={object.id}>{object.name}</option>)}
                     </Select>
@@ -187,28 +246,30 @@ export function NewCalculationForm({
           <Input id="title" name="title" required minLength={2} maxLength={160} defaultValue={leadDefaults?.organisation ?? ''} placeholder={t(locale, 'sales.quote.label')} />
         </Field>
 
-        {surveys.length > 0 && (
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="radio" name="source" value="survey" checked={fromSurvey} onChange={() => setFromSurvey(true)} />
-              {t(locale, 'sales.quote.fromSurvey')}
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="source" value="blank" checked={!fromSurvey} onChange={() => setFromSurvey(false)} />
-              {t(locale, 'sales.quote.directInput')}
-            </label>
+        {relevantSurveys.length > 0 && (
+          <div className="rounded-lg border border-border bg-muted/20 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Datenquelle</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm has-[:checked]:border-primary has-[:checked]:text-primary">
+                <input type="radio" name="source" value="blank" checked={!usingSurvey} onChange={() => setFromSurvey(false)} />
+                Angaben direkt erfassen
+              </label>
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm has-[:checked]:border-primary has-[:checked]:text-primary">
+                <input type="radio" name="source" value="survey" checked={usingSurvey} onChange={() => setFromSurvey(true)} />
+                Daten aus Besichtigung
+              </label>
+            </div>
           </div>
         )}
 
-        {fromSurvey && surveys.length > 0 ? (
+        {usingSurvey ? (
           <Field
             label={t(locale, 'sales.quote.survey')}
             htmlFor="site_survey_id"
-            info={t(locale, 'sales.quote.surveyInfo')}
+            info="Es werden nur abgeschlossene Besichtigungen dieses Kunden angezeigt."
           >
-            <Select id="site_survey_id" name="site_survey_id" required defaultValue={preferredSurveyId ?? ""}>
-              <option value="">{t(locale, 'sales.quote.selectSurvey')}</option>
-              {surveys.map((survey) => (
+            <Select id="site_survey_id" name="site_survey_id" required defaultValue={preferredSurveyId ?? relevantSurveys[0]?.id ?? ''}>
+              {relevantSurveys.map((survey) => (
                 <option key={survey.id} value={survey.id}>
                   {survey.label}
                 </option>
@@ -221,11 +282,11 @@ export function NewCalculationForm({
       </div>
 
       <div data-step="2" className={step === 2 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 2}>
-      <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+      <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
         <div className="mb-5">
           <h2 className="font-semibold">{t(locale, 'sales.quote.stepService')}</h2>
         </div>
-        {!fromSurvey && (
+        {!usingSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t(locale, 'sales.quote.cleaningType')} htmlFor="cleaning_type"><Select id="cleaning_type" name="cleaning_type" defaultValue={leadDefaults?.cleaningType ?? ''}><option value="">{t(locale, 'sales.quote.open')}</option><option value="Unterhaltsreinigung">{t(locale, 'sales.cleaning.MAINTENANCE')}</option><option value="Büroreinigung">{t(locale, 'sales.cleaning.OFFICE')}</option><option value="Grundreinigung">{t(locale, 'sales.cleaning.DEEP')}</option><option value="Glasreinigung">{t(locale, 'sales.cleaning.GLASS')}</option><option value="Treppenhausreinigung">{t(locale, 'sales.cleaning.STAIRCASE')}</option><option value="Sanitärreinigung">{t(locale, 'sales.cleaning.SANITARY')}</option><option value="Sonderreinigung">{t(locale, 'sales.cleaning.SPECIAL')}</option></Select></Field>
             <Field label={t(locale, 'sales.quote.frequency')} htmlFor="frequency"><Select id="frequency" name="frequency" defaultValue={leadDefaults?.frequency ?? ''}><option value="">{t(locale, 'sales.quote.open')}</option><option value="Einmalig">{t(locale, 'sales.frequency.ONCE')}</option><option value="1x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_1')}</option><option value="2x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_2')}</option><option value="3x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_3')}</option><option value="5x wöchentlich">{t(locale, 'sales.frequency.WEEKLY_5')}</option><option value="Monatlich">{t(locale, 'sales.frequency.MONTHLY')}</option></Select></Field>
@@ -256,11 +317,11 @@ export function NewCalculationForm({
       </div>
 
       <div data-step="3" className={step === 3 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 3}>
-        <div className="space-y-4 rounded-xl border border-border bg-card p-5">
+        <div className="space-y-3 rounded-xl border border-border bg-card p-4 sm:p-5">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(locale, 'sales.quote.reviewCustomer')}</p>
             <p className="mt-1 font-semibold">
-              {fromSurvey ? t(locale, 'sales.quote.fromSurveyShort') : customerMode === 'EXISTING' ? (selectedCustomerName || t(locale, 'sales.quote.customerModeExisting')) : t(locale, 'sales.quote.customerModeNew')}
+              {usingSurvey ? t(locale, 'sales.quote.fromSurveyShort') : customerMode === 'EXISTING' ? (selectedCustomerName || t(locale, 'sales.quote.customerModeExisting')) : t(locale, 'sales.quote.customerModeNew')}
             </p>
             {selectedObjectName && <p className="mt-1 text-sm text-muted-foreground">{selectedObjectName}</p>}
           </div>
@@ -273,7 +334,7 @@ export function NewCalculationForm({
         </div>
       </div>
 
-      <div className="sticky bottom-3 z-10 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+      <div className="sticky bottom-2 z-10 mx-auto flex max-w-2xl items-center justify-between gap-2 rounded-xl border border-border bg-card/95 p-2.5 shadow-popover backdrop-blur">
         {step === 1 ? (
           <span />
         ) : (
