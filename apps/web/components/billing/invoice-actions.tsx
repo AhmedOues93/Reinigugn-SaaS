@@ -25,7 +25,7 @@ export function IssueInvoiceAction({
         Die Rechnung erhält ihre fortlaufende Nummer, wird im Kundenportal sichtbar und ist danach nicht mehr änderbar.
       </p>
       {disabled ? (
-        <p className="text-sm font-medium text-warning">Fügen Sie zuerst mindestens eine Position hinzu.</p>
+        <p className="text-sm font-medium text-warning">Fuegen Sie zuerst mindestens eine Leistung hinzu.</p>
       ) : (
         <SubmitButton locale={locale} className="w-full">
           {t(locale, 'billing.issue')}
@@ -90,7 +90,7 @@ export function CorrectionInvoiceAction({ action, locale }: { action: Action; lo
     <form action={formAction} className="space-y-3">
       <FormMessage status={state.status} message={state.message} />
       <p className="text-sm text-muted-foreground">
-        Eine Korrekturrechnung entsteht als neuer Entwurf mit denselben Positionen und verweist auf
+        Eine Korrekturrechnung entsteht als neuer Entwurf mit denselben Leistungen und verweist auf
         diese stornierte Rechnung.
       </p>
       <SubmitButton locale={locale}>Korrekturrechnung erstellen</SubmitButton>
