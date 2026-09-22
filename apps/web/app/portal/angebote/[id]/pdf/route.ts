@@ -26,7 +26,6 @@ export async function GET(
     recurringNetMonthlyCents: Number(quote.recurring_net_monthly_cents),
     acceptedAt: quote.accepted_at,
     acceptedByName: quote.accepted_by_name,
-    acceptedSignatureText: quote.accepted_signature_text,
     recipient: quote.recipient_snapshot,
     company: quote.company_snapshot,
     logo: await fetchLogo(branding?.logoUrl ?? null),
