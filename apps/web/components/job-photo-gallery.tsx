@@ -27,7 +27,7 @@ function DeleteButton({ locale }: { locale: Locale }) {
       disabled={pending}
       className="mt-3 inline-flex min-h-touch items-center text-sm font-medium text-danger disabled:opacity-60"
     >
-      {pending ? t(locale, 'common.saving') : t(locale, 'common.cancel')}
+      {pending ? t(locale, 'common.saving') : 'Foto löschen'}
     </button>
   );
 }
