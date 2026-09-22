@@ -17,6 +17,7 @@ import {
   type InvoicePayment,
 } from '@/lib/data/billing';
 import { mailConfigured } from '@/lib/mail/transport';
+import { xrechnungReadiness } from '@/lib/billing/invoice-xrechnung-data';
 import { berlinDateKey } from '@/lib/date';
 import { formatDate, formatDateTime, formatMoney, formatPercent } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -66,6 +67,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const snapshotEmail = (invoice.customer_snapshot as Record<string, string | null> | null)?.email ?? null;
   const recipient = customerEmail ?? snapshotEmail;
   const canMail = mailConfigured();
+  const xrechnung = xrechnungReadiness(invoice);
   const today = berlinDateKey();
 
   const steps = [
@@ -107,6 +109,15 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <Download className="size-4" aria-hidden="true" />
               PDF herunterladen
             </a>
+            {xrechnung.ready && (
+              <a
+                href={`/dashboard/abrechnung/${invoice.id}/xrechnung`}
+                className={buttonVariants({ variant: 'outline' })}
+              >
+                <FileText className="size-4" aria-hidden="true" />
+                XRechnung XML
+              </a>
+            )}
           </div>
         )}
       </header>
@@ -333,6 +344,22 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <CorrectionInvoiceAction action={createCorrectionInvoice.bind(null, invoice.id)} locale={locale} />
             )}
           </Card>
+
+          {!isDraft && !xrechnung.ready && (
+            <details className="rounded-xl border border-border/80 bg-card px-5 py-3 shadow-card">
+              <summary className="cursor-pointer list-none text-sm font-medium">
+                E-Rechnung einrichten
+              </summary>
+              <div className="pt-3">
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Fuer eine valide XRechnung fehlen noch Stammdaten:
+                </p>
+                <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+                  {xrechnung.errors.map((error) => <li key={error}>{error}</li>)}
+                </ul>
+              </div>
+            </details>
+          )}
 
           <Card className="px-5 py-2">
             <dl className="divide-y divide-border/70">
