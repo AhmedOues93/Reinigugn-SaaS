@@ -64,6 +64,29 @@ export async function updateComplaint(id: string, _: FormState, formData: FormDa
   } catch { return failure('Die Reklamation konnte nicht aktualisiert werden.'); }
 }
 
+export async function replyToComplaintCustomer(complaintId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const note = String(formData.get('note') ?? '').trim();
+  if (!note) return failure('Bitte gib eine Antwort ein.');
+  if (note.length > 4000) return failure('Die Antwort darf maximal 4000 Zeichen lang sein.');
+
+  try {
+    const { supabase } = await requireStaffCompany();
+    const { error } = await supabase.rpc('add_staff_complaint_reply', {
+      p_complaint_id: complaintId,
+      p_note: note,
+    });
+    if (error) return failure('Die Antwort konnte nicht gesendet werden.');
+
+    revalidatePath(`/dashboard/reklamationen/${complaintId}`);
+    revalidatePath('/dashboard/reklamationen');
+    revalidatePath('/portal/reklamationen');
+    revalidatePath('/portal', 'layout');
+    return { status: 'success', message: 'Antwort wurde im Kundenportal veröffentlicht.' };
+  } catch {
+    return failure('Die Antwort konnte nicht gesendet werden.');
+  }
+}
+
 export async function createFollowUpJob(complaintId: string, _: FormState, formData: FormData): Promise<FormState> {
   const date = String(formData.get('scheduled_date') ?? ''); const start = String(formData.get('planned_start_time') ?? ''); const end = String(formData.get('planned_end_time') ?? '');
   const memberIds = formData.getAll('member_ids').filter((value): value is string => typeof value === 'string' && value.length > 0);
