@@ -352,7 +352,9 @@ export async function getOfficeActionItems(): Promise<OfficeActionItems> {
     awaitingAcceptance: awaiting ?? 0,
     disputedServices: disputed ?? 0,
     readyToBill: (queue ?? []).length,
-    acceptanceConfigWarnings: (configWarnings ?? []).filter((warning) => Number(warning.pending_count ?? 0) > 0).length,
+    acceptanceConfigWarnings: ((configWarnings ?? []) as AcceptanceConfigWarning[]).filter(
+      (warning) => Number(warning.pending_count ?? 0) > 0,
+    ).length,
     unassignedSoon: (soonJobs ?? []).filter((job) => (job.job_assignments ?? []).length === 0).length,
     planHorizonWarnings: horizonWarnings,
     expiredInvitations: expiredInvitations ?? 0,
