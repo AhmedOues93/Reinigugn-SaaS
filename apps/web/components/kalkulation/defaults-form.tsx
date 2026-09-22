@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
@@ -33,16 +33,40 @@ export function CalculationDefaultsForm({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const router = useRouter();
-  useEffect(() => {
-    if (state.status === 'success' && nextHref) router.push(nextHref);
-  }, [state.status, nextHref, router]);
+  const formRef = useRef<HTMLFormElement>(null);
+  const advanceAfterSave = useRef(false);
   const unset = defaults.wage_cents_per_hour === 0;
   const [step, setStep] = useState(0);
   const [visitedStep, setVisitedStep] = useState(0);
   const steps = ['Personalkosten', 'Produktive Zeit', 'Auftragskosten', 'Preis & Marge'] as const;
 
+  useEffect(() => {
+    if (state.status === 'error') {
+      advanceAfterSave.current = false;
+      return;
+    }
+    if (state.status !== 'success') return;
+
+    if (advanceAfterSave.current) {
+      advanceAfterSave.current = false;
+      setStep((value) => {
+        const next = Math.min(steps.length - 1, value + 1);
+        setVisitedStep((visited) => Math.max(visited, next));
+        return next;
+      });
+      return;
+    }
+
+    if (nextHref) router.push(nextHref);
+  }, [state, nextHref, router, steps.length]);
+
+  function saveAndContinue() {
+    advanceAfterSave.current = true;
+    formRef.current?.requestSubmit();
+  }
+
   return (
-    <form action={formAction} className="space-y-7">
+    <form ref={formRef} action={formAction} className="space-y-7">
       <FormMessage status={state.status} message={state.message} />
 
       {unset && (
@@ -75,7 +99,7 @@ export function CalculationDefaultsForm({
       <div className="flex items-center justify-between border-t border-border/80 pt-5">
         <Button type="button" variant="ghost" disabled={step === 0} onClick={() => setStep((value) => Math.max(0, value - 1))}><ArrowLeft className="size-4" /> Zurück</Button>
         {step < steps.length - 1 ? (
-          <Button type="button" onClick={() => { setStep((value) => Math.min(steps.length - 1, value + 1)); setVisitedStep((value) => Math.min(steps.length - 1, Math.max(value, step + 1))); }}>Weiter <ArrowRight className="size-4" /></Button>
+          <Button type="button" onClick={saveAndContinue}>Weiter <ArrowRight className="size-4" /></Button>
         ) : (
           <SubmitButton><Check className="size-4" /> Grundlagen speichern</SubmitButton>
         )}
