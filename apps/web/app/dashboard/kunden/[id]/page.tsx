@@ -4,6 +4,7 @@ import { Building2, Mail, MapPin, Pencil, Phone, Plus, Receipt, User } from 'luc
 import { getCustomer, listCustomerObjects } from '@/lib/data/customers';
 import { listQuotes } from '@/lib/data/sales';
 import { listInvoices } from '@/lib/data/billing';
+import { listServiceSchedules } from '@/lib/data/jobs';
 import { BackLink, ButtonLink, Notice, PageHeader, Section } from '@/components/ui';
 import { ComplaintHistory } from '@/components/complaint-history';
 import { StatusBadge } from '@/components/status-badge';
@@ -28,14 +29,26 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
   const { success } = await searchParams;
   const customer = await getCustomer(id);
   if (!customer) notFound();
-  const [objects, portalContacts, portalInvitations, invoices, allQuotes] = await Promise.all([
+  const [objects, portalContacts, portalInvitations, invoices, allQuotes, allSchedules] = await Promise.all([
     listCustomerObjects(customer.id),
     listPortalContacts(customer.id),
     listPendingPortalInvitations(customer.id),
     listInvoices({ customerId: customer.id }),
     listQuotes('all'),
+    listServiceSchedules(),
   ]);
   const quotes = allQuotes.filter((quote) => quote.customer_id === customer.id || quote.created_customer_id === customer.id);
+  const schedules = allSchedules.filter((schedule) => schedule.customer_id === customer.id);
+  const acceptanceLabel: Record<string, string> = {
+    KEINE_ABNAHME_ERFORDERLICH: 'Keine Abnahme',
+    VOR_ORT_UNTERSCHRIFT: 'Unterschrift vor Ort',
+    PORTAL_ABNAHME: 'Bestätigung im Kundenportal',
+  };
+  const billingLabel: Record<string, string> = {
+    MONATSPAUSCHALE: 'Monatspauschale',
+    PAUSCHALE_PRO_EINSATZ: 'Pauschale pro Einsatz',
+    STUNDENSATZ: 'Stundensatz',
+  };
   const open = invoices.filter((invoice) => invoice.displayStatus === 'ISSUED' || invoice.displayStatus === 'OVERDUE');
   const openCents = open.reduce((total, invoice) => total + invoice.gross_total_cents, 0);
   const address = [customer.billing_address, [customer.postal_code, customer.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
@@ -144,6 +157,51 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
                     </Link>
                   </li>
                 ))}
+              </ul>
+            )}
+          </Section>
+
+          <Section title={`Leistungspläne (${schedules.length})`}>
+            {schedules.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-foreground/15 px-4 py-5 text-sm text-muted-foreground">
+                Noch kein Leistungsplan für diesen Kunden.
+              </p>
+            ) : (
+              <ul className="space-y-2.5">
+                {schedules.map((schedule) => {
+                  const object = Array.isArray(schedule.cleaning_objects) ? schedule.cleaning_objects[0] : schedule.cleaning_objects;
+                  return (
+                    <li key={schedule.id}>
+                      <Link
+                        href={`/dashboard/planung/plaene/${schedule.id}`}
+                        className="block min-w-0 rounded-xl border border-border/80 bg-card p-4 shadow-card transition-colors hover:border-primary/40"
+                      >
+                        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="break-anywhere font-medium">{schedule.name}</p>
+                            <p className="mt-0.5 text-sm text-muted-foreground">{object?.name ?? 'Kein Objekt'}</p>
+                          </div>
+                          <span className="shrink-0 text-xs font-medium text-primary">Öffnen</span>
+                        </div>
+                        <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                          <div>
+                            <span className="text-muted-foreground">Kundenabnahme: </span>
+                            <span className="font-medium">{acceptanceLabel[schedule.acceptance_policy ?? 'KEINE_ABNAHME_ERFORDERLICH'] ?? '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Abrechnung: </span>
+                            <span className="font-medium">{billingLabel[schedule.billing_mode ?? ''] ?? '—'}</span>
+                          </div>
+                        </div>
+                        {schedule.acceptance_policy === 'PORTAL_ABNAHME' && portalContacts.length === 0 && (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Für Portal-Abnahme zuerst einen Portalzugang für den Kunden einrichten.
+                          </p>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Section>
