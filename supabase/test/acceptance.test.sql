@@ -631,6 +631,36 @@ select pg_temp.assert(
   public.resolve_acceptance_policy((select id from adhoc)) = 'KEINE_ABNAHME_ERFORDERLICH',
   'a per-visit override wins over both');
 
+-- ---------------------------------------------------------------------------
+-- A portal Leistungsnachweis describes performed work, never a planned visit
+-- ---------------------------------------------------------------------------
+-- The list already filtered on job.status, but the detail behind
+-- /portal/leistungen/<id> did not, so a guessed or stale id showed a customer a
+-- "Leistungsnachweis" with no time, an open checklist and no acceptance.
+create temporary table unperformed as select pg_temp.plan_job('Noch nicht ausgefuehrt') as id;
+grant select on unperformed to authenticated;
+
+select pg_temp.sign_in('44444444-4444-4444-4444-444444444444');
+select pg_temp.assert(
+  (select count(*) from public.service_records where job_id = (select id from unperformed)) = 0,
+  'a planned visit has no service record yet');
+select pg_temp.assert(
+  (select count(*) from public.get_my_portal_service_record((select id from unperformed))) = 0,
+  'and the portal therefore shows no Leistungsnachweis for it');
+
+-- The performed visit from the PORTAL_ABNAHME section is still reachable, even
+-- though its acceptance is still outstanding: the gate is the service record,
+-- not the acceptance.
+select pg_temp.assert(
+  (select count(*) from public.get_my_portal_service_record((select id from portal))) = 1,
+  'a performed visit awaiting portal acceptance still shows its Leistungsnachweis');
+
+-- The tenant boundary still holds on the detail.
+select pg_temp.sign_in('55555555-5555-5555-5555-555555555555');
+select pg_temp.assert(
+  (select count(*) from public.get_my_portal_service_record((select id from portal))) = 0,
+  'another customer of the same company cannot open it');
+
 select pg_temp.sign_out();
 rollback;
 \o
