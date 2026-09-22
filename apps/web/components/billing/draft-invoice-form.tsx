@@ -13,6 +13,7 @@ export function DraftInvoiceForm({
   defaultPeriodStart,
   defaultPeriodEnd,
   defaultCustomerId,
+  sourceJobId,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   locale: Locale;
@@ -20,12 +21,14 @@ export function DraftInvoiceForm({
   defaultPeriodStart: string;
   defaultPeriodEnd: string;
   defaultCustomerId?: string;
+  sourceJobId?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
 
   return (
     <form action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
+      {sourceJobId && <input type="hidden" name="source_job_id" value={sourceJobId} />}
       <label className="block text-sm font-medium">
         {t(locale, 'role.CUSTOMER')}
         <Select
@@ -78,7 +81,9 @@ export function DraftInvoiceForm({
         <Textarea id="customer_note" name="customer_note" maxLength={2000} />
       </Field>
 
-      <SubmitButton locale={locale}>{t(locale, 'billing.new')}</SubmitButton>
+      <SubmitButton locale={locale}>
+        {sourceJobId ? 'Rechnungsentwurf erstellen' : t(locale, 'billing.new')}
+      </SubmitButton>
     </form>
   );
 }
