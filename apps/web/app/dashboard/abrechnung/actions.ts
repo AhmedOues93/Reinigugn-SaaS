@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
 import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
+import { renderStaffXRechnung } from '@/lib/billing/invoice-xrechnung-data';
 import { getBillableJob, getInvoice, listBillableJobs } from '@/lib/data/billing';
 import { sendMail } from '@/lib/mail/transport';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -361,7 +362,10 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
   }
   if (kind === 'REMINDER' && invoice.displayStatus !== 'OVERDUE') return failure('Eine Zahlungserinnerung ist erst nach Fälligkeit möglich.');
 
-  const rendered = await renderStaffInvoicePdf(invoiceId);
+  const [rendered, xrechnung] = await Promise.all([
+    renderStaffInvoicePdf(invoiceId),
+    kind === 'INVOICE' ? renderStaffXRechnung(invoiceId) : Promise.resolve(null),
+  ]);
   if (!rendered) return failure('Das PDF konnte nicht erzeugt werden.');
 
   const company = (invoice.company_snapshot ?? {}) as Record<string, string | null>;
@@ -392,7 +396,12 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
     subject,
     text,
     replyTo: company.email,
-    attachments: [{ filename: rendered.fileName, content: rendered.bytes, contentType: 'application/pdf' }],
+    attachments: [
+      { filename: rendered.fileName, content: rendered.bytes, contentType: 'application/pdf' },
+      ...(xrechnung?.xml && xrechnung.fileName
+        ? [{ filename: xrechnung.fileName, content: Buffer.from(xrechnung.xml, 'utf8'), contentType: 'application/xml' }]
+        : []),
+    ],
     idempotencyKey,
   });
 
