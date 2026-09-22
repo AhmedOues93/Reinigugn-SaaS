@@ -595,6 +595,19 @@ export async function createQuoteFromCalculation(
   if (!['KEINE_ABNAHME_ERFORDERLICH', 'VOR_ORT_UNTERSCHRIFT', 'PORTAL_ABNAHME'].includes(acceptancePolicy)) {
     return failure('Bitte wähle eine gültige Kundenabnahme.');
   }
+  const orderType = String(formData.get('order_type') ?? 'DAUERAUFTRAG');
+  if (!['EINMALAUFTRAG', 'BEFRISTET', 'DAUERAUFTRAG'].includes(orderType)) {
+    return failure('Bitte wähle eine gültige Auftragsart.');
+  }
+  const serviceStart = String(formData.get('service_start') ?? '').trim() || null;
+  const serviceEnd = String(formData.get('service_end') ?? '').trim() || null;
+  const terminationNotice = String(formData.get('termination_notice') ?? '').trim().slice(0, 160) || null;
+  if (orderType === 'BEFRISTET' && !serviceEnd) {
+    return failure('Bitte gib das Vertragsende für den befristeten Auftrag an.');
+  }
+  if (serviceStart && serviceEnd && serviceEnd < serviceStart) {
+    return failure('Das Vertragsende darf nicht vor dem Leistungsbeginn liegen.');
+  }
   const validDays = Number(String(formData.get('valid_days') ?? '30'));
 
   let quoteId: string;
@@ -606,6 +619,10 @@ export async function createQuoteFromCalculation(
       p_valid_days: Number.isFinite(validDays) ? validDays : 30,
       p_billing_mode: billingMode,
       p_acceptance_policy: acceptancePolicy,
+      p_order_type: orderType,
+      p_service_start: serviceStart,
+      p_service_end: serviceEnd,
+      p_termination_notice: terminationNotice,
     });
     if (error || !data) {
       return failure(
