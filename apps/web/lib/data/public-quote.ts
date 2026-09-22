@@ -29,6 +29,12 @@ export type PublicQuote = {
   vat_total_cents: number;
   gross_total_cents: number;
   recurring_net_monthly_cents: number;
+  billing_mode?: string | null;
+  acceptance_policy?: string | null;
+  order_type?: 'EINMALAUFTRAG' | 'BEFRISTET' | 'DAUERAUFTRAG' | null;
+  service_start?: string | null;
+  service_end?: string | null;
+  termination_notice?: string | null;
   accepted_at: string | null;
   accepted_by_name: string | null;
   acceptance_note: string | null;
