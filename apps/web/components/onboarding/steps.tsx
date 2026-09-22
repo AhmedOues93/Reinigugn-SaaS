@@ -232,7 +232,6 @@ export function BrandingStep({
         logoUrl={logoUrl}
         brandColor={brandColor}
         companyName={companyName}
-        submitLabel="Speichern und weiter"
       />
     </div>
   );
