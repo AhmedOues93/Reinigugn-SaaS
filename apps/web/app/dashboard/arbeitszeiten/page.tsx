@@ -38,54 +38,73 @@ export default async function TimeEntriesPage({
 
   return (
     <>
-      <PageHeader
-        title="Arbeitszeiten"
-        description="Erfasste Einsatzzeiten aus der Mitarbeiter-App – netto, nach Abzug der Pausen."
-        actions={
+      <div className="min-w-0 max-w-full overflow-hidden">
+        <PageHeader
+          title="Arbeitszeiten"
+          description="Erfasste Einsatzzeiten aus der Mitarbeiter-App – netto, nach Abzug der Pausen."
+        />
+
+        <FilterBar className="min-w-0 max-w-full">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:contents">
+            <Input name="from" type="date" defaultValue={from} aria-label="Von" />
+            <Input name="to" type="date" defaultValue={to} aria-label="Bis" />
+          </div>
+
+          <details className="min-w-0 rounded-xl border border-border/80 bg-card sm:contents">
+            <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 text-sm font-medium sm:hidden">
+              Weitere Filter
+              <span className="text-xs font-normal text-muted-foreground">
+                {query.employee || query.customer || query.object ? 'aktiv' : 'optional'}
+              </span>
+            </summary>
+            <div className="grid min-w-0 gap-3 border-t border-border/70 p-3 sm:contents sm:border-0 sm:p-0">
+              <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
+                <option value="">Alle Mitarbeiter</option>
+                {employees.map((employee) => {
+                  const profile = first(employee.profiles);
+                  return (
+                    <option key={employee.id} value={employee.id}>
+                      {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+                    </option>
+                  );
+                })}
+              </Select>
+              <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+                <option value="">Alle Kunden</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </Select>
+              <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
+                <option value="">Alle Objekte</option>
+                {objects.map((object) => (
+                  <option key={object.id} value={object.id}>
+                    {object.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </details>
+
+          <Button type="submit" variant="outline" className="w-full sm:w-auto">
+            Anwenden
+          </Button>
+        </FilterBar>
+
+        <div className="mb-5 flex min-w-0 justify-end">
           <ButtonLink
             href={`/dashboard/arbeitszeiten/export?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&employee=${encodeURIComponent(query.employee ?? '')}&customer=${encodeURIComponent(query.customer ?? '')}&object=${encodeURIComponent(query.object ?? '')}`}
             variant="outline"
+            size="sm"
+            className="max-w-full"
           >
-            <Download className="size-4" />
-            CSV exportieren
+            <Download className="size-4 shrink-0" />
+            CSV für Excel exportieren
           </ButtonLink>
-        }
-      />
-
-      <FilterBar>
-        <Input name="from" type="date" defaultValue={from} aria-label="Von" />
-        <Input name="to" type="date" defaultValue={to} aria-label="Bis" />
-        <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
-          <option value="">Alle Mitarbeiter</option>
-          {employees.map((employee) => {
-            const profile = first(employee.profiles);
-            return (
-              <option key={employee.id} value={employee.id}>
-                {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
-              </option>
-            );
-          })}
-        </Select>
-        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
-          <option value="">Alle Kunden</option>
-          {customers.map((customer) => (
-            <option key={customer.id} value={customer.id}>
-              {customer.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
-          <option value="">Alle Objekte</option>
-          {objects.map((object) => (
-            <option key={object.id} value={object.id}>
-              {object.name}
-            </option>
-          ))}
-        </Select>
-        <Button type="submit" variant="outline">
-          Anwenden
-        </Button>
-      </FilterBar>
+        </div>
+      </div>
 
       <StatBand
         className="mb-5"
