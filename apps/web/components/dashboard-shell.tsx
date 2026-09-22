@@ -60,6 +60,7 @@ export const navGroups: NavGroup[] = [
   {
     label: 'nav.groupOperations',
     items: [
+      { href: '/dashboard/reklamationen', label: 'nav.complaints', icon: 'complaints' },
       { href: '/dashboard/qualitaetskontrolle', label: 'nav.quality', icon: 'quality' },
       { href: '/dashboard/nachrichten', label: 'nav.messages', icon: 'messages' },
       { href: '/dashboard/kalkulation/leistungskatalog', label: 'nav.catalog', icon: 'catalog' },
@@ -103,6 +104,7 @@ export function DashboardShell({
   role,
   locale,
   unreadNotifications,
+  unreadComplaints,
 }: {
   children: React.ReactNode;
   branding: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
@@ -112,6 +114,7 @@ export function DashboardShell({
   role: 'OWNER' | 'OFFICE';
   locale: Locale;
   unreadNotifications: number;
+  unreadComplaints: number;
 }) {
   const accessKey: TranslationKey = role === 'OWNER' ? 'common.ownerAccess' : 'common.officeAccess';
 
@@ -123,7 +126,7 @@ export function DashboardShell({
           <CompanyBrand branding={branding} href="/dashboard" className="text-white [&_span_span]:text-highlight" />
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-color:hsl(var(--ink-line))_transparent] [scrollbar-width:thin]">
-          <DashboardNav locale={locale} unread={unreadNotifications} />
+          <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} />
         </div>
         <div className="shrink-0 border-t border-ink-line px-5 py-4">
           <p className="truncate text-sm font-medium text-white" title={companyName}>{companyName}</p>
@@ -133,7 +136,7 @@ export function DashboardShell({
 
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 lg:ms-[264px]">
         <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center gap-2 px-4 sm:px-6 lg:px-8">
-          <DashboardNav locale={locale} unread={unreadNotifications} mobile branding={branding} companyName={companyName} />
+          <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} mobile branding={branding} companyName={companyName} />
           <div className="min-w-0 lg:hidden [&_span]:block [&_span]:truncate">
             <CompanyBrand branding={branding} href="/dashboard" size="sm" className="min-w-0" />
           </div>
