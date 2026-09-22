@@ -1,13 +1,35 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Mail, Send, X } from 'lucide-react';
+import { CheckCircle2, Mail, Send, X } from 'lucide-react';
 import { Button, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
+
+function TemporarySuccess({ message }: { message?: string }) {
+  const [visible, setVisible] = useState(Boolean(message));
+
+  useEffect(() => {
+    if (!message) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
+  if (!message || !visible) return null;
+  return (
+    <p role="status" className="flex items-start gap-2 rounded-lg border border-success/25 bg-success-soft px-3 py-2.5 text-sm text-success">
+      <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <span>{message}</span>
+    </p>
+  );
+}
 
 function CustomerLink({ url }: { url?: string }) {
   if (!url) return null;
@@ -36,7 +58,7 @@ export function SendQuoteForm({ action, locale, disabled }: { action: Action; lo
         ) : (
           <Button type="button" className="mt-4" onClick={() => setOpen(true)}>
             <Send className="size-4" />
-            Angebot senden
+            Senden an Kunden
           </Button>
         )}
       </div>
@@ -47,7 +69,7 @@ export function SendQuoteForm({ action, locale, disabled }: { action: Action; lo
     <form action={formAction} className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">Angebot senden</h2>
+          <h2 className="font-semibold">Senden an Kunden</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             ReinPlan vergibt die Angebotsnummer, erstellt den sicheren Kundenlink und sendet PDF + Link per E-Mail, wenn eine Kundenadresse vorhanden ist.
           </p>
@@ -58,9 +80,13 @@ export function SendQuoteForm({ action, locale, disabled }: { action: Action; lo
           </Button>
         )}
       </div>
-      <FormMessage status={state.status} message={state.message} />
+      {state.status === 'error' ? (
+        <FormMessage status={state.status} message={state.message} />
+      ) : (
+        <TemporarySuccess message={state.status === 'success' ? (state.message || 'Angebot erfolgreich an den Kunden gesendet.') : undefined} />
+      )}
       <CustomerLink url={state.invitationUrl} />
-      {state.status !== 'success' && <SubmitButton locale={locale}><Send className="size-4" />Jetzt senden</SubmitButton>}
+      {state.status !== 'success' && <SubmitButton locale={locale} className="w-full justify-center sm:w-auto"><Send className="size-4" />Senden an Kunden</SubmitButton>}
     </form>
   );
 }
