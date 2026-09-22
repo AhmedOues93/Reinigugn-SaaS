@@ -3,7 +3,7 @@ import { BackLink, Card, EmptyState, PageHeader } from '@/components/ui';
 import { CatalogItemEditor } from '@/components/kalkulation/catalog-editor';
 import { costBasisLabels, listCatalogItems, unitLabels } from '@/lib/data/kalkulation';
 import { formatMoney } from '@/lib/format';
-import { saveCatalogItem } from '../actions';
+import { archiveCatalogItem, saveCatalogItem } from '../actions';
 
 /**
  * The company's own services and what each assumes about productivity.
@@ -12,7 +12,8 @@ import { saveCatalogItem } from '../actions';
  * created, so changing a Richtleistung here affects the next calculation and
  * never an existing one — least of all one an offer already rests on.
  */
-export default async function CatalogPage() {
+export default async function CatalogPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
+  const { edit } = await searchParams;
   const items = await listCatalogItems(true);
   const grouped = new Map<string, typeof items>();
   for (const item of items) {
@@ -57,6 +58,7 @@ export default async function CatalogPage() {
                         <span className="ms-2 text-xs font-normal text-muted-foreground">archiviert</span>
                       )}
                     </span>
+                    <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm tabular-nums text-muted-foreground">
                       {unitLabels[item.calculation_unit]}
                       {item.default_productivity_per_hour != null &&
@@ -66,6 +68,9 @@ export default async function CatalogPage() {
                       {item.default_material_cents > 0 &&
                         ` · Material ${formatMoney('de', item.default_material_cents)} ${costBasisLabels[item.default_material_basis]}`}
                     </span>
+                    <a href={`/dashboard/kalkulation/leistungskatalog?edit=${item.id}#leistung-editor`} className="inline-flex min-h-10 items-center rounded-md border border-border px-3 text-sm font-medium">Bearbeiten</a>
+                    {item.is_active && <form action={archiveCatalogItem.bind(null, item.id)}><button className="min-h-10 rounded-md border border-border px-3 text-sm font-medium" type="submit">Archivieren</button></form>}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -74,8 +79,8 @@ export default async function CatalogPage() {
         </div>
       )}
 
-      <div className="mt-6">
-        <CatalogItemEditor action={saveCatalogItem.bind(null, null)} />
+      <div className="mt-6" id="leistung-editor">
+        <CatalogItemEditor action={saveCatalogItem.bind(null, edit ?? null)} item={edit ? items.find((item) => item.id === edit) : undefined} />
       </div>
     </div>
   );
