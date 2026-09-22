@@ -86,7 +86,7 @@ export async function listQuotes(status?: QuoteStatus | 'all') {
   let query = supabase
     .from('quotes')
     .select(
-      'id, quote_number, status, title, currency, net_total_cents, gross_total_cents, recurring_net_monthly_cents, sent_at, valid_until, created_at, lead_id, customer_id, leads(organisation), customers!quotes_customer_id_fkey(name)',
+      'id, quote_number, status, title, currency, net_total_cents, gross_total_cents, recurring_net_monthly_cents, sent_at, valid_until, created_at, lead_id, customer_id, created_customer_id, leads(organisation), customers!quotes_customer_id_fkey(name)',
     )
     .eq('company_id', company.id)
     .order('created_at', { ascending: false });
