@@ -136,13 +136,7 @@ export default async function CalculationPage({
                 Noch keine Position erfasst.
               </p>
             ) : (
-              /*
-                A real table, because an office reads down a column: every
-                Richtleistung under every other one, every monthly total in the
-                same place. It scrolls sideways on a narrow screen rather than
-                collapsing into cards — a calculation that reflows loses exactly
-                the comparison it exists to support.
-              */
+              <>
               <div className="divide-y divide-border/70 border-t border-border/70 md:hidden">
                 {calculation.lines.map((line) => (
                   <div key={line.id} className="p-4">
@@ -298,6 +292,7 @@ export default async function CalculationPage({
                   </tfoot>
                 </table>
               </div>
+              </>
             )}
           </Card>
 
