@@ -206,6 +206,21 @@ export async function listBillableJobs(
   return data ?? [];
 }
 
+export async function getBillableJob(jobId: string): Promise<BillableJob | null> {
+  const { supabase, company } = await requireStaffCompany();
+  const { data: job, error } = await supabase
+    .from('jobs')
+    .select('id, customer_id, scheduled_date')
+    .eq('company_id', company.id)
+    .eq('id', jobId)
+    .maybeSingle();
+  if (error) throw new Error('Der Einsatz konnte nicht geladen werden.');
+  if (!job) return null;
+
+  const rows = await listBillableJobs(job.customer_id, job.scheduled_date, job.scheduled_date);
+  return rows.find((row) => row.job_id === jobId) ?? null;
+}
+
 export async function listBillingCustomers() {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
