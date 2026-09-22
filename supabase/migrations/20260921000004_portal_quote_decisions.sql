@@ -13,7 +13,7 @@ security definer
 set search_path = public
 as $$
 declare
-  contact public.customer_contacts;
+  contact record;
   target public.quotes;
   raw_token text;
   result jsonb;
@@ -71,7 +71,7 @@ security definer
 set search_path = public
 as $$
 declare
-  contact public.customer_contacts;
+  contact record;
   target public.quotes;
   reason text := nullif(trim(coalesce(p_reason, '')), '');
 begin
@@ -109,7 +109,7 @@ security definer
 set search_path = public
 as $$
 declare
-  contact public.customer_contacts;
+  contact record;
   target public.quotes;
   result jsonb;
 begin
