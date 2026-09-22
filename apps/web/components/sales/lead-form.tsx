@@ -34,19 +34,16 @@ export function LeadForm({
   const selected = useMemo(() => customers.find((customer) => customer.id === customerId), [customers, customerId]);
 
   return (
-    <form action={formAction} className="space-y-7">
+    <form action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
 
-      <div className="rounded-xl border border-border bg-muted/25 p-3">
-        <div className="grid grid-cols-2 gap-2 text-left text-xs font-medium sm:grid-cols-4 sm:text-center">
-          <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>{'1. ' + t(locale, 'sales.lead.stepCustomer')}</span>
-          <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>{'2. ' + t(locale, 'sales.lead.stepNeed')}</span>
-          <span className="text-muted-foreground"><span className="sm:hidden">3. </span><span className="hidden sm:inline">3. </span>Besichtigung</span>
-          <span className="text-muted-foreground"><span className="sm:hidden">4. </span><span className="hidden sm:inline">4. </span>Angebot</span>
-        </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-          <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '25%' : '50%' }} />
-        </div>
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted/40 p-1 text-center text-xs font-semibold">
+        <span className={step === 1 ? 'rounded-md bg-card px-3 py-2.5 text-primary shadow-sm' : 'px-3 py-2.5 text-muted-foreground'}>
+          1. Kunde
+        </span>
+        <span className={step === 2 ? 'rounded-md bg-card px-3 py-2.5 text-primary shadow-sm' : 'px-3 py-2.5 text-muted-foreground'}>
+          2. Bedarf
+        </span>
       </div>
 
       <div className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
@@ -195,15 +192,16 @@ export function LeadForm({
       </section>
       </div>
 
-      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+      <div className="sticky bottom-2 z-10 flex items-center justify-between gap-2 rounded-xl border border-border bg-card/95 p-2.5 shadow-popover backdrop-blur">
         {step === 2 ? (
-          <Button type="button" variant="outline" onClick={() => setStep(1)}>{t(locale, 'sales.quote.back')}</Button>
+          <Button type="button" variant="outline" className="min-w-28" onClick={() => setStep(1)}>{t(locale, 'sales.quote.back')}</Button>
         ) : (
           <span />
         )}
         {step === 1 ? (
           <Button
             type="button"
+            className="w-full justify-center sm:w-auto"
             disabled={customerMode === 'EXISTING' && !customerId}
             onClick={() => {
               if (customerMode === 'EXISTING' && !customerId) return;
@@ -213,7 +211,7 @@ export function LeadForm({
             {customerMode === 'EXISTING' && !customerId ? 'Kunde auswählen' : t(locale, 'sales.quote.next')}
           </Button>
         ) : (
-          <SubmitButton locale={locale}>{t(locale, 'sales.lead.create')}</SubmitButton>
+          <SubmitButton locale={locale} className="w-full justify-center sm:w-auto">{t(locale, 'sales.lead.create')}</SubmitButton>
         )}
       </div>
     </form>
