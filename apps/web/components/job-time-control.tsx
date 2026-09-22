@@ -61,6 +61,7 @@ export function JobTimeControl({
   resumeAction,
   running,
   startedAt,
+  plannedStartAt,
   finishedAt,
   durationMinutes,
   breaks = [],
@@ -74,6 +75,7 @@ export function JobTimeControl({
   resumeAction: Action;
   running: boolean;
   startedAt?: string | null;
+  plannedStartAt?: string | null;
   finishedAt?: string | null;
   durationMinutes?: number | null;
   breaks?: Break[];
@@ -82,6 +84,7 @@ export function JobTimeControl({
   locale?: Locale;
 }) {
   const [startState, start] = useActionState(startAction, initialFormState);
+  const [confirmStart, setConfirmStart] = useState(false);
   const [stopState, stop] = useActionState(stopAction, initialFormState);
   const [pauseState, pause] = useActionState(pauseAction, initialFormState);
   const [resumeState, resume] = useActionState(resumeAction, initialFormState);
@@ -180,15 +183,44 @@ export function JobTimeControl({
             </form>
           </div>
         </>
-      ) : (
-        <form action={start}>
-          <p className="text-sm text-ink-muted">{t(locale, 'emp.job.startHint')}</p>
-          <div className="mt-4">
-            <ActionButton variant="go" icon={Play} pendingLabel={t(locale, 'emp.job.starting')} disabled={!online || !canStart}>
-              {t(locale, 'emp.job.start')}
-            </ActionButton>
+      ) : confirmStart ? (
+        <div className="rounded-2xl border border-white/15 bg-white/[0.06] p-4">
+          <p className="text-base font-semibold text-white">Einsatz jetzt starten?</p>
+          <p className="mt-1 text-sm leading-6 text-ink-muted">
+            {plannedStartAt
+              ? `Geplant ab ${time(plannedStartAt)}. Die Arbeitszeit beginnt sofort mit deiner Bestätigung.`
+              : 'Die Arbeitszeit beginnt sofort mit deiner Bestätigung.'}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmStart(false)}
+              className="min-h-12 rounded-xl border border-white/20 px-3 text-sm font-semibold text-white"
+            >
+              Abbrechen
+            </button>
+            <form action={start}>
+              <ActionButton variant="go" icon={Play} pendingLabel={t(locale, 'emp.job.starting')} disabled={!online || !canStart}>
+                Jetzt starten
+              </ActionButton>
+            </form>
           </div>
-        </form>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-ink-muted">
+            {plannedStartAt ? `Geplanter Start: ${time(plannedStartAt)}` : t(locale, 'emp.job.startHint')}
+          </p>
+          <button
+            type="button"
+            disabled={!online || !canStart}
+            onClick={() => setConfirmStart(true)}
+            className="mt-4 flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-highlight px-4 text-base font-semibold text-ink transition active:scale-[0.99] disabled:opacity-60"
+          >
+            <Play className="size-5" aria-hidden="true" />
+            {t(locale, 'emp.job.start')}
+          </button>
+        </div>
       )}
 
       {!online && !finishedAt && (
