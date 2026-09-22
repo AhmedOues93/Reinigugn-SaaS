@@ -67,7 +67,7 @@ export default async function ServiceRecordPage({ params }: { params: Promise<{ 
               </ButtonLink>
             ) : (
               <ButtonLink
-                href={`/dashboard/abrechnung/neu?kunde=${job.customer_id}`}
+                href={`/dashboard/abrechnung/neu?kunde=${job.customer_id}&einsatz=${job.id}`}
                 variant="outline"
               >
                 <Receipt className="size-4" aria-hidden="true" />
