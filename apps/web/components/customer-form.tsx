@@ -7,7 +7,7 @@ import { type FormState, initialFormState } from '@/lib/actions';
 import { Button, Field, FormSection, Input, Textarea } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
-type CustomerRecord = { id?: string; name?: string | null; customer_number?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; email?: string | null; phone?: string | null; billing_address?: string | null; city?: string | null; postal_code?: string | null; billing_country?: string | null; billing_email?: string | null; payment_terms_days?: number | null; vat_id?: string | null; notes?: string | null };
+type CustomerRecord = { id?: string; name?: string | null; customer_number?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; email?: string | null; phone?: string | null; billing_address?: string | null; city?: string | null; postal_code?: string | null; billing_country?: string | null; billing_email?: string | null; payment_terms_days?: number | null; vat_id?: string | null; datev_debtor_account?: string | null; notes?: string | null };
 type CustomerAction = (state: FormState, formData: FormData) => Promise<FormState>;
 
 export function CustomerForm({ customer, action, submitLabel }: { customer?: CustomerRecord; action: CustomerAction; submitLabel: string }) {
@@ -103,6 +103,20 @@ export function CustomerForm({ customer, action, submitLabel }: { customer?: Cus
         </Field>
         <Field label="USt-IdNr. des Kunden" htmlFor="vat_id" optional info="Nur bei Geschäftskunden, z. B. für innergemeinschaftliche Leistungen.">
           <Input id="vat_id" name="vat_id" defaultValue={customer?.vat_id ?? ''} maxLength={64} />
+        </Field>
+        <Field
+          label="DATEV-Debitorenkonto"
+          htmlFor="datev_debtor_account"
+          optional
+          info="Nur nötig für den DATEV-Buchungsexport. Das Konto mit der Steuerberatung abstimmen."
+        >
+          <Input
+            id="datev_debtor_account"
+            name="datev_debtor_account"
+            inputMode="numeric"
+            maxLength={11}
+            defaultValue={customer?.datev_debtor_account ?? ''}
+          />
         </Field>
       </FormSection>
       </div>
