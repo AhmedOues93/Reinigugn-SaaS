@@ -23,12 +23,18 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader
         title={t(locale, 'billing.title')}
-        description="Vom Entwurf über Festschreibung und Versand bis zum Zahlungseingang."
+        description="Von der Leistung über Ausstellung und Versand bis zum Zahlungseingang."
         actions={
-          <ButtonLink href="/dashboard/abrechnung/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            {t(locale, 'billing.new')}
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/abrechnung/buchhaltung" variant="outline">
+              <FileDown className="size-4" aria-hidden="true" />
+              Buchhaltung CSV
+            </ButtonLink>
+            <ButtonLink href="/dashboard/abrechnung/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              {t(locale, 'billing.new')}
+            </ButtonLink>
+          </div>
         }
       />
 
