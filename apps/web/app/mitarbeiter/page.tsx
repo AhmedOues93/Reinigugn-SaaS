@@ -92,7 +92,7 @@ export default async function EmployeeTodayPage() {
             </Link>
             {address && (
               <a
-                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={t(locale, 'emp.job.navigate')}
