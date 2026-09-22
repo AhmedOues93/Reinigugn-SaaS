@@ -354,6 +354,21 @@ export function QuoteFromCalculationForm({
             <option value="STUNDENSATZ">Nach Stunden</option>
           </Select>
         </Field>
+        <Field
+          label="Kundenabnahme"
+          htmlFor="quote-acceptance-policy"
+          info="Wird mit dem Angebot vereinbart und später unverändert in den Leistungsplan übernommen."
+        >
+          <Select
+            id="quote-acceptance-policy"
+            name="acceptance_policy"
+            defaultValue="KEINE_ABNAHME_ERFORDERLICH"
+          >
+            <option value="KEINE_ABNAHME_ERFORDERLICH">Keine Abnahme erforderlich</option>
+            <option value="VOR_ORT_UNTERSCHRIFT">Unterschrift vor Ort</option>
+            <option value="PORTAL_ABNAHME">Bestätigung im Kundenportal</option>
+          </Select>
+        </Field>
         <Field label="Gültigkeit" htmlFor="valid_days">
           <Select id="valid_days" name="valid_days" defaultValue="30">
             <option value="14">14 Tage</option>
