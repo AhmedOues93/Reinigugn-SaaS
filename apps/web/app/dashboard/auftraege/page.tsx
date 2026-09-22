@@ -72,36 +72,18 @@ export default async function JobsPage({
         }
       />
 
-      <FilterBar>
-        <Input name="from" type="date" defaultValue={query.from ?? ''} aria-label="Von" />
-        <Input name="to" type="date" defaultValue={query.to ?? ''} aria-label="Bis" />
-        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
-          <option value="">Alle Kunden</option>
-          {customers.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
-          <option value="">Alle Objekte</option>
-          {objects.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
-          <option value="">Alle Mitarbeiter</option>
-          {employees.map((item) => {
-            const profile = first(item.profiles);
-            return (
-              <option key={item.id} value={item.id}>
-                {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
-              </option>
-            );
-          })}
-        </Select>
+      {/*
+        Six controls stacked full width filled a phone screen before a single
+        job was visible. Date range and status — the two that answer "what am I
+        looking at today" — stay out; customer, object and employee fold away,
+        the same shape the Arbeitszeiten filters use.
+      */}
+      <FilterBar className="min-w-0 max-w-full">
+        <div className="grid min-w-0 grid-cols-2 gap-3 sm:contents">
+          <Input name="from" type="date" defaultValue={query.from ?? ''} aria-label="Von" />
+          <Input name="to" type="date" defaultValue={query.to ?? ''} aria-label="Bis" />
+        </div>
+
         <Select name="status" defaultValue={currentStatus} aria-label="Status">
           {statuses.map((entry) => (
             <option key={entry.value} value={entry.value}>
@@ -109,7 +91,46 @@ export default async function JobsPage({
             </option>
           ))}
         </Select>
-        <Button type="submit" variant="outline">
+
+        <details className="min-w-0 rounded-xl border border-border/80 bg-card sm:contents">
+          <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 text-sm font-medium sm:hidden">
+            Weitere Filter
+            <span className="text-xs font-normal text-muted-foreground">
+              {query.customer || query.object || query.employee ? 'aktiv' : 'optional'}
+            </span>
+          </summary>
+          <div className="grid min-w-0 gap-3 border-t border-border/70 p-3 sm:contents sm:border-0 sm:p-0">
+            <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+              <option value="">Alle Kunden</option>
+              {customers.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+            <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
+              <option value="">Alle Objekte</option>
+              {objects.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+            <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
+              <option value="">Alle Mitarbeiter</option>
+              {employees.map((item) => {
+                const profile = first(item.profiles);
+                return (
+                  <option key={item.id} value={item.id}>
+                    {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+                  </option>
+                );
+              })}
+            </Select>
+          </div>
+        </details>
+
+        <Button type="submit" variant="outline" className="w-full sm:w-auto">
           Anwenden
         </Button>
       </FilterBar>

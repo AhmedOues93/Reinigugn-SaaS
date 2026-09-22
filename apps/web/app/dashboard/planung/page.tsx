@@ -233,42 +233,59 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
         </Notice>
       )}
 
-      <FilterBar>
+      {/*
+        The board is what this screen is for, so the filters must not push it
+        off the first phone screen. Status stays out; customer, object and
+        employee fold away until they are wanted.
+      */}
+      <FilterBar className="min-w-0 max-w-full">
         <input type="hidden" name="week" value={start} />
-        <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
-          <option value="">Alle Kunden</option>
-          {customers.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
-          <option value="">Alle Objekte</option>
-          {objects.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
-          <option value="">Alle Mitarbeiter</option>
-          {employees.map((item) => {
-            const profile = one(item.profiles);
-            return (
-              <option key={item.id} value={item.id}>
-                {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
-              </option>
-            );
-          })}
-        </Select>
         <Select name="status" defaultValue={currentStatus} aria-label="Status">
           <option value="all">Alle Status</option>
           <option value="PLANNED">Geplant</option>
           <option value="CONFIRMED">Bestätigt</option>
           <option value="CANCELLED">Storniert</option>
         </Select>
-        <Button type="submit" variant="outline">
+
+        <details className="min-w-0 rounded-xl border border-border/80 bg-card sm:contents">
+          <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 text-sm font-medium sm:hidden">
+            Weitere Filter
+            <span className="text-xs font-normal text-muted-foreground">
+              {query.customer || query.object || query.employee ? 'aktiv' : 'optional'}
+            </span>
+          </summary>
+          <div className="grid min-w-0 gap-3 border-t border-border/70 p-3 sm:contents sm:border-0 sm:p-0">
+            <Select name="customer" defaultValue={query.customer ?? ''} aria-label="Kunde">
+              <option value="">Alle Kunden</option>
+              {customers.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+            <Select name="object" defaultValue={query.object ?? ''} aria-label="Objekt">
+              <option value="">Alle Objekte</option>
+              {objects.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+            <Select name="employee" defaultValue={query.employee ?? ''} aria-label="Mitarbeiter">
+              <option value="">Alle Mitarbeiter</option>
+              {employees.map((item) => {
+                const profile = one(item.profiles);
+                return (
+                  <option key={item.id} value={item.id}>
+                    {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+                  </option>
+                );
+              })}
+            </Select>
+          </div>
+        </details>
+
+        <Button type="submit" variant="outline" className="w-full sm:w-auto">
           Filtern
         </Button>
       </FilterBar>
