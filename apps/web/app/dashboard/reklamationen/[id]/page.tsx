@@ -5,8 +5,7 @@ import { BackLink, PageHeader, Section } from '@/components/ui';
 import { ComplaintForm } from '@/components/complaint-form';
 import { ComplaintCustomerReply } from '@/components/complaint-customer-reply';
 import { FollowUpJobForm } from '@/components/follow-up-job-form';
-import { JobPhotoGallery } from '@/components/job-photo-gallery';
-import { JobPhotoUpload } from '@/components/job-photo-upload';
+import { ComplaintPhotoSection } from '@/components/complaint-photo-section';
 import { getComplaint, listComplaintFormOptions } from '@/lib/data/complaints';
 import { listOperationalPhotos } from '@/lib/data/operational-photos';
 import { formatDateTime } from '@/lib/format';
@@ -65,13 +64,9 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
           </div>
 
           <Section title="Fotos">
-            <JobPhotoUpload
-              action={uploadOperationalPhoto.bind(null, 'COMPLAINT', id)}
-              checklistItems={[]}
-            />
-            <JobPhotoGallery
+            <ComplaintPhotoSection
               photos={photos}
-              deletablePhotoIds={photos.map((photo) => photo.id)}
+              uploadAction={uploadOperationalPhoto.bind(null, 'COMPLAINT', id)}
               deleteAction={deleteOperationalPhoto}
             />
             {job?.id && (
