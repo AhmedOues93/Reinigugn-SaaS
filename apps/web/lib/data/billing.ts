@@ -46,7 +46,7 @@ export async function getInvoice(id: string) {
   const { data, error } = await supabase
     .from('invoices')
     .select(
-      `${listSelection}, payment_terms_days, customer_note, internal_note, customer_snapshot, company_snapshot, cancelled_at, cancellation_reason, corrects_invoice_id,
+      `${listSelection}, payment_terms_days, customer_note, buyer_reference, internal_note, customer_snapshot, company_snapshot, cancelled_at, cancellation_reason, corrects_invoice_id,
        invoice_lines(id, position, description, quantity, unit, unit_price_cents, vat_rate_basis_points, net_amount_cents, vat_amount_cents, gross_amount_cents, job_id, cleaning_object_id)`,
     )
     .eq('company_id', company.id)
