@@ -143,7 +143,74 @@ export default async function CalculationPage({
                 collapsing into cards — a calculation that reflows loses exactly
                 the comparison it exists to support.
               */
-              <div className="overflow-x-auto border-t border-border/70">
+              <div className="divide-y divide-border/70 border-t border-border/70 md:hidden">
+                {calculation.lines.map((line) => (
+                  <div key={line.id} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold">{line.area_name}</p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">{line.service_name}</p>
+                      </div>
+                      {isDraft && (
+                        <RemoveLineButton
+                          action={removeCalculationLine.bind(null, id, line.id)}
+                          label={`${line.area_name} · ${line.service_name}`}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Menge</p>
+                        <p className="font-medium">{line.quantity.toLocaleString('de-DE')} {unitLabels[line.calculation_unit]}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Turnus</p>
+                        <p className="font-medium">
+                          {line.frequency === 'PRO_WOCHE' || line.frequency === 'PRO_MONAT'
+                            ? `${line.frequency_count.toLocaleString('de-DE')}× ${frequencyLabels[line.frequency]}`
+                            : frequencyLabels[line.frequency]}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Zeit / Monat</p>
+                        <p className="font-medium">
+                          {line.frequency === 'EINMALIG'
+                            ? 'Einmalig'
+                            : `${(line.monthly_minutes / 60).toLocaleString('de-DE', { maximumFractionDigits: 2 })} Std.`}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Preis</p>
+                        <p className="font-semibold">
+                          {money(
+                            line.frequency === 'EINMALIG' ? line.one_off_price_cents : line.proposed_price_cents_month,
+                            currency,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    {line.service_weekdays && line.service_weekdays.length > 0 && (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        {line.service_weekdays
+                          .map((day) => weekdayLabels.find((entry) => entry.value === day)?.short ?? day)
+                          .join(', ')}
+                      </p>
+                    )}
+                  </div>
+                ))}
+                <div className="grid grid-cols-2 gap-4 bg-subtle p-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Gesamtzeit / Monat</p>
+                    <p className="font-semibold">{(calculation.monthly_minutes / 60).toLocaleString('de-DE', { maximumFractionDigits: 2 })} Std.</p>
+                  </div>
+                  <div className="text-end">
+                    <p className="text-xs text-muted-foreground">Preis / Monat</p>
+                    <p className="font-semibold">{money(calculation.selling_price_cents_month, currency)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hidden overflow-x-auto border-t border-border/70 md:block">
                 <table className="w-full min-w-[60rem] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border/70 bg-subtle text-start">
