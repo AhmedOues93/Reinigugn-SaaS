@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { BookOpen, Check, FileText, Lock, ReceiptText } from 'lucide-react';
+import { Check, FileText, Lock, ReceiptText } from 'lucide-react';
 import { BackLink, Badge, ButtonLink, Card, DataRow, PageHeader } from '@/components/ui';
 import { CalculationKpiBand } from '@/components/kalkulation/kpi-band';
 import { CalculationLineEditor, RemoveLineButton } from '@/components/kalkulation/line-editor';
@@ -85,7 +85,7 @@ export default async function CalculationPage({
         meta={
           <>
             {isDraft ? (
-              <Badge tone="warning">Entwurf</Badge>
+              <Badge tone="neutral">Entwurf</Badge>
             ) : calculation.status === 'FINAL' ? (
               <Badge tone="success">
                 <Lock className="size-3.5" aria-hidden="true" />
@@ -99,7 +99,7 @@ export default async function CalculationPage({
         actions={!isDraft ? <ReviseCalculationAction action={reviseCalculation.bind(null, id)} /> : undefined}
       />
 
-      <CalculationKpiBand calculation={calculation} />
+      {tab === 'kalkulation' && <CalculationKpiBand calculation={calculation} />}
 
       <div className="mb-4 grid grid-cols-4 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
         <span className="flex items-center justify-center gap-1 px-1 py-2 text-primary">
@@ -123,12 +123,7 @@ export default async function CalculationPage({
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
               <h2 className="text-[15px] font-semibold">Leistungspositionen</h2>
-              {isDraft && (
-                <ButtonLink href="/dashboard/kalkulation/leistungskatalog" variant="outline" size="sm">
-                  <BookOpen className="size-4" aria-hidden="true" />
-                  Aus Katalog hinzufügen
-                </ButtonLink>
-              )}
+
             </div>
 
             {calculation.lines.length === 0 ? (
