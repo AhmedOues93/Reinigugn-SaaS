@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Building2, ClipboardCheck, MapPin, Pencil, User } from 'lucide-react';
 import { cn } from '@reinigung/ui';
-import { getServiceRecord, type ServiceRecord } from '@/lib/data/service-record';
+import { getServiceRecord, hasStoredServiceRecord, type ServiceRecord } from '@/lib/data/service-record';
 import {
   BackLink,
   ButtonLink,
@@ -33,7 +33,7 @@ export default async function JobDetailPage({
 }) {
   const { id } = await params;
   const { success } = await searchParams;
-  const record = await getServiceRecord(id);
+  const [record, hasProof] = await Promise.all([getServiceRecord(id), hasStoredServiceRecord(id)]);
   if (!record) notFound();
 
   const completedItems = record.checklistItems.filter((item) => item.completedAt).length;
@@ -95,13 +95,15 @@ export default async function JobDetailPage({
         }
         actions={
           <>
-            <ButtonLink
-              href={`/dashboard/auftraege/${record.job.id}/leistungsnachweis`}
-              variant="outline"
-            >
-              <ClipboardCheck className="size-4" aria-hidden="true" />
-              Leistungsnachweis
-            </ButtonLink>
+            {hasProof && (
+              <ButtonLink
+                href={`/dashboard/auftraege/${record.job.id}/leistungsnachweis`}
+                variant="outline"
+              >
+                <ClipboardCheck className="size-4" aria-hidden="true" />
+                Leistungsnachweis
+              </ButtonLink>
+            )}
             <ButtonLink href={`/dashboard/auftraege/${record.job.id}/bearbeiten`}>
               <Pencil className="size-4" aria-hidden="true" />
               Bearbeiten
