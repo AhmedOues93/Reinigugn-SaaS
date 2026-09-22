@@ -22,7 +22,7 @@ import {
  * of contribution reads very differently as 2.160 € a year.
  */
 export function CalculationKpiBand({ calculation }: { calculation: Calculation }) {
-  const hasLines = calculation.lines.length > 0;
+  const hasLines = !calculation.incomplete_reasons.includes('NO_LINES');
   const incomplete = calculation.incomplete_reasons.length > 0;
   const loss = calculation.contribution_cents_month < 0;
   const thin = !loss && calculation.margin_bp < 500 && calculation.selling_price_cents_month > 0;
