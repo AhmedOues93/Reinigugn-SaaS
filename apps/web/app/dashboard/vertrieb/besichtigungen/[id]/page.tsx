@@ -11,7 +11,7 @@ import {
   PageHeader,
 } from '@/components/ui';
 import { SurveyAreaEditor } from '@/components/sales/survey-area-editor';
-import { CompleteSurveyForm, QuoteFromSurveyForm } from '@/components/sales/survey-actions';
+import { CompleteSurveyForm } from '@/components/sales/survey-actions';
 import {
   getCompanyHourlyRate,
   getSurvey,
@@ -24,7 +24,6 @@ import { currentLocale } from '@/lib/i18n-server';
 import {
   addSurveyArea,
   completeSurvey,
-  createQuoteFromSurvey,
   removeSurveyArea,
 } from '../../actions';
 
@@ -47,7 +46,7 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
   const planned = survey.status === 'PLANNED';
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-3xl">
       <BackLink
         href={
           survey.lead_id
@@ -76,7 +75,7 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
         }
       />
 
-      <Card className="p-5">
+      <Card className="p-4 sm:p-5">
         <dl className="divide-y divide-border">
           <DataRow
             label={t(locale, 'sales.survey.scheduledAt')}
@@ -99,12 +98,12 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
         </dl>
       </Card>
 
-      <Card className="mt-5 overflow-hidden">
+      <Card className="mt-4 overflow-hidden">
         <CardHeader
           title={t(locale, 'sales.area.title')}
           description={t(locale, 'sales.area.emptyBody')}
         />
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           {survey.areas.length === 0 && !planned ? (
             <EmptyState icon={<Ruler className="size-5" />} title={t(locale, 'sales.area.empty')} />
           ) : (
@@ -121,7 +120,7 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
       </Card>
 
       {planned && (
-        <Card className="mt-5 p-5">
+        <Card className="mt-4 p-4 sm:p-5">
           <h2 className="mb-4 font-semibold">{t(locale, 'sales.survey.complete')}</h2>
           <CompleteSurveyForm action={completeSurvey.bind(null, survey.id)} locale={locale} />
         </Card>
@@ -130,26 +129,13 @@ export default async function SurveyDetailPage({ params }: { params: Promise<{ i
       {survey.status === 'COMPLETED' && (
         <Card className="mt-5 p-5">
           <h2 className="font-semibold">Nächster Schritt: Kalkulation</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Flächen aus dieser Besichtigung übernehmen und Zeit, Kosten und Verkaufspreis berechnen.</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">Besichtigungsdaten übernehmen, Kosten und Verkaufspreis prüfen und danach das Angebot erstellen.</p>
           <Link
             href={`/dashboard/kalkulation/neu?survey=${survey.id}`}
-            className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground sm:w-auto"
           >
-            Kalkulation erstellen
+            Zur Kalkulation
           </Link>
-        </Card>
-      )}
-
-      {survey.status === 'COMPLETED' && (
-        <Card className="mt-5 p-5">
-          <h2 className="mb-1 font-semibold">{t(locale, 'sales.quote.createFromSurvey')}</h2>
-          <p className="mb-4 text-sm text-muted-foreground">{t(locale, 'sales.quote.emptyBody')}</p>
-          <QuoteFromSurveyForm
-            action={createQuoteFromSurvey.bind(null, survey.id)}
-            locale={locale}
-            defaultTitle={survey.site_name}
-            disabled={survey.areas.length === 0}
-          />
         </Card>
       )}
 
