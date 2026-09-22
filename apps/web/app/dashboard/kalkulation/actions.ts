@@ -551,6 +551,25 @@ export async function finaliseCalculation(
   }
 }
 
+export async function finaliseCalculationAndContinue(calculationId: string): Promise<void> {
+  try {
+    const { supabase } = await requireStaffCompany();
+    const { error } = await supabase.rpc('finalise_calculation', { p_calculation_id: calculationId });
+    if (error) {
+      throw new Error(
+        error.message.includes('at least one position')
+          ? 'Eine Kalkulation braucht mindestens eine Position.'
+          : 'Die Kalkulation konnte nicht abgeschlossen werden.',
+      );
+    }
+  } catch (error) {
+    if (error && typeof error === 'object' && 'digest' in error) throw error;
+    throw error;
+  }
+  revalidateCalculation(calculationId);
+  redirect(`/dashboard/kalkulation/${calculationId}?tab=angebot`);
+}
+
 export async function reviseCalculation(calculationId: string): Promise<void> {
   const { supabase } = await requireStaffCompany();
   const { data, error } = await supabase.rpc('revise_calculation', { p_calculation_id: calculationId });
