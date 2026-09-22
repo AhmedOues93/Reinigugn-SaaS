@@ -127,22 +127,10 @@ export function AcceptQuoteForm({ action, locale, showSchedule }: { action: Acti
       <FormMessage status={state.status} message={state.message} />
       <h2 className="font-semibold">{t(locale, 'sales.accept.title')}</h2>
       <p className="text-sm text-muted-foreground">{t(locale, 'sales.accept.body')}</p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Auftragsart" htmlFor="order_type">
-          <Select id="order_type" name="order_type" defaultValue={showSchedule ? 'DAUERAUFTRAG' : 'EINMALAUFTRAG'}>
-            <option value="EINMALAUFTRAG">Einmalauftrag</option>
-            <option value="BEFRISTET">Befristeter Auftrag</option>
-            <option value="DAUERAUFTRAG">Laufender Auftrag</option>
-          </Select>
-        </Field>
-        <Field label="Kundenabnahme" htmlFor="acceptance_policy">
-          <Select id="acceptance_policy" name="acceptance_policy" defaultValue="KEINE_ABNAHME_ERFORDERLICH">
-            <option value="KEINE_ABNAHME_ERFORDERLICH">Keine Abnahme erforderlich</option>
-            <option value="PORTAL_ABNAHME">Bestätigung im Kundenportal</option>
-            <option value="VOR_ORT_UNTERSCHRIFT">Unterschrift vor Ort</option>
-          </Select>
-        </Field>
-      </div>
+      <p className="rounded-lg bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
+        Preis, Abrechnungsart und Kundenabnahme werden aus dem angenommenen Angebot uebernommen.
+        Hier wird nur noch die operative Einsatzzeit eingerichtet.
+      </p>
 
       {showSchedule ? (
         <>
