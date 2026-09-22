@@ -31,6 +31,7 @@ export function ServiceAcceptancePanel({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const signatureRef = useRef<HTMLInputElement | null>(null);
   const drawing = useRef(false);
+  const inkRef = useRef(false);
   const [hasInk, setHasInk] = useState(false);
 
   // The canvas is sized to its own box in device pixels, so a signature does
@@ -79,13 +80,16 @@ export function ServiceAcceptancePanel({
     const { x, y } = positionOf(event);
     context.lineTo(x, y);
     context.stroke();
-    if (!hasInk) setHasInk(true);
+    if (!inkRef.current) {
+      inkRef.current = true;
+      setHasInk(true);
+    }
   };
 
   const end = () => {
     drawing.current = false;
     const canvas = canvasRef.current;
-    if (canvas && signatureRef.current && hasInk) {
+    if (canvas && signatureRef.current && inkRef.current) {
       signatureRef.current.value = canvas.toDataURL('image/png');
     }
   };
@@ -96,6 +100,7 @@ export function ServiceAcceptancePanel({
     if (!canvas || !context) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (signatureRef.current) signatureRef.current.value = '';
+    inkRef.current = false;
     setHasInk(false);
   }, []);
 
