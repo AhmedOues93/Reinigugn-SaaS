@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarClock, FileCheck2, Receipt, TriangleAlert } from 'lucide-react';
+import { AlertTriangle, CalendarClock, FileCheck2, Receipt } from 'lucide-react';
 import { Badge, Button, ButtonLink, EmptyState, FilterTabs, Input, PageHeader } from '@/components/ui';
 import { DataTable, FilterBar } from '@/components/data-table';
 import { addDays, berlinDateKey } from '@/lib/date';
@@ -89,25 +89,43 @@ export default async function ServiceRecordsPage({
         end.
       */}
       {warnings.length > 0 && (
-        <div className="mb-4 rounded-xl border border-warning/25 bg-warning-soft px-4 py-3.5">
-          <p className="flex items-start gap-2.5 text-sm font-semibold leading-6 text-warning">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            Portal-Abnahme ohne Ansprechpartner
-          </p>
-          <p className="mt-1 ps-7 text-sm leading-6 text-foreground">
-            Diese Pläne verlangen eine Abnahme im Kundenportal, aber der Kunde hat keinen aktiven
-            Portalzugang. Diese Einsätze können nicht abgenommen und damit nicht abgerechnet werden.
-          </p>
-          <ul className="mt-2 space-y-1 ps-7 text-sm">
-            {warnings.map((warning) => (
-              <li key={warning.service_schedule_id}>
-                <span className="font-medium">{warning.customer_name}</span> · {warning.schedule_name}
-                {warning.pending_count > 0 && (
-                  <span className="text-muted-foreground"> · {warning.pending_count} wartende Einsätze</span>
-                )}
-              </li>
-            ))}
-          </ul>
+        <div className="mb-4 space-y-2">
+          {warnings.map((warning) => {
+            const blocked = warning.pending_count > 0;
+            return (
+              <div
+                key={warning.service_schedule_id}
+                className={
+                  blocked
+                    ? 'rounded-xl border border-warning/25 bg-warning-soft px-4 py-3.5'
+                    : 'rounded-xl border border-border/80 bg-card px-4 py-3.5'
+                }
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className={blocked ? 'flex items-center gap-2 text-sm font-semibold text-warning' : 'text-sm font-semibold text-foreground'}>
+                      {blocked && <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />}
+                      {blocked ? 'Portal-Abnahme wartet auf Zugang' : 'Portalzugang vor erster Abnahme einrichten'}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      <span className="font-medium text-foreground">{warning.customer_name}</span> · {warning.schedule_name}
+                      {blocked
+                        ? ` · ${warning.pending_count} ${warning.pending_count === 1 ? 'Einsatz wartet' : 'Einsätze warten'} auf Kundenbestätigung.`
+                        : ' · Für diesen Plan ist Portal-Abnahme vereinbart. Aktuell ist noch kein Einsatz blockiert.'}
+                    </p>
+                  </div>
+                  <ButtonLink
+                    href={`/dashboard/kunden/${warning.customer_id}#portalzugang`}
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    Portalzugang einrichten
+                  </ButtonLink>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
