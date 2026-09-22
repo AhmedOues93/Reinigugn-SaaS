@@ -59,9 +59,7 @@ export default async function LoginPage({
           labelAction={
             <Link
               href="/forgot-password"
-              /* Inline beside the label, so it cannot be 44px tall without
-                 pushing the field around; 24px is the accessible floor. */
-              className="inline-flex min-h-6 items-center rounded-sm text-[13px] font-medium text-highlight underline-offset-4 hover:underline"
+              className="relative z-10 -my-2 inline-flex min-h-11 items-center rounded-md px-1 text-[13px] font-medium text-highlight underline-offset-4 hover:underline"
             >
               {t(locale, 'auth.forgotLink')}
             </Link>
