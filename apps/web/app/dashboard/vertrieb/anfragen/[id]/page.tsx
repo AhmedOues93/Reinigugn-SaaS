@@ -48,6 +48,29 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         }
       />
 
+      {!decided && (
+        <Card className="mb-5 p-4 sm:p-5">
+          <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium sm:text-sm">
+            <span className="text-muted-foreground">1. Kunde</span>
+            <span className="text-muted-foreground">2. Bedarf</span>
+            <span className="text-primary">3. Besichtigung</span>
+            <span className="text-muted-foreground">4. Angebot</span>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border">
+            <div className="h-full w-3/4 bg-primary" />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold">Nächster Schritt: Besichtigung</p>
+              <p className="mt-1 text-sm text-muted-foreground">Termin und Objekt erfassen. Danach geht es direkt zum Angebot.</p>
+            </div>
+            <Link href="#besichtigung-planen" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">
+              Besichtigung planen
+            </Link>
+          </div>
+        </Card>
+      )}
+
       {lead.converted_customer_id && (
         <p className="mb-5 rounded-md bg-success-soft p-3 text-sm text-success">
           {t(locale, 'sales.lead.convertedTo')}:{' '}
@@ -166,7 +189,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       )}
 
       {!decided && (
-        <Card className="mt-5 p-5">
+        <Card id="besichtigung-planen" className="mt-5 scroll-mt-28 p-5">
           <h2 className="mb-1 font-semibold">{t(locale, 'sales.survey.new')}</h2>
           <p className="mb-4 text-sm text-muted-foreground">Termin und Objektangaben in zwei kurzen Schritten erfassen.</p>
           <SurveyForm
