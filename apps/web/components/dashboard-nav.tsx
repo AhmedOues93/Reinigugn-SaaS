@@ -19,12 +19,14 @@ import { t, type Locale } from '@/lib/i18n';
 export function DashboardNav({
   locale,
   unread = 0,
+  unreadComplaints = 0,
   mobile = false,
   branding,
   companyName,
 }: {
   locale: Locale;
   unread?: number;
+  unreadComplaints?: number;
   mobile?: boolean;
   branding?: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
   companyName?: string;
@@ -82,7 +84,12 @@ export function DashboardNav({
         />
         <span className="truncate">{label}</span>
         {badge ? (
-          <span className="ms-auto rounded-full bg-highlight/15 px-1.5 text-[11px] font-semibold tabular-nums text-highlight">
+          <span className={cn(
+            'ms-auto rounded-full px-1.5 text-[11px] font-semibold tabular-nums',
+            href === '/dashboard/reklamationen'
+              ? 'bg-danger text-white'
+              : 'bg-highlight/15 text-highlight',
+          )}>
             {badge > 9 ? '9+' : badge}
           </span>
         ) : null}
@@ -127,6 +134,11 @@ export function DashboardNav({
           className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-white/[0.05] hover:text-white max-lg:min-h-touch"
         >
           <span className="truncate">{locale === 'de' ? 'Mehr' : locale === 'en' ? 'More' : locale === 'ar' ? 'المزيد' : locale === 'tr' ? 'Daha fazla' : locale === 'uk' ? 'Більше' : 'Ещё'}</span>
+          {unreadComplaints > 0 && !moreOpen && !secondaryActive ? (
+            <span className="ms-auto rounded-full bg-danger px-1.5 text-[11px] font-semibold tabular-nums text-white">
+              {unreadComplaints > 9 ? '9+' : unreadComplaints}
+            </span>
+          ) : null}
           <ChevronDown className={cn('ms-auto size-4 transition-transform', (moreOpen || secondaryActive) && 'rotate-180')} aria-hidden="true" />
         </button>
         {(moreOpen || secondaryActive) && (
@@ -137,7 +149,7 @@ export function DashboardNav({
                   entry.href,
                   t(locale, entry.label),
                   navIcons[entry.icon as keyof typeof navIcons],
-                  entry.icon === 'messages' ? unread : undefined,
+                  entry.icon === 'complaints' ? unreadComplaints : entry.icon === 'messages' ? unread : undefined,
                 )}
               </li>
             ))}
