@@ -32,6 +32,7 @@ export type PublicQuote = {
   accepted_at: string | null;
   accepted_by_name: string | null;
   acceptance_note: string | null;
+  accepted_signature_text: string | null;
   decline_reason?: string | null;
   lines: PublicQuoteLine[];
 };
@@ -39,7 +40,7 @@ export type PublicQuote = {
 export async function getPublicQuote(token: string): Promise<PublicQuote | null> {
   if (!token || token.length < 32 || token.length > 256) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc('get_public_quote', { p_token: token });
+  const { data, error } = await supabase.rpc('get_public_quote_v2', { p_token: token });
   if (error || !data || typeof data !== 'object') return null;
   return data as unknown as PublicQuote;
 }
