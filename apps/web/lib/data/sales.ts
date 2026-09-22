@@ -102,7 +102,7 @@ export async function getQuote(id: string) {
     .from('quotes')
     .select(
       `id, quote_number, status, title, intro, currency, net_total_cents, vat_total_cents, gross_total_cents,
-       recurring_net_monthly_cents, sent_at, valid_until, accepted_at, accepted_by_name, acceptance_note, accepted_via, declined_at, decline_reason, created_at,
+       recurring_net_monthly_cents, sent_at, valid_until, accepted_at, accepted_by_name, accepted_signature_text, acceptance_note, accepted_via, declined_at, decline_reason, created_at,
        recipient_snapshot, company_snapshot, lead_id, customer_id, site_survey_id,
        created_customer_id, created_object_id, created_schedule_id,
        leads(organisation), customers!quotes_customer_id_fkey(name),
