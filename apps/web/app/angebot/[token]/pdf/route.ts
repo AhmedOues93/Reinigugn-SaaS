@@ -20,6 +20,9 @@ export async function GET(
     vatTotalCents: Number(quote.vat_total_cents),
     grossTotalCents: Number(quote.gross_total_cents),
     recurringNetMonthlyCents: Number(quote.recurring_net_monthly_cents),
+    acceptedAt: quote.accepted_at,
+    acceptedByName: quote.accepted_by_name,
+    acceptedSignatureText: quote.accepted_signature_text,
     recipient: quote.recipient_snapshot,
     company: quote.company_snapshot,
     lines: quote.lines.map((line) => ({
