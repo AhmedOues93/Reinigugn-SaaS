@@ -24,7 +24,7 @@ export async function getComplaint(id: string) {
   const [{ data: updates, error: updatesError }, { data: jobAssignments, error: assignmentsError }] = await Promise.all([
     supabase
       .from('complaint_updates')
-      .select('id, status, note, created_at, company_members!complaint_updates_author_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
+      .select('id, status, note, created_at, company_members!complaint_updates_author_member_id_fkey(role, profiles!company_members_profile_id_fkey(first_name, last_name))')
       .eq('complaint_id', id)
       .order('created_at', { ascending: false }),
     complaint.job_id
