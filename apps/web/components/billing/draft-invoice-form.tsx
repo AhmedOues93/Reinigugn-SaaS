@@ -77,6 +77,23 @@ export function DraftInvoiceForm({
         <Input id="payment_terms_days" name="payment_terms_days" type="number" min={0} max={365} placeholder="14" />
       </Field>
 
+      <details className="rounded-xl border border-border/80 bg-card">
+        <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
+          E-Rechnung
+          <span className="text-xs font-normal text-muted-foreground">optional</span>
+        </summary>
+        <div className="border-t border-border/80 p-4">
+          <Field
+            label="Kaeuferreferenz / Leitweg-ID"
+            htmlFor="buyer_reference"
+            optional
+            info="Fuer XRechnung erforderlich. Bei Behoerden ist das meist die Leitweg-ID."
+          >
+            <Input id="buyer_reference" name="buyer_reference" maxLength={200} />
+          </Field>
+        </div>
+      </details>
+
       <Field label="Hinweis auf der Rechnung" htmlFor="customer_note" optional info="Erscheint für den Kunden auf dem Dokument, z. B. ein Dank oder eine Bestellnummer.">
         <Textarea id="customer_note" name="customer_note" maxLength={2000} />
       </Field>
