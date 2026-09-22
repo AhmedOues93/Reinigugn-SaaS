@@ -22,6 +22,7 @@ import {
  * of contribution reads very differently as 2.160 € a year.
  */
 export function CalculationKpiBand({ calculation }: { calculation: Calculation }) {
+  const hasLines = calculation.lines.length > 0;
   const incomplete = calculation.incomplete_reasons.length > 0;
   const loss = calculation.contribution_cents_month < 0;
   const thin = !loss && calculation.margin_bp < 500 && calculation.selling_price_cents_month > 0;
@@ -37,27 +38,29 @@ export function CalculationKpiBand({ calculation }: { calculation: Calculation }
   const items: { label: string; value: string; hint?: string; tone?: 'danger' | 'warning' }[] = [
     {
       label: 'Zeit / Monat',
-      value: formatMinutes(calculation.monthly_minutes),
-      hint: `${calculation.visits_per_week.toLocaleString('de-DE')}× pro Woche`,
+      value: hasLines ? formatMinutes(calculation.monthly_minutes) : '–',
+      hint: hasLines ? `${calculation.visits_per_week.toLocaleString('de-DE')}× pro Woche` : 'Noch keine Leistungen',
     },
     {
       label: 'Kosten / Monat',
-      value: money(calculation.total_cost_cents_month),
-      hint: 'Personal, Material, Fahrt und Sonstiges',
+      value: hasLines ? money(calculation.total_cost_cents_month) : '–',
+      hint: hasLines ? 'Personal, Material, Fahrt und Sonstiges' : 'Wird nach den Leistungen berechnet',
     },
     {
       label: 'Verkaufspreis / Monat',
-      value: money(calculation.selling_price_cents_month),
+      value: hasLines ? money(calculation.selling_price_cents_month) : '–',
       hint:
-        calculation.price_override_cents_month != null
+        !hasLines
+          ? 'Wird nach den Leistungen berechnet'
+          : calculation.price_override_cents_month != null
           ? 'manuell angepasst'
           : 'aus Zielmarge berechnet',
       tone: belowMinRate ? 'warning' : undefined,
     },
     {
       label: 'Marge',
-      value: formatBp(calculation.margin_bp),
-      hint: `Deckungsbeitrag ${money(calculation.contribution_cents_month)} / Monat`,
+      value: hasLines ? formatBp(calculation.margin_bp) : '–',
+      hint: hasLines ? `Deckungsbeitrag ${money(calculation.contribution_cents_month)} / Monat` : 'Wird nach den Leistungen berechnet',
       tone: loss ? 'danger' : thin ? 'warning' : undefined,
     },
   ];
@@ -70,17 +73,20 @@ export function CalculationKpiBand({ calculation }: { calculation: Calculation }
         one thing this band must never do is let it pass as an answer.
       */}
       {incomplete && (
-        <div className="mb-2 rounded-lg border border-info/25 bg-info-soft px-3.5 py-3 text-sm leading-6 text-info">
-          <p className="font-medium">Diese Kalkulation ist noch unvollständig.</p>
-          <ul className="mt-1 list-disc space-y-0.5 pl-5">
-            {calculation.incomplete_reasons.map((reason) => (
-              <li key={reason}>{incompleteReasonLabels[reason] ?? reason}</li>
-            ))}
-          </ul>
-          <p className="mt-1.5">
-            Die unten stehenden Zahlen beruhen auf den vorhandenen Angaben und sind noch keine
-            belastbare Grundlage für ein Angebot.
-          </p>
+        <div className="mb-3 rounded-lg border border-border bg-muted/35 px-3.5 py-3 text-sm leading-6 text-foreground">
+          <p className="font-medium">{hasLines ? 'Kalkulation noch nicht vollständig' : 'Leistungen zuerst erfassen'}</p>
+          {hasLines && (
+            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted-foreground">
+              {calculation.incomplete_reasons.map((reason) => (
+                <li key={reason}>{incompleteReasonLabels[reason] ?? reason}</li>
+              ))}
+            </ul>
+          )}
+          {!hasLines && (
+            <p className="mt-1 text-muted-foreground">
+              Sobald mindestens eine Leistungsposition vorhanden ist, berechnet ReinPlan Zeit, Kosten, Preis und Marge.
+            </p>
+          )}
         </div>
       )}
 
@@ -112,14 +118,14 @@ export function CalculationKpiBand({ calculation }: { calculation: Calculation }
         sign in a table. A contract at a loss is the single most expensive
         thing this screen can fail to communicate.
       */}
-      {loss && (
+      {hasLines && loss && (
         <p className="mt-2 rounded-lg border border-danger/25 bg-danger-soft px-3.5 py-2.5 text-sm leading-6 text-danger">
           Der Verkaufspreis liegt unter den kalkulierten Kosten. Bei diesem Preis macht der Auftrag
           jeden Monat {money(Math.abs(calculation.contribution_cents_month))} Verlust —{' '}
           {money(Math.abs(calculation.contribution_cents_month) * 12)} im Jahr.
         </p>
       )}
-      {thin && (
+      {hasLines && thin && (
         <p className="mt-2 rounded-lg border border-warning/25 bg-warning-soft px-3.5 py-2.5 text-sm leading-6 text-warning">
           Sehr geringe Marge. Mindeststundensatz zur Kostendeckung:{' '}
           <span className="font-semibold tabular-nums">
@@ -128,7 +134,7 @@ export function CalculationKpiBand({ calculation }: { calculation: Calculation }
           je produktiver Stunde.
         </p>
       )}
-      {belowMinRate && (
+      {hasLines && belowMinRate && (
         <p className="mt-2 rounded-lg border border-warning/25 bg-warning-soft px-3.5 py-2.5 text-sm leading-6 text-warning">
           Der erzielte Stundensatz von{' '}
           <span className="font-semibold tabular-nums">
