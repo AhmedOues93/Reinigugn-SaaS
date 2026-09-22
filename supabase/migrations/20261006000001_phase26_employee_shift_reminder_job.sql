@@ -76,11 +76,19 @@ $$;
 
 revoke all on function public.enqueue_job_start_reminders() from public, anon, authenticated;
 
-select cron.schedule(
-  'reinplan-employee-shift-reminders',
-  '*/5 * * * *',
-  $$select public.enqueue_job_start_reminders();$$
-)
-where not exists (
-  select 1 from cron.job where jobname = 'reinplan-employee-shift-reminders'
-);
+do $
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+    perform cron.unschedule(jobid)
+      from cron.job
+      where jobname = 'reinplan-employee-shift-reminders';
+    perform cron.schedule(
+      'reinplan-employee-shift-reminders',
+      '*/5 * * * *',
+      $cron$select public.enqueue_job_start_reminders();$cron$
+    );
+  end if;
+exception when insufficient_privilege or undefined_function or undefined_table then
+  raise notice 'pg_cron reminder schedule not available in this environment';
+end $;
