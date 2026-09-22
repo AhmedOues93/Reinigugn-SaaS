@@ -3,7 +3,7 @@ import { BackLink, Card, EmptyState, PageHeader } from '@/components/ui';
 import { CatalogItemEditor } from '@/components/kalkulation/catalog-editor';
 import { costBasisLabels, listCatalogItems, unitLabels } from '@/lib/data/kalkulation';
 import { formatMoney } from '@/lib/format';
-import { archiveCatalogItem, saveCatalogItem } from '../actions';
+import { saveCatalogItem } from '../actions';
 
 /**
  * The company's own services and what each assumes about productivity.
@@ -69,7 +69,6 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
                         ` · Material ${formatMoney('de', item.default_material_cents)} ${costBasisLabels[item.default_material_basis]}`}
                     </span>
                     <a href={`/dashboard/kalkulation/leistungskatalog?edit=${item.id}#leistung-editor`} className="inline-flex min-h-10 items-center rounded-md border border-border px-3 text-sm font-medium">Bearbeiten</a>
-                    {item.is_active && <form action={archiveCatalogItem.bind(null, item.id)}><button className="min-h-10 rounded-md border border-border px-3 text-sm font-medium" type="submit">Archivieren</button></form>}
                     </div>
                   </li>
                 ))}
@@ -79,7 +78,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         </div>
       )}
 
-      <div className="mt-6" id="leistung-editor">
+      <div className="mt-6 scroll-mt-24" id="leistung-editor">
         <CatalogItemEditor action={saveCatalogItem.bind(null, edit ?? null)} item={edit ? items.find((item) => item.id === edit) : undefined} />
       </div>
     </div>
