@@ -22,7 +22,6 @@ export async function renderStaffQuotePdf(id: string) {
       recurringNetMonthlyCents: quote.recurring_net_monthly_cents,
       acceptedAt: quote.accepted_at,
       acceptedByName: quote.accepted_by_name,
-      acceptedSignatureText: quote.accepted_signature_text,
       recipient: quote.recipient_snapshot as Record<string, unknown> | null,
       company: quote.company_snapshot as Record<string, unknown> | null,
       logo: await fetchLogo(branding?.logoUrl ?? null),
