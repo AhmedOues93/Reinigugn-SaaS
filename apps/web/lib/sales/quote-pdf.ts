@@ -11,6 +11,7 @@ export type QuotePdfInput = {
   vatTotalCents: number;
   grossTotalCents: number;
   recurringNetMonthlyCents: number;
+  acceptancePolicy?: 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME' | null;
   acceptedAt?: string | null;
   acceptedByName?: string | null;
   recipient: Record<string, unknown> | null;
@@ -213,8 +214,15 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   draw('Vertragsgrundlagen', mx, y, { font: bold, size: 10.5, color: ink });
   y -= 18;
 
+  const acceptanceText = {
+    KEINE_ABNAHME_ERFORDERLICH: 'Keine gesonderte Kundenabnahme erforderlich',
+    VOR_ORT_UNTERSCHRIFT: 'Unterschrift des Kunden vor Ort',
+    PORTAL_ABNAHME: 'Bestätigung durch den Kunden im Kundenportal',
+  }[input.acceptancePolicy ?? 'KEINE_ABNAHME_ERFORDERLICH'];
+
   const commercialTerms = [
     ['Angebotsgültigkeit', date(input.validUntil)],
+    ['Kundenabnahme', acceptanceText],
     ['Zahlungsziel', paymentDays > 0 ? `${paymentDays} Tage ab Rechnungsdatum` : 'gemäß Rechnung'],
     ['Umsatzsteuer', 'gemäß den oben ausgewiesenen Steuersätzen'],
     ['Leistungsumfang', 'maßgeblich sind die oben aufgeführten Positionen und Leistungsbeschreibungen'],
