@@ -39,8 +39,6 @@ export default async function PublicQuotePage({
   const errorText =
     query.error === 'name'
       ? 'Bitte geben Sie Ihren Namen an.'
-      : query.error === 'signature'
-        ? 'Bitte unterschreiben Sie das Angebot im Feld Unterschrift.'
         : query.error === 'note'
         ? 'Der Hinweis darf maximal 1.000 Zeichen enthalten.'
         : query.error === 'decline-note'
@@ -147,9 +145,6 @@ export default async function PublicQuotePage({
                   {quote.accepted_at ? ` am ${formatDateTime('de', quote.accepted_at)}` : ''}
                   {quote.accepted_by_name ? ` durch ${quote.accepted_by_name}` : ''} dokumentiert.
                 </p>
-                {quote.accepted_signature_text && (
-                  <p className="mt-3 text-sm"><span className="text-muted-foreground">Unterschrift:</span> <span className="font-semibold italic">{quote.accepted_signature_text}</span></p>
-                )}
                 {quote.acceptance_note && (
                   <p className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-sm">{quote.acceptance_note}</p>
                 )}
@@ -196,10 +191,7 @@ export default async function PublicQuotePage({
               <Field label="Name" htmlFor="name">
                 <Input id="name" name="name" required minLength={2} maxLength={160} autoComplete="name" />
               </Field>
-              <Field label="Unterschrift" htmlFor="signature">
-                <Input id="signature" name="signature" required minLength={2} maxLength={160} placeholder="Vor- und Nachname als Unterschrift" autoComplete="name" />
-              </Field>
-              <p className="text-xs leading-5 text-muted-foreground">Mit der digitalen Annahme bestätigen Sie, dass die eingegebene Unterschrift von Ihnen stammt und diesem Angebot zugeordnet werden darf.</p>
+              <p className="text-xs leading-5 text-muted-foreground">Mit der digitalen Annahme bestätigen Sie das Angebot verbindlich. Name und Zeitpunkt werden als Annahmenachweis dokumentiert.</p>
               <Field label="Hinweis" htmlFor="note" optional>
                 <Textarea id="note" name="note" maxLength={1000} placeholder="Optionaler Hinweis zur Annahme" />
               </Field>
