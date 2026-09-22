@@ -384,6 +384,9 @@ export type InvoiceDelivery = {
   recipient: string | null;
   status: 'SENT' | 'FAILED' | 'NOT_CONFIGURED' | 'MANUAL';
   detail: string | null;
+  reminder_level: number | null;
+  reminder_fee_cents: number | null;
+  reminder_interest_cents: number | null;
   created_at: string;
 };
 
@@ -392,7 +395,7 @@ export async function listInvoiceDeliveries(invoiceId: string): Promise<InvoiceD
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('invoice_deliveries')
-    .select('id, kind, channel, recipient, status, detail, created_at')
+    .select('id, kind, channel, recipient, status, detail, reminder_level, reminder_fee_cents, reminder_interest_cents, created_at')
     .eq('company_id', company.id)
     .eq('invoice_id', invoiceId)
     .order('created_at', { ascending: false });
