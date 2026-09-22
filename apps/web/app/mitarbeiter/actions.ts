@@ -220,21 +220,23 @@ export async function confirmOnSiteAcceptance(
   }
 
   const signature = String(formData.get('signature') ?? '');
-  let path: string | null = null;
-  if (signature) {
-    const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(signature);
-    if (!match) return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
-    const bytes = Buffer.from(match[1], 'base64');
-    // A handwritten scribble is a few kilobytes; anything larger is not one.
-    if (bytes.byteLength === 0 || bytes.byteLength > 512 * 1024) {
-      return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
-    }
-    path = `${context.membership.company_id}/service/${jobId}/${randomUUID()}.png`;
-    const { error: uploadError } = await context.supabase.storage
-      .from('service-signatures')
-      .upload(path, bytes, { contentType: 'image/png', upsert: false });
-    if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (!signature) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureRequired') };
   }
+
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(signature);
+  if (!match) return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  const bytes = Buffer.from(match[1], 'base64');
+  // A handwritten scribble is a few kilobytes; anything larger is not one.
+  if (bytes.byteLength === 0 || bytes.byteLength > 512 * 1024) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  }
+
+  const path = `${context.membership.company_id}/service/${jobId}/${randomUUID()}.png`;
+  const { error: uploadError } = await context.supabase.storage
+    .from('service-signatures')
+    .upload(path, bytes, { contentType: 'image/png', upsert: false });
+  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
 
   const { error } = await context.supabase.rpc('sign_service_record_on_site', {
     p_job_id: jobId,
