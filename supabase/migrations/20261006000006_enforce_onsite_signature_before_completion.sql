@@ -279,10 +279,6 @@ begin
     raise exception 'The name of the person accepting the work is required';
   end if;
 
-  if p_signature_path is null or trim(p_signature_path) = '' then
-    raise exception 'A handwritten customer signature is required';
-  end if;
-
   select * into record_row
   from public.service_records
   where job_id = p_job_id
@@ -297,6 +293,10 @@ begin
   end if;
   if record_row.status = 'PROBLEM_GEMELDET' then
     raise exception 'A reported problem has to be resolved first';
+  end if;
+
+  if p_signature_path is null or trim(p_signature_path) = '' then
+    raise exception 'A handwritten customer signature is required';
   end if;
 
   if p_signature_path !~
