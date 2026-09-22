@@ -666,6 +666,7 @@ export default async function CalculationPage({
               <QuoteFromCalculationForm
                 action={createQuoteFromCalculation.bind(null, id)}
                 defaultTitle={calculation.title}
+                hasRecurring={recurring.length > 0}
               />
             ) : (
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
