@@ -60,7 +60,7 @@ export async function listServiceSchedules() {
   const { supabase, company } = await requireStaffCompany();
   const { data, error } = await supabase
     .from('service_schedules')
-    .select('id, name, customer_id, cleaning_object_id, valid_from, valid_until, is_active, customers(name), cleaning_objects(name), schedule_rules(weekday, planned_start_time, planned_end_time, is_active), service_schedule_assignments(member_id)')
+    .select('id, name, customer_id, cleaning_object_id, valid_from, valid_until, is_active, acceptance_policy, billing_mode, customers(name), cleaning_objects(name), schedule_rules(weekday, planned_start_time, planned_end_time, is_active), service_schedule_assignments(member_id)')
     .eq('company_id', company.id).order('name');
   if (error) throw new Error('Pläne konnten nicht geladen werden.');
   return data ?? [];
