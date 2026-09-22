@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Download } from 'lucide-react';
 import { CustomerImportForm } from '@/components/customer-import-form';
 import { BackLink, buttonVariants, Card, PageHeader } from '@/components/ui';
@@ -14,10 +15,10 @@ export default async function CustomerImportPage() {
         title="Kunden und Objekte importieren"
         description="Bestehende Stammdaten aus einer CSV übernehmen, ohne den normalen Workflow zu verändern."
         actions={
-          <a href="/dashboard/kunden/import/vorlage" className={buttonVariants({ variant: 'outline' })}>
+          <Link href="/dashboard/kunden/import/vorlage" className={buttonVariants({ variant: 'outline' })}>
             <Download className="size-4" aria-hidden="true" />
             CSV-Vorlage
-          </a>
+          </Link>
         }
       />
       <Card className="p-5 sm:p-6">
