@@ -179,6 +179,24 @@ export async function saveCatalogItem(
   }
 }
 
+export async function archiveCatalogItem(itemId: string): Promise<void> {
+  const { supabase } = await requireStaffCompany();
+  const { data: item, error: readError } = await supabase
+    .from('service_catalog_items')
+    .select('id, name, category, description, calculation_unit, default_productivity_per_hour, default_minutes_per_unit, default_material_cents, default_material_basis')
+    .eq('id', itemId)
+    .maybeSingle();
+  if (readError || !item) throw new Error('Die Leistung wurde nicht gefunden.');
+  const { error } = await supabase.rpc('save_catalog_item', {
+    p_id: item.id, p_name: item.name, p_category: item.category, p_unit: item.calculation_unit,
+    p_productivity: item.default_productivity_per_hour, p_minutes_per_unit: item.default_minutes_per_unit,
+    p_material_cents: item.default_material_cents, p_material_basis: item.default_material_basis,
+    p_description: item.description, p_is_active: false,
+  });
+  if (error) throw new Error('Die Leistung konnte nicht archiviert werden.');
+  revalidatePath('/dashboard/kalkulation/leistungskatalog');
+}
+
 // ---------------------------------------------------------------------------
 // The calculation itself
 // ---------------------------------------------------------------------------
