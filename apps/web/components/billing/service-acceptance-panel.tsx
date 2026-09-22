@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { AlertTriangle, History, ShieldCheck, Undo2 } from 'lucide-react';
+import { AlertTriangle, History, Mail, ShieldCheck, Undo2 } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Card, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
@@ -12,6 +12,7 @@ import type {
 } from '@/lib/data/billing';
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
+type MailAction = (kind: 'REQUEST' | 'REMINDER', state: FormState, formData: FormData) => Promise<FormState>;
 
 const policyLabel: Record<AcceptancePolicy, string> = {
   KEINE_ABNAHME_ERFORDERLICH: 'Keine Abnahme erforderlich',
@@ -55,6 +56,9 @@ export function ServiceAcceptancePanel({
   events,
   resolveAction,
   revokeAction,
+  mailAction,
+  requestSentAt,
+  reminderSentAt,
   canRevoke,
   invoiced,
 }: {
@@ -67,12 +71,17 @@ export function ServiceAcceptancePanel({
   events: ServiceRecordEvent[];
   resolveAction: Action;
   revokeAction: Action;
+  mailAction: MailAction;
+  requestSentAt: string | null;
+  reminderSentAt: string | null;
   /** Revocation is the OWNER's call; the server enforces it regardless. */
   canRevoke: boolean;
   invoiced: boolean;
 }) {
   const [resolveState, resolve] = useActionState(resolveAction, initialFormState);
   const [revokeState, revoke] = useActionState(revokeAction, initialFormState);
+  const [requestState, sendRequest] = useActionState(mailAction.bind(null, 'REQUEST'), initialFormState);
+  const [reminderState, sendReminder] = useActionState(mailAction.bind(null, 'REMINDER'), initialFormState);
   const [showRevoke, setShowRevoke] = useState(false);
 
   return (
@@ -105,6 +114,39 @@ export function ServiceAcceptancePanel({
           )}
         </div>
       </div>
+
+      {policy === 'PORTAL_ABNAHME' && status === 'ABNAHME_AUSSTEHEND' && (
+        <div className="mt-4 rounded-lg border border-border bg-subtle p-4 print:hidden">
+          <p className="text-sm font-semibold">Kunde per E-Mail informieren</p>
+          {!requestSentAt ? (
+            <form action={sendRequest} className="mt-3 space-y-3">
+              <FormMessage status={requestState.status} message={requestState.message} />
+              <p className="text-sm leading-6 text-muted-foreground">
+                Sendet dem aktiven Portal-Kontakt direkt den Link zu diesem Leistungsnachweis.
+              </p>
+              <SubmitButton variant="outline">
+                <Mail className="size-4" aria-hidden="true" />
+                Abnahmeanfrage senden
+              </SubmitButton>
+            </form>
+          ) : !reminderSentAt ? (
+            <form action={sendReminder} className="mt-3 space-y-3">
+              <FormMessage status={reminderState.status} message={reminderState.message} />
+              <p className="text-sm leading-6 text-muted-foreground">
+                Anfrage gesendet am {when(requestSentAt)}. Eine einmalige Erinnerung ist möglich.
+              </p>
+              <SubmitButton variant="outline">
+                <Mail className="size-4" aria-hidden="true" />
+                Einmal erinnern
+              </SubmitButton>
+            </form>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Anfrage gesendet am {when(requestSentAt)} · Erinnerung gesendet am {when(reminderSentAt)}.
+            </p>
+          )}
+        </div>
+      )}
 
       {signatureUrl && (
         <figure className="mt-4">
