@@ -6,7 +6,7 @@ import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
 import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
 import { renderStaffXRechnung } from '@/lib/billing/invoice-xrechnung-data';
-import { getBillableJob, getInvoice, listBillableJobs } from '@/lib/data/billing';
+import { getBillableJob, getInvoice, listBillableJobs, listInvoicePayments } from '@/lib/data/billing';
 import { sendMail } from '@/lib/mail/transport';
 import { formatDate, formatMoney } from '@/lib/format';
 import { randomUUID } from 'node:crypto';
@@ -323,9 +323,12 @@ async function recordDelivery(
   provider: 'resend' | 'smtp' | null = null,
   providerMessageId: string | null = null,
   idempotencyKey: string | null = null,
+  reminderLevel: number | null = null,
+  reminderFeeCents = 0,
+  reminderInterestCents = 0,
 ) {
   const { supabase } = await requireStaffCompany();
-  const { error } = await supabase.rpc('record_invoice_delivery', {
+  const { error } = await supabase.rpc('record_invoice_delivery_v2', {
     p_invoice_id: invoiceId,
     p_kind: kind,
     p_channel: channel,
@@ -335,8 +338,20 @@ async function recordDelivery(
     p_provider: provider,
     p_provider_message_id: providerMessageId,
     p_idempotency_key: idempotencyKey,
+    p_reminder_level: reminderLevel,
+    p_reminder_fee_cents: reminderFeeCents,
+    p_reminder_interest_cents: reminderInterestCents,
   });
   return error;
+}
+
+function parseOptionalEuroCents(value: FormDataEntryValue | null) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+  const normalized = raw.replace(/\s/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  const cents = Math.round(Number(normalized) * 100);
+  return Number.isSafeInteger(cents) && cents >= 0 ? cents : null;
 }
 
 /**
@@ -356,11 +371,23 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
   const recipient = String(formData.get('recipient') ?? '').trim();
   if (!emailPattern.test(recipient) || recipient.length > 320) return failure('Bitte gib eine gültige E-Mail-Adresse an.');
 
+  const requestedLevel = Number(String(formData.get('reminder_level') ?? '0'));
+  const reminderFeeCents = parseOptionalEuroCents(formData.get('reminder_fee'));
+  const reminderInterestCents = parseOptionalEuroCents(formData.get('reminder_interest'));
+  if (kind === 'REMINDER' && (reminderFeeCents == null || reminderInterestCents == null)) {
+    return failure('Bitte prüfe Mahngebühr und Verzugszinsen.');
+  }
+
   const invoice = await getInvoice(invoiceId);
   if (!invoice || invoice.status === 'DRAFT' || invoice.status === 'CANCELLED' || !invoice.invoice_number) {
     return failure('Nur festgeschriebene, nicht stornierte Rechnungen können versendet werden.');
   }
-  if (kind === 'REMINDER' && invoice.displayStatus !== 'OVERDUE') return failure('Eine Zahlungserinnerung ist erst nach Fälligkeit möglich.');
+  if (kind === 'REMINDER' && invoice.displayStatus !== 'OVERDUE') return failure('Eine Mahnung ist erst nach Fälligkeit möglich.');
+  if (kind === 'REMINDER') {
+    const expectedLevel = invoice.reminder_count + 1;
+    if (expectedLevel > 3) return failure('Alle drei Mahnstufen wurden bereits dokumentiert.');
+    if (requestedLevel !== expectedLevel) return failure('Die Mahnstufe ist nicht mehr aktuell. Bitte lade die Rechnung neu.');
+  }
 
   const [rendered, xrechnung] = await Promise.all([
     renderStaffInvoicePdf(invoiceId),
@@ -369,16 +396,24 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
   if (!rendered) return failure('Das PDF konnte nicht erzeugt werden.');
 
   const company = (invoice.company_snapshot ?? {}) as Record<string, string | null>;
-  const amount = formatMoney('de', invoice.gross_total_cents, invoice.currency);
+  const payments = kind === 'REMINDER' ? await listInvoicePayments(invoiceId) : [];
+  const paidCents = payments.reduce((sum, payment) => sum + payment.amount_cents, 0);
+  const outstandingCents = Math.max(0, invoice.gross_total_cents - paidCents);
+  const amount = formatMoney('de', kind === 'REMINDER' ? outstandingCents : invoice.gross_total_cents, invoice.currency);
   const due = invoice.due_date ? formatDate('de', invoice.due_date) : '';
+  const dunningTotalCents = outstandingCents + (reminderFeeCents ?? 0) + (reminderInterestCents ?? 0);
+  const reminderExtras = [
+    (reminderFeeCents ?? 0) > 0 ? `Mahngebühr: ${formatMoney('de', reminderFeeCents ?? 0, invoice.currency)}` : null,
+    (reminderInterestCents ?? 0) > 0 ? `Verzugszinsen: ${formatMoney('de', reminderInterestCents ?? 0, invoice.currency)}` : null,
+  ].filter(Boolean).join('\n');
   const subject =
     kind === 'INVOICE'
       ? `Rechnung ${invoice.invoice_number} von ${company.name ?? ''}`.trim()
-      : `Zahlungserinnerung zu Rechnung ${invoice.invoice_number}`;
+      : `${requestedLevel}. Mahnung zu Rechnung ${invoice.invoice_number}`;
   const text =
     kind === 'INVOICE'
       ? `Guten Tag,\n\nanbei erhalten Sie die Rechnung ${invoice.invoice_number} über ${amount}, zahlbar bis ${due}.\nSie finden die Rechnung außerdem jederzeit in Ihrem Kundenportal.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`
-      : `Guten Tag,\n\nsicher ist es Ihrer Aufmerksamkeit entgangen: Die Rechnung ${invoice.invoice_number} über ${amount} war am ${due} fällig und ist bei uns noch nicht eingegangen.\nBitte überweisen Sie den Betrag in den nächsten Tagen. Sollte sich Ihre Zahlung mit dieser Erinnerung überschnitten haben, betrachten Sie sie bitte als gegenstandslos.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`;
+      : `Guten Tag,\n\ndie Rechnung ${invoice.invoice_number} mit einem offenen Betrag von ${amount} war am ${due} fällig.\n${reminderExtras ? `${reminderExtras}\nGesamtforderung: ${formatMoney('de', dunningTotalCents, invoice.currency)}\n` : ''}Bitte begleichen Sie den offenen Betrag. Sollte sich Ihre Zahlung mit dieser Mahnung überschnitten haben, betrachten Sie sie bitte als gegenstandslos.\n\nMit freundlichen Grüßen\n${company.name ?? ''}`;
 
   /*
    * One key identifies this attempt end to end. The browser supplies it with
@@ -417,10 +452,13 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
     // Only a delivered message is worth de-duplicating: a failure must stay
     // retryable, and a retry that succeeds must be recorded.
     result.status === 'SENT' ? idempotencyKey : null,
+    kind === 'REMINDER' ? requestedLevel : null,
+    kind === 'REMINDER' ? reminderFeeCents ?? 0 : 0,
+    kind === 'REMINDER' ? reminderInterestCents ?? 0 : 0,
   );
   revalidateBilling(invoiceId);
   if (error) return failure('Der Versand konnte nicht protokolliert werden.');
-  if (result.status === 'SENT') return { status: 'success', message: kind === 'INVOICE' ? `Rechnung an ${recipient} gesendet.` : `Zahlungserinnerung an ${recipient} gesendet.` };
+  if (result.status === 'SENT') return { status: 'success', message: kind === 'INVOICE' ? `Rechnung an ${recipient} gesendet.` : `${requestedLevel}. Mahnung an ${recipient} gesendet.` };
   if (result.status === 'NOT_CONFIGURED') {
     return failure('Nicht gesendet: Es ist kein E-Mail-Versand eingerichtet. Laden Sie das PDF herunter und vermerken Sie den Versand manuell.');
   }
@@ -439,16 +477,30 @@ export async function recordManualDelivery(invoiceId: string, _: FormState, form
   };
   const note = String(formData.get('note') ?? '').trim().slice(0, 400);
   const detail = [methodLabel[method] ?? methodLabel.OTHER, note].filter(Boolean).join(' · ');
-  const error = await recordDelivery(invoiceId, kind, 'MANUAL', null, 'MANUAL', detail);
+  const reminderLevel = kind === 'REMINDER' ? Number(String(formData.get('reminder_level') ?? '0')) : null;
+  const error = await recordDelivery(
+    invoiceId,
+    kind,
+    'MANUAL',
+    null,
+    'MANUAL',
+    detail,
+    null,
+    null,
+    null,
+    reminderLevel,
+    0,
+    0,
+  );
   revalidateBilling(invoiceId);
   if (error) {
     return failure(
       error.message.includes('overdue')
-        ? 'Eine Zahlungserinnerung ist erst nach Fälligkeit möglich.'
+        ? 'Eine Mahnung ist erst nach Fälligkeit möglich.'
         : 'Der Versand konnte nicht vermerkt werden.',
     );
   }
-  return { status: 'success', message: kind === 'INVOICE' ? 'Versand vermerkt.' : 'Zahlungserinnerung vermerkt.' };
+  return { status: 'success', message: kind === 'INVOICE' ? 'Versand vermerkt.' : `${reminderLevel}. Mahnung vermerkt.` };
 }
 
 /**
