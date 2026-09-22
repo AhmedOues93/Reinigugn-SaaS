@@ -591,6 +591,10 @@ export async function createQuoteFromCalculation(
   if (!['PAUSCHALE_PRO_EINSATZ', 'STUNDENSATZ', 'MONATSPAUSCHALE'].includes(billingMode)) {
     return failure('Bitte wähle eine gültige Abrechnungsart.');
   }
+  const acceptancePolicy = String(formData.get('acceptance_policy') ?? 'KEINE_ABNAHME_ERFORDERLICH');
+  if (!['KEINE_ABNAHME_ERFORDERLICH', 'VOR_ORT_UNTERSCHRIFT', 'PORTAL_ABNAHME'].includes(acceptancePolicy)) {
+    return failure('Bitte wähle eine gültige Kundenabnahme.');
+  }
   const validDays = Number(String(formData.get('valid_days') ?? '30'));
 
   let quoteId: string;
@@ -601,6 +605,7 @@ export async function createQuoteFromCalculation(
       p_title: String(formData.get('title') ?? '').trim() || null,
       p_valid_days: Number.isFinite(validDays) ? validDays : 30,
       p_billing_mode: billingMode,
+      p_acceptance_policy: acceptancePolicy,
     });
     if (error || !data) {
       return failure(
