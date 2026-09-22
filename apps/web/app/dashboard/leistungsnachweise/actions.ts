@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { sendMail } from '@/lib/mail/transport';
+import { appUrl } from '@/lib/utils';
 
 function revalidateQueue(jobId: string) {
   revalidatePath('/dashboard/leistungsnachweise');
@@ -92,5 +94,74 @@ export async function revokeServiceAcceptance(
     return { status: 'success', message: 'Die Abnahme wurde widerrufen und protokolliert.' };
   } catch {
     return { status: 'error', message: 'Die Abnahme konnte nicht widerrufen werden.' };
+  }
+}
+
+type PortalAcceptanceMailTarget = {
+  service_record_id: string;
+  customer_name: string;
+  job_title: string;
+  scheduled_date: string;
+  recipient_email: string;
+  recipient_name: string | null;
+  request_sent_at: string | null;
+  reminder_sent_at: string | null;
+};
+
+export async function sendPortalAcceptanceMail(
+  jobId: string,
+  kind: 'REQUEST' | 'REMINDER',
+  _: FormState,
+  __: FormData,
+): Promise<FormState> {
+  try {
+    const { supabase, company } = await requireStaffCompany();
+    const { data, error } = await supabase.rpc('get_portal_acceptance_mail_target', { p_job_id: jobId });
+    if (error) return { status: 'error', message: 'Die Abnahme-E-Mail konnte nicht vorbereitet werden.' };
+    const target = (Array.isArray(data) ? data[0] : data) as PortalAcceptanceMailTarget | null;
+    if (!target?.recipient_email) return { status: 'error', message: 'Für diesen Kunden gibt es keinen aktiven Portalzugang mit E-Mail-Adresse.' };
+
+    if (kind === 'REQUEST' && target.request_sent_at) {
+      return { status: 'success', message: 'Die Abnahmeanfrage wurde bereits versendet.' };
+    }
+    if (kind === 'REMINDER') {
+      if (!target.request_sent_at) return { status: 'error', message: 'Bitte zuerst die Abnahmeanfrage senden.' };
+      if (target.reminder_sent_at) return { status: 'success', message: 'Die Erinnerung wurde bereits einmal versendet.' };
+    }
+
+    const subject = kind === 'REQUEST'
+      ? `Abnahme erforderlich: ${target.job_title}`
+      : `Erinnerung zur Abnahme: ${target.job_title}`;
+    const intro = kind === 'REQUEST'
+      ? `${company.name} hat die Leistung „${target.job_title}“ abgeschlossen.`
+      : `Die Abnahme der Leistung „${target.job_title}“ ist noch offen.`;
+    const result = await sendMail({
+      to: target.recipient_email,
+      subject,
+      text:
+        `Guten Tag${target.recipient_name ? ` ${target.recipient_name}` : ''},\n\n` +
+        `${intro} Bitte prüfen und bestätigen Sie den Leistungsnachweis im Kundenportal.\n\n` +
+        `${appUrl(`/portal/leistungen/${jobId}`)}\n\n` +
+        `Mit freundlichen Grüßen\n${company.name}`,
+      idempotencyKey: `acceptance-${kind.toLowerCase()}-${target.service_record_id}`,
+    });
+
+    if (result.status !== 'SENT') {
+      return { status: 'error', message: result.status === 'NOT_CONFIGURED' ? 'E-Mail-Versand ist noch nicht eingerichtet.' : 'Die E-Mail konnte nicht versendet werden.' };
+    }
+
+    const { error: recordError } = await supabase.rpc('record_portal_acceptance_mail', {
+      p_job_id: jobId,
+      p_kind: kind,
+    });
+    if (recordError) return { status: 'error', message: 'Die E-Mail wurde versendet, aber der Versandstatus konnte nicht gespeichert werden.' };
+
+    revalidateQueue(jobId);
+    return {
+      status: 'success',
+      message: kind === 'REQUEST' ? 'Abnahmeanfrage wurde an den Kunden gesendet.' : 'Einmalige Erinnerung wurde an den Kunden gesendet.',
+    };
+  } catch {
+    return { status: 'error', message: 'Die Abnahme-E-Mail konnte nicht versendet werden.' };
   }
 }
