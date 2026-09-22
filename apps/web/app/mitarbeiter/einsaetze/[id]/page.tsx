@@ -95,7 +95,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
           durationMinutes={entry?.duration_minutes}
           breaks={breaks}
           incompleteRequiredItems={incompleteRequiredItems}
-          canStart={editable}
+          canStart={editable && !acceptance?.signature_required}
           locale={locale}
         />
 
