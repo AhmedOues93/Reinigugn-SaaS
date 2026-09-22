@@ -9,7 +9,7 @@ import { BackLink, ButtonLink } from '@/components/ui';
 import { requireStaffCompany } from '@/lib/auth';
 import { listServiceRecordEvents } from '@/lib/data/billing';
 import { currentLocale } from '@/lib/i18n-server';
-import { resolveServiceDispute, revokeServiceAcceptance } from '../../../leistungsnachweise/actions';
+import { resolveServiceDispute, revokeServiceAcceptance, sendPortalAcceptanceMail } from '../../../leistungsnachweise/actions';
 
 export default async function ServiceRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,7 +22,7 @@ export default async function ServiceRecordPage({ params }: { params: Promise<{ 
   if (!record || !stored) notFound();
   // Hand-off to billing: is this visit already on a live invoice?
   const { supabase, company, membership } = await requireStaffCompany();
-  const [{ data: job }, { data: acceptanceRow }] = await Promise.all([
+  const [{ data: job }, { data: acceptanceRow }, { data: mailState }] = await Promise.all([
     supabase
       .from('jobs')
       .select('customer_id, invoice_lines(invoice_id, invoice_status)')
@@ -30,6 +30,12 @@ export default async function ServiceRecordPage({ params }: { params: Promise<{ 
       .eq('id', id)
       .maybeSingle(),
     supabase.rpc('get_service_record', { p_job_id: id }),
+    supabase
+      .from('service_records')
+      .select('acceptance_request_sent_at, acceptance_reminder_sent_at')
+      .eq('company_id', company.id)
+      .eq('job_id', id)
+      .maybeSingle(),
   ]);
   const line = (job?.invoice_lines ?? []).find((entry) => entry.invoice_status !== 'CANCELLED');
 
@@ -90,6 +96,9 @@ export default async function ServiceRecordPage({ params }: { params: Promise<{ 
           events={events}
           resolveAction={resolveServiceDispute.bind(null, id)}
           revokeAction={revokeServiceAcceptance.bind(null, id)}
+          mailAction={sendPortalAcceptanceMail.bind(null, id)}
+          requestSentAt={mailState?.acceptance_request_sent_at ?? null}
+          reminderSentAt={mailState?.acceptance_reminder_sent_at ?? null}
           canRevoke={membership?.role === 'OWNER'}
           invoiced={Boolean(line)}
         />
