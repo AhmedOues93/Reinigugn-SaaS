@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Receipt } from 'lucide-react';
-import { getServiceRecord } from '@/lib/data/service-record';
+import { getServiceRecord, hasStoredServiceRecord } from '@/lib/data/service-record';
 import { ServiceRecordView } from '@/components/service-record-view';
 import { ServiceAcceptancePanel } from '@/components/billing/service-acceptance-panel';
 import { DocumentPrintStyles } from '@/components/document-print-styles';
@@ -13,12 +13,13 @@ import { resolveServiceDispute, revokeServiceAcceptance } from '../../../leistun
 
 export default async function ServiceRecordPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [record, locale, events] = await Promise.all([
+  const [record, stored, locale, events] = await Promise.all([
     getServiceRecord(id),
+    hasStoredServiceRecord(id),
     currentLocale(),
     listServiceRecordEvents(id),
   ]);
-  if (!record) notFound();
+  if (!record || !stored) notFound();
   // Hand-off to billing: is this visit already on a live invoice?
   const { supabase, company, membership } = await requireStaffCompany();
   const [{ data: job }, { data: acceptanceRow }] = await Promise.all([
@@ -32,14 +33,15 @@ export default async function ServiceRecordPage({ params }: { params: Promise<{ 
   ]);
   const line = (job?.invoice_lines ?? []).find((entry) => entry.invoice_status !== 'CANCELLED');
 
-  const acceptance = acceptanceRow as {
+  type AcceptanceRow = {
     status: 'ERFASST' | 'ABNAHME_AUSSTEHEND' | 'ABGENOMMEN' | 'PROBLEM_GEMELDET';
     acceptance_policy: 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME';
     acceptance_method: 'KEINE' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_BESTAETIGUNG' | 'BUERO_FREIGABE' | null;
     accepted_at: string | null;
     accepted_by_name: string | null;
     signature_storage_path: string | null;
-  } | null;
+  };
+  const acceptance = (Array.isArray(acceptanceRow) ? acceptanceRow[0] : acceptanceRow) as AcceptanceRow | null;
 
   // The signature bucket is private, like every other. Sign it per request.
   let signatureUrl: string | null = null;
