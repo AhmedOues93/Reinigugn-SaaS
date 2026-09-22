@@ -21,6 +21,16 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const owner = first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—';
   const isDraft = quote.status === 'DRAFT';
+  const acceptanceLabel: Record<string, string> = {
+    KEINE_ABNAHME_ERFORDERLICH: 'Keine Abnahme erforderlich',
+    VOR_ORT_UNTERSCHRIFT: 'Unterschrift vor Ort',
+    PORTAL_ABNAHME: 'Bestätigung im Kundenportal',
+  };
+  const billingLabel: Record<string, string> = {
+    MONATSPAUSCHALE: 'Monatspauschale',
+    PAUSCHALE_PRO_EINSATZ: 'Pauschale je Einsatz',
+    STUNDENSATZ: 'Nach Stunden',
+  };
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -117,6 +127,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               value={formatDate(locale, quote.valid_until)}
             />
           )}
+          <DataRow
+            label="Abrechnungsart"
+            value={billingLabel[String(quote.billing_mode ?? '')] ?? '—'}
+          />
+          <DataRow
+            label="Kundenabnahme"
+            value={acceptanceLabel[String(quote.acceptance_policy ?? 'KEINE_ABNAHME_ERFORDERLICH')]}
+          />
           <DataRow
             label={t(locale, 'billing.net')}
             value={formatMoney(locale, quote.net_total_cents, quote.currency)}
