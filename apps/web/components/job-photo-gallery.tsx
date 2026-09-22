@@ -105,17 +105,17 @@ export function JobPhotoGallery({
       {photos.length === 0 ? (
         <EmptyState title={t(locale, 'emp.job.photos')} body="Noch keine Fotos gespeichert." />
       ) : (
-        <div className="space-y-5">
+        <div className="grid items-start gap-5 md:grid-cols-2">
           {groups.map((group) => {
             const items = photos.filter((photo) => photo.category === group.key);
             if (items.length === 0) return null;
             return (
-              <div key={group.key}>
+              <div key={group.key} className={group.key === 'DOCUMENTATION' ? 'md:col-span-2' : ''}>
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-sm font-semibold">{group.label}</h3>
                   <span className="text-xs text-muted-foreground">{items.length}</span>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 xl:grid-cols-2">
                   {items.map((photo) => (
                     <PhotoCard
                       key={photo.id}
