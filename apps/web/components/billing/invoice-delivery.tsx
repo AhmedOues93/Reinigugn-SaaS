@@ -28,7 +28,7 @@ export function SendInvoicePanel({
 }) {
   const [sendState, send] = useActionState(sendAction, initialFormState);
   const [manualState, manual] = useActionState(manualAction, initialFormState);
-  const [showManual, setShowManual] = useState(!mailConfigured);
+  const [showManual, setShowManual] = useState(false);
   // useId is stable across re-renders and unique per form instance, so the
   // invoice and reminder panels never share a key.
   const attemptKey = `${kind ?? 'INVOICE'}-${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
@@ -55,26 +55,39 @@ export function SendInvoicePanel({
           </SubmitButton>
         </form>
       ) : (
-        <p className="rounded-lg border border-warning/25 bg-warning-soft px-3.5 py-3 text-sm leading-6 text-warning">
-          E-Mail-Versand ist nicht eingerichtet. Laden Sie das PDF herunter, senden Sie es selbst und vermerken Sie den Versand hier.
-        </p>
+        <div className="rounded-lg border border-border bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
+          Direkter E-Mail-Versand ist noch nicht verbunden. Das PDF kann heruntergeladen und extern versendet werden.
+        </div>
       )}
 
-      {mailConfigured && !showManual ? (
+      {!showManual ? (
         <button type="button" onClick={() => setShowManual(true)} className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-          Auf anderem Weg versendet?
+          Weitere Versandart dokumentieren
         </button>
       ) : (
         <form action={manual} className="space-y-3 rounded-lg border border-border/80 bg-subtle p-3.5">
           <input type="hidden" name="kind" value={kind} />
           <FormMessage status={manualState.status} message={manualState.message} />
-          <Field label={isReminder ? 'Erinnerung vermerken' : 'Versand vermerken'} htmlFor={`${kind}-note`}>
-            <Input id={`${kind}-note`} name="note" required minLength={2} maxLength={500} placeholder="z. B. per Post am 19.09." />
+          <Field label="Versandweg" htmlFor={`${kind}-method`}>
+            <Select id={`${kind}-method`} name="method" defaultValue="EXTERNAL_EMAIL">
+              <option value="EXTERNAL_EMAIL">Extern per E-Mail</option>
+              <option value="POST">Per Post</option>
+              <option value="PERSONAL">Persönlich übergeben</option>
+              <option value="OTHER">Sonstiger Weg</option>
+            </Select>
           </Field>
-          <SubmitButton variant="outline">
-            <PackageCheck className="size-4" aria-hidden="true" />
-            {isReminder ? 'Erinnerung als erfolgt vermerken' : 'Als versendet vermerken'}
-          </SubmitButton>
+          <Field label="Notiz" htmlFor={`${kind}-note`} info="Optional, z. B. Ansprechpartner oder Versanddatum.">
+            <Input id={`${kind}-note`} name="note" maxLength={500} placeholder="Optional" />
+          </Field>
+          <div className="flex flex-wrap gap-2">
+            <SubmitButton variant="outline">
+              <PackageCheck className="size-4" aria-hidden="true" />
+              {isReminder ? 'Erinnerung dokumentieren' : 'Versand dokumentieren'}
+            </SubmitButton>
+            <button type="button" onClick={() => setShowManual(false)} className="min-h-10 px-2 text-sm text-muted-foreground hover:text-foreground">
+              Schließen
+            </button>
+          </div>
         </form>
       )}
     </div>
