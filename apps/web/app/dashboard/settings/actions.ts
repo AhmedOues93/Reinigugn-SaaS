@@ -109,6 +109,12 @@ export async function updateCompanyBranding(_: FormState, formData: FormData): P
 
   try {
     const { supabase, company } = await requireOwnerCompany();
+    const { data: currentBranding } = await supabase
+      .from('companies')
+      .select('logo_storage_path')
+      .eq('id', company.id)
+      .maybeSingle();
+    const previousPath = currentBranding?.logo_storage_path ?? null;
     let storagePath: string | null = null;
 
     if (hasFile) {
@@ -125,6 +131,13 @@ export async function updateCompanyBranding(_: FormState, formData: FormData): P
       return { status: 'error', message: `Das Branding konnte nicht gespeichert werden: ${error.message}` };
     }
 
+    if (storagePath && previousPath && previousPath !== storagePath) {
+      const { error: cleanupError } = await supabase.storage.from('company-branding').remove([previousPath]);
+      if (cleanupError) {
+        console.error('Old company logo cleanup failed:', cleanupError.message);
+      }
+    }
+
     revalidatePath('/dashboard', 'layout');
     revalidatePath('/mitarbeiter', 'layout');
     revalidatePath('/portal', 'layout');
@@ -137,8 +150,16 @@ export async function updateCompanyBranding(_: FormState, formData: FormData): P
 export async function removeCompanyLogo(_: FormState, __: FormData): Promise<FormState> {
   try {
     const { supabase } = await requireOwnerCompany();
-    const { error } = await supabase.rpc('clear_company_logo');
+    const { data: previousPath, error } = await supabase.rpc('clear_company_logo');
     if (error) return { status: 'error', message: 'Das Logo konnte nicht entfernt werden.' };
+
+    if (previousPath) {
+      const { error: storageError } = await supabase.storage.from('company-branding').remove([previousPath]);
+      if (storageError) {
+        console.error('Company logo storage cleanup failed:', storageError.message);
+      }
+    }
+
     revalidatePath('/dashboard', 'layout');
     revalidatePath('/mitarbeiter', 'layout');
     revalidatePath('/portal', 'layout');
