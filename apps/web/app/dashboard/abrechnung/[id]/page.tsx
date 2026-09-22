@@ -243,12 +243,20 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                     <li key={delivery.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-border/70 px-4 py-3 last:border-0">
                       <span className="min-w-0">
                         <span className={cn('block text-sm font-medium', deliveryLabel[delivery.status].tone)}>
-                          {delivery.kind === 'REMINDER' ? 'Zahlungserinnerung: ' : ''}
+                          {delivery.kind === 'REMINDER' ? `${delivery.reminder_level ?? '–'}. Mahnung: ` : ''}
                           {deliveryLabel[delivery.status].text}
                         </span>
                         <span className="break-anywhere block text-xs text-muted-foreground">
                           {[delivery.recipient, delivery.detail].filter(Boolean).join(' — ')}
                         </span>
+                        {delivery.kind === 'REMINDER' && ((delivery.reminder_fee_cents ?? 0) > 0 || (delivery.reminder_interest_cents ?? 0) > 0) && (
+                          <span className="mt-0.5 block text-xs tabular-nums text-muted-foreground">
+                            {[
+                              (delivery.reminder_fee_cents ?? 0) > 0 ? `Gebühr ${formatMoney(locale, delivery.reminder_fee_cents ?? 0, invoice.currency)}` : null,
+                              (delivery.reminder_interest_cents ?? 0) > 0 ? `Zinsen ${formatMoney(locale, delivery.reminder_interest_cents ?? 0, invoice.currency)}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
                       </span>
                       <span className="text-xs tabular-nums text-muted-foreground">{formatDateTime(locale, delivery.created_at)}</span>
                     </li>
@@ -315,15 +323,22 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                   <div className="border-t border-border pt-5">
                     <p className="mb-3 text-sm font-medium text-danger">
                       Seit {formatDate(locale, invoice.due_date!)} überfällig
-                      {invoice.reminder_count > 0 && ` · ${invoice.reminder_count}× erinnert`}
+                      {invoice.reminder_count > 0 && ` · ${invoice.reminder_count}/3 Mahnstufen dokumentiert`}
                     </p>
-                    <SendInvoicePanel
-                      kind="REMINDER"
-                      sendAction={sendPaymentReminder.bind(null, invoice.id)}
-                      manualAction={recordManualDelivery.bind(null, invoice.id)}
-                      defaultRecipient={recipient}
-                      mailConfigured={canMail}
-                    />
+                    {invoice.reminder_count < 3 ? (
+                      <SendInvoicePanel
+                        kind="REMINDER"
+                        reminderLevel={(invoice.reminder_count + 1) as 1 | 2 | 3}
+                        sendAction={sendPaymentReminder.bind(null, invoice.id)}
+                        manualAction={recordManualDelivery.bind(null, invoice.id)}
+                        defaultRecipient={recipient}
+                        mailConfigured={canMail}
+                      />
+                    ) : (
+                      <p className="rounded-lg border border-border bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
+                        Alle drei Mahnstufen sind dokumentiert. Weitere Schritte werden außerhalb des automatischen Mahnlaufs entschieden.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
