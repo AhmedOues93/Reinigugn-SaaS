@@ -51,15 +51,15 @@ export function CompanyBrandingForm({
   }, [state.status]);
 
   const quote = previewQuote ?? {
-    quote_number: '2026-0042',
-    title: 'Unterhaltsreinigung',
+    quote_number: 'LAYOUT-DEMO',
+    title: 'Beispiel-Leistungsverzeichnis',
     currency: 'EUR',
     net_total_cents: 85000,
     vat_total_cents: 16150,
     gross_total_cents: 101150,
     valid_until: '2026-10-15',
-    recipient_name: 'Musterkunde GmbH',
-    recipient_address: 'Musterstraße 12 · 20095 Hamburg',
+    recipient_name: 'TESTDATEN – Beispielkunde',
+    recipient_address: 'Beispielstraße 12 · 60311 Frankfurt',
     lines: [
       { description: 'Unterhaltsreinigung Büroflächen', quantity: 20, unit: 'Std.', unit_price_cents: 3500, gross_amount_cents: 83300 },
       { description: 'Materialpauschale', quantity: 1, unit: 'Pauschal', unit_price_cents: 15000, gross_amount_cents: 17850 },
@@ -125,6 +125,9 @@ export function CompanyBrandingForm({
               <Button type="button" variant="outline" className="bg-card" onClick={() => setPreviewOpen(false)}><X className="size-4" />Schließen</Button>
             </div>
             <div className="min-h-[900px] rounded-xl bg-white p-8 text-slate-900 shadow-2xl sm:p-12">
+              <div className="mb-6 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
+                Layoutvorschau – keine echten Kunden- oder Angebotsdaten
+              </div>
               <header className="flex items-start justify-between gap-6 border-b border-slate-200 pb-7">
                 <div>
                   {logoUrl ? <img src={logoUrl} alt="Firmenlogo" className="mb-4 max-h-16 max-w-52 object-contain" /> : <p className="mb-3 text-xl font-bold">{companyName}</p>}
@@ -173,7 +176,7 @@ export function CompanyBrandingForm({
                 <div><p className="text-xs font-semibold uppercase text-slate-400">Konditionen</p><p className="mt-2 text-sm leading-6 text-slate-600">Preise gemäß Leistungsverzeichnis. Änderungen und Zusatzleistungen nur nach Abstimmung.</p></div>
                 <div><p className="text-xs font-semibold uppercase text-slate-400">Kontakt</p><p className="mt-2 text-sm leading-6 text-slate-600">{companyName}<br />Vielen Dank für Ihr Vertrauen.</p></div>
               </div>
-              <footer className="mt-16 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">Seite 1 von 1 · Dokumentvorschau</footer>
+              <footer className="mt-16 border-t border-slate-200 pt-4 text-center text-xs text-slate-400">Seite 1 von 1 · Layoutvorschau · TESTDATEN</footer>
             </div>
           </div>
         </div>
