@@ -8,7 +8,6 @@ import {
   Card,
   CardHeader,
   DataRow,
-  EmptyState,
   PageHeader,
 } from '@/components/ui';
 import { LeadStatusActions } from '@/components/sales/lead-status-actions';
@@ -83,10 +82,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 Besichtigung öffnen
               </ButtonLink>
             ) : !completedSurvey ? (
-              <ButtonLink href="#besichtigung-planen" variant="outline" className="w-full justify-center sm:w-auto">
-                <ClipboardList className="size-4" aria-hidden="true" />
-                Besichtigung planen
-              </ButtonLink>
+              <SurveyForm
+                action={scheduleSurvey.bind(null, lead.id)}
+                locale={locale}
+                surveyors={surveyors}
+                buttonClassName="w-full justify-center sm:w-auto"
+                defaults={{
+                  siteName: lead.organisation,
+                  street: lead.street ?? '',
+                  postalCode: lead.postal_code ?? '',
+                  city: lead.city ?? '',
+                }}
+              />
             ) : (
               <ButtonLink
                 href={`/dashboard/vertrieb/besichtigungen/${completedSurvey.id}`}
@@ -165,16 +172,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         )}
       </div>
 
+      {lead.surveys.length > 0 && (
       <Card className="mt-5 overflow-hidden">
         <CardHeader title={t(locale, 'sales.surveys.title')} />
-        {lead.surveys.length === 0 ? (
-          <div className="p-5">
-            <EmptyState
-              icon={<ClipboardList className="size-5" />}
-              title={t(locale, 'sales.survey.empty')}
-            />
-          </div>
-        ) : (
           <ul className="divide-y divide-border">
             {lead.surveys.map((survey) => (
               <li key={survey.id}>
@@ -198,8 +198,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               </li>
             ))}
           </ul>
-        )}
       </Card>
+      )}
 
       {lead.quotes.length > 0 && (
         <Card className="mt-5 overflow-hidden">
@@ -229,23 +229,6 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </Card>
       )}
 
-      {!decided && !completedSurvey && !plannedSurvey && (
-        <Card id="besichtigung-planen" className="mt-5 scroll-mt-28 p-5">
-          <h2 className="mb-1 font-semibold">{t(locale, 'sales.survey.new')}</h2>
-          <p className="mb-4 text-sm text-muted-foreground">Termin und Objektangaben in zwei kurzen Schritten erfassen.</p>
-          <SurveyForm
-            action={scheduleSurvey.bind(null, lead.id)}
-            locale={locale}
-            surveyors={surveyors}
-            defaults={{
-              siteName: lead.organisation,
-              street: lead.street ?? '',
-              postalCode: lead.postal_code ?? '',
-              city: lead.city ?? '',
-            }}
-          />
-        </Card>
-      )}
     </div>
   );
 }
