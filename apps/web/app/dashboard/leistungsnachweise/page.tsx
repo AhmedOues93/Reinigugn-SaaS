@@ -88,44 +88,35 @@ export default async function ServiceRecordsPage({
         and therefore never invoiced. Said here rather than discovered at month
         end.
       */}
-      {warnings.length > 0 && (
+      {warnings.some((warning) => warning.pending_count > 0) && (
         <div className="mb-4 space-y-2">
-          {warnings.map((warning) => {
-            const blocked = warning.pending_count > 0;
-            return (
-              <div
-                key={warning.service_schedule_id}
-                className={
-                  blocked
-                    ? 'rounded-xl border border-warning/25 bg-warning-soft px-4 py-3.5'
-                    : 'rounded-xl border border-border/80 bg-card px-4 py-3.5'
-                }
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className={blocked ? 'flex items-center gap-2 text-sm font-semibold text-warning' : 'text-sm font-semibold text-foreground'}>
-                      {blocked && <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />}
-                      {blocked ? 'Portal-Abnahme wartet auf Zugang' : 'Portalzugang vor erster Abnahme einrichten'}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      <span className="font-medium text-foreground">{warning.customer_name}</span> · {warning.schedule_name}
-                      {blocked
-                        ? ` · ${warning.pending_count} ${warning.pending_count === 1 ? 'Einsatz wartet' : 'Einsätze warten'} auf Kundenbestätigung.`
-                        : ' · Für diesen Plan ist Portal-Abnahme vereinbart. Aktuell ist noch kein Einsatz blockiert.'}
-                    </p>
-                  </div>
-                  <ButtonLink
-                    href={`/dashboard/kunden/${warning.customer_id}#portalzugang`}
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                  >
-                    Portalzugang einrichten
-                  </ButtonLink>
+          {warnings.filter((warning) => warning.pending_count > 0).map((warning) => (
+            <div
+              key={warning.service_schedule_id}
+              className="rounded-xl border border-warning/25 bg-warning-soft px-4 py-3.5"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-warning">
+                    <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+                    Kundenabnahme blockiert
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    <span className="font-medium text-foreground">{warning.customer_name}</span> · {warning.schedule_name}
+                    {` · ${warning.pending_count} ${warning.pending_count === 1 ? 'Einsatz wartet' : 'Einsätze warten'} auf Bestätigung, aber es gibt keinen aktiven Portalzugang.`}
+                  </p>
                 </div>
+                <ButtonLink
+                  href={`/dashboard/kunden/${warning.customer_id}#portalzugang`}
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                >
+                  Portalzugang einrichten
+                </ButtonLink>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
