@@ -19,12 +19,14 @@ export function SendInvoicePanel({
   defaultRecipient,
   mailConfigured,
   kind = 'INVOICE',
+  reminderLevel,
 }: {
   sendAction: Action;
   manualAction: Action;
   defaultRecipient: string | null;
   mailConfigured: boolean;
   kind?: 'INVOICE' | 'REMINDER';
+  reminderLevel?: 1 | 2 | 3;
 }) {
   const [sendState, send] = useActionState(sendAction, initialFormState);
   const [manualState, manual] = useActionState(manualAction, initialFormState);
@@ -45,13 +47,30 @@ export function SendInvoicePanel({
             mints a new one, which is what a deliberate second send is.
           */}
           <input type="hidden" name="idempotency_key" value={attemptKey} />
+          {isReminder && <input type="hidden" name="reminder_level" value={reminderLevel ?? 1} />}
           <FormMessage status={sendState.status} message={sendState.message} />
+          {isReminder && (
+            <div className="rounded-lg border border-border bg-subtle px-3.5 py-3">
+              <p className="text-sm font-semibold">{reminderLevel ?? 1}. Mahnung</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Gebühren oder Verzugszinsen nur eintragen, wenn sie für diesen Kunden tatsächlich gelten.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <Field label="Mahngebühr" htmlFor={`${kind}-fee`} optional>
+                  <Input id={`${kind}-fee`} name="reminder_fee" inputMode="decimal" placeholder="0,00" />
+                </Field>
+                <Field label="Verzugszinsen" htmlFor={`${kind}-interest`} optional>
+                  <Input id={`${kind}-interest`} name="reminder_interest" inputMode="decimal" placeholder="0,00" />
+                </Field>
+              </div>
+            </div>
+          )}
           <Field label="Empfänger" htmlFor={`${kind}-recipient`} info="Standardmäßig die E-Mail-Adresse aus den Kundenstammdaten. Das PDF wird angehängt.">
             <Input id={`${kind}-recipient`} name="recipient" type="email" required defaultValue={defaultRecipient ?? ''} autoComplete="off" />
           </Field>
           <SubmitButton variant={isReminder ? 'outline' : 'default'}>
             {isReminder ? <BellRing className="size-4" aria-hidden="true" /> : <Mail className="size-4" aria-hidden="true" />}
-            {isReminder ? 'Zahlungserinnerung senden' : 'Per E-Mail senden'}
+            {isReminder ? `${reminderLevel ?? 1}. Mahnung senden` : 'Per E-Mail senden'}
           </SubmitButton>
         </form>
       ) : (
@@ -67,6 +86,7 @@ export function SendInvoicePanel({
       ) : (
         <form action={manual} className="space-y-3 rounded-lg border border-border/80 bg-subtle p-3.5">
           <input type="hidden" name="kind" value={kind} />
+          {isReminder && <input type="hidden" name="reminder_level" value={reminderLevel ?? 1} />}
           <FormMessage status={manualState.status} message={manualState.message} />
           <Field label="Versandweg" htmlFor={`${kind}-method`}>
             <Select id={`${kind}-method`} name="method" defaultValue="EXTERNAL_EMAIL">
