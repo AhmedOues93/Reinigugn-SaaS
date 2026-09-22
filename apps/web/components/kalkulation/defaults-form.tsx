@@ -49,11 +49,8 @@ export function CalculationDefaultsForm({
 
     if (advanceAfterSave.current) {
       advanceAfterSave.current = false;
-      setStep((value) => {
-        const next = Math.min(steps.length - 1, value + 1);
-        setVisitedStep((visited) => Math.max(visited, next));
-        return next;
-      });
+      setStep((value) => Math.min(steps.length - 1, value + 1));
+      setVisitedStep((value) => Math.min(steps.length - 1, value + 1));
       return;
     }
 
