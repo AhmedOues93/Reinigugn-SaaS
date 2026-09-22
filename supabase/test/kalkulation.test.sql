@@ -389,7 +389,13 @@ select pg_temp.assert_rejected(
   'finalised');
 
 create temporary table quote as
-select public.create_quote_from_calculation((select id from calc), null, 30, 'MONATSPAUSCHALE') as id;
+select public.create_quote_from_calculation(
+  (select id from calc),
+  null,
+  30,
+  'MONATSPAUSCHALE',
+  'PORTAL_ABNAHME'
+) as id;
 grant select on quote to authenticated;
 
 select pg_temp.assert(
@@ -405,7 +411,15 @@ select pg_temp.assert(
   'the Sonderleistung is its own one-off line');
 
 select public.send_quote((select id from quote));
-select public.accept_quote((select id from quote), array[1,2,3,4,5]::smallint[], '06:00', '08:00', 'PORTAL_ABNAHME');
+-- The acceptance call deliberately passes a different legacy value. The
+-- commercial term was already agreed in the Angebot and must win.
+select public.accept_quote(
+  (select id from quote),
+  array[1,2,3,4,5]::smallint[],
+  '06:00',
+  '08:00',
+  'KEINE_ABNAHME_ERFORDERLICH'
+);
 
 /*
  * The defect this phase fixes. `accept_quote` used to copy the first recurring
