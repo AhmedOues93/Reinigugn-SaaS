@@ -79,7 +79,7 @@ export default async function StaffMessagesPage() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {item.complaint_id && item.type === 'COMPLAINT_CREATED' ? (
                     <form action={openComplaintNotification.bind(null, item.id, item.complaint_id)}>
-                      <SubmitButton variant="secondary" size="sm">
+                      <SubmitButton variant="outline" size="sm">
                         Reklamation öffnen
                       </SubmitButton>
                     </form>
