@@ -72,7 +72,7 @@ export function CalculationLineEditor({
   };
 
   return (
-    <form action={formAction} className="space-y-4 rounded-2xl border border-border/80 bg-subtle p-4">
+    <form action={formAction} className="space-y-4 rounded-xl border border-border/80 bg-card p-4 sm:p-5">
       <FormMessage status={state.status} message={state.message} />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -154,33 +154,6 @@ export function CalculationLineEditor({
         the cost follows from the Turnus — but it belongs on the position,
         because it is what the Leistungsverzeichnis and the Einsatzplan need.
       */}
-      {frequency !== 'EINMALIG' && (
-        <fieldset>
-          <legend className="text-sm font-medium">Wochentage (optional)</legend>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Für die Einsatzplanung. Auf die Kalkulation wirkt sich die Auswahl nicht aus.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {weekdayLabels.map((day) => (
-              <label
-                key={day.value}
-                className="inline-flex min-h-touch cursor-pointer items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 text-sm font-medium has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary md:min-h-9"
-              >
-                <input
-                  type="checkbox"
-                  name="service_weekdays"
-                  value={day.value}
-                  defaultChecked={line?.service_weekdays?.includes(day.value) ?? false}
-                  className="size-4 accent-current"
-                />
-                <span aria-hidden="true">{day.short}</span>
-                <span className="sr-only">{day.label}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-
       {/* Productivity only means something for area and piece work. */}
       {unit === 'QM' && (
         <Field label="Richtleistung (m²/h)" htmlFor="productivity" info="Erfahrungswert: wie viele m² eine Kraft in einer Stunde schafft. Daraus wird die Zeit berechnet.">
@@ -199,6 +172,33 @@ export function CalculationLineEditor({
         office has walked this building — but a departure has to be
         attributable, or a typo looks exactly like judgement.
       */}
+      <details className="rounded-lg border border-border/80 bg-muted/20 p-3.5">
+        <summary className="cursor-pointer list-none font-medium">Weitere Angaben</summary>
+        <p className="mt-1 text-xs text-muted-foreground">Planung, Sonderzeiten und Zusatzkosten nur bei Bedarf.</p>
+        <div className="mt-4 space-y-4">
+          {frequency !== 'EINMALIG' && (
+            <fieldset>
+              <legend className="text-sm font-medium">Wochentage (optional)</legend>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {weekdayLabels.map((day) => (
+                  <label
+                    key={day.value}
+                    className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 text-sm font-medium has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
+                  >
+                    <input
+                      type="checkbox"
+                      name="service_weekdays"
+                      value={day.value}
+                      defaultChecked={line?.service_weekdays?.includes(day.value) ?? false}
+                      className="size-4 accent-current"
+                    />
+                    <span>{day.short}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
       {showOverride ? (
         <div className="grid gap-4 rounded-lg border border-warning/25 bg-warning-soft/50 p-3.5 sm:grid-cols-2">
           <Field label="Zeit manuell (Minuten je Einsatz)" htmlFor="minutes_override">
@@ -257,9 +257,11 @@ export function CalculationLineEditor({
       <Field label="Hinweis für das Leistungsverzeichnis" htmlFor="scope_note" info="Kundenseitig sichtbar. Keine Kosten oder Margen eintragen.">
         <Input id="scope_note" name="scope_note" maxLength={1000} defaultValue={line?.scope_note ?? ''} />
       </Field>
+        </div>
+      </details>
 
       <div className="flex flex-wrap gap-3">
-        <SubmitButton>
+        <SubmitButton className="w-full justify-center sm:w-auto">
           <Plus className="size-4" aria-hidden="true" />
           {line ? 'Position speichern' : 'Position hinzufügen'}
         </SubmitButton>
