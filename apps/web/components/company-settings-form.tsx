@@ -149,6 +149,37 @@ export function CompanySettingsForm({
           <Input id="vat_rate" name="vat_rate" inputMode="decimal" defaultValue={company.default_vat_rate_basis_points != null ? String(Number(company.default_vat_rate_basis_points) / 100).replace('.', ',') : '19'} />
           <input type="hidden" name="vat_rate_was_set" value={vatWasSet ? 'true' : 'false'} />
         </Field>
+        <details className="sm:col-span-2 rounded-xl border border-border/80 bg-muted/20">
+          <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
+            DATEV / Steuerberatung
+            <span className="text-xs font-normal text-muted-foreground">optional</span>
+          </summary>
+          <div className="grid gap-4 border-t border-border/80 p-4 sm:grid-cols-2">
+            <Field label="Beraternummer" htmlFor="datev_beraternummer" optional>
+              <Input id="datev_beraternummer" name="datev_beraternummer" inputMode="numeric" maxLength={7} defaultValue={String(company.datev_beraternummer ?? '')} />
+            </Field>
+            <Field label="Mandantennummer" htmlFor="datev_mandantennummer" optional>
+              <Input id="datev_mandantennummer" name="datev_mandantennummer" inputMode="numeric" maxLength={5} defaultValue={String(company.datev_mandantennummer ?? '')} />
+            </Field>
+            <Field label="Kontenrahmen" htmlFor="datev_kontenrahmen" optional>
+              <Select id="datev_kontenrahmen" name="datev_kontenrahmen" defaultValue={String(company.datev_kontenrahmen ?? '')}>
+                <option value="">Nicht festgelegt</option>
+                <option value="SKR03">SKR03</option>
+                <option value="SKR04">SKR04</option>
+                <option value="INDIVIDUELL">Individuell</option>
+              </Select>
+            </Field>
+            <Field label="Erlöskonto 19 % USt." htmlFor="datev_revenue_account_19" optional info="Mit der Steuerberatung abstimmen; ReinPlan setzt kein Konto automatisch voraus.">
+              <Input id="datev_revenue_account_19" name="datev_revenue_account_19" inputMode="numeric" maxLength={11} defaultValue={String(company.datev_revenue_account_19 ?? '')} />
+            </Field>
+            <Field label="Erlöskonto 7 % USt." htmlFor="datev_revenue_account_7" optional>
+              <Input id="datev_revenue_account_7" name="datev_revenue_account_7" inputMode="numeric" maxLength={11} defaultValue={String(company.datev_revenue_account_7 ?? '')} />
+            </Field>
+            <Field label="Erlöskonto 0 % USt." htmlFor="datev_revenue_account_0" optional>
+              <Input id="datev_revenue_account_0" name="datev_revenue_account_0" inputMode="numeric" maxLength={11} defaultValue={String(company.datev_revenue_account_0 ?? '')} />
+            </Field>
+          </div>
+        </details>
       </div>
 
       <div className={step === 3 ? 'grid gap-4' : 'hidden'}>
