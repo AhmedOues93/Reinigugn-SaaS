@@ -34,6 +34,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   ]);
   if (!lead) notFound();
   const decided = lead.status === 'WON' || lead.status === 'LOST';
+  const completedSurvey = lead.surveys.find((survey) => survey.status === 'COMPLETED');
+  const plannedSurvey = lead.surveys.find((survey) => survey.status === 'PLANNED');
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -61,12 +63,16 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="font-semibold">Nächster Schritt: Besichtigung</p>
-              <p className="mt-1 text-sm text-muted-foreground">Termin und Objekt erfassen. Danach geht es direkt zum Angebot.</p>
+              <p className="font-semibold">{completedSurvey ? 'Nächster Schritt: Kalkulation / Angebot' : plannedSurvey ? 'Nächster Schritt: Besichtigung durchführen' : 'Nächster Schritt: Besichtigung'}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{completedSurvey ? 'Die Besichtigung ist abgeschlossen. Daten übernehmen und Angebot vorbereiten.' : plannedSurvey ? 'Der Termin ist geplant. Besichtigung öffnen, Daten erfassen und abschließen.' : 'Termin und Objekt erfassen. Danach geht es direkt zur Kalkulation und zum Angebot.'}</p>
             </div>
-            <Link href="#besichtigung-planen" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">
-              Besichtigung planen
-            </Link>
+            {completedSurvey ? (
+              <Link href={`/dashboard/kalkulation/neu?survey=${completedSurvey.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">Kalkulation erstellen</Link>
+            ) : plannedSurvey ? (
+              <Link href={`/dashboard/vertrieb/besichtigungen/${plannedSurvey.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">Besichtigung öffnen</Link>
+            ) : (
+              <Link href="#besichtigung-planen" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">Besichtigung planen</Link>
+            )}
           </div>
         </Card>
       )}
@@ -188,7 +194,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         </Card>
       )}
 
-      {!decided && (
+      {!decided && !completedSurvey && !plannedSurvey && (
         <Card id="besichtigung-planen" className="mt-5 scroll-mt-28 p-5">
           <h2 className="mb-1 font-semibold">{t(locale, 'sales.survey.new')}</h2>
           <p className="mb-4 text-sm text-muted-foreground">Termin und Objektangaben in zwei kurzen Schritten erfassen.</p>
