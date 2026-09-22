@@ -32,6 +32,7 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
   const periodEnd = String(formData.get('service_period_end') ?? '');
   const paymentTermsRaw = String(formData.get('payment_terms_days') ?? '').trim();
   const customerNote = String(formData.get('customer_note') ?? '').trim();
+  const buyerReference = String(formData.get('buyer_reference') ?? '').trim();
   const sourceJobId = String(formData.get('source_job_id') ?? '').trim() || null;
 
   if (!customerId) return failure('Bitte wähle einen Kunden aus.');
@@ -46,6 +47,7 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
     return failure('Das Zahlungsziel muss zwischen 0 und 365 Tagen liegen.');
   }
   if (customerNote.length > 2000) return failure('Der Hinweistext ist zu lang.');
+  if (buyerReference.length > 200) return failure('Die Kaeuferreferenz ist zu lang.');
 
   const sourceJob = sourceJobId ? await getBillableJob(sourceJobId) : null;
   if (sourceJobId && (!sourceJob || sourceJob.customer_id !== customerId)) {
@@ -64,6 +66,7 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
       p_period_end: periodEnd,
       p_payment_terms_days: paymentTermsRaw ? Number(paymentTermsRaw) : null,
       p_customer_note: customerNote || null,
+      p_buyer_reference: buyerReference || null,
     });
     if (error || !data) return failure('Der Rechnungsentwurf konnte nicht angelegt werden.');
     invoiceId = data as string;
