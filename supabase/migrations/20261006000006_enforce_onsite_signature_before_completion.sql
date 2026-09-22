@@ -260,7 +260,7 @@ $$;
 create or replace function public.sign_service_record_on_site(
   p_job_id uuid,
   p_signer_name text,
-  p_signature_path text
+  p_signature_path text default null
 ) returns uuid
 language plpgsql
 security definer
