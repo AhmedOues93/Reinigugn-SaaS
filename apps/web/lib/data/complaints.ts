@@ -1,7 +1,7 @@
 import { requireStaffCompany } from '@/lib/auth';
 import { getCurrentCompany } from '@/lib/auth';
 
-const complaintSelection = 'id, customer_id, cleaning_object_id, job_id, title, description, priority, status, assigned_member_id, due_date, internal_note, follow_up_job_id, created_at, updated_at, customers(id, name), cleaning_objects(id, name), jobs!complaints_job_id_fkey(id, title), company_members!complaints_assigned_member_id_fkey(id, profiles!company_members_profile_id_fkey(first_name, last_name))';
+const complaintSelection = 'id, customer_id, cleaning_object_id, job_id, title, description, priority, status, assigned_member_id, due_date, internal_note, follow_up_job_id, created_at, updated_at, customers(id, name), cleaning_objects(id, name), jobs!complaints_job_id_fkey(id, title, scheduled_date), company_members!complaints_assigned_member_id_fkey(id, profiles!company_members_profile_id_fkey(first_name, last_name))';
 
 export async function listComplaints({ objectId, customerId }: { objectId?: string; customerId?: string } = {}) {
   const { supabase, company } = await requireStaffCompany();
