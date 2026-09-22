@@ -11,6 +11,9 @@ export type QuotePdfInput = {
   vatTotalCents: number;
   grossTotalCents: number;
   recurringNetMonthlyCents: number;
+  acceptedAt?: string | null;
+  acceptedByName?: string | null;
+  acceptedSignatureText?: string | null;
   recipient: Record<string, unknown> | null;
   company: Record<string, unknown> | null;
   logo?: { bytes: Uint8Array; type: 'png' | 'jpg' } | null;
@@ -193,6 +196,17 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
     draw('Monatlich netto', A4.width - mx - 200, y, { font: bold });
     draw(money(input.recurringNetMonthlyCents, input.currency), A4.width - mx, y, { font: bold, right: true });
     y -= 24;
+  }
+
+  if (input.acceptedAt && input.acceptedByName) {
+    if (y < bottom + 115) newPage();
+    y -= 12;
+    page.drawRectangle({ x: mx, y: y - 58, width, height: 70, color: rgb(0.94, 0.97, 0.95) });
+    draw('Digital angenommen', mx + 12, y - 4, { font: bold, size: 10, color: ink });
+    draw(`Name: ${input.acceptedByName}`, mx + 12, y - 21, { size: 9 });
+    if (input.acceptedSignatureText) draw(`Unterschrift: ${input.acceptedSignatureText}`, mx + 12, y - 37, { font: bold, size: 10 });
+    draw(`Zeitpunkt: ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }).format(new Date(input.acceptedAt))}`, A4.width - mx - 12, y - 21, { size: 8.5, color: muted, right: true });
+    y -= 78;
   }
 
   const paymentDays = Number(input.company?.default_payment_terms_days ?? 0);
