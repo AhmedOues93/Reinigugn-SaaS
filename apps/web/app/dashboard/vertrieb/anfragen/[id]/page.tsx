@@ -53,18 +53,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       {!decided && (
         <Card className="mb-5 p-4 sm:p-5">
-          <div className="grid grid-cols-5 gap-1.5 text-center text-[11px] font-medium sm:gap-2 sm:text-xs">
-            <span className="text-muted-foreground">1. Anfrage</span>
-            <span className="text-primary">2. Daten</span>
-            <span className="text-muted-foreground">3. Besichtigung</span>
-            <span className="text-muted-foreground">4. Kalkulation</span>
-            <span className="text-muted-foreground">5. Angebot</span>
-          </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border">
-            <div className="h-full w-2/5 bg-primary" />
-          </div>
-
-          <div className="mt-4">
+          <div>
             <p className="font-semibold">Daten prüfen und Angebot vorbereiten</p>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               Kundendaten und Bedarf prüfen. Eine Besichtigung ist optional und nur nötig, wenn Angaben vor Ort fehlen oder bestätigt werden müssen.
