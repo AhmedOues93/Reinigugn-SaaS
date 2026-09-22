@@ -38,11 +38,11 @@ export function LeadForm({
       <FormMessage status={state.status} message={state.message} />
 
       <div className="rounded-xl border border-border bg-muted/25 p-3">
-        <div className="grid grid-cols-4 gap-2 text-center text-[11px] font-medium sm:text-xs">
+        <div className="grid grid-cols-2 gap-2 text-left text-xs font-medium sm:grid-cols-4 sm:text-center">
           <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>{'1. ' + t(locale, 'sales.lead.stepCustomer')}</span>
           <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>{'2. ' + t(locale, 'sales.lead.stepNeed')}</span>
-          <span className="text-muted-foreground">3. Besichtigung</span>
-          <span className="text-muted-foreground">4. Angebot</span>
+          <span className="text-muted-foreground"><span className="sm:hidden">3. </span><span className="hidden sm:inline">3. </span>Besichtigung</span>
+          <span className="text-muted-foreground"><span className="sm:hidden">4. </span><span className="hidden sm:inline">4. </span>Angebot</span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
           <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '25%' : '50%' }} />
@@ -202,7 +202,16 @@ export function LeadForm({
           <span />
         )}
         {step === 1 ? (
-          <Button type="button" onClick={() => setStep(2)}>{t(locale, 'sales.quote.next')}</Button>
+          <Button
+            type="button"
+            disabled={customerMode === 'EXISTING' && !customerId}
+            onClick={() => {
+              if (customerMode === 'EXISTING' && !customerId) return;
+              setStep(2);
+            }}
+          >
+            {customerMode === 'EXISTING' && !customerId ? 'Kunde auswählen' : t(locale, 'sales.quote.next')}
+          </Button>
         ) : (
           <SubmitButton locale={locale}>{t(locale, 'sales.lead.create')}</SubmitButton>
         )}
