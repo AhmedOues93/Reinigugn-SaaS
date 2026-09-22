@@ -38,7 +38,7 @@ export default async function SettingsPage() {
   const { data } = await supabase
     .from('companies')
     .select(
-      'id, name, legal_form, managing_director, street, postal_code, city, country, phone, email, website, tax_number, vat_id, billing_email, iban, bic, default_payment_terms_days, default_vat_rate_basis_points, service_focus, timezone, default_language, default_hourly_rate_cents',
+      'id, name, legal_form, managing_director, street, postal_code, city, country, phone, email, website, tax_number, vat_id, billing_email, iban, bic, default_payment_terms_days, default_vat_rate_basis_points, service_focus, timezone, default_language, default_hourly_rate_cents, datev_beraternummer, datev_mandantennummer, datev_kontenrahmen, datev_revenue_account_19, datev_revenue_account_7, datev_revenue_account_0',
     )
     .eq('id', company.id)
     .single();
