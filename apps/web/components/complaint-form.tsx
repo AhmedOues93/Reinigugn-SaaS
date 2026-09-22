@@ -20,10 +20,55 @@ export function ComplaintForm({ complaint, options, action, submitLabel }: { com
   if (complaint?.id && !editing) {
     const customer = options.customers.find((item) => item.id === complaint.customer_id);
     const object = options.objects.find((item) => item.id === complaint.cleaning_object_id);
-    const employee = options.employees.find((item) => item.id === complaint.assigned_member_id);
     const statusLabel: Record<string, string> = { OPEN: 'Offen', IN_PROGRESS: 'In Bearbeitung', RESOLVED: 'Gelöst', CLOSED: 'Geschlossen' };
     const priorityLabel: Record<string, string> = { LOW: 'Niedrig', NORMAL: 'Normal', HIGH: 'Hoch', URGENT: 'Dringend' };
-    return <div className="space-y-5"><FormMessage status={state.status} message={state.message} /><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">Vorgang</p><p className="mt-1 text-sm text-muted-foreground">Gespeicherte Reklamationsdaten.</p></div><Button type="button" variant="outline" onClick={() => setEditing(true)}><Pencil className="size-4" />Bearbeiten</Button></div><dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2"><div><dt className="text-xs text-muted-foreground">Kunde</dt><dd className="mt-1 font-medium">{customer?.name ?? '—'}</dd></div><div><dt className="text-xs text-muted-foreground">Objekt</dt><dd className="mt-1 font-medium">{object?.name ?? '—'}</dd></div><div><dt className="text-xs text-muted-foreground">Priorität</dt><dd className="mt-1">{priorityLabel[complaint.priority ?? 'NORMAL'] ?? complaint.priority}</dd></div><div><dt className="text-xs text-muted-foreground">Status</dt><dd className="mt-1">{statusLabel[complaint.status ?? 'OPEN'] ?? complaint.status}</dd></div><div><dt className="text-xs text-muted-foreground">Zugewiesen</dt><dd className="mt-1">{employee ? name(employee.profiles) : 'Nicht zugewiesen'}</dd></div><div><dt className="text-xs text-muted-foreground">Fällig</dt><dd className="mt-1">{complaint.due_date || '—'}</dd></div><div className="sm:col-span-2"><dt className="text-xs text-muted-foreground">Beschreibung</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6">{complaint.description || '—'}</dd></div>{complaint.internal_note && <div className="sm:col-span-2"><dt className="text-xs text-muted-foreground">Interne Notiz</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6">{complaint.internal_note}</dd></div>}</dl></div>;
+    const status = complaint.status ?? 'OPEN';
+    const priority = complaint.priority ?? 'NORMAL';
+
+    return (
+      <div className="space-y-4">
+        <FormMessage status={state.status} message={state.message} />
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Kundenmeldung</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{statusLabel[status] ?? status}</span>
+              <span className={priority === 'URGENT' || priority === 'HIGH'
+                ? 'rounded-full bg-danger/10 px-2.5 py-1 text-xs font-semibold text-danger'
+                : 'rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground'}>
+                {priorityLabel[priority] ?? priority}
+              </span>
+            </div>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
+            <Pencil className="size-4" />
+            Bearbeiten
+          </Button>
+        </div>
+
+        <div className="grid gap-3 rounded-xl bg-subtle p-4 sm:grid-cols-2">
+          <div><p className="text-xs text-muted-foreground">Kunde</p><p className="mt-0.5 font-medium">{customer?.name ?? '—'}</p></div>
+          <div><p className="text-xs text-muted-foreground">Objekt</p><p className="mt-0.5 font-medium">{object?.name ?? '—'}</p></div>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold">{complaint.title}</p>
+          <p className="break-anywhere mt-2 whitespace-pre-wrap text-[15px] leading-6 text-foreground">
+            {complaint.description || '—'}
+          </p>
+        </div>
+
+        {(complaint.assigned_member_id || complaint.due_date || complaint.internal_note) && (
+          <details className="rounded-lg border border-border/80">
+            <summary className="min-h-touch cursor-pointer list-none px-4 py-3 text-sm font-medium">Interne Bearbeitung</summary>
+            <dl className="grid gap-3 border-t border-border/80 p-4 text-sm sm:grid-cols-2">
+              {complaint.due_date && <div><dt className="text-xs text-muted-foreground">Fällig</dt><dd className="mt-0.5">{complaint.due_date}</dd></div>}
+              {complaint.internal_note && <div className="sm:col-span-2"><dt className="text-xs text-muted-foreground">Interne Notiz</dt><dd className="mt-0.5 whitespace-pre-wrap">{complaint.internal_note}</dd></div>}
+            </dl>
+          </details>
+        )}
+      </div>
+    );
   }
 
   const customer = options.customers.find((item) => item.id === complaint?.customer_id);
