@@ -38,12 +38,14 @@ export function LeadForm({
       <FormMessage status={state.status} message={state.message} />
 
       <div className="rounded-xl border border-border bg-muted/25 p-3">
-        <div className="flex items-center justify-between gap-3 text-xs font-medium">
+        <div className="grid grid-cols-4 gap-2 text-center text-[11px] font-medium sm:text-xs">
           <span className={step === 1 ? 'text-primary' : 'text-muted-foreground'}>{'1. ' + t(locale, 'sales.lead.stepCustomer')}</span>
           <span className={step === 2 ? 'text-primary' : 'text-muted-foreground'}>{'2. ' + t(locale, 'sales.lead.stepNeed')}</span>
+          <span className="text-muted-foreground">3. Besichtigung</span>
+          <span className="text-muted-foreground">4. Angebot</span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-          <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '50%' : '100%' }} />
+          <div className="h-full bg-primary transition-all" style={{ width: step === 1 ? '25%' : '50%' }} />
         </div>
       </div>
 
