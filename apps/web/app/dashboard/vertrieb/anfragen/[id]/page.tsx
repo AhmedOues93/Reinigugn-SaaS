@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ClipboardList } from 'lucide-react';
+import { Calculator, ClipboardList, Eye } from 'lucide-react';
 import {
   BackLink,
   Badge,
+  ButtonLink,
   Card,
   CardHeader,
   DataRow,
@@ -52,28 +53,73 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       {!decided && (
         <Card className="mb-5 p-4 sm:p-5">
-          <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium sm:text-sm">
-            <span className="text-muted-foreground">1. Kunde</span>
-            <span className="text-muted-foreground">2. Bedarf</span>
-            <span className="text-primary">3. Besichtigung</span>
-            <span className="text-muted-foreground">4. Angebot</span>
+          <div className="grid grid-cols-5 gap-1.5 text-center text-[11px] font-medium sm:gap-2 sm:text-xs">
+            <span className="text-muted-foreground">1. Anfrage</span>
+            <span className="text-primary">2. Daten</span>
+            <span className="text-muted-foreground">3. Besichtigung</span>
+            <span className="text-muted-foreground">4. Kalkulation</span>
+            <span className="text-muted-foreground">5. Angebot</span>
           </div>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border">
-            <div className="h-full w-3/4 bg-primary" />
+            <div className="h-full w-2/5 bg-primary" />
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-semibold">{completedSurvey ? 'Nächster Schritt: Kalkulation / Angebot' : plannedSurvey ? 'Nächster Schritt: Besichtigung durchführen' : 'Nächster Schritt: Besichtigung'}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{completedSurvey ? 'Die Besichtigung ist abgeschlossen. Daten übernehmen und Angebot vorbereiten.' : plannedSurvey ? 'Der Termin ist geplant. Besichtigung öffnen, Daten erfassen und abschließen.' : 'Termin und Objekt erfassen. Danach geht es direkt zur Kalkulation und zum Angebot.'}</p>
-            </div>
-            {completedSurvey ? (
-              <Link href={`/dashboard/kalkulation/neu?survey=${completedSurvey.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">Kalkulation erstellen</Link>
-            ) : plannedSurvey ? (
-              <Link href={`/dashboard/vertrieb/besichtigungen/${plannedSurvey.id}`} className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">Besichtigung öffnen</Link>
+
+          <div className="mt-4">
+            <p className="font-semibold">Daten prüfen und Angebot vorbereiten</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Kundendaten und Bedarf prüfen. Eine Besichtigung ist optional und nur nötig, wenn Angaben vor Ort fehlen oder bestätigt werden müssen.
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+            <ButtonLink
+              href={
+                completedSurvey
+                  ? `/dashboard/kalkulation/neu?anfrage=${lead.id}&survey=${completedSurvey.id}`
+                  : `/dashboard/kalkulation/neu?anfrage=${lead.id}`
+              }
+              className="w-full justify-center sm:w-auto"
+            >
+              <Calculator className="size-4" aria-hidden="true" />
+              Angebot vorbereiten
+            </ButtonLink>
+
+            {plannedSurvey ? (
+              <ButtonLink
+                href={`/dashboard/vertrieb/besichtigungen/${plannedSurvey.id}`}
+                variant="outline"
+                className="w-full justify-center sm:w-auto"
+              >
+                <Eye className="size-4" aria-hidden="true" />
+                Besichtigung öffnen
+              </ButtonLink>
+            ) : !completedSurvey ? (
+              <ButtonLink href="#besichtigung-planen" variant="outline" className="w-full justify-center sm:w-auto">
+                <ClipboardList className="size-4" aria-hidden="true" />
+                Besichtigung planen
+              </ButtonLink>
             ) : (
-              <Link href="#besichtigung-planen" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">Besichtigung planen</Link>
+              <ButtonLink
+                href={`/dashboard/vertrieb/besichtigungen/${completedSurvey.id}`}
+                variant="outline"
+                className="w-full justify-center sm:w-auto"
+              >
+                <Eye className="size-4" aria-hidden="true" />
+                Besichtigung ansehen
+              </ButtonLink>
             )}
           </div>
+
+          {completedSurvey && (
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              Die abgeschlossene Besichtigung wird automatisch in die Kalkulation übernommen.
+            </p>
+          )}
+          {plannedSurvey && (
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              Der geplante Termin blockiert die Angebotserstellung nicht. Wenn die vorhandenen Daten ausreichen, kann die Kalkulation direkt gestartet werden.
+            </p>
+          )}
         </Card>
       )}
 
