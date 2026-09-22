@@ -300,6 +300,16 @@ export function FinaliseCalculationAction({ action }: { action: Action }) {
   );
 }
 
+export function FinaliseAndContinueAction({ action }: { action: () => Promise<void> }) {
+  return (
+    <form action={action} className="mt-4">
+      <SubmitButton className="w-full justify-center sm:w-auto">
+        Weiter zum Angebot
+      </SubmitButton>
+    </form>
+  );
+}
+
 /** A new draft copy; the frozen original stays exactly as it was. */
 export function ReviseCalculationAction({ action }: { action: () => Promise<void> }) {
   return (
