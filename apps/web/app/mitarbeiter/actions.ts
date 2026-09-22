@@ -221,7 +221,7 @@ export async function confirmOnSiteAcceptance(
 
   const signature = String(formData.get('signature') ?? '');
   if (!signature) {
-    return { status: 'error', message: t(locale, 'emp.acceptance.signatureRequired') };
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
   }
 
   const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(signature);
