@@ -71,10 +71,10 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const today = berlinDateKey();
 
   const steps = [
-    { label: 'Entwurf', done: true, at: null as string | null },
-    { label: 'Ausgestellt', done: !isDraft, at: invoice.issue_date },
-    { label: 'Versendet', done: Boolean(invoice.sent_at), at: invoice.sent_at },
-    { label: 'Bezahlt', done: invoice.status === 'PAID', at: invoice.paid_at },
+    { label: t(locale, 'billing.draft'), done: true, at: null as string | null },
+    { label: t(locale, 'billing.issued'), done: !isDraft, at: invoice.issue_date },
+    { label: t(locale, 'billing.sent'), done: Boolean(invoice.sent_at), at: invoice.sent_at },
+    { label: t(locale, 'billing.paid'), done: invoice.status === 'PAID', at: invoice.paid_at },
   ];
   const current = steps.findIndex((step) => !step.done);
   const pdfHref = `/dashboard/abrechnung/${invoice.id}/pdf?download=1`;
@@ -142,7 +142,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <span className="min-w-0">
                 <span className={cn('block text-sm font-medium', !step.done && index !== current && 'text-muted-foreground')}>{step.label}</span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {step.at ? formatDate(locale, step.at) : index === current ? 'Nächster Schritt' : '—'}
+                  {step.at ? formatDate(locale, step.at) : index === current ? t(locale, 'billing.nextStep') : '—'}
                 </span>
               </span>
             </li>
@@ -231,7 +231,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           {!isDraft && (
             <section aria-labelledby="deliveries">
               <h2 id="deliveries" className="mb-3 text-[15px] font-semibold">
-                Versandverlauf
+                {t(locale, 'billing.deliveryHistory')}
               </h2>
               {deliveries.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-foreground/15 px-4 py-5 text-sm text-muted-foreground">
@@ -263,7 +263,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <Card className="p-5">
             <h2 className="mb-4 text-[15px] font-semibold">
               {isDraft
-                ? 'Rechnung ausstellen'
+                ? t(locale, 'billing.issue')
                 : invoice.status === 'ISSUED'
                   ? invoice.sent_at
                     ? 'Zahlung erfassen'
@@ -365,8 +365,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <dl className="divide-y divide-border/70">
               <DataRow label={t(locale, 'billing.issueDate')} value={invoice.issue_date ? formatDate(locale, invoice.issue_date) : '—'} />
               <DataRow label={t(locale, 'billing.dueDate')} value={invoice.due_date ? formatDate(locale, invoice.due_date) : `${invoice.payment_terms_days} Tage nach Ausstellung`} />
-              <DataRow label="Versendet" value={invoice.sent_at ? formatDate(locale, invoice.sent_at) : '—'} />
-              <DataRow label="Im Kundenportal" value={isDraft ? 'Nein (Entwurf)' : 'Sichtbar'} />
+              <DataRow label={t(locale, 'billing.sent')} value={invoice.sent_at ? formatDate(locale, invoice.sent_at) : '—'} />
+              <DataRow label={t(locale, 'billing.portal')} value={isDraft ? t(locale, 'billing.notVisibleDraft') : t(locale, 'billing.visible')} />
             </dl>
           </Card>
 
