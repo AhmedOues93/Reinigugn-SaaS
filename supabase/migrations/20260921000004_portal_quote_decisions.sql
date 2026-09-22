@@ -14,7 +14,7 @@ set search_path = public
 as $$
 declare
   contact record;
-  target public.quotes;
+  target record;
   raw_token text;
   result jsonb;
 begin
@@ -72,7 +72,7 @@ set search_path = public
 as $$
 declare
   contact record;
-  target public.quotes;
+  target record;
   reason text := nullif(trim(coalesce(p_reason, '')), '');
 begin
   select * into contact from public.current_customer_contact();
@@ -110,7 +110,7 @@ set search_path = public
 as $$
 declare
   contact record;
-  target public.quotes;
+  target record;
   result jsonb;
 begin
   select * into contact from public.current_customer_contact();
