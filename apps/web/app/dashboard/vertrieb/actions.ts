@@ -399,9 +399,6 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
     .map((value) => Number(String(value)))
     .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
   const start = String(formData.get('start_time') ?? '08:00');
-  const acceptancePolicy = String(formData.get('acceptance_policy') ?? 'KEINE_ABNAHME_ERFORDERLICH');
-  const validPolicies = ['KEINE_ABNAHME_ERFORDERLICH', 'PORTAL_ABNAHME', 'VOR_ORT_UNTERSCHRIFT'];
-  if (!validPolicies.includes(acceptancePolicy)) return failure('Bitte wählen Sie eine gültige Kundenabnahme.');
   const end = String(formData.get('end_time') ?? '10:00');
   if (weekdays.length === 0) return failure('Bitte wählen Sie mindestens einen Wochentag.');
   if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end) || end <= start) {
@@ -415,7 +412,6 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
       p_weekdays: weekdays,
       p_start_time: start,
       p_end_time: end,
-      p_acceptance_policy: acceptancePolicy,
     });
     if (error) return failure('Das Angebot konnte nicht angenommen werden.');
   } catch {
