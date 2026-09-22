@@ -7,17 +7,22 @@ create index if not exists in_app_notifications_complaint_idx
 
 -- Make already-created portal complaint notifications actionable too.
 update public.in_app_notifications notification
-set complaint_id = matched.id
-from lateral (
+set complaint_id = (
   select complaint.id
   from public.complaints complaint
   where complaint.company_id = notification.company_id
     and complaint.title = notification.body
   order by abs(extract(epoch from (complaint.created_at - notification.created_at))) asc
   limit 1
-) matched
+)
 where notification.type = 'COMPLAINT_CREATED'
-  and notification.complaint_id is null;
+  and notification.complaint_id is null
+  and exists (
+    select 1
+    from public.complaints complaint
+    where complaint.company_id = notification.company_id
+      and complaint.title = notification.body
+  );
 
 create or replace function public.create_my_portal_complaint(
   p_object_id uuid,
