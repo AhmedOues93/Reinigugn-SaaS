@@ -208,9 +208,66 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   }
 
   const paymentDays = Number(input.company?.default_payment_terms_days ?? 0);
-  const paymentText = paymentDays > 0 ? ` Zahlungsziel: ${paymentDays} Tage.` : '';
-  const terms = `Dieses Angebot ist bis ${date(input.validUntil)} gültig. Preise verstehen sich zuzüglich der ausgewiesenen Umsatzsteuer. Leistungsumfang und Turnus ergeben sich aus den oben aufgeführten Positionen.${paymentText}`;
-  for (const l of wrap(terms, regular, 8.8, width)) { draw(l, mx, y, { size: 8.8, color: muted }); y -= 12; }
+  if (y < bottom + 150) newPage();
+  y -= 8;
+  draw('Vertragsgrundlagen', mx, y, { font: bold, size: 10.5, color: ink });
+  y -= 18;
+
+  const commercialTerms = [
+    ['Angebotsgültigkeit', date(input.validUntil)],
+    ['Zahlungsziel', paymentDays > 0 ? `${paymentDays} Tage ab Rechnungsdatum` : 'gemäß Rechnung'],
+    ['Umsatzsteuer', 'gemäß den oben ausgewiesenen Steuersätzen'],
+    ['Leistungsumfang', 'maßgeblich sind die oben aufgeführten Positionen und Leistungsbeschreibungen'],
+    ['Turnus', 'ergibt sich aus den angebotenen Positionen bzw. dem nach Annahme eingerichteten Leistungsplan'],
+    ['AGB', 'die beigefügten Muster-AGB sind Bestandteil dieses Angebots und vor Produktivbetrieb zu ersetzen'],
+  ] as const;
+
+  for (const [label, value] of commercialTerms) {
+    draw(label, mx, y, { font: bold, size: 8.8 });
+    const lines = wrap(value, regular, 8.8, width - 120);
+    lines.forEach((lineText, index) => draw(lineText, mx + 120, y - index * 11, { size: 8.8, color: muted }));
+    y -= Math.max(14, lines.length * 11 + 3);
+  }
+
+  // Separate AGB page. This is intentionally an explicit demo placeholder so
+  // it cannot be mistaken for final legal terms before the company replaces it.
+  page = pdf.addPage([A4.width, A4.height]);
+  pages.push(page);
+  y = A4.height - top;
+  draw('Allgemeine Geschäftsbedingungen (AGB)', mx, y, { font: bold, size: 16, color: ink });
+  y -= 24;
+  draw('MUSTER / TESTINHALT – VOR PRODUKTIVNUTZUNG ERSETZEN', mx, y, { font: bold, size: 9.5, color: rgb(0.65, 0.18, 0.16) });
+  y -= 24;
+
+  const agbSections = [
+    ['1. Geltungsbereich', 'Diese Musterbedingungen dienen ausschließlich als Platzhalter für die ReinPlan-Testphase. Die endgültigen AGB des Reinigungsunternehmens müssen vor Produktivbetrieb rechtlich geprüft und hier hinterlegt werden.'],
+    ['2. Leistungsumfang', 'Art, Umfang, Turnus und Ausführungsort der Reinigungsleistungen ergeben sich aus dem jeweiligen Angebot, der Leistungsbeschreibung und dem nach Annahme eingerichteten Leistungsplan.'],
+    ['3. Mitwirkung des Auftraggebers', 'Der Auftraggeber stellt vereinbarte Zugänge, Ansprechpartner und erforderliche Informationen rechtzeitig zur Verfügung. Besondere Objekt- oder Sicherheitsvorgaben sind vor Leistungsbeginn mitzuteilen.'],
+    ['4. Vergütung und Zahlung', `Die Vergütung ergibt sich aus dem Angebot. Rechnungen sind, soweit nichts Abweichendes vereinbart ist, innerhalb von ${paymentDays > 0 ? paymentDays : 14} Tagen nach Rechnungsdatum fällig.`],
+    ['5. Leistungsnachweis und Abnahme', 'Je nach vereinbartem Leistungsplan kann eine Leistung ohne gesonderte Abnahme dokumentiert, vor Ort unterschrieben oder im Kundenportal bestätigt werden.'],
+    ['6. Reklamationen', 'Beanstandungen sollen möglichst zeitnah mit Angabe von Objekt, Leistung und konkretem Mangel gemeldet werden, damit Prüfung und gegebenenfalls Nacharbeit organisiert werden können.'],
+    ['7. Laufzeit und Kündigung', 'Laufzeit, Kündigungsfrist und besondere Beendigungsregeln müssen im finalen Vertrag beziehungsweise in den finalen AGB des Reinigungsunternehmens festgelegt werden. Dieser Mustertext enthält hierzu bewusst keine verbindliche Regelung.'],
+    ['8. Schlussbestimmungen', 'Dieser Abschnitt ist ein Platzhalter. Gerichtsstand, Rechtswahl, Haftungsregelungen und weitere rechtlich relevante Bestimmungen müssen vor Produktivbetrieb individuell geprüft und ergänzt werden.'],
+  ] as const;
+
+  for (const [heading, body] of agbSections) {
+    const bodyLines = wrap(body, regular, 8.8, width);
+    const needed = 18 + bodyLines.length * 11 + 12;
+    if (y - needed < bottom) {
+      page = pdf.addPage([A4.width, A4.height]);
+      pages.push(page);
+      y = A4.height - top;
+      draw('Allgemeine Geschäftsbedingungen (AGB) – Fortsetzung', mx, y, { font: bold, size: 11, color: ink });
+      y -= 24;
+    }
+    draw(heading, mx, y, { font: bold, size: 9.5 });
+    y -= 14;
+    bodyLines.forEach((lineText) => {
+      draw(lineText, mx, y, { size: 8.8, color: text });
+      y -= 11;
+    });
+    y -= 10;
+  }
 
   pages.forEach((p, i) => {
     const footerY = 42;
