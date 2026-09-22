@@ -41,7 +41,7 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
   const address = [customer.billing_address, [customer.postal_code, customer.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto min-w-0 max-w-5xl overflow-x-hidden">
       <BackLink href="/dashboard/kunden">Kunden</BackLink>
       {success && (
         <Notice tone="success" className="mb-5">
@@ -71,8 +71,8 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="space-y-4">
+      <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-4">
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
             <h2 className="mb-4 text-[15px] font-semibold">Kontakt & Rechnungsadresse</h2>
             <ul className="space-y-3">
@@ -126,13 +126,13 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
                   <li key={object.id}>
                     <Link
                       href={`/dashboard/objekte/${object.id}`}
-                      className="group flex h-full items-start gap-3 rounded-xl border border-border/80 bg-card p-4 shadow-card transition-colors hover:border-primary/40"
+                      className="group flex min-w-0 max-w-full items-start gap-3 rounded-xl border border-border/80 bg-card p-4 shadow-card transition-colors hover:border-primary/40"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary">
                         <Building2 className="size-4" aria-hidden="true" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium group-hover:text-primary">{object.name}</span>
+                        <span className="break-anywhere block font-medium group-hover:text-primary">{object.name}</span>
                         <span className="block truncate text-sm text-muted-foreground">
                           {[object.street, object.postal_code, object.city].filter(Boolean).join(', ') || 'Keine Adresse'}
                         </span>
@@ -205,7 +205,7 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
             )}
           </Section>
 
-          <PortalAccessPanel action={inviteCustomerPortalContact.bind(null, customer.id)} contacts={portalContacts} invitations={portalInvitations} />
+          <div id="portalzugang" className="scroll-mt-24"><PortalAccessPanel action={inviteCustomerPortalContact.bind(null, customer.id)} contacts={portalContacts} invitations={portalInvitations} /></div>
           <ComplaintHistory customerId={customer.id} />
         </div>
       </div>
