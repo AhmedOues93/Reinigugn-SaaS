@@ -122,13 +122,13 @@ export default async function CalculationPage({
         <div className="space-y-4">
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-              <h2 className="text-[15px] font-semibold">Leistungspositionen</h2>
+              <h2 className="text-[15px] font-semibold">Leistungen</h2>
 
             </div>
 
             {calculation.lines.length === 0 ? (
               <p className="border-t border-border/70 px-4 py-6 text-sm text-muted-foreground sm:px-5">
-                Noch keine Position erfasst.
+                Noch keine Leistung erfasst.
               </p>
             ) : (
               <>
@@ -708,7 +708,7 @@ export default async function CalculationPage({
         <p className="mt-4 text-sm leading-6 text-muted-foreground">
           {oneOff.length} einmalige {oneOff.length === 1 ? 'Leistung' : 'Leistungen'} werden separat
           abgerechnet und sind nicht Teil der monatlichen Zahlen. {recurring.length} wiederkehrende{' '}
-          {recurring.length === 1 ? 'Position' : 'Positionen'} bilden den Monatswert.
+          {recurring.length === 1 ? 'Leistung' : 'Leistungen'} bilden den Monatswert.
         </p>
       )}
     </div>
