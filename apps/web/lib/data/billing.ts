@@ -206,7 +206,7 @@ export async function listBillableJobs(
   return data ?? [];
 }
 
-export async function getBillableJob(jobId: string): Promise<BillableJob | null> {
+export async function getBillableJob(jobId: string): Promise<(BillableJob & { customer_id: string }) | null> {
   const { supabase, company } = await requireStaffCompany();
   const { data: job, error } = await supabase
     .from('jobs')
@@ -218,7 +218,8 @@ export async function getBillableJob(jobId: string): Promise<BillableJob | null>
   if (!job) return null;
 
   const rows = await listBillableJobs(job.customer_id, job.scheduled_date, job.scheduled_date);
-  return rows.find((row) => row.job_id === jobId) ?? null;
+  const row = rows.find((entry) => entry.job_id === jobId);
+  return row ? { ...row, customer_id: job.customer_id } : null;
 }
 
 export async function listBillingCustomers() {
