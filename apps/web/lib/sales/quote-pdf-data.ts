@@ -20,6 +20,7 @@ export async function renderStaffQuotePdf(id: string) {
       vatTotalCents: quote.vat_total_cents,
       grossTotalCents: quote.gross_total_cents,
       recurringNetMonthlyCents: quote.recurring_net_monthly_cents,
+      acceptancePolicy: quote.acceptance_policy,
       acceptedAt: quote.accepted_at,
       acceptedByName: quote.accepted_by_name,
       recipient: quote.recipient_snapshot as Record<string, unknown> | null,
