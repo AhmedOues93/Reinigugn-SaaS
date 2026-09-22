@@ -74,10 +74,11 @@ export function NewCalculationForm({
   const relevantSurveys = useMemo(
     () =>
       surveys.filter((survey) => {
+        if (preferredSurveyId && survey.id === preferredSurveyId) return true;
         if (preferredLeadId && survey.leadId === preferredLeadId) return true;
         return Boolean(customerId && survey.customerId === customerId);
       }),
-    [customerId, preferredLeadId, surveys],
+    [customerId, preferredLeadId, preferredSurveyId, surveys],
   );
   const usingSurvey = fromSurvey && relevantSurveys.length > 0;
 
