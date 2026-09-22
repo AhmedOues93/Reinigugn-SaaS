@@ -22,6 +22,7 @@ function first<T>(value: T | T[] | null) {
 }
 
 type MemberLike = {
+  role?: string | null;
   profiles:
     | { first_name: string | null; last_name: string | null }
     | { first_name: string | null; last_name: string | null }[]
@@ -31,7 +32,15 @@ type MemberLike = {
 function person(value: unknown) {
   const member = first(value as MemberLike | MemberLike[] | null);
   const profile = first(member?.profiles ?? null);
-  return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter';
+  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
+  if (fullName) return fullName;
+  const roleLabel: Record<string, string> = {
+    OWNER: 'Inhaber',
+    OFFICE: 'Büro',
+    EMPLOYEE: 'Mitarbeiter',
+    CUSTOMER: 'Kunde',
+  };
+  return roleLabel[member?.role ?? ''] ?? 'Benutzer';
 }
 
 export default async function ComplaintDetailPage({ params }: { params: Promise<{ id: string }> }) {
