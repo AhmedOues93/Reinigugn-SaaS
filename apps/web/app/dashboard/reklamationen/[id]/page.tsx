@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 import { BackLink, PageHeader, Section } from '@/components/ui';
 import { ComplaintForm } from '@/components/complaint-form';
+import { ComplaintCustomerReply } from '@/components/complaint-customer-reply';
 import { FollowUpJobForm } from '@/components/follow-up-job-form';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
 import { JobPhotoUpload } from '@/components/job-photo-upload';
@@ -12,6 +13,7 @@ import { formatDateTime } from '@/lib/format';
 import {
   createFollowUpJob,
   deleteOperationalPhoto,
+  replyToComplaintCustomer,
   updateComplaint,
   uploadOperationalPhoto,
 } from '../actions';
@@ -39,7 +41,8 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
   if (!record) notFound();
   const photos = await listOperationalPhotos('COMPLAINT', id);
   const { complaint } = record;
-  const job = first(complaint.jobs as never) as { id?: string; title?: string } | null;
+  const job = first(complaint.jobs as never) as { id?: string; title?: string; scheduled_date?: string } | null;
+  const jobEmployees = record.jobAssignments.map((assignment) => person(assignment.company_members));
   const employees = record.employees.map((employee) => ({
     id: employee.id,
     name: person(employee),
@@ -87,6 +90,39 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
         </div>
 
         <aside className="space-y-6">
+          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+            <h2 className="text-[15px] font-semibold">Zugehöriger Einsatz</h2>
+            {job?.id ? (
+              <div className="mt-3 space-y-3 text-sm">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auftrag</p>
+                  <Link className="mt-1 inline-flex items-center gap-1.5 font-medium text-primary hover:underline" href={`/dashboard/auftraege/${job.id}`}>
+                    {job.title ?? 'Einsatz öffnen'}
+                    <ExternalLink className="size-3.5" aria-hidden="true" />
+                  </Link>
+                  {job.scheduled_date ? <p className="mt-1 text-muted-foreground">{job.scheduled_date}</p> : null}
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Eingesetzte Mitarbeiter</p>
+                  {jobEmployees.length > 0 ? (
+                    <ul className="mt-1.5 space-y-1">
+                      {jobEmployees.map((name, index) => <li key={`${name}-${index}`} className="font-medium">{name}</li>)}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-muted-foreground">Keine Zuordnung gefunden.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Diese Reklamation ist keinem Einsatz zugeordnet.</p>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+            <h2 className="mb-3 text-[15px] font-semibold">Kundenkommunikation</h2>
+            <ComplaintCustomerReply action={replyToComplaintCustomer.bind(null, id)} />
+          </section>
+
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
             <h2 className="mb-3 text-[15px] font-semibold">Nacharbeit</h2>
             {complaint.follow_up_job_id ? (
