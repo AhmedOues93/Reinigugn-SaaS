@@ -92,6 +92,53 @@ export default async function PublicQuotePage({
           )}
           {quote.intro && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{quote.intro}</p>}
 
+          {(quote.order_type || quote.service_start || quote.service_end || quote.termination_notice || quote.acceptance_policy) && (
+            <div className="mt-4 grid gap-3 rounded-xl bg-muted/30 p-4 text-sm sm:grid-cols-2">
+              {quote.order_type && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Auftragsart</p>
+                  <p className="mt-0.5 font-medium">
+                    {quote.order_type === 'EINMALAUFTRAG'
+                      ? 'Einmalauftrag'
+                      : quote.order_type === 'BEFRISTET'
+                        ? 'Befristeter Auftrag'
+                        : 'Laufender Auftrag'}
+                  </p>
+                </div>
+              )}
+              {quote.service_start && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Leistungsbeginn</p>
+                  <p className="mt-0.5 font-medium">{formatDate('de', quote.service_start)}</p>
+                </div>
+              )}
+              {quote.service_end && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Vertragsende</p>
+                  <p className="mt-0.5 font-medium">{formatDate('de', quote.service_end)}</p>
+                </div>
+              )}
+              {quote.termination_notice && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Kuendigungsfrist</p>
+                  <p className="mt-0.5 font-medium">{quote.termination_notice}</p>
+                </div>
+              )}
+              {quote.acceptance_policy && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-muted-foreground">Kundenabnahme</p>
+                  <p className="mt-0.5 font-medium">
+                    {quote.acceptance_policy === 'VOR_ORT_UNTERSCHRIFT'
+                      ? 'Unterschrift vor Ort'
+                      : quote.acceptance_policy === 'PORTAL_ABNAHME'
+                        ? 'Bestaetigung im Kundenportal'
+                        : 'Keine gesonderte Abnahme erforderlich'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mt-6 space-y-2">
             {quote.lines.map((line) => (
               <div key={`${line.position}-${line.description}`} className="rounded-xl border border-border/80 p-4">
