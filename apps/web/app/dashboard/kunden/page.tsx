@@ -1,4 +1,4 @@
-import { Plus, Search, Users } from 'lucide-react';
+import { FileUp, Plus, Search, Users } from 'lucide-react';
 import { listCustomers, type StatusFilter } from '@/lib/data/customers';
 import { ButtonLink, Button, EmptyState, Input, PageHeader, Select } from '@/components/ui';
 import { DataTable, FilterBar } from '@/components/data-table';
@@ -22,10 +22,16 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         title="Kunden"
         description="Auftraggeber mit ihren Objekten, Ansprechpersonen und Rechnungsdaten."
         actions={
-          <ButtonLink href="/dashboard/kunden/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            Kunde anlegen
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/kunden/import" variant="outline">
+              <FileUp className="size-4" aria-hidden="true" />
+              CSV importieren
+            </ButtonLink>
+            <ButtonLink href="/dashboard/kunden/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Kunde anlegen
+            </ButtonLink>
+          </div>
         }
       />
 
