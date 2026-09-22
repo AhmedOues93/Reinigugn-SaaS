@@ -103,7 +103,13 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
   const { error: uploadError } = await context.supabase.storage
     .from('job-photos')
     .upload(path, file, { contentType: file.type, upsert: false });
-  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (uploadError) {
+    console.error('job photo storage upload failed', uploadError);
+    return {
+      status: 'error',
+      message: 'Foto konnte nicht hochgeladen werden. Bitte JPG, PNG oder WebP bis 10 MB verwenden und erneut versuchen.',
+    };
+  }
   const { error: metadataError } = await context.supabase.rpc('create_my_job_photo_metadata', {
     p_job_id: jobId,
     p_storage_path: path,
@@ -112,8 +118,9 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
     p_description: description || null,
   });
   if (metadataError) {
+    console.error('job photo metadata failed', metadataError);
     await context.supabase.storage.from('job-photos').remove([path]);
-    return { status: 'error', message: t(locale, 'common.errorBody') };
+    return { status: 'error', message: 'Foto wurde nicht gespeichert. Bitte Seite neu laden und erneut versuchen.' };
   }
   revalidateEmployee(jobId);
   revalidatePath(`/dashboard/auftraege/${jobId}`);
