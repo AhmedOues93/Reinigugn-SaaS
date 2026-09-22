@@ -400,7 +400,7 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
     .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
   const start = String(formData.get('start_time') ?? '08:00');
   const acceptancePolicy = String(formData.get('acceptance_policy') ?? 'KEINE_ABNAHME_ERFORDERLICH');
-  const validPolicies = ['KEINE_ABNAHME_ERFORDERLICH', 'DIGITALE_BESTAETIGUNG', 'UNTERSCHRIFT'];
+  const validPolicies = ['KEINE_ABNAHME_ERFORDERLICH', 'PORTAL_ABNAHME', 'VOR_ORT_UNTERSCHRIFT'];
   if (!validPolicies.includes(acceptancePolicy)) return failure('Bitte wählen Sie eine gültige Kundenabnahme.');
   const end = String(formData.get('end_time') ?? '10:00');
   if (weekdays.length === 0) return failure('Bitte wählen Sie mindestens einen Wochentag.');
