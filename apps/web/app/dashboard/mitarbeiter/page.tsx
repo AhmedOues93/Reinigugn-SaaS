@@ -72,6 +72,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
         rows={employees}
         rowKey={(member) => member.id}
         rowHref={(member) => `/dashboard/mitarbeiter/${member.id}`}
+        rowActions={(member) => <ButtonLink href={`/dashboard/mitarbeiter/${member.id}`} variant="outline">Ansehen</ButtonLink>}
         columns={[
           {
             key: 'name',
