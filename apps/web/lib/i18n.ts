@@ -409,7 +409,7 @@ const de = {
   'billing.issued': 'Ausgestellt',
   'billing.sent': 'Versendet',
   'billing.paid': 'Bezahlt',
-  'billing.nextStep': 'Naechster Schritt',
+  'billing.nextStep': 'Nächster Schritt',
   'billing.deliveryHistory': 'Versandverlauf',
   'billing.portal': 'Im Kundenportal',
   'billing.visible': 'Sichtbar',
