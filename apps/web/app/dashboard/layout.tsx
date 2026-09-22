@@ -16,12 +16,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const storedLocale = await cookieLocale();
   const locale: Locale = storedLocale ?? 'de';
-  const [branding, { count: unreadNotifications }] = await Promise.all([
+  const [branding, { count: unreadNotifications }, { count: unreadComplaints }] = await Promise.all([
     getCompanyBranding(membership.company_id),
     supabase
       .from('in_app_notifications')
       .select('*', { count: 'exact', head: true })
       .eq('recipient_member_id', membership.id)
+      .is('read_at', null),
+    supabase
+      .from('in_app_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_member_id', membership.id)
+      .eq('type', 'COMPLAINT_CREATED')
       .is('read_at', null),
   ]);
 
@@ -34,6 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       role={membership.role as 'OWNER' | 'OFFICE'}
       locale={locale}
       unreadNotifications={unreadNotifications ?? 0}
+      unreadComplaints={unreadComplaints ?? 0}
     >
       {children}
     </DashboardShell>
