@@ -31,6 +31,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
     PAUSCHALE_PRO_EINSATZ: 'Pauschale je Einsatz',
     STUNDENSATZ: 'Nach Stunden',
   };
+  const orderTypeLabel: Record<string, string> = {
+    EINMALAUFTRAG: 'Einmalauftrag',
+    BEFRISTET: 'Befristeter Auftrag',
+    DAUERAUFTRAG: 'Laufender Auftrag',
+  };
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -126,6 +131,18 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               label={t(locale, 'sales.quote.validUntil')}
               value={formatDate(locale, quote.valid_until)}
             />
+          )}
+          {quote.order_type && (
+            <DataRow label="Auftragsart" value={orderTypeLabel[quote.order_type] ?? quote.order_type} />
+          )}
+          {quote.service_start && (
+            <DataRow label="Leistungsbeginn" value={formatDate(locale, quote.service_start)} />
+          )}
+          {quote.service_end && (
+            <DataRow label="Vertragsende" value={formatDate(locale, quote.service_end)} />
+          )}
+          {quote.termination_notice && (
+            <DataRow label="Kuendigungsfrist" value={quote.termination_notice} />
           )}
           <DataRow
             label="Abrechnungsart"
