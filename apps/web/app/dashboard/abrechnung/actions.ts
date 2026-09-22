@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
 import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
-import { getInvoice, listBillableJobs } from '@/lib/data/billing';
+import { getBillableJob, getInvoice, listBillableJobs } from '@/lib/data/billing';
 import { sendMail } from '@/lib/mail/transport';
 import { formatDate, formatMoney } from '@/lib/format';
 import { randomUUID } from 'node:crypto';
@@ -32,6 +32,7 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
   const periodEnd = String(formData.get('service_period_end') ?? '');
   const paymentTermsRaw = String(formData.get('payment_terms_days') ?? '').trim();
   const customerNote = String(formData.get('customer_note') ?? '').trim();
+  const sourceJobId = String(formData.get('source_job_id') ?? '').trim() || null;
 
   if (!customerId) return failure('Bitte wähle einen Kunden aus.');
   if (
@@ -46,6 +47,14 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
   }
   if (customerNote.length > 2000) return failure('Der Hinweistext ist zu lang.');
 
+  const sourceJob = sourceJobId ? await getBillableJob(sourceJobId) : null;
+  if (sourceJobId && (!sourceJob || sourceJob.customer_id !== customerId)) {
+    return failure('Der ausgewaehlte Einsatz ist nicht mehr abrechenbar.');
+  }
+  if (sourceJob && sourceJob.suggested_unit_price_cents == null) {
+    return failure('Fuer diesen Einsatz ist kein vereinbarter Abrechnungspreis hinterlegt.');
+  }
+
   let invoiceId: string;
   try {
     const { supabase } = await requireStaffCompany();
@@ -58,6 +67,28 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
     });
     if (error || !data) return failure('Der Rechnungsentwurf konnte nicht angelegt werden.');
     invoiceId = data as string;
+
+    if (sourceJob) {
+      const { error: lineError } = await supabase.rpc('add_invoice_line', {
+        p_invoice_id: invoiceId,
+        p_description: [
+          sourceJob.title,
+          sourceJob.title.includes(sourceJob.object_name) ? null : sourceJob.object_name,
+          formatDate('de', sourceJob.scheduled_date),
+        ].filter(Boolean).join(' · ').slice(0, 500),
+        p_quantity: sourceJob.suggested_quantity,
+        p_unit: sourceJob.suggested_unit,
+        p_unit_price_cents: sourceJob.suggested_unit_price_cents!,
+        p_vat_rate_basis_points: sourceJob.suggested_vat_rate_basis_points ?? 1900,
+        p_job_id: sourceJob.job_id,
+        p_service_schedule_id: sourceJob.service_schedule_id,
+        p_cleaning_object_id: sourceJob.object_id,
+      });
+      if (lineError) {
+        await supabase.rpc('delete_draft_invoice', { p_invoice_id: invoiceId });
+        return failure('Die erledigte Leistung konnte nicht automatisch in die Rechnung uebernommen werden.');
+      }
+    }
   } catch {
     return failure('Der Rechnungsentwurf konnte nicht angelegt werden.');
   }
