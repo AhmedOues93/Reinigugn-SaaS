@@ -93,7 +93,7 @@ export function InvoiceLineEditor({
 
       <details className="rounded-xl border border-border/80 bg-card">
         <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
-          Weitere Leistung manuell hinzufuegen
+          {t(locale, 'billing.addManualService')}
           <span className="text-xs font-normal text-muted-foreground">optional</span>
         </summary>
         <form action={formAction} className="space-y-4 border-t border-border/80 p-4">
@@ -149,7 +149,7 @@ export function InvoiceLineEditor({
         <input type="hidden" name="cleaning_object_id" />
         <input type="hidden" name="service_schedule_id" />
 
-        <Field label="Beschreibung" htmlFor="line-description">
+        <Field label={t(locale, 'billing.description')} htmlFor="line-description">
           <Input id="line-description" name="description" placeholder="z. B. Unterhaltsreinigung Bürofläche" autoComplete="off" maxLength={500} required />
         </Field>
 
@@ -165,7 +165,7 @@ export function InvoiceLineEditor({
               required
             />
           </Field>
-          <Field label="Einheit" htmlFor="line-unit">
+          <Field label={t(locale, 'billing.unit')} htmlFor="line-unit">
             <Select id="line-unit" name="unit" defaultValue="Std">
               <option value="Std">Stunde</option><option value="Monat">Monat</option><option value="Einsatz">Einsatz</option><option value="m²">m²</option><option value="Stück">Stück</option><option value="Pauschal">Pauschal</option>
             </Select>
@@ -188,7 +188,7 @@ export function InvoiceLineEditor({
         </div>
 
           <SubmitButton locale={locale} variant="outline">
-            Leistung hinzufuegen
+            {t(locale, 'billing.addService')}
           </SubmitButton>
         </form>
       </details>
