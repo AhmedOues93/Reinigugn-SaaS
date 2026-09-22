@@ -148,7 +148,7 @@ export default async function ServiceRecordsPage({
         rowActions={(row) =>
           row.queue === 'BEREIT' ? (
             <ButtonLink
-              href={`/dashboard/abrechnung/neu?kunde=${row.customer_id}`}
+              href={`/dashboard/abrechnung/neu?kunde=${row.customer_id}&einsatz=${row.job_id}`}
               variant="ghost"
               size="sm"
               className="relative z-10 text-primary"
