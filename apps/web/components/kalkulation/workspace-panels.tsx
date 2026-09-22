@@ -330,11 +330,14 @@ export function ReviseCalculationAction({ action }: { action: () => Promise<void
 export function QuoteFromCalculationForm({
   action,
   defaultTitle,
+  hasRecurring,
 }: {
   action: Action;
   defaultTitle: string;
+  hasRecurring: boolean;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const [orderType, setOrderType] = useState<'DAUERAUFTRAG' | 'BEFRISTET'>('DAUERAUFTRAG');
 
   return (
     <form action={formAction} className="mt-3 space-y-4">
@@ -343,6 +346,49 @@ export function QuoteFromCalculationForm({
         <Field className="sm:col-span-2" label="Titel" htmlFor="quote-title">
           <Input id="quote-title" name="title" defaultValue={defaultTitle} maxLength={160} />
         </Field>
+        {hasRecurring ? (
+          <>
+            <Field label="Auftragsart" htmlFor="quote-order-type">
+              <Select
+                id="quote-order-type"
+                name="order_type"
+                value={orderType}
+                onChange={(event) => setOrderType(event.target.value as 'DAUERAUFTRAG' | 'BEFRISTET')}
+              >
+                <option value="DAUERAUFTRAG">Laufender Auftrag</option>
+                <option value="BEFRISTET">Befristeter Auftrag</option>
+              </Select>
+            </Field>
+            <Field
+              label="Leistungsbeginn"
+              htmlFor="quote-service-start"
+              info="Leer lassen, wenn der genaue Start noch vereinbart wird."
+            >
+              <Input id="quote-service-start" name="service_start" type="date" />
+            </Field>
+            {orderType === 'BEFRISTET' ? (
+              <Field label="Vertragsende" htmlFor="quote-service-end">
+                <Input id="quote-service-end" name="service_end" type="date" required />
+              </Field>
+            ) : (
+              <Field
+                label="Kuendigungsfrist"
+                htmlFor="quote-termination-notice"
+                info="Nur eintragen, wenn sie im Angebot ausdruecklich vereinbart werden soll."
+              >
+                <Input
+                  id="quote-termination-notice"
+                  name="termination_notice"
+                  maxLength={160}
+                  placeholder="z. B. 1 Monat zum Monatsende"
+                />
+              </Field>
+            )}
+          </>
+        ) : (
+          <input type="hidden" name="order_type" value="EINMALAUFTRAG" />
+        )}
+
         <Field
           label="Abrechnungsart"
           htmlFor="billing_mode"
