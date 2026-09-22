@@ -137,21 +137,21 @@ export async function addInvoiceLine(
       return failure(
         error.message.includes('already been billed')
           ? 'Dieser Einsatz wurde bereits abgerechnet.'
-          : 'Die Position konnte nicht hinzugefügt werden.',
+          : 'Die Leistung konnte nicht hinzugefuegt werden.',
       );
     }
   } catch {
-    return failure('Die Position konnte nicht hinzugefügt werden.');
+    return failure('Die Leistung konnte nicht hinzugefuegt werden.');
   }
 
   revalidateBilling(invoiceId);
-  return { status: 'success', message: 'Position hinzugefügt.' };
+  return { status: 'success', message: 'Leistung hinzugefuegt.' };
 }
 
 export async function removeInvoiceLine(invoiceId: string, lineId: string): Promise<void> {
   const { supabase } = await requireStaffCompany();
   const { error } = await supabase.rpc('remove_invoice_line', { p_line_id: lineId });
-  if (error) throw new Error('Die Position konnte nicht entfernt werden.');
+  if (error) throw new Error('Die Leistung konnte nicht entfernt werden.');
   revalidateBilling(invoiceId);
 }
 
@@ -166,7 +166,7 @@ export async function issueInvoice(
     if (error) {
       return failure(
         error.message.includes('at least one line')
-          ? 'Eine Rechnung braucht mindestens eine Position.'
+          ? 'Eine Rechnung braucht mindestens eine Leistung.'
           : 'Die Rechnung konnte nicht festgeschrieben werden.',
       );
     }
@@ -445,12 +445,12 @@ export async function recordManualDelivery(invoiceId: string, _: FormState, form
  */
 export async function addAllBillableJobs(invoiceId: string, _: FormState, __: FormData): Promise<FormState> {
   const invoice = await getInvoice(invoiceId);
-  if (!invoice || invoice.status !== 'DRAFT') return failure('Positionen können nur einem Entwurf hinzugefügt werden.');
+  if (!invoice || invoice.status !== 'DRAFT') return failure('Leistungen koennen nur einem Entwurf hinzugefuegt werden.');
   const jobs = await listBillableJobs(invoice.customer_id, invoice.service_period_start, invoice.service_period_end);
   const priced = jobs.filter((job) => job.suggested_unit_price_cents != null);
   if (jobs.length === 0) return failure('Im Leistungszeitraum gibt es keine abrechenbaren Einsätze.');
   if (priced.length === 0) {
-    return failure('Für diese Einsätze ist kein Preis im Reinigungsplan hinterlegt. Bitte Positionen einzeln mit Preis erfassen.');
+    return failure('Fuer diese Einsaetze ist kein Preis im Leistungsplan hinterlegt. Bitte pruefe zuerst die vereinbarten Preise.');
   }
 
   const { supabase } = await requireStaffCompany();
