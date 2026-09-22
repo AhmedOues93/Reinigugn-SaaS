@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Check, Plus } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Card, CardHeader, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
@@ -24,6 +25,14 @@ export function CatalogItemEditor({ action, item }: { action: Action; item?: {
 } }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [unit, setUnit] = useState<CalculationUnit>(item?.calculation_unit ?? 'QM');
+  const router = useRouter();
+
+  useEffect(() => {
+    if (item && state.status === 'success') {
+      router.replace('/dashboard/kalkulation/leistungskatalog');
+      router.refresh();
+    }
+  }, [item, router, state.status]);
 
   return (
     <Card className="overflow-hidden">
@@ -91,7 +100,7 @@ export function CatalogItemEditor({ action, item }: { action: Action; item?: {
 
         <input type="hidden" name="is_active" value={item?.is_active === false ? 'false' : 'true'} />
         <SubmitButton>
-          <Plus className="size-4" aria-hidden="true" />
+          {item ? <Check className="size-4" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
           {item ? 'Änderungen speichern' : 'Leistung speichern'}
         </SubmitButton>
       </form>
