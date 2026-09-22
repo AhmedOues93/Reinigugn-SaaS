@@ -1,15 +1,14 @@
 import { notFound } from 'next/navigation';
-import { BookOpen, FileText, Lock, ReceiptText } from 'lucide-react';
+import { BookOpen, Check, FileText, Lock, ReceiptText } from 'lucide-react';
 import { BackLink, Badge, ButtonLink, Card, DataRow, PageHeader } from '@/components/ui';
 import { CalculationKpiBand } from '@/components/kalkulation/kpi-band';
 import { CalculationLineEditor, RemoveLineButton } from '@/components/kalkulation/line-editor';
 import {
   AssumptionsPanel,
-  FinaliseCalculationAction,
+  FinaliseAndContinueAction,
   QuoteFromCalculationForm,
   ReviseCalculationAction,
 } from '@/components/kalkulation/workspace-panels';
-import { FilterTabs } from '@/components/ui';
 import {
   formatBp,
   formatMinutes,
@@ -24,7 +23,7 @@ import {
 import { formatMoney } from '@/lib/format';
 import {
   createQuoteFromCalculation,
-  finaliseCalculation,
+  finaliseCalculationAndContinue,
   removeCalculationLine,
   reviseCalculation,
   saveCalculationLine,
@@ -34,7 +33,6 @@ import {
 const tabs = [
   { key: 'leistung', label: 'Leistungen' },
   { key: 'kalkulation', label: 'Kalkulation' },
-  { key: 'preis', label: 'Preis' },
   { key: 'angebot', label: 'Angebot' },
 ] as const;
 
@@ -98,38 +96,26 @@ export default async function CalculationPage({
             )}
           </>
         }
-        actions={
-          isDraft ? (
-            <FinaliseCalculationAction action={finaliseCalculation.bind(null, id)} />
-          ) : (
-            <ReviseCalculationAction action={reviseCalculation.bind(null, id)} />
-          )
-        }
+        actions={!isDraft ? <ReviseCalculationAction action={reviseCalculation.bind(null, id)} /> : undefined}
       />
 
       <CalculationKpiBand calculation={calculation} />
 
-      <div className="mb-4 rounded-xl border border-border bg-card p-3 shadow-card">
-        <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
-          {tabs.map((entry, index) => (
-            <div key={entry.key}>
-              <span className={tab === entry.key ? 'text-primary' : 'text-muted-foreground'}>
-                {index + 1}. {entry.label}
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="mb-4 grid grid-cols-4 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
+        <span className="flex items-center justify-center gap-1 px-1 py-2 text-primary">
+          <Check className="size-3.5" aria-hidden="true" />
+          Kunde
+        </span>
+        <span className={tab === 'leistung' ? 'rounded-md bg-card px-1 py-2 text-primary shadow-sm' : 'px-1 py-2 text-muted-foreground'}>
+          Leistungen
+        </span>
+        <span className={tab === 'kalkulation' ? 'rounded-md bg-card px-1 py-2 text-primary shadow-sm' : 'px-1 py-2 text-muted-foreground'}>
+          Kalkulation
+        </span>
+        <span className={tab === 'angebot' ? 'rounded-md bg-card px-1 py-2 text-primary shadow-sm' : 'px-1 py-2 text-muted-foreground'}>
+          Angebot
+        </span>
       </div>
-
-      <FilterTabs
-        className="mb-4"
-        label="Kalkulationsbereich"
-        items={tabs.map((entry) => ({
-          href: `/dashboard/kalkulation/${id}?tab=${entry.key}`,
-          label: entry.label,
-          active: tab === entry.key,
-        }))}
-      />
 
       {/* --- Leistung: what is performed, where and how often ---------------- */}
       {tab === 'leistung' && (
@@ -398,7 +384,7 @@ export default async function CalculationPage({
       )}
 
       {/* --- Preis: proposal, override, and the markup/margin distinction ---- */}
-      {tab === 'preis' && (
+      {tab === 'kalkulation' && (
         <div className="space-y-4">
           <Card className="p-5">
             <h2 className="text-[15px] font-semibold">Preisbildung</h2>
@@ -537,7 +523,7 @@ export default async function CalculationPage({
       )}
 
       {/* --- Wirtschaftlichkeit: the year, and the floor under the price ----- */}
-      {tab === 'preis' && (
+      {tab === 'kalkulation' && (
         <div className="space-y-4">
           <Card className="p-5">
             <h2 className="text-[15px] font-semibold">Erwartete Wirtschaftlichkeit</h2>
@@ -632,6 +618,32 @@ export default async function CalculationPage({
               </p>
             )}
           </Card>
+        </div>
+      )}
+
+      {tab === 'leistung' && calculation.lines.length > 0 && (
+        <div className="mt-5 flex justify-end">
+          <ButtonLink href={`/dashboard/kalkulation/${id}?tab=kalkulation`} className="w-full justify-center sm:w-auto">
+            Weiter zur Kalkulation
+          </ButtonLink>
+        </div>
+      )}
+
+      {tab === 'kalkulation' && isDraft && (
+        <Card className="mt-5 p-4 sm:p-5">
+          <h2 className="font-semibold">Kalkulation prüfen</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Wenn Zeit, Kosten und Verkaufspreis stimmen, geht es direkt zum Angebot. ReinPlan friert die Kalkulation dabei automatisch ein.
+          </p>
+          <FinaliseAndContinueAction action={finaliseCalculationAndContinue.bind(null, id)} />
+        </Card>
+      )}
+
+      {tab === 'kalkulation' && !isDraft && (
+        <div className="mt-5 flex justify-end">
+          <ButtonLink href={`/dashboard/kalkulation/${id}?tab=angebot`} className="w-full justify-center sm:w-auto">
+            Weiter zum Angebot
+          </ButtonLink>
         </div>
       )}
 
