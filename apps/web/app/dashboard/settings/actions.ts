@@ -72,6 +72,23 @@ export async function updateCompanySettings(_: FormState, formData: FormData): P
       }
     }
 
+    const datevFields = {
+      p_beraternummer: String(value.datev_beraternummer ?? '').trim(),
+      p_mandantennummer: String(value.datev_mandantennummer ?? '').trim(),
+      p_kontenrahmen: String(value.datev_kontenrahmen ?? '').trim(),
+      p_revenue_account_19: String(value.datev_revenue_account_19 ?? '').trim(),
+      p_revenue_account_7: String(value.datev_revenue_account_7 ?? '').trim(),
+      p_revenue_account_0: String(value.datev_revenue_account_0 ?? '').trim(),
+    };
+    if (datevFields.p_beraternummer && !/^\d{1,7}$/.test(datevFields.p_beraternummer)) return { status: 'error', message: 'Die DATEV-Beraternummer ist ungültig.' };
+    if (datevFields.p_mandantennummer && !/^\d{1,5}$/.test(datevFields.p_mandantennummer)) return { status: 'error', message: 'Die DATEV-Mandantennummer ist ungültig.' };
+    if (datevFields.p_kontenrahmen && !['SKR03', 'SKR04', 'INDIVIDUELL'].includes(datevFields.p_kontenrahmen)) return { status: 'error', message: 'Bitte wähle einen gültigen Kontenrahmen.' };
+    for (const account of [datevFields.p_revenue_account_19, datevFields.p_revenue_account_7, datevFields.p_revenue_account_0]) {
+      if (account && !/^\d{4,11}$/.test(account)) return { status: 'error', message: 'DATEV-Konten müssen aus 4 bis 11 Ziffern bestehen.' };
+    }
+    const { error: datevError } = await supabase.rpc('set_company_datev_settings', datevFields);
+    if (datevError) return databaseFailure('Die DATEV-Einstellungen wurden nicht gespeichert:', datevError);
+
     // Changing the focus adds matching catalogue entries and never overwrites
     // one that already exists, so this is safe to repeat.
     const focus = formData.getAll('focus').map(String).filter(Boolean);
