@@ -138,8 +138,8 @@ export function AcceptQuoteForm({ action, locale, showSchedule }: { action: Acti
         <Field label="Kundenabnahme" htmlFor="acceptance_policy">
           <Select id="acceptance_policy" name="acceptance_policy" defaultValue="KEINE_ABNAHME_ERFORDERLICH">
             <option value="KEINE_ABNAHME_ERFORDERLICH">Keine Abnahme erforderlich</option>
-            <option value="DIGITALE_BESTAETIGUNG">Digitale Bestätigung</option>
-            <option value="UNTERSCHRIFT">Unterschrift erforderlich</option>
+            <option value="PORTAL_ABNAHME">Bestätigung im Kundenportal</option>
+            <option value="VOR_ORT_UNTERSCHRIFT">Unterschrift vor Ort</option>
           </Select>
         </Field>
       </div>
