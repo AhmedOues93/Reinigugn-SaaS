@@ -24,14 +24,16 @@ export function ComplaintForm({ complaint, options, action, submitLabel }: { com
     const priorityLabel: Record<string, string> = { LOW: 'Niedrig', NORMAL: 'Normal', HIGH: 'Hoch', URGENT: 'Dringend' };
     const status = complaint.status ?? 'OPEN';
     const priority = complaint.priority ?? 'NORMAL';
+    const assignee = complaint.assigned_member_id
+      ? name(options.employees.find((employee) => employee.id === complaint.assigned_member_id)?.profiles ?? null)
+      : null;
 
     return (
       <div className="space-y-4">
         <FormMessage status={state.status} message={state.message} />
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Kundenmeldung</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{statusLabel[status] ?? status}</span>
               <span className={priority === 'URGENT' || priority === 'HIGH'
                 ? 'rounded-full bg-danger/10 px-2.5 py-1 text-xs font-semibold text-danger'
@@ -46,22 +48,24 @@ export function ComplaintForm({ complaint, options, action, submitLabel }: { com
           </Button>
         </div>
 
-        <div className="grid gap-3 rounded-xl bg-subtle p-4 sm:grid-cols-2">
-          <div><p className="text-xs text-muted-foreground">Kunde</p><p className="mt-0.5 font-medium">{customer?.name ?? '—'}</p></div>
-          <div><p className="text-xs text-muted-foreground">Objekt</p><p className="mt-0.5 font-medium">{object?.name ?? '—'}</p></div>
-        </div>
-
         <div>
-          <p className="text-sm font-semibold">{complaint.title}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Kundenmeldung</p>
+          <p className="break-anywhere mt-2 text-sm font-semibold">{complaint.title}</p>
           <p className="break-anywhere mt-2 whitespace-pre-wrap text-[15px] leading-6 text-foreground">
             {complaint.description || '—'}
           </p>
+        </div>
+
+        <div className="grid gap-3 rounded-xl bg-subtle p-4 sm:grid-cols-2">
+          <div className="min-w-0"><p className="text-xs text-muted-foreground">Kunde</p><p className="break-anywhere mt-0.5 font-medium">{customer?.name ?? '—'}</p></div>
+          <div className="min-w-0"><p className="text-xs text-muted-foreground">Objekt</p><p className="break-anywhere mt-0.5 font-medium">{object?.name ?? '—'}</p></div>
         </div>
 
         {(complaint.assigned_member_id || complaint.due_date || complaint.internal_note) && (
           <details className="rounded-lg border border-border/80">
             <summary className="min-h-touch cursor-pointer list-none px-4 py-3 text-sm font-medium">Interne Bearbeitung</summary>
             <dl className="grid gap-3 border-t border-border/80 p-4 text-sm sm:grid-cols-2">
+              {assignee && <div className="min-w-0"><dt className="text-xs text-muted-foreground">Zugewiesen</dt><dd className="break-anywhere mt-0.5">{assignee}</dd></div>}
               {complaint.due_date && <div><dt className="text-xs text-muted-foreground">Fällig</dt><dd className="mt-0.5">{complaint.due_date}</dd></div>}
               {complaint.internal_note && <div className="sm:col-span-2"><dt className="text-xs text-muted-foreground">Interne Notiz</dt><dd className="mt-0.5 whitespace-pre-wrap">{complaint.internal_note}</dd></div>}
             </dl>

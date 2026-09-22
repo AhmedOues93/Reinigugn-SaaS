@@ -151,8 +151,17 @@ export function DataTable<T>({
           return (
             <li key={rowKey(row)} className="relative rounded-xl border border-border/80 bg-card p-4 shadow-card">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="break-anywhere font-semibold text-foreground">
+                <div className="min-w-0 flex-1">
+                  {/*
+                    `break-words`, not `break-anywhere`: the title line sits in a
+                    flex row beside a shrink-0 status column, and
+                    `overflow-wrap: anywhere` drops this item's min-content width
+                    to a single character. The row then squeezes the title into a
+                    one-character column and a value like an invoice number reads
+                    vertically. `break-word` still wraps a genuinely oversized
+                    token without collapsing the column.
+                  */}
+                  <p className="break-words font-semibold text-foreground">
                     {href ? (
                       <Link href={href} className="rounded-sm underline-offset-4 hover:text-primary hover:underline">
                         {titleColumn.cell(row)}
