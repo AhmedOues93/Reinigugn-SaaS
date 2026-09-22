@@ -22,10 +22,10 @@ export function IssueInvoiceAction({
     <form action={formAction} className="space-y-3">
       <FormMessage status={state.status} message={state.message} />
       <p className="text-sm leading-6 text-muted-foreground">
-        Die Rechnung erhält ihre fortlaufende Nummer, wird im Kundenportal sichtbar und ist danach nicht mehr änderbar.
+        {t(locale, 'billing.issueHelp')}
       </p>
       {disabled ? (
-        <p className="text-sm font-medium text-warning">Fuegen Sie zuerst mindestens eine Leistung hinzu.</p>
+        <p className="text-sm font-medium text-warning">{t(locale, 'billing.needService')}</p>
       ) : (
         <SubmitButton locale={locale} className="w-full">
           {t(locale, 'billing.issue')}
