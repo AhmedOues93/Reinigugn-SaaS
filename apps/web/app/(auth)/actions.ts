@@ -77,8 +77,24 @@ export async function requestPasswordReset(formData: FormData) {
   if (!parsed.success) withMessage('/forgot-password', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: appUrl('/auth/callback?next=/reset-password') });
-  withMessage('/forgot-password', 'message', 'Falls ein Konto existiert, wurde eine E-Mail zum Zurücksetzen versendet.');
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: appUrl('/auth/callback?next=/reset-password'),
+  });
+
+  if (error) {
+    console.error('Password reset request failed:', error.message);
+    withMessage(
+      '/forgot-password',
+      'error',
+      'Der Link konnte nicht versendet werden. Bitte versuche es erneut oder wende dich an den Administrator.',
+    );
+  }
+
+  withMessage(
+    '/forgot-password',
+    'message',
+    'Falls ein Konto existiert, wurde eine E-Mail zum Zurücksetzen versendet.',
+  );
 }
 
 export async function updatePassword(formData: FormData) {
