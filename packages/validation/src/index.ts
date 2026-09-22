@@ -49,6 +49,10 @@ export const customerSchema = z.object({
   billing_recipient_address: optionalText(500, 'Die abweichende Rechnungsadresse'),
   payment_terms_days: z.preprocess((value) => value === '' ? undefined : value, z.coerce.number().int().min(0).max(365).optional()),
   vat_id: optionalText(64, 'Die USt-IdNr.'),
+  datev_debtor_account: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().regex(/^\d{4,11}$/, 'Das DATEV-Debitorenkonto muss aus 4 bis 11 Ziffern bestehen.').optional(),
+  ),
   notes: optionalText(4_000, 'Die Notizen'),
 });
 
