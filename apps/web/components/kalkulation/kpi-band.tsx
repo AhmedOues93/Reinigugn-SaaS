@@ -36,46 +36,28 @@ export function CalculationKpiBand({ calculation }: { calculation: Calculation }
 
   const items: { label: string; value: string; hint?: string; tone?: 'danger' | 'warning' }[] = [
     {
-      label: 'Std./Einsatz',
-      value: formatMinutes(calculation.minutes_per_visit),
-      hint: 'inkl. Rüstzeit',
-    },
-    {
-      label: 'Std./Monat',
+      label: 'Zeit / Monat',
       value: formatMinutes(calculation.monthly_minutes),
       hint: `${calculation.visits_per_week.toLocaleString('de-DE')}× pro Woche`,
     },
     {
-      label: 'Kosten/Monat',
+      label: 'Kosten / Monat',
       value: money(calculation.total_cost_cents_month),
-      hint: `${money(calculation.total_cost_cents_month * 12)} pro Jahr`,
+      hint: 'Personal, Material, Fahrt und Sonstiges',
     },
     {
-      label: 'Verkaufspreis/Monat',
+      label: 'Verkaufspreis / Monat',
       value: money(calculation.selling_price_cents_month),
       hint:
-        calculation.surcharge_cents_month > 0
-          ? `inkl. ${money(calculation.surcharge_cents_month)} Zuschläge`
-          : calculation.price_override_cents_month != null
-            ? 'manuell gesetzt'
-            : 'aus Zielmarge',
-    },
-    {
-      label: 'Umsatz/Jahr',
-      value: money(calculation.selling_price_cents_month * 12),
-      hint: `${money(calculation.price_cents_per_productive_hour)} je produktiver Std.`,
+        calculation.price_override_cents_month != null
+          ? 'manuell angepasst'
+          : 'aus Zielmarge berechnet',
       tone: belowMinRate ? 'warning' : undefined,
-    },
-    {
-      label: 'Deckungsbeitrag',
-      value: money(calculation.contribution_cents_month),
-      hint: `${money(calculation.contribution_cents_month * 12)} pro Jahr`,
-      tone: loss ? 'danger' : thin ? 'warning' : undefined,
     },
     {
       label: 'Marge',
       value: formatBp(calculation.margin_bp),
-      hint: `Aufschlag ${formatBp(calculation.markup_bp)}`,
+      hint: `Deckungsbeitrag ${money(calculation.contribution_cents_month)} / Monat`,
       tone: loss ? 'danger' : thin ? 'warning' : undefined,
     },
   ];
@@ -104,7 +86,7 @@ export function CalculationKpiBand({ calculation }: { calculation: Calculation }
 
       <dl
         className={cn(
-          'grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border/80 bg-border/60 shadow-card sm:grid-cols-4 lg:grid-cols-7',
+          'grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/80 bg-border/60 shadow-card sm:grid-cols-4',
           incomplete && 'opacity-80',
         )}
       >
