@@ -12,6 +12,10 @@ export type QuotePdfInput = {
   grossTotalCents: number;
   recurringNetMonthlyCents: number;
   acceptancePolicy?: 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME' | null;
+  orderType?: 'EINMALAUFTRAG' | 'BEFRISTET' | 'DAUERAUFTRAG' | null;
+  serviceStart?: string | null;
+  serviceEnd?: string | null;
+  terminationNotice?: string | null;
   acceptedAt?: string | null;
   acceptedByName?: string | null;
   recipient: Record<string, unknown> | null;
@@ -220,8 +224,20 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
     PORTAL_ABNAHME: 'Bestätigung durch den Kunden im Kundenportal',
   }[input.acceptancePolicy ?? 'KEINE_ABNAHME_ERFORDERLICH'];
 
+  const orderTypeText = input.orderType === 'EINMALAUFTRAG'
+    ? 'Einmalauftrag'
+    : input.orderType === 'BEFRISTET'
+      ? 'Befristeter Auftrag'
+      : input.orderType === 'DAUERAUFTRAG'
+        ? 'Laufender Auftrag'
+        : null;
+
   const commercialTerms = [
-    ['Angebotsgültigkeit', date(input.validUntil)],
+    ['Angebotsgueltigkeit', date(input.validUntil)],
+    ...(orderTypeText ? [['Auftragsart', orderTypeText] as const] : []),
+    ...(input.serviceStart ? [['Leistungsbeginn', date(input.serviceStart)] as const] : []),
+    ...(input.serviceEnd ? [['Vertragsende', date(input.serviceEnd)] as const] : []),
+    ...(input.terminationNotice ? [['Kuendigungsfrist', input.terminationNotice] as const] : []),
     ['Kundenabnahme', acceptanceText],
     ['Zahlungsziel', paymentDays > 0 ? `${paymentDays} Tage ab Rechnungsdatum` : 'gemäß Rechnung'],
     ['Umsatzsteuer', 'gemäß den oben ausgewiesenen Steuersätzen'],
