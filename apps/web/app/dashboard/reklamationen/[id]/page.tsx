@@ -61,117 +61,99 @@ export default async function ComplaintDetailPage({ params }: { params: Promise<
       <BackLink href="/dashboard/reklamationen">Reklamationen</BackLink>
       <PageHeader title={complaint.title} />
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-8">
-          <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
-            <ComplaintForm
-              complaint={complaint}
-              options={options}
-              action={updateComplaint.bind(null, id)}
-              submitLabel="Änderungen speichern"
-            />
-          </div>
+      <div className="mx-auto max-w-4xl space-y-5">
+        <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+          <ComplaintForm
+            complaint={complaint}
+            options={options}
+            action={updateComplaint.bind(null, id)}
+            submitLabel="Änderungen speichern"
+          />
+        </section>
 
-          <Section title="Fotos">
-            <ComplaintPhotoSection
-              photos={photos}
-              uploadAction={uploadOperationalPhoto.bind(null, 'COMPLAINT', id)}
-              deleteAction={deleteOperationalPhoto}
-            />
-            {job?.id && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Weitere auftragsbezogene Fotos liegen im{' '}
-                <Link
-                  className="font-medium text-primary hover:underline"
-                  href={`/dashboard/auftraege/${job.id}`}
-                >
-                  Auftrag
-                </Link>
-                .
-              </p>
-            )}
-          </Section>
-        </div>
-
-        <aside className="space-y-6">
-          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
-            <h2 className="text-[15px] font-semibold">Zugehöriger Einsatz</h2>
-            {job?.id ? (
-              <div className="mt-3 space-y-3 text-sm">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Auftrag</p>
-                  <Link className="mt-1 inline-flex items-center gap-1.5 font-medium text-primary hover:underline" href={`/dashboard/auftraege/${job.id}`}>
-                    {job.title ?? 'Einsatz öffnen'}
-                    <ExternalLink className="size-3.5" aria-hidden="true" />
-                  </Link>
-                  {job.scheduled_date ? <p className="mt-1 text-muted-foreground">{job.scheduled_date}</p> : null}
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Eingesetzte Mitarbeiter</p>
-                  {jobEmployees.length > 0 ? (
-                    <ul className="mt-1.5 space-y-1">
-                      {jobEmployees.map((name, index) => <li key={`${name}-${index}`} className="font-medium">{name}</li>)}
-                    </ul>
-                  ) : (
-                    <p className="mt-1 text-muted-foreground">Keine Zuordnung gefunden.</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">Diese Reklamation ist keinem Einsatz zugeordnet.</p>
-            )}
-          </section>
-
-          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
-            <h2 className="mb-3 text-[15px] font-semibold">Kundenkommunikation</h2>
+        <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+          <h2 className="text-lg font-semibold">Antwort an den Kunden</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Die Antwort erscheint direkt im Kundenportal im Verlauf dieser Reklamation.</p>
+          <div className="mt-4">
             <ComplaintCustomerReply action={replyToComplaintCustomer.bind(null, id)} />
-          </section>
+          </div>
+        </section>
 
-          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
-            <h2 className="mb-3 text-[15px] font-semibold">Nacharbeit</h2>
-            {complaint.follow_up_job_id ? (
+        {job?.id ? (
+          <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Zugehöriger Einsatz</h2>
+                {job.scheduled_date ? <p className="mt-1 text-sm text-muted-foreground">{job.scheduled_date}</p> : null}
+              </div>
+              <Link className="inline-flex min-h-touch items-center gap-1.5 text-sm font-medium text-primary hover:underline" href={`/dashboard/auftraege/${job.id}`}>
+                Einsatz öffnen
+                <ExternalLink className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="mt-4 rounded-xl bg-subtle p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Eingesetzte Mitarbeiter</p>
+              {jobEmployees.length > 0 ? (
+                <p className="mt-1.5 font-medium">{jobEmployees.join(', ')}</p>
+              ) : (
+                <p className="mt-1.5 text-sm text-muted-foreground">Keine Zuordnung gefunden.</p>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="rounded-2xl border border-border/80 bg-card shadow-card">
+          {complaint.follow_up_job_id ? (
+            <div className="p-5 sm:p-6">
+              <h2 className="text-lg font-semibold">Nacharbeit</h2>
               <Link
-                className="inline-flex min-h-touch items-center gap-2 text-sm font-medium text-primary hover:underline md:min-h-9"
+                className="mt-3 inline-flex min-h-touch items-center gap-2 text-sm font-medium text-primary hover:underline"
                 href={`/dashboard/auftraege/${complaint.follow_up_job_id}`}
               >
                 Nacharbeitsauftrag öffnen
                 <ExternalLink className="size-4" aria-hidden="true" />
               </Link>
-            ) : (
-              <FollowUpJobForm action={createFollowUpJob.bind(null, id)} employees={employees} />
-            )}
-          </section>
+            </div>
+          ) : (
+            <details>
+              <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-semibold sm:px-6">
+                Nacharbeit planen
+                <span className="text-xs font-normal text-muted-foreground">optional</span>
+              </summary>
+              <div className="border-t border-border/80 p-5 sm:p-6">
+                <FollowUpJobForm action={createFollowUpJob.bind(null, id)} employees={employees} />
+              </div>
+            </details>
+          )}
+        </section>
 
-          <section>
-            <h2 className="mb-3 text-[15px] font-semibold">Verlauf</h2>
-            {record.updates.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-foreground/15 px-4 py-5 text-sm text-muted-foreground">
-                Noch keine operativen Aktualisierungen.
-              </p>
-            ) : (
-              /* A complaint is a sequence of events, so the trail reads as one. */
-              <ol className="relative space-y-5 border-s border-border ps-5">
-                {record.updates.map((update) => (
-                  <li key={update.id} className="relative">
-                    <span
-                      aria-hidden="true"
-                      className="absolute -start-[1.4rem] top-1.5 size-2 rounded-full bg-border ring-4 ring-background"
-                    />
-                    <p className="text-sm font-medium text-foreground">
-                      {person(update.company_members)}
-                    </p>
-                    <p className="break-anywhere mt-0.5 text-sm leading-6 text-muted-foreground">
-                      {update.note}
-                    </p>
-                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground/80">
-                      {formatDateTime('de', update.created_at)}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-        </aside>
+        <Section title="Fotos">
+          <ComplaintPhotoSection
+            photos={photos}
+            uploadAction={uploadOperationalPhoto.bind(null, 'COMPLAINT', id)}
+            deleteAction={deleteOperationalPhoto}
+          />
+        </Section>
+
+        <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+          <h2 className="text-lg font-semibold">Verlauf</h2>
+          {record.updates.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">Noch keine Aktualisierungen.</p>
+          ) : (
+            <ol className="relative mt-4 space-y-5 border-s border-border ps-5">
+              {record.updates.map((update) => (
+                <li key={update.id} className="relative">
+                  <span aria-hidden="true" className="absolute -start-[1.4rem] top-1.5 size-2 rounded-full bg-border ring-4 ring-background" />
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="text-sm font-semibold text-foreground">{person(update.company_members)}</p>
+                    <p className="text-xs tabular-nums text-muted-foreground">{formatDateTime('de', update.created_at)}</p>
+                  </div>
+                  <p className="break-anywhere mt-1 text-sm leading-6 text-muted-foreground">{update.note}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </div>
     </div>
   );
