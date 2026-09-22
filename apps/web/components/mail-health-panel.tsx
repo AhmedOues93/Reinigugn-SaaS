@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { CheckCircle2, MailWarning, Send } from 'lucide-react';
+import { CheckCircle2, Mail, Send } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { initialFormState, type FormState } from '@/lib/actions';
 
@@ -24,19 +24,19 @@ export function MailHealthPanel({
           className={
             configured
               ? 'grid size-10 shrink-0 place-items-center rounded-lg bg-success-soft text-success'
-              : 'grid size-10 shrink-0 place-items-center rounded-lg bg-warning-soft text-warning'
+              : 'grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground'
           }
         >
-          {configured ? <CheckCircle2 className="size-5" /> : <MailWarning className="size-5" />}
+          {configured ? <CheckCircle2 className="size-5" /> : <Mail className="size-5" />}
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-semibold">
-            {configured ? 'E-Mail-Versand eingerichtet' : 'E-Mail-Versand nicht vollständig eingerichtet'}
+            {configured ? 'E-Mail-Versand eingerichtet' : 'E-Mail-Versand noch nicht verbunden'}
           </p>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {configured
               ? 'Provider: ' + (provider === 'resend' ? 'Resend' : 'SMTP') + '. Teste den Versand direkt an deine Anmelde-E-Mail.'
-              : 'Für zuverlässige Einladungen, Passwort-Mails und Rechnungen braucht Produktion RESEND_API_KEY oder SMTP_HOST plus MAIL_FROM.'}
+              : 'ReinPlan kann aktuell weiterhin über die vorhandene Auth-E-Mail arbeiten. Für direkten Versand von Einladungen, Angeboten und Rechnungen kann später ein eigener E-Mail-Anbieter verbunden werden.'}
           </p>
           {configured && (
             <form action={formAction} className="mt-4">
