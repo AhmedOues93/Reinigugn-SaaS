@@ -76,7 +76,7 @@ $$;
 
 revoke all on function public.enqueue_job_start_reminders() from public, anon, authenticated;
 
-do $
+do $reminder$
 begin
   if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
     create extension if not exists pg_cron;
@@ -91,4 +91,4 @@ begin
   end if;
 exception when insufficient_privilege or undefined_function or undefined_table then
   raise notice 'pg_cron reminder schedule not available in this environment';
-end $;
+end $reminder$;
