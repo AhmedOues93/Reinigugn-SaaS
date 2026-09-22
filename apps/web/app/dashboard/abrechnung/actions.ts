@@ -387,9 +387,16 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
 /** Records a delivery made outside the app (post, own mail client, handed over). */
 export async function recordManualDelivery(invoiceId: string, _: FormState, formData: FormData): Promise<FormState> {
   const kind = String(formData.get('kind') ?? 'INVOICE') === 'REMINDER' ? 'REMINDER' : 'INVOICE';
-  const note = String(formData.get('note') ?? '').trim().slice(0, 500);
-  if (note.length < 2) return failure('Bitte vermerke kurz, wie versendet wurde (z. B. „per Post“).');
-  const error = await recordDelivery(invoiceId, kind, 'MANUAL', null, 'MANUAL', note);
+  const method = String(formData.get('method') ?? 'EXTERNAL_EMAIL');
+  const methodLabel: Record<string, string> = {
+    EXTERNAL_EMAIL: 'Extern per E-Mail',
+    POST: 'Per Post',
+    PERSONAL: 'Persönlich übergeben',
+    OTHER: 'Sonstiger Weg',
+  };
+  const note = String(formData.get('note') ?? '').trim().slice(0, 400);
+  const detail = [methodLabel[method] ?? methodLabel.OTHER, note].filter(Boolean).join(' · ');
+  const error = await recordDelivery(invoiceId, kind, 'MANUAL', null, 'MANUAL', detail);
   revalidateBilling(invoiceId);
   if (error) {
     return failure(
