@@ -30,6 +30,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
               <FileDown className="size-4" aria-hidden="true" />
               Buchhaltung CSV
             </ButtonLink>
+            <ButtonLink href="/dashboard/abrechnung/datev" variant="outline">
+              <FileDown className="size-4" aria-hidden="true" />
+              DATEV CSV
+            </ButtonLink>
             <ButtonLink href="/dashboard/abrechnung/neu">
               <Plus className="size-4" aria-hidden="true" />
               {t(locale, 'billing.new')}
