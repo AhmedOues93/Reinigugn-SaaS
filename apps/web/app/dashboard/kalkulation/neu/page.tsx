@@ -79,6 +79,8 @@ export default async function NewCalculationPage({
         surveys={surveys.map((survey) => ({
           id: survey.id,
           label: [survey.site_name, survey.city].filter(Boolean).join(' · ') || t(locale, 'sales.quote.survey'),
+          customerId: survey.customer_id ?? null,
+          leadId: survey.lead_id ?? null,
         }))}
       />
     </FormPage>
