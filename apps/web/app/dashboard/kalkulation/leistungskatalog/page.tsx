@@ -29,7 +29,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
         description="Ihre wiederverwendbaren Reinigungsleistungen. Sie liefern Zeit- und Materialvorgaben für neue Kalkulationen."
       />
 
-      <p className="mb-5 rounded-lg border border-info/25 bg-info-soft px-3.5 py-3 text-sm leading-6 text-info">
+      <p className="mb-5 rounded-lg border border-border bg-muted/30 px-3.5 py-3 text-sm leading-6 text-muted-foreground">
         Beispiel: 250 m²/h bedeutet, dass 500 m² rechnerisch etwa 2 Arbeitsstunden benötigen.
         Der Katalog spart Tipparbeit: Bei einer Kalkulation werden diese Vorgaben übernommen und können
         für das konkrete Objekt angepasst werden.
