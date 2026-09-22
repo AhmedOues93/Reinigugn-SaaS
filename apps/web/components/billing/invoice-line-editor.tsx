@@ -79,7 +79,7 @@ export function InvoiceLineEditor({
                 >
                   <button
                     type="submit"
-                    aria-label={`Position entfernen: ${line.description}`}
+                    aria-label={`Leistung entfernen: ${line.description}`}
                     className="grid min-h-touch min-w-touch place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
@@ -91,8 +91,13 @@ export function InvoiceLineEditor({
         ))}
       </ul>
 
-      <form action={formAction} className="space-y-4 rounded-xl border border-dashed border-foreground/15 bg-subtle p-4">
-        <FormMessage status={state.status} message={state.message} />
+      <details className="rounded-xl border border-border/80 bg-card">
+        <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
+          Weitere Leistung manuell hinzufuegen
+          <span className="text-xs font-normal text-muted-foreground">optional</span>
+        </summary>
+        <form action={formAction} className="space-y-4 border-t border-border/80 p-4">
+          <FormMessage status={state.status} message={state.message} />
 
         {billableJobs.length > 0 && (
           <Field
@@ -182,10 +187,11 @@ export function InvoiceLineEditor({
           </Field>
         </div>
 
-        <SubmitButton locale={locale} variant="outline">
-          Position hinzufügen
-        </SubmitButton>
-      </form>
+          <SubmitButton locale={locale} variant="outline">
+            Leistung hinzufuegen
+          </SubmitButton>
+        </form>
+      </details>
     </div>
   );
 }
