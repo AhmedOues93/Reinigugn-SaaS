@@ -19,6 +19,34 @@ export async function renderStaffInvoicePdf(id: string): Promise<Rendered | null
     correctsInvoiceNumber = data?.invoice_number ?? null;
   }
   const branding = await getCompanyBranding(company.id);
+
+  // Legacy DEMO invoices were seeded before issue-time snapshots were enforced.
+  // Keep real issued invoices strictly snapshot-only; for explicit RE-DEMO rows
+  // only, reconstruct the missing document parties from the same tenant's
+  // current master data so the mobile PDF remains useful for QA.
+  let customerSnapshot = invoice.customer_snapshot as Record<string, unknown> | null;
+  let companySnapshot = invoice.company_snapshot as Record<string, unknown> | null;
+  if (
+    invoice.invoice_number.startsWith('RE-DEMO-') &&
+    (!customerSnapshot || !companySnapshot)
+  ) {
+    const [customerResult, companyResult] = await Promise.all([
+      supabase
+        .from('customers')
+        .select('name, customer_number, contact_person, email, billing_address, postal_code, city')
+        .eq('company_id', company.id)
+        .eq('id', invoice.customer_id)
+        .maybeSingle(),
+      supabase
+        .from('companies')
+        .select('name, legal_form, street, postal_code, city, country, phone, email, website, tax_number, vat_id, iban, bic')
+        .eq('id', company.id)
+        .maybeSingle(),
+    ]);
+    if (!customerSnapshot && customerResult.data) customerSnapshot = customerResult.data;
+    if (!companySnapshot && companyResult.data) companySnapshot = companyResult.data;
+  }
+
   const input: InvoicePdfInput = {
     invoiceNumber: invoice.invoice_number,
     status: invoice.status,
@@ -33,8 +61,8 @@ export async function renderStaffInvoicePdf(id: string): Promise<Rendered | null
     customerNote: invoice.customer_note,
     cancelledAt: invoice.cancelled_at,
     correctsInvoiceNumber,
-    customer: invoice.customer_snapshot as Record<string, unknown> | null,
-    company: invoice.company_snapshot as Record<string, unknown> | null,
+    customer: customerSnapshot,
+    company: companySnapshot,
     lines: invoice.lines,
     logo: await fetchLogo(branding?.logoUrl ?? null),
   };
