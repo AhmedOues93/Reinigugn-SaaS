@@ -25,14 +25,14 @@ export function JobPhotoUpload({
   action,
   checklistItems,
   locale = 'de',
-  category,
+  category = 'DOCUMENTATION',
   title,
 }: {
   action: Action;
   checklistItems: ChecklistItem[];
   locale?: Locale;
-  category: 'BEFORE' | 'AFTER' | 'DOCUMENTATION';
-  title: string;
+  category?: 'BEFORE' | 'AFTER' | 'DOCUMENTATION';
+  title?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [preview, setPreview] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function JobPhotoUpload({
     <form action={formAction} className="space-y-3">
       <FormMessage status={state.status} message={state.message} />
       <input type="hidden" name="category" value={category} />
-      <p className="text-sm font-semibold">{title}</p>
+      {title && <p className="text-sm font-semibold">{title}</p>}
       <label className="group relative flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-foreground/15 bg-subtle p-4 text-center transition-colors hover:border-primary/50 focus-within:border-primary">
         {preview ? (
           <img src={preview} alt={t(locale, 'emp.photo.file')} className="absolute inset-0 size-full object-cover" />
