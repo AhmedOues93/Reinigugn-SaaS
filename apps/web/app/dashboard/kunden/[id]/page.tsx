@@ -35,7 +35,7 @@ export default async function CustomerDetailPage({ params, searchParams }: { par
     listInvoices({ customerId: customer.id }),
     listQuotes('all'),
   ]);
-  const quotes = allQuotes.filter((quote) => quote.customer_id === customer.id);
+  const quotes = allQuotes.filter((quote) => quote.customer_id === customer.id || quote.created_customer_id === customer.id);
   const open = invoices.filter((invoice) => invoice.displayStatus === 'ISSUED' || invoice.displayStatus === 'OVERDUE');
   const openCents = open.reduce((total, invoice) => total + invoice.gross_total_cents, 0);
   const address = [customer.billing_address, [customer.postal_code, customer.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
