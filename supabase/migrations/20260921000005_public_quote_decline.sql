@@ -10,7 +10,7 @@ security definer
 set search_path = public
 as $$
 declare
-  target public.quotes;
+  target record;
   reason text := nullif(trim(coalesce(p_reason, '')), '');
 begin
   if p_token is null or length(p_token) < 32 or length(p_token) > 256 then
@@ -53,7 +53,7 @@ security definer
 set search_path = public
 as $$
 declare
-  target public.quotes;
+  target record;
   result jsonb;
 begin
   if p_token is null or length(p_token) < 32 or length(p_token) > 256 then
