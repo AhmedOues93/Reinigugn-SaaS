@@ -54,6 +54,39 @@ export async function getCurrentCompany() {
   return { supabase, user, profile, membership };
 }
 
+/**
+ * Where this visitor belongs, or null if they are not signed in.
+ *
+ * `getCurrentCompany` redirects an anonymous visitor to the sign-in screen,
+ * which is right for every screen behind the session and wrong for the public
+ * landing page — the people it is written for are exactly the ones that
+ * redirect would bounce. This asks the same question without deciding anything
+ * on the answer, so the caller can show the marketing page instead.
+ */
+export async function signedInLandingPath(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+  if (!profile) return null;
+
+  const { data: membership } = await supabase
+    .from('company_members')
+    .select('role')
+    .eq('profile_id', profile.id)
+    .eq('status', 'ACTIVE')
+    .limit(1)
+    .maybeSingle();
+  if (!membership) return null;
+
+  return landingPathForRole(membership.role);
+}
+
 export async function requireOwnerCompany() {
   const context = await getCurrentCompany();
   const company = context.membership?.companies as unknown as { id: string; name: string } | null;

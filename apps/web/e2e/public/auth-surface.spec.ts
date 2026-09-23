@@ -15,9 +15,19 @@ function fieldError(page: import('@playwright/test').Page) {
 }
 
 test.describe('unauthenticated surface', () => {
-  test('the sign-in page renders and is reachable from the root', async ({ page }) => {
+  test('the root serves the landing page to a signed-out visitor', async ({ page }) => {
     const response = await page.goto('/');
     expect(response?.status()).toBeLessThan(400);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // The page exists to get people into the product, so the way in is the
+    // assertion that matters.
+    await expect(page.getByRole('link', { name: /anmelden/i }).first()).toBeVisible();
+  });
+
+  test('the landing page leads to the sign-in form', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: /anmelden/i }).first().click();
     await expect(page).toHaveURL(/\/login/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.locator('input[type=email]')).toBeVisible();
@@ -76,7 +86,7 @@ test.describe('unauthenticated surface', () => {
   });
 
   test('no page scrolls sideways, on a phone or a desktop', async ({ page }) => {
-    for (const path of ['/login', '/signup', '/forgot-password']) {
+    for (const path of ['/', '/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
       await page.goto(path);
       const overflow = await page.evaluate(() => {
         const root = document.documentElement;
