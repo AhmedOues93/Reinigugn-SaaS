@@ -71,7 +71,48 @@ async function saveSchedule(scheduleId: string | null, formData: FormData): Prom
 export async function createServiceSchedule(_: FormState, formData: FormData) { return saveSchedule(null, formData); }
 export async function updateServiceSchedule(id: string, _: FormState, formData: FormData) { return saveSchedule(id, formData); }
 export async function setScheduleActive(id: string, isActive: boolean) {
-  try { const { supabase, company } = await requireStaffCompany(); const { error } = await supabase.from('service_schedules').update({ is_active: isActive }).eq('id', id).eq('company_id', company.id); if (error) return { error: 'Der Planstatus konnte nicht aktualisiert werden.' }; if (isActive) await supabase.rpc('generate_jobs_for_schedule', { p_schedule_id: id, p_until: horizon() }); revalidatePath('/dashboard/planung'); revalidatePath('/dashboard/auftraege'); return { error: null }; } catch { return { error: 'Der Planstatus konnte nicht aktualisiert werden.' }; }
+  try {
+    const { supabase, company } = await requireStaffCompany();
+    const { data: schedule, error: loadError } = await supabase
+      .from('service_schedules')
+      .select('assignment_mode')
+      .eq('id', id)
+      .eq('company_id', company.id)
+      .maybeSingle();
+    if (loadError || !schedule) return { error: 'Der Planstatus konnte nicht aktualisiert werden.' };
+
+    if (isActive && schedule.assignment_mode !== 'MANUAL') {
+      const { data: autoMember, error: autoError } = await supabase.rpc('auto_assign_schedule_employee', {
+        p_schedule_id: id,
+      });
+      if (autoError) return { error: 'Die automatische Teamplanung ist fehlgeschlagen.' };
+      if (!autoMember) {
+        return { error: 'Kein passender Mitarbeiter mit freien Wochenstunden gefunden. Bitte Stunden prüfen oder manuell zuweisen.' };
+      }
+    }
+
+    const { error } = await supabase
+      .from('service_schedules')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .eq('company_id', company.id);
+    if (error) return { error: 'Der Planstatus konnte nicht aktualisiert werden.' };
+
+    if (isActive) {
+      const { error: generationError } = await supabase.rpc('generate_jobs_for_schedule', {
+        p_schedule_id: id,
+        p_until: horizon(),
+      });
+      if (generationError) return { error: 'Der Plan wurde aktiviert, aber die Einsätze konnten nicht erzeugt werden.' };
+    }
+
+    revalidatePath('/dashboard/planung');
+    revalidatePath('/dashboard/auftraege');
+    revalidatePath(`/dashboard/planung/plaene/${id}`);
+    return { error: null };
+  } catch {
+    return { error: 'Der Planstatus konnte nicht aktualisiert werden.' };
+  }
 }
 
 /**
