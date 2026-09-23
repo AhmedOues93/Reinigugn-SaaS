@@ -59,7 +59,8 @@ const winAnsiExtras = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•
 export function safe(value: unknown): string {
   const input = String(value ?? '')
     .replace(/[\u202f\u2009\u2007]/g, ' ')
-    .replace(/\u2212/g, '-')
+    .replace(/[–—−]/g, '-')
+    .replace(/•/g, '·')
     .replace(/[\r\t]/g, ' ');
   let out = '';
   for (const char of input) {
@@ -224,7 +225,7 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
 
   const tableHeader = () => {
     page.drawRectangle({ x: margin.x - 6, y: y - 6, width: contentWidth + 12, height: 20, color: rgb(0.94, 0.96, 0.96) });
-    draw('Pos.', cols.pos, y, { size: 8, font: bold, color: muted });
+    draw('Nr.', cols.pos, y, { size: 8, font: bold, color: muted });
     draw('Beschreibung', cols.desc, y, { size: 8, font: bold, color: muted });
     draw('Menge', cols.qty, y, { size: 8, font: bold, color: muted, align: 'right' });
     draw('Einzelpreis', cols.price + 12, y, { size: 8, font: bold, color: muted, align: 'right' });
