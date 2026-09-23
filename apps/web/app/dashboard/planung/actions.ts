@@ -21,12 +21,29 @@ async function saveSchedule(scheduleId: string | null, formData: FormData): Prom
   try {
     const { supabase, company } = await requireStaffCompany();
     let id = scheduleId;
+    let acceptancePolicy = parsed.data.acceptance_policy;
+    let billingMode = parsed.data.billing_mode;
+
+    if (scheduleId) {
+      const { data: sourceQuote, error: sourceQuoteError } = await supabase
+        .from('quotes')
+        .select('acceptance_policy, billing_mode')
+        .eq('company_id', company.id)
+        .eq('created_schedule_id', scheduleId)
+        .eq('status', 'ACCEPTED')
+        .maybeSingle();
+      if (sourceQuoteError) return failure('Die vereinbarten Angebotsbedingungen konnten nicht geprüft werden.');
+      if (sourceQuote) {
+        acceptancePolicy = sourceQuote.acceptance_policy;
+        billingMode = sourceQuote.billing_mode;
+      }
+    }
     if (!id) {
-      const { data, error } = await supabase.from('service_schedules').insert({ company_id: company.id, customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: parsed.data.acceptance_policy, billing_mode: parsed.data.billing_mode, assignment_mode: assignmentMode, is_active: activateAfterSave }).select('id').single();
+      const { data, error } = await supabase.from('service_schedules').insert({ company_id: company.id, customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: acceptancePolicy, billing_mode: billingMode, assignment_mode: assignmentMode, is_active: activateAfterSave }).select('id').single();
       if (error || !data) return failure('Der wiederkehrende Plan konnte nicht erstellt werden.');
       id = data.id;
     } else {
-      const { error } = await supabase.from('service_schedules').update({ customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: parsed.data.acceptance_policy, billing_mode: parsed.data.billing_mode, assignment_mode: assignmentMode, is_active: activateAfterSave }).eq('id', id).eq('company_id', company.id);
+      const { error } = await supabase.from('service_schedules').update({ customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: acceptancePolicy, billing_mode: billingMode, assignment_mode: assignmentMode, is_active: activateAfterSave }).eq('id', id).eq('company_id', company.id);
       if (error) return failure('Der wiederkehrende Plan konnte nicht aktualisiert werden.');
       await supabase.from('schedule_rules').update({ is_active: false }).eq('service_schedule_id', id);
       await supabase.from('service_schedule_assignments').delete().eq('service_schedule_id', id);
