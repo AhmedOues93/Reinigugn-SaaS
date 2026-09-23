@@ -13,7 +13,7 @@ export async function GET() {
     'DATEV-Debitorenkonto',
     'Objekt',
     'Objektnummer',
-    'Objektstrasse',
+    'Objektstraße',
     'Objekt-PLZ',
     'Objekt-Ort',
   ].join(';');
