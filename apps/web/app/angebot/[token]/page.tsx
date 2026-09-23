@@ -120,7 +120,7 @@ export default async function PublicQuotePage({
               )}
               {quote.termination_notice && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Kuendigungsfrist</p>
+                  <p className="text-xs text-muted-foreground">Kündigungsfrist</p>
                   <p className="mt-0.5 font-medium">{quote.termination_notice}</p>
                 </div>
               )}
@@ -131,7 +131,7 @@ export default async function PublicQuotePage({
                     {quote.acceptance_policy === 'VOR_ORT_UNTERSCHRIFT'
                       ? 'Unterschrift vor Ort'
                       : quote.acceptance_policy === 'PORTAL_ABNAHME'
-                        ? 'Bestaetigung im Kundenportal'
+                        ? 'Bestätigung im Kundenportal'
                         : 'Keine gesonderte Abnahme erforderlich'}
                   </p>
                 </div>
