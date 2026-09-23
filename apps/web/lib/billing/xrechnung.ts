@@ -58,13 +58,13 @@ export function validateXRechnung(input: XRechnungInput): string[] {
 
   if (!input.invoiceNumber) errors.push('Rechnungsnummer fehlt.');
   if (!input.issueDate) errors.push('Rechnungsdatum fehlt.');
-  if (!input.dueDate) errors.push('Faelligkeitsdatum fehlt.');
-  if (!input.buyerReference) errors.push('Kaeuferreferenz / Leitweg-ID fehlt.');
+  if (!input.dueDate) errors.push('Fälligkeitsdatum fehlt.');
+  if (!input.buyerReference) errors.push('Käuferreferenz / Leitweg-ID fehlt.');
   if (!input.lines.length) errors.push('Mindestens eine Leistung ist erforderlich.');
 
   for (const [label, record, key] of [
     ['Firmenname', company, 'name'],
-    ['Firmenstrasse', company, 'street'],
+    ['Firmenstraße', company, 'street'],
     ['Firmen-PLZ', company, 'postal_code'],
     ['Firmenort', company, 'city'],
     ['Firmen-E-Mail', company, 'email'],
