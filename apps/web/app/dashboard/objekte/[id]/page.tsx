@@ -7,6 +7,7 @@ import { ComplaintHistory } from '@/components/complaint-history';
 import { StatusBadge } from '@/components/status-badge';
 import { StatusToggle } from '@/components/status-toggle';
 import { setCleaningObjectActive } from '../actions';
+import { stripDemoPrefix } from '@/lib/demo-label';
 
 /** A block of instructions the cleaner depends on. Prose, not a data row. */
 function Instructions({
@@ -136,20 +137,20 @@ export default async function ObjectDetailPage({
             <Instructions
               title="Zugang"
               icon={KeyRound}
-              body={object.access_instructions}
+              body={stripDemoPrefix(object.access_instructions)}
               empty="Keine Zugangshinweise hinterlegt."
             />
             <Instructions
               title="Reinigung"
               icon={SprayCan}
-              body={object.cleaning_instructions}
+              body={stripDemoPrefix(object.cleaning_instructions)}
               empty="Keine Reinigungsanweisungen hinterlegt."
             />
             {object.notes && (
               <Instructions
                 title="Interne Notizen"
                 icon={StickyNote}
-                body={object.notes}
+                body={stripDemoPrefix(object.notes)}
                 empty=""
               />
             )}
