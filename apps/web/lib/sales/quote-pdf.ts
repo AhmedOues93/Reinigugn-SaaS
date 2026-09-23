@@ -12,6 +12,7 @@ export type QuotePdfInput = {
   grossTotalCents: number;
   recurringNetMonthlyCents: number;
   acceptancePolicy?: 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME' | null;
+  billingMode?: 'MONATSPAUSCHALE' | 'PAUSCHALE_PRO_EINSATZ' | 'STUNDENSATZ' | null;
   orderType?: 'EINMALAUFTRAG' | 'BEFRISTET' | 'DAUERAUFTRAG' | null;
   serviceStart?: string | null;
   serviceEnd?: string | null;
@@ -41,7 +42,13 @@ const text = rgb(0.10, 0.14, 0.15);
 const muted = rgb(0.40, 0.45, 0.46);
 const line = rgb(0.84, 0.87, 0.86);
 
-const safe = (value: unknown) => String(value ?? '').replace(/[\r\t]/g, ' ').replace(/[^\x0A\x20-\x7E\xA0-\xFF€]/g, '?');
+const safe = (value: unknown) =>
+  String(value ?? '')
+    .replace(/[\u202f\u2009\u2007]/g, ' ')
+    .replace(/[–—−]/g, '-')
+    .replace(/•/g, '·')
+    .replace(/[\r\t]/g, ' ')
+    .replace(/[^\x0A\x20-\x7E\xA0-\xFF€]/g, '');
 const str = (record: Record<string, unknown> | null, key: string) => {
   const value = record?.[key];
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -233,17 +240,22 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
         : null;
 
   const commercialTerms = [
-    ['Angebotsgueltigkeit', date(input.validUntil)],
+    ['Angebotsgültigkeit', date(input.validUntil)],
     ...(orderTypeText ? [['Auftragsart', orderTypeText] as const] : []),
     ...(input.serviceStart ? [['Leistungsbeginn', date(input.serviceStart)] as const] : []),
     ...(input.serviceEnd ? [['Vertragsende', date(input.serviceEnd)] as const] : []),
-    ...(input.terminationNotice ? [['Kuendigungsfrist', input.terminationNotice] as const] : []),
+    ...(input.terminationNotice ? [['Kündigungsfrist', input.terminationNotice] as const] : []),
+    ...(input.billingMode ? [['Abrechnung', {
+      MONATSPAUSCHALE: 'Monatspauschale',
+      PAUSCHALE_PRO_EINSATZ: 'Pauschale pro Einsatz',
+      STUNDENSATZ: 'Nach tatsächlichem Zeitaufwand',
+    }[input.billingMode]] as const] : []),
     ['Kundenabnahme', acceptanceText],
     ['Zahlungsziel', paymentDays > 0 ? `${paymentDays} Tage ab Rechnungsdatum` : 'gemäß Rechnung'],
     ['Umsatzsteuer', 'gemäß den oben ausgewiesenen Steuersätzen'],
     ['Leistungsumfang', 'maßgeblich sind die oben aufgeführten Positionen und Leistungsbeschreibungen'],
     ['Turnus', 'ergibt sich aus den angebotenen Positionen bzw. dem nach Annahme eingerichteten Leistungsplan'],
-    ['AGB', 'die beigefügten Muster-AGB sind Bestandteil dieses Angebots und vor Produktivbetrieb zu ersetzen'],
+    ['AGB', 'siehe separate Anlage; der dort gekennzeichnete Mustertext ist vor Produktivnutzung durch die eigenen geprüften AGB zu ersetzen'],
   ] as const;
 
   for (const [label, value] of commercialTerms) {
