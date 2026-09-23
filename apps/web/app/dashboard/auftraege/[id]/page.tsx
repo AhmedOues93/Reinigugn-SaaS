@@ -189,6 +189,24 @@ export default async function JobDetailPage({
                 />
               </div>
             )}
+            {totalItems > 0 && (
+              <ol className="mt-4 space-y-2 border-t border-border/70 pt-4">
+                {record.checklistItems.map((item) => (
+                  <li key={item.id} className="flex items-start gap-2 text-xs leading-5">
+                    <span
+                      className={cn(
+                        'mt-1.5 size-1.5 shrink-0 rounded-full',
+                        item.completedAt ? 'bg-success' : 'bg-border',
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span className={item.completedAt ? 'text-foreground' : 'text-muted-foreground'}>
+                      {item.title}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
         </aside>
 
