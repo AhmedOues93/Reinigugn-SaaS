@@ -47,7 +47,7 @@ export function invoiceToXRechnungInput(invoice: Invoice): XRechnungInput | null
 
 export function xrechnungReadiness(invoice: Invoice): { ready: boolean; errors: string[] } {
   const input = invoiceToXRechnungInput(invoice);
-  if (!input) return { ready: false, errors: ['Nur ausgestellte, nicht stornierte Rechnungen koennen als XRechnung exportiert werden.'] };
+  if (!input) return { ready: false, errors: ['Nur ausgestellte, nicht stornierte Rechnungen können als XRechnung exportiert werden.'] };
   const errors = validateXRechnung(input);
   return { ready: errors.length === 0, errors };
 }
