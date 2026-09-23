@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import { signedInLandingPath } from '@/lib/auth';
 import { ClosingCta } from '@/components/marketing/closing-cta';
 import { DemoVideo } from '@/components/marketing/demo-video';
 import { Features } from '@/components/marketing/features';
@@ -18,17 +16,14 @@ export const metadata: Metadata = {
 };
 
 /**
- * The public start page.
+ * Public marketing home.
  *
- * Signed-in visitors never see it: they are sent straight to their own surface,
- * which is what `/` did before this page existed. Somebody who is already
- * working does not want the pitch, and an owner who opens the bookmark expects
- * the dashboard. The marketing page is for everyone else.
+ * The company domain must stay a real public website, even when the browser
+ * already carries a ReinPlan session. The three product surfaces have their
+ * own explicit entry points; opening the brand/domain must never unexpectedly
+ * throw a customer, employee or office user into an authenticated workspace.
  */
-export default async function Home() {
-  const destination = await signedInLandingPath();
-  if (destination) redirect(destination);
-
+export default function Home() {
   return (
     <div className="min-h-[100dvh] bg-background">
       <SiteHeader />
