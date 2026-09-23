@@ -76,6 +76,19 @@ export async function getServiceSchedule(id: string) {
   return data;
 }
 
+export async function getScheduleSourceQuoteTerms(id: string) {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('id, quote_number, status, acceptance_policy, billing_mode')
+    .eq('company_id', company.id)
+    .eq('created_schedule_id', id)
+    .eq('status', 'ACCEPTED')
+    .maybeSingle();
+  if (error) throw new Error('Vertragsgrundlage konnte nicht geladen werden.');
+  return data;
+}
+
 export async function getDashboardMetrics() {
   const { supabase, company } = await requireStaffCompany();
   const today = berlinDateKey();
