@@ -43,7 +43,7 @@ export function SiteHeader() {
 
         <div className="ms-auto flex items-center gap-2 md:ms-3">
           <Link
-            href="/login"
+            href="/admin/login"
             className="inline-flex min-h-touch items-center rounded-lg px-3 text-sm font-semibold text-white/85 transition-colors hover:bg-white/[0.07] hover:text-white md:min-h-9"
           >
             Anmelden
