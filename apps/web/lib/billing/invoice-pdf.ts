@@ -59,7 +59,7 @@ const winAnsiExtras = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•
 export function safe(value: unknown): string {
   const input = String(value ?? '')
     .replace(/[\u202f\u2009\u2007]/g, ' ')
-    .replace(/[–—−]/g, '-')
+    .replace(/−/g, '-')
     .replace(/•/g, '·')
     .replace(/[\r\t]/g, ' ');
   let out = '';
