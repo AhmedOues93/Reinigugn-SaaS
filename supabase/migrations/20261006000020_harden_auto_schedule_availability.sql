@@ -37,9 +37,6 @@ begin
   where rule.service_schedule_id = target.id
     and rule.is_active;
 
-  delete from public.service_schedule_assignments
-  where service_schedule_id = target.id;
-
   if target_minutes <= 0 then return null; end if;
 
   with employee_capacity as (
@@ -148,6 +145,12 @@ begin
   limit 1;
 
   if chosen is not null then
+    -- Replace the standing assignment only after a safe candidate exists.
+    -- A failed re-plan must never silently unassign the current team.
+    delete from public.service_schedule_assignments
+    where service_schedule_id = target.id
+      and member_id <> chosen;
+
     insert into public.service_schedule_assignments(company_id, service_schedule_id, member_id)
     values (actor.company_id, target.id, chosen)
     on conflict (service_schedule_id, member_id) do nothing;
