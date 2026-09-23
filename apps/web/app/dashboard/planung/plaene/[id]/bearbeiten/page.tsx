@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { ScheduleForm } from '@/components/schedule-form';
 import { FormPage } from '@/components/ui';
-import { getServiceSchedule, listAssignableEmployeeOptions } from '@/lib/data/jobs';
+import { getScheduleSourceQuoteTerms, getServiceSchedule, listAssignableEmployeeOptions } from '@/lib/data/jobs';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listCleaningObjectOptions } from '@/lib/data/cleaning-objects';
 import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
@@ -9,12 +9,13 @@ import { updateServiceSchedule } from '../../../actions';
 
 export default async function EditSchedulePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [schedule, customers, objects, employees, templates] = await Promise.all([
+  const [schedule, customers, objects, employees, templates, sourceQuote] = await Promise.all([
     getServiceSchedule(id),
     listCustomerOptions(),
     listCleaningObjectOptions(),
     listAssignableEmployeeOptions(),
     listActiveChecklistTemplateOptions(),
+    getScheduleSourceQuoteTerms(id),
   ]);
   if (!schedule) notFound();
 
@@ -32,6 +33,7 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
         templates={templates}
         action={updateServiceSchedule.bind(null, id)}
         submitLabel="Änderungen speichern"
+        sourceQuote={sourceQuote}
       />
     </FormPage>
   );
