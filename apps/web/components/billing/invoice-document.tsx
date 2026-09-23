@@ -14,6 +14,7 @@ export type InvoiceDocumentData = {
   vatTotalCents: number;
   grossTotalCents: number;
   customerNote: string | null;
+  buyerReference?: string | null;
   cancelledAt: string | null;
   customer: Record<string, string | null> | null;
   company: Record<string, string | null> | null;
@@ -130,8 +131,14 @@ export function InvoiceDocument({
           )}
           {customer.customer_number && (
             <div className="mt-1 flex justify-between gap-8">
-              <dt className="text-slate-500">{t(locale, 'role.CUSTOMER')}</dt>
+              <dt className="text-slate-500">Kundennummer</dt>
               <dd>{customer.customer_number}</dd>
+            </div>
+          )}
+          {data.buyerReference && (
+            <div className="mt-1 flex justify-between gap-8">
+              <dt className="text-slate-500">Käuferreferenz</dt>
+              <dd className="break-anywhere text-end">{data.buyerReference}</dd>
             </div>
           )}
         </dl>
@@ -185,7 +192,7 @@ export function InvoiceDocument({
       <table className="mt-7 hidden w-full text-sm sm:table print:table">
         <thead>
           <tr className="border-b-2 border-slate-800 text-xs text-slate-500">
-            <th className="py-2 text-start font-medium">Pos.</th>
+            <th className="py-2 text-start font-medium">Nr.</th>
             <th className="py-2 text-start font-medium">{t(locale, 'billing.lines')}</th>
             <th className="py-2 text-end font-medium">{t(locale, 'billing.quantity')}</th>
             <th className="py-2 text-end font-medium">{t(locale, 'billing.unitPrice')}</th>
