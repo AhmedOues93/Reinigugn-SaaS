@@ -113,9 +113,9 @@ export default async function JobDetailPage({
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="space-y-6">
-          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+      <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6">
+        <aside className="space-y-4 lg:space-y-6">
+          <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
             <h2 className="mb-4 text-[15px] font-semibold">Kunde &amp; Objekt</h2>
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm">
@@ -151,7 +151,7 @@ export default async function JobDetailPage({
             </ul>
           </section>
 
-          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+          <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
             <h2 className="mb-1 text-[15px] font-semibold">Eingeteilt</h2>
             {record.assignments.length === 0 ? (
               <p className="mt-3 text-sm font-medium text-danger">Niemand eingeteilt</p>
@@ -190,7 +190,7 @@ export default async function JobDetailPage({
               </div>
             )}
             {totalItems > 0 && (
-              <ol className="mt-4 space-y-2 border-t border-border/70 pt-4">
+              <ol className="mt-4 hidden space-y-2 border-t border-border/70 pt-4 lg:block">
                 {record.checklistItems.map((item) => (
                   <li key={item.id} className="flex items-start gap-2 text-xs leading-5">
                     <span
@@ -210,32 +210,7 @@ export default async function JobDetailPage({
           </section>
         </aside>
 
-        <div className="min-w-0 space-y-8">
-          <Section
-            title="Arbeitszeiten"
-            description={
-              record.timeEntries.length > 0
-                ? `${record.timeEntries.length} Erfassung${record.timeEntries.length === 1 ? '' : 'en'}`
-                : 'Noch keine Zeiterfassung'
-            }
-          >
-            {record.timeEntries.length > 0 ? (
-              <DataTable
-                rows={record.timeEntries}
-                columns={columns}
-                rowKey={(entry) => entry.id}
-                caption="Erfasste Arbeitszeiten"
-              />
-            ) : (
-              <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-4">
-                <p className="text-sm font-medium">Noch keine Arbeitszeit erfasst</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Sobald ein Mitarbeiter den Einsatz startet, erscheint die Zeit hier.
-                </p>
-              </div>
-            )}
-          </Section>
-
+        <div className="min-w-0 space-y-5 lg:space-y-8">
           {record.checklistItems.length > 0 && (
             <Section title="Checkliste">
               <ol className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
@@ -280,8 +255,33 @@ export default async function JobDetailPage({
             </Section>
           )}
 
+          <Section
+            title="Arbeitszeiten"
+            description={
+              record.timeEntries.length > 0
+                ? `${record.timeEntries.length} Erfassung${record.timeEntries.length === 1 ? '' : 'en'}`
+                : 'Noch keine Zeiterfassung'
+            }
+          >
+            {record.timeEntries.length > 0 ? (
+              <DataTable
+                rows={record.timeEntries}
+                columns={columns}
+                rowKey={(entry) => entry.id}
+                caption="Erfasste Arbeitszeiten"
+              />
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-4">
+                <p className="text-sm font-medium">Noch keine Arbeitszeit erfasst</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sobald ein Mitarbeiter den Einsatz startet, erscheint die Zeit hier.
+                </p>
+              </div>
+            )}
+          </Section>
+
           <Section title="Hinweise">
-            <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+            <div className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
               <p className="whitespace-pre-wrap break-anywhere text-sm leading-6">
                 {stripDemoPrefix(record.job.employee_instructions) || (
                   <span className="text-muted-foreground">Keine Arbeitsanweisung hinterlegt.</span>
