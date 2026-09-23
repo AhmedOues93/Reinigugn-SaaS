@@ -64,6 +64,7 @@ export function ScheduleForm({
   templates,
   action,
   submitLabel,
+  sourceQuote,
 }: {
   schedule?: ScheduleRecord;
   customers: Option[];
@@ -72,6 +73,12 @@ export function ScheduleForm({
   templates: { id: string; name: string }[];
   action: ScheduleAction;
   submitLabel: string;
+  sourceQuote?: {
+    id: string;
+    quote_number: string | null;
+    acceptance_policy: string | null;
+    billing_mode: string | null;
+  } | null;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const router = useRouter();
@@ -384,30 +391,63 @@ export function ScheduleForm({
             <h2 className="font-semibold">Abnahme & Abrechnung</h2>
             <p className="mt-1 text-sm text-muted-foreground">Vertragseinstellungen, die für alle Einsätze dieses Plans gelten.</p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Kundenabnahme" htmlFor="schedule-acceptance">
-              <Select
-                id="schedule-acceptance"
-                name="acceptance_policy"
-                defaultValue={schedule?.acceptance_policy ?? 'KEINE_ABNAHME_ERFORDERLICH'}
-              >
-                <option value="KEINE_ABNAHME_ERFORDERLICH">Keine Abnahme erforderlich</option>
-                <option value="VOR_ORT_UNTERSCHRIFT">Unterschrift vor Ort</option>
-                <option value="PORTAL_ABNAHME">Abnahme im Kundenportal</option>
-              </Select>
-            </Field>
-            <Field label="Abrechnungsart" htmlFor="schedule-billing">
-              <Select
-                id="schedule-billing"
-                name="billing_mode"
-                defaultValue={schedule?.billing_mode ?? 'PAUSCHALE_PRO_EINSATZ'}
-              >
-                <option value="PAUSCHALE_PRO_EINSATZ">Pauschale pro Einsatz</option>
-                <option value="STUNDENSATZ">Nach Stunden</option>
-                <option value="MONATSPAUSCHALE">Monatspauschale</option>
-              </Select>
-            </Field>
-          </div>
+          {sourceQuote ? (
+            <div className="rounded-xl border border-border bg-muted/25 p-4">
+              <p className="text-sm font-semibold">Aus angenommenem Angebot übernommen</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Diese Vertragswerte stammen aus {sourceQuote.quote_number ?? 'dem angenommenen Angebot'} und werden in der Planung nicht neu gewählt.
+              </p>
+              <input type="hidden" name="acceptance_policy" value={schedule?.acceptance_policy ?? 'KEINE_ABNAHME_ERFORDERLICH'} />
+              <input type="hidden" name="billing_mode" value={schedule?.billing_mode ?? 'PAUSCHALE_PRO_EINSATZ'} />
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Kundenabnahme</dt>
+                  <dd className="mt-1 text-sm font-medium">
+                    {schedule?.acceptance_policy === 'VOR_ORT_UNTERSCHRIFT'
+                      ? 'Unterschrift vor Ort'
+                      : schedule?.acceptance_policy === 'PORTAL_ABNAHME'
+                        ? 'Abnahme im Kundenportal'
+                        : 'Keine Abnahme erforderlich'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Abrechnungsart</dt>
+                  <dd className="mt-1 text-sm font-medium">
+                    {schedule?.billing_mode === 'MONATSPAUSCHALE'
+                      ? 'Monatspauschale'
+                      : schedule?.billing_mode === 'STUNDENSATZ'
+                        ? 'Nach Stunden'
+                        : 'Pauschale pro Einsatz'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Kundenabnahme" htmlFor="schedule-acceptance">
+                <Select
+                  id="schedule-acceptance"
+                  name="acceptance_policy"
+                  defaultValue={schedule?.acceptance_policy ?? 'KEINE_ABNAHME_ERFORDERLICH'}
+                >
+                  <option value="KEINE_ABNAHME_ERFORDERLICH">Keine Abnahme erforderlich</option>
+                  <option value="VOR_ORT_UNTERSCHRIFT">Unterschrift vor Ort</option>
+                  <option value="PORTAL_ABNAHME">Abnahme im Kundenportal</option>
+                </Select>
+              </Field>
+              <Field label="Abrechnungsart" htmlFor="schedule-billing">
+                <Select
+                  id="schedule-billing"
+                  name="billing_mode"
+                  defaultValue={schedule?.billing_mode ?? 'PAUSCHALE_PRO_EINSATZ'}
+                >
+                  <option value="PAUSCHALE_PRO_EINSATZ">Pauschale pro Einsatz</option>
+                  <option value="STUNDENSATZ">Nach Stunden</option>
+                  <option value="MONATSPAUSCHALE">Monatspauschale</option>
+                </Select>
+              </Field>
+            </div>
+          )}
 
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4">
             <input
