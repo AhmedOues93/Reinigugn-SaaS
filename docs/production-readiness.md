@@ -127,10 +127,15 @@ it.
 Needed: refuse to issue an invoice until the company's own mandatory details
 are present. Cheap, and prevents an invalid document reaching a customer.
 
-### 10. German E-Rechnung — **not implemented, and time-bound**
+### 10. German E-Rechnung — **XRechnung output implemented; external validation still required**
 
-There is no structured XML output: no XRechnung, no ZUGFeRD, no UBL/CII. The
-PDF is a PDF.
+ReinPlan now generates a structured XRechnung 3 UBL XML beside the human-readable
+PDF, checks required invoice master data before exposing the XML, and attaches the
+XML when an invoice e-mail is sent. The PDF remains the visual document for humans.
+
+Before production claims of full standards compliance, validate representative
+exports against the current official KoSIT/XRechnung validation rules. ZUGFeRD
+(PDF/A-3 with embedded XML) is not implemented yet.
 
 Receiving e-invoices has been mandatory for German B2B since 1 January 2025.
 For **sending**, paper and PDF remain permissible through 2026; from 2027
