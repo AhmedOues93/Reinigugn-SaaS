@@ -115,7 +115,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 className={buttonVariants({ variant: 'outline' })}
               >
                 <FileText className="size-4" aria-hidden="true" />
-                E-Rechnung herunterladen (XML)
+                XRechnung XML
               </a>
             )}
           </div>
@@ -363,11 +363,11 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           {!isDraft && !xrechnung.ready && (
             <details className="rounded-xl border border-border/80 bg-card px-5 py-3 shadow-card">
               <summary className="cursor-pointer list-none text-sm font-medium">
-                E-Rechnung vorbereiten
+                XRechnung noch nicht vollständig
               </summary>
               <div className="pt-3">
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Die PDF-Rechnung ist bereits nutzbar. Für die zusätzliche XRechnung (XML) fehlen noch folgende Stammdaten:
+                  Die PDF-Rechnung bleibt die sichtbare Rechnung. Für eine zusätzliche maschinenlesbare XRechnung (XML) fehlen noch:
                 </p>
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
                   {xrechnung.errors.map((error) => <li key={error}>{error}</li>)}
