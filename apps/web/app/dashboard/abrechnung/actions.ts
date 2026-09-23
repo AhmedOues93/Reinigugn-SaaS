@@ -48,14 +48,14 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
     return failure('Das Zahlungsziel muss zwischen 0 und 365 Tagen liegen.');
   }
   if (customerNote.length > 2000) return failure('Der Hinweistext ist zu lang.');
-  if (buyerReference.length > 200) return failure('Die Kaeuferreferenz ist zu lang.');
+  if (buyerReference.length > 200) return failure('Die Käuferreferenz ist zu lang.');
 
   const sourceJob = sourceJobId ? await getBillableJob(sourceJobId) : null;
   if (sourceJobId && (!sourceJob || sourceJob.customer_id !== customerId)) {
-    return failure('Der ausgewaehlte Einsatz ist nicht mehr abrechenbar.');
+    return failure('Der ausgewählte Einsatz ist nicht mehr abrechenbar.');
   }
   if (sourceJob && sourceJob.suggested_unit_price_cents == null) {
-    return failure('Fuer diesen Einsatz ist kein vereinbarter Abrechnungspreis hinterlegt.');
+    return failure('Für diesen Einsatz ist kein vereinbarter Abrechnungspreis hinterlegt.');
   }
 
   let invoiceId: string;
@@ -90,7 +90,7 @@ export async function createDraftInvoice(_: FormState, formData: FormData): Prom
       });
       if (lineError) {
         await supabase.rpc('delete_draft_invoice', { p_invoice_id: invoiceId });
-        return failure('Die erledigte Leistung konnte nicht automatisch in die Rechnung uebernommen werden.');
+        return failure('Die erledigte Leistung konnte nicht automatisch in die Rechnung übernommen werden.');
       }
     }
   } catch {
@@ -141,15 +141,15 @@ export async function addInvoiceLine(
       return failure(
         error.message.includes('already been billed')
           ? 'Dieser Einsatz wurde bereits abgerechnet.'
-          : 'Die Leistung konnte nicht hinzugefuegt werden.',
+          : 'Die Leistung konnte nicht hinzugefügt werden.',
       );
     }
   } catch {
-    return failure('Die Leistung konnte nicht hinzugefuegt werden.');
+    return failure('Die Leistung konnte nicht hinzugefügt werden.');
   }
 
   revalidateBilling(invoiceId);
-  return { status: 'success', message: 'Leistung hinzugefuegt.' };
+  return { status: 'success', message: 'Leistung hinzugefügt.' };
 }
 
 export async function removeInvoiceLine(invoiceId: string, lineId: string): Promise<void> {
@@ -171,13 +171,13 @@ export async function issueInvoice(
       return failure(
         error.message.includes('at least one line')
           ? 'Eine Rechnung braucht mindestens eine Leistung.'
-          : 'Die Rechnung konnte nicht festgeschrieben werden.',
+          : 'Die Rechnung konnte nicht ausgestellt werden.',
       );
     }
     revalidateBilling(invoiceId);
-    return { status: 'success', message: `Rechnung ${data} wurde festgeschrieben.` };
+    return { status: 'success', message: `Rechnung ${data} wurde ausgestellt.` };
   } catch {
-    return failure('Die Rechnung konnte nicht festgeschrieben werden.');
+    return failure('Die Rechnung konnte nicht ausgestellt werden.');
   }
 }
 
@@ -250,7 +250,7 @@ export async function markInvoicePaid(
         return failure('Eine stornierte Rechnung kann nicht bezahlt werden.');
       }
       if (error.message.includes('draft invoice')) {
-        return failure('Ein Entwurf muss erst festgeschrieben werden.');
+        return failure('Ein Entwurf muss erst ausgestellt werden.');
       }
       return failure('Die Zahlung konnte nicht verbucht werden.');
     }
@@ -380,7 +380,7 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
 
   const invoice = await getInvoice(invoiceId);
   if (!invoice || invoice.status === 'DRAFT' || invoice.status === 'CANCELLED' || !invoice.invoice_number) {
-    return failure('Nur festgeschriebene, nicht stornierte Rechnungen können versendet werden.');
+    return failure('Nur ausgestellte, nicht stornierte Rechnungen können versendet werden.');
   }
   if (kind === 'REMINDER' && invoice.displayStatus !== 'OVERDUE') return failure('Eine Mahnung ist erst nach Fälligkeit möglich.');
   if (kind === 'REMINDER') {
@@ -509,12 +509,12 @@ export async function recordManualDelivery(invoiceId: string, _: FormState, form
  */
 export async function addAllBillableJobs(invoiceId: string, _: FormState, __: FormData): Promise<FormState> {
   const invoice = await getInvoice(invoiceId);
-  if (!invoice || invoice.status !== 'DRAFT') return failure('Leistungen koennen nur einem Entwurf hinzugefuegt werden.');
+  if (!invoice || invoice.status !== 'DRAFT') return failure('Leistungen können nur einem Entwurf hinzugefügt werden.');
   const jobs = await listBillableJobs(invoice.customer_id, invoice.service_period_start, invoice.service_period_end);
   const priced = jobs.filter((job) => job.suggested_unit_price_cents != null);
   if (jobs.length === 0) return failure('Im Leistungszeitraum gibt es keine abrechenbaren Einsätze.');
   if (priced.length === 0) {
-    return failure('Fuer diese Einsaetze ist kein Preis im Leistungsplan hinterlegt. Bitte pruefe zuerst die vereinbarten Preise.');
+    return failure('Für diese Einsaetze ist kein Preis im Leistungsplan hinterlegt. Bitte prüfe zuerst die vereinbarten Preise.');
   }
 
   const { supabase } = await requireStaffCompany();
