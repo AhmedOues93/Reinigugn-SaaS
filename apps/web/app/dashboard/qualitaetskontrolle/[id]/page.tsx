@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { stripDemoPrefix } from '@/lib/demo-label';
 import { notFound } from 'next/navigation';
 import { ExternalLink, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { BackLink, Badge, ButtonLink, DataRow, PageHeader, Section } from '@/components/ui';
@@ -100,7 +101,7 @@ export default async function QualityInspectionDetailPage({
                 {inspection.notes && (
                   <div className={criteria.length > 0 ? 'mt-5 border-t border-border pt-5' : ''}>
                     <p className="text-sm font-semibold">{t(locale, 'quality.notes')}</p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{inspection.notes}</p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{stripDemoPrefix(inspection.notes)}</p>
                   </div>
                 )}
               </div>
