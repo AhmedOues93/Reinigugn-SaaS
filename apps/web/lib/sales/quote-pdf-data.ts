@@ -21,6 +21,7 @@ export async function renderStaffQuotePdf(id: string) {
       grossTotalCents: quote.gross_total_cents,
       recurringNetMonthlyCents: quote.recurring_net_monthly_cents,
       acceptancePolicy: quote.acceptance_policy,
+      billingMode: quote.billing_mode,
       orderType: quote.order_type,
       serviceStart: quote.service_start,
       serviceEnd: quote.service_end,
