@@ -13,9 +13,10 @@ import { listAffectedAssignments } from '@/lib/data/absences';
 import { Button, ButtonLink, Notice, PageHeader, Select } from '@/components/ui';
 import { FilterBar } from '@/components/data-table';
 import { ExtendHorizonButton } from '@/components/extend-horizon';
+import { AutomaticPlanningAssistant } from '@/components/automatic-planning-assistant';
 import { addDays, berlinDateKey } from '@/lib/date';
 import { formatDate, formatTimeRange } from '@/lib/format';
-import { extendScheduleHorizon } from './actions';
+import { createAutomaticWeekPlan, extendScheduleHorizon } from './actions';
 
 type Query = {
   week?: string;
@@ -187,6 +188,8 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
           </>
         }
       />
+
+      <AutomaticPlanningAssistant weekStart={start} action={createAutomaticWeekPlan} />
 
       {runningOut.length > 0 && (
         <Notice
