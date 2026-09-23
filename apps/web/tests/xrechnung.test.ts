@@ -46,7 +46,7 @@ const base: XRechnungInput = {
 describe('XRechnung', () => {
   it('requires the XRechnung buyer reference instead of inventing one', () => {
     const errors = validateXRechnung({ ...base, buyerReference: null });
-    expect(errors).toContain('Kaeuferreferenz / Leitweg-ID fehlt.');
+    expect(errors).toContain('Käuferreferenz / Leitweg-ID fehlt.');
   });
 
   it('renders the XRechnung 3 UBL identifiers and invoice totals', () => {
