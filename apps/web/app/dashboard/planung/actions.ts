@@ -166,3 +166,83 @@ export async function extendScheduleHorizon() {
     return { error: 'Die Einsätze konnten nicht erzeugt werden.' };
   }
 }
+
+
+/**
+ * Builds the office-approved automatic plan for the selected week.
+ * The database planner is the safety authority: it checks weekly capacity,
+ * employment dates, approved vacation/sickness and overlapping work before
+ * selecting anyone. Only AUTO schedules are changed.
+ */
+export async function createAutomaticWeekPlan(_: FormState, formData: FormData): Promise<FormState> {
+  const weekStart = String(formData.get('week_start') ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return failure('Die ausgewählte Woche ist ungültig.');
+
+  try {
+    const { supabase, company } = await requireStaffCompany();
+    const weekEndDate = new Date(`${weekStart}T12:00:00Z`);
+    weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
+    const weekEnd = weekEndDate.toISOString().slice(0, 10);
+
+    const { data: schedules, error: scheduleError } = await supabase
+      .from('service_schedules')
+      .select('id, name, valid_from, valid_until, assignment_mode')
+      .eq('company_id', company.id)
+      .eq('is_active', true)
+      .eq('assignment_mode', 'AUTO')
+      .lte('valid_from', weekEnd)
+      .or(`valid_until.is.null,valid_until.gte.${weekStart}`);
+
+    if (scheduleError) return failure('Die automatische Planung konnte nicht vorbereitet werden.');
+    if (!schedules?.length) {
+      return failure('Für diese Woche gibt es keine aktiven Pläne mit automatischer Teamplanung.');
+    }
+
+    let planned = 0;
+    const unresolved: string[] = [];
+
+    for (const schedule of schedules) {
+      const { data: memberId, error: assignmentError } = await supabase.rpc('auto_assign_schedule_employee', {
+        p_schedule_id: schedule.id,
+      });
+      if (assignmentError) {
+        unresolved.push(schedule.name);
+        continue;
+      }
+      if (!memberId) {
+        unresolved.push(schedule.name);
+        continue;
+      }
+
+      const { error: generationError } = await supabase.rpc('generate_jobs_for_schedule', {
+        p_schedule_id: schedule.id,
+        p_until: weekEnd,
+      });
+      if (generationError) {
+        unresolved.push(schedule.name);
+        continue;
+      }
+      planned += 1;
+    }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/planung');
+    revalidatePath('/dashboard/auftraege');
+
+    if (unresolved.length) {
+      return {
+        status: planned ? 'success' : 'error',
+        message: planned
+          ? `${planned} automatische Pläne wurden aktualisiert. Für ${unresolved.length} Plan/Pläne wurde wegen Verfügbarkeit, Urlaub, Krankheit, Arbeitszeit oder Konflikten keine sichere Zuweisung vorgenommen: ${unresolved.slice(0, 3).join(', ')}${unresolved.length > 3 ? ' …' : ''}`
+          : `Keine sichere automatische Zuweisung möglich. Bitte Verfügbarkeit, Urlaub/Krankheit, Wochenstunden und bestehende Einsätze prüfen.`,
+      };
+    }
+
+    return {
+      status: 'success',
+      message: `${planned} automatische Pläne wurden für die ausgewählte Woche geprüft und übernommen. Die zugewiesenen Mitarbeiter erhalten ihre Einsatzbenachrichtigungen.`,
+    };
+  } catch {
+    return failure('Die automatische Wochenplanung konnte nicht erstellt werden.');
+  }
+}
