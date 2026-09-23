@@ -372,9 +372,9 @@ export function QuoteFromCalculationForm({
               </Field>
             ) : (
               <Field
-                label="Kuendigungsfrist"
+                label="Kündigungsfrist"
                 htmlFor="quote-termination-notice"
-                info="Nur eintragen, wenn sie im Angebot ausdruecklich vereinbart werden soll."
+                info="Nur eintragen, wenn sie im Angebot ausdrücklich vereinbart werden soll."
               >
                 <Input
                   id="quote-termination-notice"
