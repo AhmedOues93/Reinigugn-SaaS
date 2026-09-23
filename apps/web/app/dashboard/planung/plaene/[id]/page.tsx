@@ -38,7 +38,8 @@ export default async function ScheduleDetailPage({
     })
     .filter(Boolean);
   const activeRules = schedule.schedule_rules.filter((rule) => rule.is_active !== false);
-  const checklist = one(schedule.checklist_templates);
+  const objectChecklist = one(one(schedule.cleaning_objects)?.checklist_templates);
+  const checklist = one(schedule.checklist_templates) ?? objectChecklist;
   const checklistItems = [...(checklist?.checklist_template_items ?? [])].sort(
     (a, b) => a.position - b.position,
   );
@@ -153,7 +154,7 @@ export default async function ScheduleDetailPage({
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
             <h2 className="mb-3 text-[15px] font-semibold">Checkliste</h2>
             {!checklist ? (
-              <p className="text-sm text-muted-foreground">Objektstandard wird verwendet oder es ist keine Checkliste hinterlegt.</p>
+              <p className="text-sm text-muted-foreground">Keine Checkliste hinterlegt.</p>
             ) : (
               <>
                 <p className="text-sm font-medium">{checklist.name}</p>
