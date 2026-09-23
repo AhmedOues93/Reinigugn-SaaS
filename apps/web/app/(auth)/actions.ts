@@ -82,11 +82,25 @@ export async function requestPasswordReset(formData: FormData) {
   });
 
   if (error) {
-    console.error('Password reset request failed:', error.message);
+    console.error('Password reset request failed:', {
+      message: error.message,
+      status: 'status' in error ? error.status : undefined,
+      code: 'code' in error ? error.code : undefined,
+    });
+
+    const normalized = `${error.message} ${'code' in error ? error.code ?? '' : ''}`.toLowerCase();
+    const rateLimited =
+      ('status' in error && error.status === 429) ||
+      normalized.includes('rate limit') ||
+      normalized.includes('rate_limit') ||
+      normalized.includes('too many');
+
     withMessage(
       '/forgot-password',
       'error',
-      'Der Link konnte nicht versendet werden. Bitte versuche es erneut oder wende dich an den Administrator.',
+      rateLimited
+        ? 'Zu viele Anfragen in kurzer Zeit. Bitte warte mindestens 60 Sekunden und fordere dann genau einen neuen Link an.'
+        : 'Die Passwort-E-Mail konnte technisch nicht versendet werden. Das Konto ist davon nicht betroffen. Bitte versuche es später erneut.',
     );
   }
 
