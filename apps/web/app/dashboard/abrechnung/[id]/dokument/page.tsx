@@ -32,6 +32,7 @@ export default async function InvoiceDocumentPage({ params }: { params: Promise<
     vatTotalCents: invoice.vat_total_cents,
     grossTotalCents: invoice.gross_total_cents,
     customerNote: invoice.customer_note,
+    buyerReference: invoice.buyer_reference,
     cancelledAt: invoice.cancelled_at,
     customer: invoice.customer_snapshot as InvoiceDocumentData['customer'],
     company: invoice.company_snapshot as InvoiceDocumentData['company'],
