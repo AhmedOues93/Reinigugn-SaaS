@@ -79,22 +79,22 @@ export function DraftInvoiceForm({
 
       <details className="rounded-xl border border-border/80 bg-card">
         <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
-          E-Rechnung (XRechnung)
-          <span className="text-xs font-normal text-muted-foreground">optional</span>
+          E-Rechnung für Geschäftskunden
+          <span className="text-xs font-normal text-muted-foreground">XRechnung 3.0</span>
         </summary>
         <div className="space-y-4 border-t border-border/80 p-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            ReinPlan erstellt weiterhin die normale PDF-Rechnung. Nur wenn der Kunde oder eine Behörde
-            zusätzlich eine XRechnung verlangt, wird eine XML-Datei erzeugt. Die XML ist für Buchhaltungssoftware,
-            nicht zum Lesen gedacht.
+            Eine E-Rechnung ist eine strukturierte Rechnungsdatei, die Buchhaltungssoftware automatisch lesen kann.
+            ReinPlan erzeugt dafür XRechnung 3.0 als XML und verschickt sie zusammen mit der lesbaren PDF. Für normale
+            B2B-Rechnungen genügt als Käuferreferenz die vom Kunden gewünschte Referenz; eine Leitweg-ID brauchst du
+            grundsätzlich nur bei Rechnungen an Behörden.
           </p>
           <Field
             label="Käuferreferenz / Leitweg-ID"
             htmlFor="buyer_reference"
-            optional
-            info="Nur für XRechnung. Bei Behörden meist Leitweg-ID; bei Firmen nur eintragen, wenn der Kunde eine Käufer-/Bestellreferenz vorgibt."
+            info="Für die XRechnung erforderlich. Bei Behörden die Leitweg-ID eintragen. Bei Firmen die vom Kunden vorgegebene Käufer-, Bestell- oder Vertragsreferenz verwenden."
           >
-            <Input id="buyer_reference" name="buyer_reference" maxLength={200} />
+            <Input id="buyer_reference" name="buyer_reference" maxLength={200} placeholder="z. B. Bestellnummer, Vertragsreferenz oder Leitweg-ID" />
           </Field>
         </div>
       </details>
