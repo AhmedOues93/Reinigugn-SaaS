@@ -79,7 +79,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </p>
           <p className="mb-3 mt-1 text-sm text-success/80">
             {quote.accepted_by_name ? `Angenommen von ${quote.accepted_by_name}. ` : ''}
-            Kunde und Objekt wurden übernommen. Prüfen Sie jetzt den erzeugten Plan und weisen Sie bei Bedarf ein Team zu.
+            Kunde und Objekt wurden übernommen. Legen Sie im erzeugten Plan nur Rhythmus und Uhrzeiten fest; ReinPlan plant standardmäßig automatisch eine passende freie Stammbesetzung ein.
           </p>
           {quote.acceptance_note && (
             <p className="mb-3 rounded-lg border border-success/20 bg-card/70 px-3 py-2 text-sm text-foreground">
@@ -142,7 +142,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <DataRow label="Vertragsende" value={formatDate(locale, quote.service_end)} />
           )}
           {quote.termination_notice && (
-            <DataRow label="Kuendigungsfrist" value={quote.termination_notice} />
+            <DataRow label="Kündigungsfrist" value={quote.termination_notice} />
           )}
           <DataRow
             label="Abrechnungsart"
