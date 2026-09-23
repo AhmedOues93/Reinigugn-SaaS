@@ -128,7 +128,7 @@ export function AcceptQuoteForm({ action, locale, showSchedule }: { action: Acti
       <h2 className="font-semibold">{t(locale, 'sales.accept.title')}</h2>
       <p className="text-sm text-muted-foreground">{t(locale, 'sales.accept.body')}</p>
       <p className="rounded-lg bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
-        Preis, Abrechnungsart und Kundenabnahme werden aus dem angenommenen Angebot uebernommen.
+        Preis, Abrechnungsart und Kundenabnahme werden aus dem angenommenen Angebot übernommen.
         Hier wird nur noch die operative Einsatzzeit eingerichtet.
       </p>
 
