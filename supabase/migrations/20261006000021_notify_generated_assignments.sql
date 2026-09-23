@@ -2,8 +2,6 @@
 -- their field schedule. Idempotent: an existing assignment never gets a second
 -- notification when the nightly horizon job runs again.
 
-alter type public.notification_type add value if not exists 'JOB_ASSIGNED';
-
 create or replace function public.generate_schedule_occurrences(p_schedule_id uuid, p_until date)
 returns integer
 language plpgsql
@@ -105,7 +103,15 @@ begin
     job.id
   from inserted_assignments inserted
   join public.jobs job on job.id = inserted.job_id
-  left join public.cleaning_objects object_row on object_row.id = job.cleaning_object_id;
+  left join public.cleaning_objects object_row on object_row.id = job.cleaning_object_id
+  where not exists (
+    select 1
+    from public.in_app_notifications existing
+    where existing.company_id = inserted.company_id
+      and existing.recipient_member_id = inserted.member_id
+      and existing.job_id = inserted.job_id
+      and existing.type = 'JOB_ASSIGNED'::public.notification_type
+  );
 
   return generated_count;
 end;
