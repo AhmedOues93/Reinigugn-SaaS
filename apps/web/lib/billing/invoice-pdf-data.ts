@@ -59,6 +59,7 @@ export async function renderStaffInvoicePdf(id: string): Promise<Rendered | null
     vatTotalCents: invoice.vat_total_cents,
     grossTotalCents: invoice.gross_total_cents,
     customerNote: invoice.customer_note,
+    buyerReference: invoice.buyer_reference,
     cancelledAt: invoice.cancelled_at,
     correctsInvoiceNumber,
     customer: customerSnapshot,
