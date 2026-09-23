@@ -79,19 +79,20 @@ export function DraftInvoiceForm({
 
       <details className="rounded-xl border border-border/80 bg-card">
         <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
-          E-Rechnung für Buchhaltung / Behörde
+          E-Rechnung (XRechnung)
           <span className="text-xs font-normal text-muted-foreground">optional</span>
         </summary>
         <div className="space-y-4 border-t border-border/80 p-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            Die normale PDF-Rechnung bleibt erhalten. Wenn der Kunde eine strukturierte E-Rechnung braucht,
-            erzeugt ReinPlan zusätzlich eine XRechnung als XML-Datei.
+            ReinPlan erstellt weiterhin die normale PDF-Rechnung. Nur wenn der Kunde oder eine Behörde
+            zusätzlich eine XRechnung verlangt, wird eine XML-Datei erzeugt. Die XML ist für Buchhaltungssoftware,
+            nicht zum Lesen gedacht.
           </p>
           <Field
             label="Käuferreferenz / Leitweg-ID"
             htmlFor="buyer_reference"
             optional
-            info="Für XRechnung erforderlich. Bei Behörden ist das meistens die Leitweg-ID; bei Firmen kann es eine Bestell- oder Käuferreferenz sein."
+            info="Nur für XRechnung. Bei Behörden meist Leitweg-ID; bei Firmen nur eintragen, wenn der Kunde eine Käufer-/Bestellreferenz vorgibt."
           >
             <Input id="buyer_reference" name="buyer_reference" maxLength={200} />
           </Field>
