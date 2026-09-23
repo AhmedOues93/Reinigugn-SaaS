@@ -41,6 +41,7 @@ type ScheduleRecord = {
   is_active?: boolean;
   acceptance_policy?: string | null;
   billing_mode?: string | null;
+  assignment_mode?: 'AUTO' | 'MANUAL' | null;
   schedule_rules?: Rule[];
   service_schedule_assignments?: { member_id: string }[];
 };
@@ -79,6 +80,9 @@ export function ScheduleForm({
   const [customerId, setCustomerId] = useState(schedule?.customer_id ?? '');
   const [selectedMembers, setSelectedMembers] = useState(
     () => new Set(schedule?.service_schedule_assignments?.map((item) => item.member_id) ?? []),
+  );
+  const [assignmentMode, setAssignmentMode] = useState<'AUTO' | 'MANUAL'>(
+    schedule?.assignment_mode === 'MANUAL' ? 'MANUAL' : 'AUTO',
   );
   const rules = schedule?.schedule_rules ?? [];
   const setupPending = Boolean(schedule && !schedule.is_active && rules.filter((rule) => rule.is_active !== false).length === 0);
@@ -141,6 +145,7 @@ export function ScheduleForm({
     <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
       <input type="hidden" name="activate_after_save" value={activateAfterSave ? 'true' : 'false'} />
+      <input type="hidden" name="assignment_mode" value={assignmentMode} />
 
       {setupPending && (
         <div className="rounded-xl border border-warning/30 bg-warning-soft p-4">
@@ -278,13 +283,52 @@ export function ScheduleForm({
           <div>
             <h2 className="font-semibold">Stammbesetzung</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Diese Personen werden automatisch den erzeugten Einsätzen zugewiesen.
+              ReinPlan kann die passende Person nach freien Wochenstunden und Zeitkonflikten wählen.
             </p>
           </div>
 
-          {employees.length === 0 ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
+              <input
+                type="radio"
+                name="assignment_mode_choice"
+                value="AUTO"
+                checked={assignmentMode === 'AUTO'}
+                onChange={() => setAssignmentMode('AUTO')}
+                className="mt-1 size-4"
+              />
+              <span>
+                <span className="block text-sm font-semibold">Automatisch einplanen</span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  Empfohlen. ReinPlan nimmt einen aktiven Mitarbeiter ohne Zeitüberschneidung und mit möglichst viel freier Kapazität gemessen an den Wochen-Sollstunden.
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-4 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
+              <input
+                type="radio"
+                name="assignment_mode_choice"
+                value="MANUAL"
+                checked={assignmentMode === 'MANUAL'}
+                onChange={() => setAssignmentMode('MANUAL')}
+                className="mt-1 size-4"
+              />
+              <span>
+                <span className="block text-sm font-semibold">Manuell festlegen</span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  Nur verwenden, wenn dieses Objekt bewusst eine feste Person oder ein festes Team bekommen soll.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          {assignmentMode === 'AUTO' ? (
+            <div className="rounded-xl border border-border bg-muted/25 p-4 text-sm leading-6 text-muted-foreground">
+              Die Auswahl passiert beim Speichern. Falls niemand genügend freie Wochenstunden hat oder ein Zeitkonflikt besteht, wird der Plan nicht stillschweigend falsch zugewiesen.
+            </div>
+          ) : employees.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-              Noch keine Mitarbeiter vorhanden. Du kannst den Plan trotzdem speichern und das Team später zuweisen.
+              Noch keine Mitarbeiter vorhanden. Du kannst den Plan speichern und das Team später zuweisen.
             </div>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -383,7 +427,7 @@ export function ScheduleForm({
           <div className="rounded-xl border border-border bg-muted/20 p-4 text-sm">
             <p className="font-medium">Zusammenfassung</p>
             <p className="mt-2 text-muted-foreground">
-              {schedule?.name || 'Neuer Plan'} · {selectedObject?.name ?? 'Objekt'} · {selectedMembers.size} Teammitglied{selectedMembers.size === 1 ? '' : 'er'}
+              {schedule?.name || 'Neuer Plan'} · {selectedObject?.name ?? 'Objekt'} · {assignmentMode === 'AUTO' ? 'Team automatisch' : `${selectedMembers.size} Teammitglied${selectedMembers.size === 1 ? '' : 'er'}`}
             </p>
           </div>
         </section>
