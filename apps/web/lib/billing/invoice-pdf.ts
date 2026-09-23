@@ -28,6 +28,7 @@ export type InvoicePdfInput = {
   vatTotalCents: number;
   grossTotalCents: number;
   customerNote: string | null;
+  buyerReference?: string | null;
   cancelledAt: string | null;
   correctsInvoiceNumber?: string | null;
   customer: Record<string, unknown> | null;
@@ -191,6 +192,7 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
   ];
   const customerNumber = str(customer, 'customer_number');
   if (customerNumber) meta.push(['Kundennummer', customerNumber]);
+  if (input.buyerReference) meta.push(['Käuferreferenz', input.buyerReference]);
   const metaLabelX = A4.width - margin.x - 210;
   meta.forEach(([label, value], index) => {
     draw(label, metaLabelX, y - 18 - index * 14, { size: 9, color: muted });
