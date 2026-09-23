@@ -200,8 +200,8 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   draw(money(input.vatTotalCents, input.currency), A4.width - mx, y, { right: true });
   y -= 18;
   page.drawLine({ start: { x: A4.width - mx - 210, y: y + 8 }, end: { x: A4.width - mx, y: y + 8 }, thickness: 1, color: ink });
-  draw('Gesamtbetrag', A4.width - mx - 200, y, { font: bold, size: 11, color: ink });
-  draw(money(input.grossTotalCents, input.currency), A4.width - mx, y, { font: bold, size: 11, color: ink, right: true });
+  draw('Gesamtbetrag', A4.width - mx - 200, y - 3, { font: bold, size: 11, color: ink });
+  draw(money(input.grossTotalCents, input.currency), A4.width - mx, y - 3, { font: bold, size: 11, color: ink, right: true });
   y -= 25;
   if (input.recurringNetMonthlyCents > 0) {
     draw('Monatlich netto', A4.width - mx - 200, y, { font: bold });
@@ -220,7 +220,7 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   }
 
   const paymentDays = Number(input.company?.default_payment_terms_days ?? 0);
-  if (y < bottom + 150) newPage();
+  if (y < bottom + 165) newPage();
   y -= 8;
   draw('Vertragsgrundlagen', mx, y, { font: bold, size: 10.5, color: ink });
   y -= 18;
@@ -258,10 +258,12 @@ export async function renderQuotePdf(input: QuotePdfInput): Promise<Uint8Array> 
   ] as const;
 
   for (const [label, value] of commercialTerms) {
+    const lines = wrap(value, regular, 8.8, width - 138);
+    const rowHeight = Math.max(14, lines.length * 11 + 3);
+    if (y - rowHeight < bottom + 12) newPage();
     draw(label, mx, y, { font: bold, size: 8.8 });
-    const lines = wrap(value, regular, 8.8, width - 120);
     lines.forEach((lineText, index) => draw(lineText, mx + 120, y - index * 11, { size: 8.8, color: muted }));
-    y -= Math.max(14, lines.length * 11 + 3);
+    y -= rowHeight;
   }
 
   pages.forEach((p, i) => {
