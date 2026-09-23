@@ -38,6 +38,10 @@ export default async function ScheduleDetailPage({
     })
     .filter(Boolean);
   const activeRules = schedule.schedule_rules.filter((rule) => rule.is_active !== false);
+  const checklist = one(schedule.checklist_templates);
+  const checklistItems = [...(checklist?.checklist_template_items ?? [])].sort(
+    (a, b) => a.position - b.position,
+  );
   const setupPending = !schedule.is_active && activeRules.length === 0;
 
   return (
@@ -127,7 +131,12 @@ export default async function ScheduleDetailPage({
           </section>
 
           <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
-            <h2 className="mb-3 text-[15px] font-semibold">Stammbesetzung</h2>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-[15px] font-semibold">Stammbesetzung</h2>
+              <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                {schedule.assignment_mode === 'MANUAL' ? 'Manuell' : 'Automatisch'}
+              </span>
+            </div>
             {team.length === 0 ? (
               <p className="text-sm text-muted-foreground">Keine feste Besetzung hinterlegt.</p>
             ) : (
@@ -138,6 +147,30 @@ export default async function ScheduleDetailPage({
                   </li>
                 ))}
               </ul>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+            <h2 className="mb-3 text-[15px] font-semibold">Checkliste</h2>
+            {!checklist ? (
+              <p className="text-sm text-muted-foreground">Objektstandard wird verwendet oder es ist keine Checkliste hinterlegt.</p>
+            ) : (
+              <>
+                <p className="text-sm font-medium">{checklist.name}</p>
+                {checklistItems.length > 0 && (
+                  <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
+                    {checklistItems.map((item) => (
+                      <li key={item.id} className="flex items-start gap-2">
+                        <span className="mt-0.5 tabular-nums text-xs">{item.position}.</span>
+                        <span className="min-w-0">
+                          <span className="block font-medium text-foreground">{item.title}</span>
+                          {item.instruction && <span className="block text-xs leading-5">{item.instruction}</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </>
             )}
           </section>
         </aside>
