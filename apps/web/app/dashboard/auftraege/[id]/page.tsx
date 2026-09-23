@@ -16,6 +16,7 @@ import { JobStatusBadge } from '@/components/job-badges';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
 import { formatDate, formatDateTime, formatTimeRange } from '@/lib/format';
 import { deleteOperationalJobPhoto } from '../actions';
+import { stripDemoPrefix } from '@/lib/demo-label';
 
 type TimeEntry = ServiceRecord['timeEntries'][number];
 
@@ -264,15 +265,15 @@ export default async function JobDetailPage({
           <Section title="Hinweise">
             <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
               <p className="whitespace-pre-wrap break-anywhere text-sm leading-6">
-                {record.job.employee_instructions || (
+                {stripDemoPrefix(record.job.employee_instructions) || (
                   <span className="text-muted-foreground">Keine Arbeitsanweisung hinterlegt.</span>
                 )}
               </p>
-              {record.job.internal_notes && (
+              {stripDemoPrefix(record.job.internal_notes) && (
                 <div className="mt-4 border-t border-border/70 pt-4">
                   <p className="text-[13px] font-medium text-muted-foreground">Interne Notiz</p>
                   <p className="mt-1 whitespace-pre-wrap break-anywhere text-sm leading-6 text-muted-foreground">
-                    {record.job.internal_notes}
+                    {stripDemoPrefix(record.job.internal_notes)}
                   </p>
                 </div>
               )}
