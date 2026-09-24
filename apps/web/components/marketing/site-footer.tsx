@@ -41,7 +41,7 @@ export function SiteFooter() {
                 ))}
                 <li>
                   <Link
-                    href="/login"
+                    href="/admin/login"
                     className="inline-flex min-h-touch items-center text-sm text-white/75 transition-colors hover:text-highlight md:min-h-9"
                   >
                     Anmelden
