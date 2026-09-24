@@ -28,7 +28,7 @@ export async function requireUser() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     const app = await requestedApp();
-    redirect(app ? `/login?app=${app}` : '/login');
+    redirect(app === 'team' ? '/mitarbeiter/login' : app === 'portal' ? '/kunde/login' : '/admin/login');
   }
   return { supabase, user };
 }
