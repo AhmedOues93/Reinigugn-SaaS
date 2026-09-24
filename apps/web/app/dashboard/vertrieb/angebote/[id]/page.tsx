@@ -71,6 +71,12 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         </p>
       )}
 
+      <div className="mb-5 grid grid-cols-3 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
+        <span className="rounded-md bg-card px-2 py-2 text-primary shadow-sm">1. Prüfen</span>
+        <span className={quote.status === 'DRAFT' ? 'px-2 py-2 text-muted-foreground' : 'px-2 py-2 text-primary'}>2. Versenden</span>
+        <span className={quote.status === 'ACCEPTED' || quote.status === 'DECLINED' ? 'px-2 py-2 text-primary' : 'px-2 py-2 text-muted-foreground'}>3. Kundenreaktion</span>
+      </div>
+
       {/* Where the accepted quote landed — the provenance the whole workflow is for. */}
       {quote.status === 'ACCEPTED' && (
         <Card className="mb-5 border-success/30 bg-success-soft p-5">
@@ -178,8 +184,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </Card>
 
       <Card className="mt-5 overflow-hidden">
-        <CardHeader title={t(locale, 'billing.lines')} />
+        <CardHeader title="Leistungspositionen" />
         <div className="p-5">
+          <p className="mb-4 text-sm leading-6 text-muted-foreground">
+            Die Leistungen aus der Kalkulation sind bereits übernommen. Prüfen Sie hier nur Inhalt, Preis und Steuer. Zusätzliche Positionen bleiben optional.
+          </p>
           <QuoteLineEditor
             locale={locale}
             currency={quote.currency}
