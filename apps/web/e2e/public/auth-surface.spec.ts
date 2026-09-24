@@ -89,9 +89,12 @@ test.describe('unauthenticated surface', () => {
     test(`${path} does not scroll sideways`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator('body')).toBeVisible();
-      const overflow = await page.locator('body').evaluate(
-        (body) => Math.max(body.scrollWidth, document.documentElement.scrollWidth) - document.documentElement.clientWidth,
-      );
+      const metrics = await page.locator('body').evaluate((body) => ({
+        bodyWidth: body.scrollWidth,
+        rootWidth: document.documentElement.scrollWidth,
+        viewportWidth: document.documentElement.clientWidth,
+      }), { timeout: 5_000 });
+      const overflow = Math.max(metrics.bodyWidth, metrics.rootWidth) - metrics.viewportWidth;
       expect(overflow, `${path} overflows horizontally by ${overflow}px`).toBeLessThanOrEqual(0);
     });
   }
