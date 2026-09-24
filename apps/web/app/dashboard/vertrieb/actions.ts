@@ -407,6 +407,17 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
 
   try {
     const { supabase } = await requireStaffCompany();
+    const { data: quote, error: quoteError } = await supabase
+      .from('quotes')
+      .select('status, valid_until')
+      .eq('id', quoteId)
+      .maybeSingle();
+    if (quoteError || !quote) return failure('Das Angebot konnte nicht geprüft werden.');
+    if (quote.status !== 'SENT') return failure('Nur ein versendetes Angebot kann angenommen werden.');
+    if (quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10)) {
+      return failure('Das Angebot ist abgelaufen und kann nicht mehr angenommen werden.');
+    }
+
     const { error } = await supabase.rpc('accept_quote', {
       p_quote_id: quoteId,
       p_weekdays: weekdays,
