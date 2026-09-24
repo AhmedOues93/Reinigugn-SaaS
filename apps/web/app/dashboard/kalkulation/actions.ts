@@ -292,6 +292,56 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
     });
     if (error || !data) return failure('Die Kalkulation konnte nicht angelegt werden.');
     newId = data as string;
+
+    // The first service belongs to the calculation creation flow. Persist it
+    // immediately so the next screen never asks the user to enter Leistung twice.
+    const initialServiceName = String(formData.get('initial_service_name') ?? '').trim();
+    const initialAreaName = String(formData.get('initial_area_name') ?? '').trim();
+    const initialQuantity = parseNumber(String(formData.get('initial_quantity') ?? ''));
+    const initialFrequency = String(formData.get('initial_frequency') ?? 'PRO_WOCHE');
+    const initialFrequencyCount = parseNumber(String(formData.get('initial_frequency_count') ?? '1')) ?? 1;
+    const selectedCatalog = catalogItemId
+      ? await supabase
+          .from('service_catalog')
+          .select('name, calculation_unit, default_productivity_per_hour, default_minutes_per_unit, default_material_cents, default_material_basis')
+          .eq('id', catalogItemId)
+          .maybeSingle()
+      : { data: null, error: null };
+    if (selectedCatalog.error) return failure('Die ausgewählte Leistung konnte nicht geladen werden.');
+    const catalogService = selectedCatalog.data;
+    const serviceName = initialServiceName || catalogService?.name || String(formData.get('cleaning_type') ?? '').trim();
+    const unit = String(catalogService?.calculation_unit ?? 'QM');
+    const quantity = initialQuantity ?? 1;
+    const productivity = catalogService?.default_productivity_per_hour ?? null;
+    const minutesPerUnit = catalogService?.default_minutes_per_unit ?? null;
+
+    if (serviceName.length >= 2) {
+      const { error: lineError } = await supabase.rpc('save_calculation_line', {
+        p_id: null,
+        p_calculation_id: newId,
+        p_area_name: initialAreaName || cleaningObjectId ? (initialAreaName || 'Gesamtobjekt') : (initialAreaName || 'Leistungsbereich'),
+        p_service_name: serviceName,
+        p_unit: unit,
+        p_quantity: quantity,
+        p_frequency: initialFrequency,
+        p_frequency_count: initialFrequencyCount,
+        p_area_sqm: unit === 'QM' ? quantity : null,
+        p_catalog_item_id: catalogItemId,
+        p_productivity: productivity,
+        p_minutes_per_unit: minutesPerUnit,
+        p_minutes_override: unit === 'QM' && productivity === null ? 60 : null,
+        p_override_reason: unit === 'QM' && productivity === null ? 'Erste Erfassung im Angebotsworkflow' : null,
+        p_material_cents: catalogService?.default_material_cents ?? 0,
+        p_material_basis: catalogService?.default_material_basis ?? 'PRO_EINSATZ',
+        p_machine_cents: 0,
+        p_machine_basis: 'PRO_EINSATZ',
+        p_other_cents: 0,
+        p_other_basis: 'PRO_EINSATZ',
+        p_scope_note: null,
+        p_service_weekdays: null,
+      });
+      if (lineError) return failure('Die Leistung konnte nicht in die Kalkulation übernommen werden.');
+    }
   } catch {
     return failure('Die Kalkulation konnte nicht angelegt werden.');
   }
