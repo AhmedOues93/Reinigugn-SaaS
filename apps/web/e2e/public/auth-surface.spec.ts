@@ -87,18 +87,18 @@ test.describe('unauthenticated surface', () => {
 
   test('no page scrolls sideways, on a phone or a desktop', async ({ page }) => {
     for (const path of ['/', '/admin/login', '/mitarbeiter/login', '/kunde/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
-      await page.goto(path, { waitUntil: 'domcontentloaded' });
-      await page.locator('body').waitFor({ state: 'visible' });
-      const overflow = await page.evaluate(() => {
-        const root = document.documentElement;
-        return root.scrollWidth - root.clientWidth;
-      });
+      await page.goto(path);
+      await expect(page.locator('body')).toBeVisible();
+      const root = page.locator('html');
+      const overflow = (await root.evaluate((element) => element.scrollWidth - element.clientWidth));
       expect(overflow, `${path} overflows horizontally by ${overflow}px`).toBeLessThanOrEqual(0);
     }
   });
 
   test('every visible control can be reached and seen when tabbing', async ({ page }) => {
     await page.goto('/admin/login');
+    await expect(page.locator('input[type=email]')).toBeVisible();
+    await page.locator('body').click({ position: { x: 1, y: 1 } });
     const reached: string[] = [];
     for (let step = 0; step < 6; step += 1) {
       await page.keyboard.press('Tab');
