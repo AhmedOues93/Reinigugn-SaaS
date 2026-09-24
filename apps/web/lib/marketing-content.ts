@@ -23,7 +23,7 @@ export const hero = {
   subline:
     'Von der Anfrage bis zur bezahlten Rechnung: ReinPlan führt Angebot, Planung, Einsatz und Abrechnung in einem Ablauf zusammen – für Büro, Objektleitung und Reinigungskräfte.',
   primaryCta: { label: 'Kostenlos testen', href: '/signup' },
-  secondaryCta: { label: 'Anmelden', href: '/login' },
+  secondaryCta: { label: 'Anmelden', href: '/admin/login' },
   /** Short, checkable claims. Nothing here promises what the product cannot do. */
   assurances: ['Ohne Kreditkarte starten', 'Daten in der EU', 'Deutsch, Englisch, Türkisch, Arabisch, Ukrainisch'],
 } as const;
@@ -104,9 +104,9 @@ export const demo = {
  * placeholder without any layout change.
  */
 export const screenshots = [
-  { id: 'dashboard', frame: 'browser', title: 'Büro-Dashboard', caption: 'Offene Aufgaben, Umsatz und heutige Einsätze auf einen Blick.', src: null as string | null },
-  { id: 'planung', frame: 'browser', title: 'Wochenplanung', caption: 'Einsätze je Objekt und Mitarbeiter, Woche für Woche.', src: null as string | null },
-  { id: 'einsatz', frame: 'phone', title: 'Einsatz auf dem Handy', caption: 'Zeiterfassung, Checkliste und Fotos für die Reinigungskraft.', src: null as string | null },
+  { id: 'dashboard', frame: 'browser', title: 'Büro-Dashboard', caption: 'Offene Aufgaben, Umsatz und heutige Einsätze auf einen Blick.', src: '/marketing/dashboard-preview.svg' },
+  { id: 'planung', frame: 'browser', title: 'Wochenplanung', caption: 'Einsätze je Objekt und Mitarbeiter, Woche für Woche.', src: '/marketing/planning-preview.svg' },
+  { id: 'einsatz', frame: 'phone', title: 'Einsatz auf dem Handy', caption: 'Zeiterfassung, Checkliste und Fotos für die Reinigungskraft.', src: '/marketing/mobile-preview.svg' },
 ] as const;
 
 /**
@@ -154,7 +154,7 @@ export const closing = {
   title: 'Bereit für einen Betrieb, der läuft?',
   body: 'Richten Sie ReinPlan in wenigen Schritten ein und planen Sie Ihren ersten Einsatz noch heute.',
   cta: { label: 'Kostenlos testen', href: '/signup' },
-  secondary: { label: 'Anmelden', href: '/login' },
+  secondary: { label: 'Anmelden', href: '/admin/login' },
   signature: 'Gemeinsam.\nSauber.\nBesser.',
 } as const;
 
