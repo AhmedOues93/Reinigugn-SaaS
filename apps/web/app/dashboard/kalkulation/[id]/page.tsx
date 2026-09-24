@@ -101,12 +101,9 @@ export default async function CalculationPage({
 
       {tab === 'kalkulation' && <CalculationKpiBand calculation={calculation} />}
 
-      <div className="mb-4 grid grid-cols-4 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
-        <span className="flex items-center justify-center gap-1 px-1 py-2 text-primary">
-          <Check className="size-3.5" aria-hidden="true" />
-          Kunde
-        </span>
-        <span className={tab === 'leistung' ? 'rounded-md bg-card px-1 py-2 text-primary shadow-sm' : 'px-1 py-2 text-muted-foreground'}>
+      <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
+        <span className={tab === 'leistung' ? 'rounded-md bg-card px-1 py-2 text-primary shadow-sm' : 'flex items-center justify-center gap-1 px-1 py-2 text-primary'}>
+          {tab !== 'leistung' && <Check className="size-3.5" aria-hidden="true" />}
           Leistungen
         </span>
         <span className={tab === 'kalkulation' ? 'rounded-md bg-card px-1 py-2 text-primary shadow-sm' : 'px-1 py-2 text-muted-foreground'}>
@@ -291,11 +288,18 @@ export default async function CalculationPage({
             )}
           </Card>
 
-          {isDraft && (
+          {isDraft && calculation.lines.length === 0 && (
             <CalculationLineEditor
               action={saveCalculationLine.bind(null, id, null)}
               catalog={catalog}
             />
+          )}
+          {isDraft && calculation.lines.length > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <ButtonLink href={`/dashboard/kalkulation/${id}?tab=kalkulation`} className="w-full sm:w-auto">
+                Weiter zur Kalkulation
+              </ButtonLink>
+            </div>
           )}
         </div>
       )}
