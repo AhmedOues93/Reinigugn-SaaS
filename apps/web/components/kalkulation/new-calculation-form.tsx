@@ -50,6 +50,8 @@ export function NewCalculationForm({
   const [state, formAction] = useActionState(action, initialFormState);
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [catalogItemId, setCatalogItemId] = useState(catalog[0]?.id ?? '');
+  const selectedCatalogItem = useMemo(() => catalog.find((item) => item.id === catalogItemId) ?? null, [catalog, catalogItemId]);
   const [fromSurvey, setFromSurvey] = useState(Boolean(preferredSurveyId));
   const [customerMode, setCustomerMode] = useState<'NEW' | 'EXISTING'>(preferredCustomerId ? 'EXISTING' : 'NEW');
   const [customerId, setCustomerId] = useState(preferredCustomerId ?? '');
@@ -285,7 +287,8 @@ export function NewCalculationForm({
       <div data-step="2" className={step === 2 ? 'mx-auto block max-w-2xl' : 'hidden'} aria-hidden={step !== 2}>
       <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
         <div className="mb-5">
-          <h2 className="font-semibold">{t(locale, 'sales.quote.stepService')}</h2>
+          <h2 className="font-semibold">Leistung erfassen</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Diese Angaben werden direkt als erste Leistung in die Kalkulation übernommen.</p>
         </div>
         {!usingSurvey && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -299,7 +302,7 @@ export function NewCalculationForm({
           htmlFor="catalog_item_id"
           info={t(locale, 'sales.quote.serviceTemplateInfo')}
         >
-          <Select id="catalog_item_id" name="catalog_item_id" defaultValue={catalog[0]?.id ?? ''}>
+          <Select id="catalog_item_id" name="catalog_item_id" value={catalogItemId} onChange={(event) => setCatalogItemId(event.target.value)}>
             <option value="">{t(locale, 'sales.quote.customService')}</option>
             {catalog.map((item) => (
               <option key={item.id} value={item.id}>
@@ -314,6 +317,28 @@ export function NewCalculationForm({
             {t(locale, 'sales.quote.noTemplate')}
           </p>
         )}
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="Bereich / Raum" htmlFor="initial_area_name">
+            <Input id="initial_area_name" name="initial_area_name" required placeholder="z. B. 3. OG · Bürofläche" />
+          </Field>
+          <Field label="Leistung" htmlFor="initial_service_name">
+            <Input id="initial_service_name" name="initial_service_name" required minLength={2} defaultValue={selectedCatalogItem?.name ?? leadDefaults?.cleaningType ?? ''} key={selectedCatalogItem?.id ?? 'custom'} placeholder="z. B. Unterhaltsreinigung" />
+          </Field>
+          <Field label={selectedCatalogItem?.calculation_unit === 'QM' || !selectedCatalogItem ? 'Fläche / Menge' : 'Menge'} htmlFor="initial_quantity">
+            <Input id="initial_quantity" name="initial_quantity" type="number" inputMode="decimal" min="0.01" step="0.01" required placeholder={selectedCatalogItem?.calculation_unit === 'QM' || !selectedCatalogItem ? 'z. B. 350' : 'z. B. 1'} />
+          </Field>
+          <Field label="Turnus" htmlFor="initial_frequency">
+            <Select id="initial_frequency" name="initial_frequency" defaultValue="PRO_WOCHE">
+              <option value="EINMALIG">Einmalig</option>
+              <option value="PRO_WOCHE">Pro Woche</option>
+              <option value="VIERZEHNTAEGIG">Alle 14 Tage</option>
+              <option value="PRO_MONAT">Pro Monat</option>
+            </Select>
+          </Field>
+          <Field label="Anzahl je Turnus" htmlFor="initial_frequency_count">
+            <Input id="initial_frequency_count" name="initial_frequency_count" type="number" inputMode="decimal" min="0.01" step="0.01" required defaultValue="1" />
+          </Field>
+        </div>
       </section>
       </div>
 
@@ -335,9 +360,9 @@ export function NewCalculationForm({
         </div>
       </div>
 
-      <div className="sticky bottom-2 z-10 mx-auto flex max-w-2xl items-center justify-between gap-2 rounded-xl border border-border bg-card/95 p-2.5 shadow-popover backdrop-blur">
+      <div className="sticky bottom-2 z-10 mx-auto grid max-w-2xl grid-cols-2 gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-popover backdrop-blur sm:flex sm:items-center sm:justify-between sm:p-2.5">
         {step === 1 ? (
-          <span />
+          <span className="hidden sm:block" />
         ) : (
           <Button type="button" variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)}>
             <ChevronLeft className="size-4" />{t(locale, 'sales.quote.back')}
