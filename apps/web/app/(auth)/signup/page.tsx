@@ -1,4 +1,4 @@
-import { signUp } from '../actions';
+import { loginWithGoogle, signUp } from '../actions';
 import { AuthMessage } from '@/components/auth-message';
 import { AuthFooterLink, AuthShell } from '@/components/auth-shell';
 import { AuthField, AuthForm, AuthSubmit } from '@/components/auth-form';
@@ -20,6 +20,18 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
         </>
       }
     >
+      <form action={loginWithGoogle}>
+        <input type="hidden" name="next" value="/onboarding" />
+        <button type="submit" className="mb-5 flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-highlight">
+          <span aria-hidden="true" className="text-base font-bold">G</span>
+          Mit Google registrieren
+        </button>
+      </form>
+      <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+        <span className="h-px flex-1 bg-border" />
+        <span>oder mit E-Mail</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
       <AuthForm action={signUp} locale={locale}>
         <AuthMessage error={error} />
         <div className="grid gap-4 sm:grid-cols-2">
