@@ -1,5 +1,10 @@
-import { redirect } from 'next/navigation';
+import { LoginSurface } from '@/components/login-surface';
 
-export default function EmployeeLoginPage() {
-  redirect('/login?app=team');
+export default async function EmployeeLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
+  const { error, message } = await searchParams;
+  return <LoginSurface variant="employee" error={error} message={message} />;
 }
