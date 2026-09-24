@@ -214,6 +214,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
   if (!surveyId && customerMode === 'EXISTING' && !customerId) return failure('Bitte wähle einen Kunden aus.');
 
   let newId: string;
+  let initialLineCreated = false;
   try {
     const { supabase, company } = await requireStaffCompany();
     let leadId: string | null = existingLeadId;
@@ -344,12 +345,13 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
         p_service_weekdays: null,
       });
       if (lineError) return failure('Die Leistung konnte nicht in die Kalkulation übernommen werden.');
+      initialLineCreated = true;
     }
   } catch {
     return failure('Die Kalkulation konnte nicht angelegt werden.');
   }
   revalidateCalculation(newId);
-  redirect(`/dashboard/kalkulation/${newId}`);
+  redirect(`/dashboard/kalkulation/${newId}${initialLineCreated ? '?tab=kalkulation' : '?tab=leistung'}`);
 }
 
 export async function updateCalculation(
