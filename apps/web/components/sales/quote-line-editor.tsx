@@ -83,36 +83,47 @@ export function QuoteLineEditor({
       </ul>
 
       {editable && (
-        <form action={formAction} className="space-y-4 rounded-md border border-border bg-muted/50 p-4">
-          <FormMessage status={state.status} message={state.message} />
-          <Field label={t(locale, 'common.note')} htmlFor="line-description">
-            <Input id="line-description" name="description" placeholder="z. B. Unterhaltsreinigung Bürofläche" autoComplete="off" required maxLength={500} />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <Field label={t(locale, 'billing.quantity')} htmlFor="line-quantity">
-              <Input id="line-quantity" name="quantity" type="number" step="0.001" min="0.001" defaultValue="1" required />
+        <details className="group rounded-md border border-dashed border-border bg-muted/20">
+          <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold marker:hidden">
+            <span>Weitere Position hinzufügen</span>
+            <span className="text-xs font-normal text-muted-foreground group-open:hidden">
+              Nur für zusätzliche Leistungen
+            </span>
+          </summary>
+          <form action={formAction} className="space-y-4 border-t border-border p-4">
+            <FormMessage status={state.status} message={state.message} />
+            <p className="text-sm leading-6 text-muted-foreground">
+              Die kalkulierten Leistungen sind bereits oben übernommen. Hier nur ergänzen, wenn im Angebot wirklich eine zusätzliche Position benötigt wird.
+            </p>
+            <Field label="Beschreibung" htmlFor="line-description">
+              <Input id="line-description" name="description" placeholder="z. B. Sonderreinigung Glasflächen" autoComplete="off" required maxLength={500} />
             </Field>
-            <Field label="Einheit" htmlFor="line-unit">
-              <Select id="line-unit" name="unit" defaultValue="Std">
-                <option value="Std">Stunde</option><option value="Monat">Monat</option><option value="Einsatz">Einsatz</option><option value="m²">m²</option><option value="Stück">Stück</option><option value="Pauschal">Pauschal</option>
-              </Select>
-            </Field>
-            <Field label={t(locale, 'billing.unitPrice')} htmlFor="line-price">
-              <Input id="line-price" name="unit_price" type="number" inputMode="decimal" step="0.01" min="0" placeholder="z. B. 45,00" required />
-            </Field>
-            <Field label={`${t(locale, 'billing.vatRate')} %`} htmlFor="line-vat">
-              <Input id="line-vat" name="vat_rate" type="number" step="0.01" min="0" max="100" defaultValue="19" required />
-            </Field>
-            <Field label={t(locale, 'sales.quote.recurrence')} htmlFor="line-recurrence">
-              <Select id="line-recurrence" name="recurrence" defaultValue="ONE_OFF">
-                <option value="ONE_OFF">{t(locale, 'sales.recurrence.ONE_OFF')}</option>
-                <option value="WEEKLY">{t(locale, 'sales.recurrence.WEEKLY')}</option>
-                <option value="MONTHLY">{t(locale, 'sales.recurrence.MONTHLY')}</option>
-              </Select>
-            </Field>
-          </div>
-          <SubmitButton locale={locale}>{t(locale, 'billing.lines')}</SubmitButton>
-        </form>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Field label={t(locale, 'billing.quantity')} htmlFor="line-quantity">
+                <Input id="line-quantity" name="quantity" type="number" step="0.001" min="0.001" defaultValue="1" required />
+              </Field>
+              <Field label="Einheit" htmlFor="line-unit">
+                <Select id="line-unit" name="unit" defaultValue="Std">
+                  <option value="Std">Stunde</option><option value="Monat">Monat</option><option value="Einsatz">Einsatz</option><option value="m²">m²</option><option value="Stück">Stück</option><option value="Pauschal">Pauschal</option>
+                </Select>
+              </Field>
+              <Field label={t(locale, 'billing.unitPrice')} htmlFor="line-price">
+                <Input id="line-price" name="unit_price" type="number" inputMode="decimal" step="0.01" min="0" placeholder="z. B. 45,00" required />
+              </Field>
+              <Field label={`${t(locale, 'billing.vatRate')} %`} htmlFor="line-vat">
+                <Input id="line-vat" name="vat_rate" type="number" step="0.01" min="0" max="100" defaultValue="19" required />
+              </Field>
+              <Field label={t(locale, 'sales.quote.recurrence')} htmlFor="line-recurrence">
+                <Select id="line-recurrence" name="recurrence" defaultValue="ONE_OFF">
+                  <option value="ONE_OFF">{t(locale, 'sales.recurrence.ONE_OFF')}</option>
+                  <option value="WEEKLY">{t(locale, 'sales.recurrence.WEEKLY')}</option>
+                  <option value="MONTHLY">{t(locale, 'sales.recurrence.MONTHLY')}</option>
+                </Select>
+              </Field>
+            </div>
+            <SubmitButton locale={locale}>Position hinzufügen</SubmitButton>
+          </form>
+        </details>
       )}
     </div>
   );
