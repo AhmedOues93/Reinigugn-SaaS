@@ -40,3 +40,5 @@ export default function Home() {
     </div>
   );
 }
+
+// Deploy refresh: public marketing home is intentionally served at `/`.
