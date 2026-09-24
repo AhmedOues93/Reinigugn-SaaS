@@ -59,9 +59,20 @@ test.describe('sales pipeline', () => {
 
     await page.getByRole('button', { name: /abschließen|abgeschlossen/i }).first().click();
 
-    // --- Angebot -----------------------------------------------------------
-    await page.getByRole('button', { name: /angebot/i }).first().click();
-    await page.waitForURL(/\/dashboard\/vertrieb\/angebote/, { timeout: 30_000 });
+    // --- Kalkulation → Angebot ---------------------------------------------
+    await page.getByRole('link', { name: /zur kalkulation/i }).click();
+    await page.waitForURL(/\/dashboard\/kalkulation\/neu\?survey=/, { timeout: 30_000 });
+    await page.locator('input[name=title]').fill(`${organisation} Unterhaltsreinigung`);
+    await page.getByRole('button', { name: /weiter|kalkulation|erstellen/i }).last().click();
+    await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/, { timeout: 30_000 });
+
+    const finalise = page.getByRole('button', { name: /festschreiben|angebot/i }).first();
+    await expect(finalise).toBeVisible();
+    await finalise.click();
+    await page.waitForURL(/tab=angebot/, { timeout: 30_000 });
+
+    await page.getByRole('button', { name: /angebot erstellen/i }).click();
+    await page.waitForURL(/\/dashboard\/vertrieb\/angebote\/[0-9a-f-]{36}/, { timeout: 30_000 });
 
     const quoteUrl = page.url();
     // A calculation that produced nothing is a broken quote, not an empty one.
