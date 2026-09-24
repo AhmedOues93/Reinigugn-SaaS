@@ -28,7 +28,7 @@ test.describe('unauthenticated surface', () => {
   test('the landing page leads to the sign-in form', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: /anmelden/i }).first().click();
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/admin\/login/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.locator('input[type=email]')).toBeVisible();
     await expect(page.locator('input[type=password]')).toBeVisible();
@@ -37,11 +37,11 @@ test.describe('unauthenticated surface', () => {
   test('a protected area is never served to an anonymous visitor', async ({ page }) => {
     // The real assertion: no dashboard content, whatever the route does.
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/admin\/login/);
   });
 
   test('the sign-in form rejects a malformed address before contacting the server', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/admin/login');
     const address = page.locator('input[type=email]');
     await address.fill('keine-adresse');
     // Validation runs when the field is left, which is what Tab does. Clicking
@@ -54,15 +54,15 @@ test.describe('unauthenticated surface', () => {
   });
 
   test('an empty submission does not navigate away', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/admin/login');
     await page.getByRole('button', { name: /anmelden/i }).click();
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/admin\/login/);
     await expect(fieldError(page).first()).toBeVisible();
     await expect(page.locator('input[type=email]')).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('the password can be revealed and hidden again', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/admin/login');
     const password = page.locator('input[name=password]');
     await password.fill('ein-geheimes-passwort');
     await expect(password).toHaveAttribute('type', 'password');
@@ -75,7 +75,7 @@ test.describe('unauthenticated surface', () => {
   });
 
   test('sign-up and password reset are reachable and come back', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/admin/login');
     await page.getByRole('link', { name: /passwort vergessen/i }).click();
     await expect(page).toHaveURL(/\/forgot-password/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -86,7 +86,7 @@ test.describe('unauthenticated surface', () => {
   });
 
   test('no page scrolls sideways, on a phone or a desktop', async ({ page }) => {
-    for (const path of ['/', '/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
+    for (const path of ['/', '/admin/login', '/mitarbeiter/login', '/kunde/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
       await page.goto(path);
       const overflow = await page.evaluate(() => {
         const root = document.documentElement;
@@ -97,7 +97,7 @@ test.describe('unauthenticated surface', () => {
   });
 
   test('every visible control can be reached and seen when tabbing', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/admin/login');
     const reached: string[] = [];
     for (let step = 0; step < 6; step += 1) {
       await page.keyboard.press('Tab');
@@ -117,7 +117,7 @@ test.describe('unauthenticated surface', () => {
   });
 
   test('the employee app is installable', async ({ page, request }) => {
-    await page.goto('/login');
+    await page.goto('/admin/login');
     const manifest = await request.get('/mitarbeiter/manifest.webmanifest');
     expect(manifest.status()).toBe(200);
     const body = await manifest.json();
