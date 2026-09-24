@@ -3,12 +3,12 @@ import { notFound } from 'next/navigation';
 import { Building2, CalendarDays, Download, Eye, Users } from 'lucide-react';
 import { BackLink, Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
 import { QuoteLineEditor } from '@/components/sales/quote-line-editor';
-import { DeclineQuoteForm, SendQuoteForm, ShareQuoteForm } from '@/components/sales/quote-actions';
+import { AcceptQuoteForm, DeclineQuoteForm, SendQuoteForm, ShareQuoteForm } from '@/components/sales/quote-actions';
 import { getQuote, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
-import { addQuoteLine, declineQuote, removeQuoteLine, resendQuoteToCustomer, sendQuote } from '../../actions';
+import { acceptQuote, addQuoteLine, declineQuote, removeQuoteLine, resendQuoteToCustomer, sendQuote } from '../../actions';
 
 function first<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -21,6 +21,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const owner = first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—';
   const isDraft = quote.status === 'DRAFT';
+  const hasRecurringWork = quote.lines.some((line) => line.recurrence !== 'ONE_OFF');
   const acceptanceLabel: Record<string, string> = {
     KEINE_ABNAHME_ERFORDERLICH: 'Keine Abnahme erforderlich',
     VOR_ORT_UNTERSCHRIFT: 'Unterschrift vor Ort',
@@ -214,6 +215,13 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               action={resendQuoteToCustomer.bind(null, quote.id)}
               locale={locale}
             />
+            <div className="border-t border-border pt-6">
+              <AcceptQuoteForm
+                action={acceptQuote.bind(null, quote.id)}
+                locale={locale}
+                showSchedule={hasRecurringWork}
+              />
+            </div>
             <div className="border-t border-border pt-6">
               <DeclineQuoteForm action={declineQuote.bind(null, quote.id)} locale={locale} />
             </div>
