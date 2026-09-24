@@ -55,10 +55,11 @@ export default async function CalculationPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; add?: string }>;
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const tab = (tabs.find((entry) => entry.key === query.tab)?.key ?? 'leistung') as TabKey;
+  const addingService = query.add === '1';
 
   const [calculation, catalog] = await Promise.all([getCalculation(id), listCatalogItems()]);
   if (!calculation) notFound();
@@ -119,8 +120,17 @@ export default async function CalculationPage({
         <div className="space-y-4">
           <Card className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-              <h2 className="text-[15px] font-semibold">Leistungen</h2>
-
+              <div>
+                <h2 className="text-[15px] font-semibold">Leistungen</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Bereits erfasste Leistungen werden hier nur geprüft. Weitere Leistungen fügen Sie bewusst hinzu.
+                </p>
+              </div>
+              {isDraft && calculation.lines.length > 0 && !addingService && (
+                <ButtonLink href={`/dashboard/kalkulation/${id}?tab=leistung&add=1`} variant="outline">
+                  Weitere Leistung hinzufügen
+                </ButtonLink>
+              )}
             </div>
 
             {calculation.lines.length === 0 ? (
@@ -288,11 +298,21 @@ export default async function CalculationPage({
             )}
           </Card>
 
-          {isDraft && calculation.lines.length === 0 && (
-            <CalculationLineEditor
-              action={saveCalculationLine.bind(null, id, null)}
-              catalog={catalog}
-            />
+          {isDraft && (calculation.lines.length === 0 || addingService) && (
+            <div className="space-y-3">
+              {calculation.lines.length > 0 && (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium">Zusätzliche Leistung</p>
+                  <ButtonLink href={`/dashboard/kalkulation/${id}?tab=leistung`} variant="ghost">
+                    Abbrechen
+                  </ButtonLink>
+                </div>
+              )}
+              <CalculationLineEditor
+                action={saveCalculationLine.bind(null, id, null)}
+                catalog={catalog}
+              />
+            </div>
           )}
         </div>
       )}
