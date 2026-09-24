@@ -2,6 +2,22 @@
 
 ReinPlan is a multi-tenant operations platform for professional cleaning companies in Germany. The product connects sales, customer and object master data, workforce planning, field execution, quality control, working-time records and billing in one workflow.
 
+## Live URLs
+
+Current public host: `reinplan-de.netlify.app`
+
+| Surface | URL |
+| --- | --- |
+| Public landing page | `https://reinplan-de.netlify.app/` |
+| Office / Admin login | `https://reinplan-de.netlify.app/admin/login` |
+| Employee login | `https://reinplan-de.netlify.app/mitarbeiter/login` |
+| Customer login | `https://reinplan-de.netlify.app/kunde/login` |
+| Legacy login | `https://reinplan-de.netlify.app/login` |
+
+The public root `/` is the marketing landing page and must not redirect authenticated visitors into the application. The explicit login URLs above are the canonical entry points for each product surface.
+
+> Deployment note: these routes describe the current `main` branch. The Netlify production site can remain on an older deployment while Netlify builds are paused or unavailable.
+
 ## Product surfaces
 
 | Surface | Route | Audience |
