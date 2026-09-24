@@ -294,13 +294,6 @@ export default async function CalculationPage({
               catalog={catalog}
             />
           )}
-          {isDraft && calculation.lines.length > 0 && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <ButtonLink href={`/dashboard/kalkulation/${id}?tab=kalkulation`} className="w-full sm:w-auto">
-                Weiter zur Kalkulation
-              </ButtonLink>
-            </div>
-          )}
         </div>
       )}
 
@@ -684,7 +677,7 @@ export default async function CalculationPage({
       )}
 
       {tab === 'leistung' && calculation.lines.length > 0 && (
-        <div className="mt-5 flex justify-end">
+        <div className="sticky bottom-2 z-10 mt-5 rounded-xl border border-border bg-card/95 p-2 shadow-popover backdrop-blur sm:static sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
           <ButtonLink href={`/dashboard/kalkulation/${id}?tab=kalkulation`} className="w-full justify-center sm:w-auto">
             Weiter zur Kalkulation
           </ButtonLink>
