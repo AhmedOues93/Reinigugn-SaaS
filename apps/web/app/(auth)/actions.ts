@@ -42,6 +42,20 @@ export async function signUp(formData: FormData) {
   redirect('/login?message=Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.');
 }
 
+export async function loginWithGoogle(formData: FormData) {
+  const requestedNext = String(formData.get('next') ?? '/dashboard');
+  const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/dashboard';
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: appUrl(`/auth/callback?next=${encodeURIComponent(next)}`),
+    },
+  });
+  if (error || !data.url) withMessage('/admin/login', 'error', 'Google-Anmeldung konnte nicht gestartet werden.');
+  redirect(data.url);
+}
+
 export async function login(formData: FormData) {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) withMessage('/login', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
