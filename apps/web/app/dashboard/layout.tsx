@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { getCurrentCompany } from '@/lib/auth';
@@ -5,6 +6,12 @@ import { getCompanyBranding } from '@/lib/data/branding';
 import { type Locale } from '@/lib/i18n';
 import { landingPathForRole } from '@/lib/landing';
 import { cookieLocale } from '@/lib/i18n-server';
+
+export const metadata: Metadata = {
+  title: 'ReinPlan Admin',
+  manifest: '/dashboard/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'ReinPlan Admin' },
+};
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, membership, supabase, profile } = await getCurrentCompany();
