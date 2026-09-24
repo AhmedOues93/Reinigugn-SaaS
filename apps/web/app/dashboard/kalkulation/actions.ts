@@ -302,7 +302,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
     const initialFrequencyCount = parseNumber(String(formData.get('initial_frequency_count') ?? '1')) ?? 1;
     const selectedCatalog = catalogItemId
       ? await supabase
-          .from('service_catalog')
+          .from('service_catalog_items')
           .select('name, calculation_unit, default_productivity_per_hour, default_minutes_per_unit, default_material_cents, default_material_basis')
           .eq('id', catalogItemId)
           .maybeSingle()
