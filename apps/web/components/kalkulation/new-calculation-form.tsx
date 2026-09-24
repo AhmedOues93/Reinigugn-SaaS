@@ -360,16 +360,16 @@ export function NewCalculationForm({
         </div>
       </div>
 
-      <div className="sticky bottom-2 z-10 mx-auto grid max-w-2xl grid-cols-2 gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-popover backdrop-blur sm:flex sm:items-center sm:justify-between sm:p-2.5">
+      <div className="sticky bottom-2 z-10 mx-auto flex max-w-2xl items-center justify-end gap-2 rounded-xl border border-border bg-card/95 p-2 shadow-popover backdrop-blur sm:p-2.5">
         {step === 1 ? (
           <span className="hidden sm:block" />
         ) : (
-          <Button type="button" variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)}>
+          <Button className="min-w-0 flex-1 sm:flex-none" type="button" variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)}>
             <ChevronLeft className="size-4" />{t(locale, 'sales.quote.back')}
           </Button>
         )}
         {step < 3 ? (
-          <Button type="button" onClick={nextStep}>
+          <Button className="min-w-0 flex-1 sm:flex-none" type="button" onClick={nextStep}>
             {t(locale, 'sales.quote.next')}<ChevronRight className="size-4" />
           </Button>
         ) : (
