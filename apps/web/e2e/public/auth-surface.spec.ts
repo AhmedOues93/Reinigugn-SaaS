@@ -85,15 +85,16 @@ test.describe('unauthenticated surface', () => {
     await expect(page.locator('input[type=email]')).toBeVisible();
   });
 
-  test('no page scrolls sideways, on a phone or a desktop', async ({ page }) => {
-    for (const path of ['/', '/admin/login', '/mitarbeiter/login', '/kunde/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
+  for (const path of ['/', '/admin/login', '/mitarbeiter/login', '/kunde/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
+    test(`${path} does not scroll sideways`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator('body')).toBeVisible();
-      const root = page.locator('html');
-      const overflow = (await root.evaluate((element) => element.scrollWidth - element.clientWidth));
+      const overflow = await page.locator('body').evaluate(
+        (body) => Math.max(body.scrollWidth, document.documentElement.scrollWidth) - document.documentElement.clientWidth,
+      );
       expect(overflow, `${path} overflows horizontally by ${overflow}px`).toBeLessThanOrEqual(0);
-    }
-  });
+    });
+  }
 
   test('every visible control can be reached and seen when tabbing', async ({ page }) => {
     await page.goto('/admin/login');
