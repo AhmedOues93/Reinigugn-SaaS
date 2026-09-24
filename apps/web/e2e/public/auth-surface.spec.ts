@@ -87,8 +87,8 @@ test.describe('unauthenticated surface', () => {
 
   test('no page scrolls sideways, on a phone or a desktop', async ({ page }) => {
     for (const path of ['/', '/admin/login', '/mitarbeiter/login', '/kunde/login', '/signup', '/forgot-password', '/impressum', '/datenschutz', '/agb']) {
-      await page.goto(path);
-      await page.waitForLoadState('networkidle');
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await page.locator('body').waitFor({ state: 'visible' });
       const overflow = await page.evaluate(() => {
         const root = document.documentElement;
         return root.scrollWidth - root.clientWidth;
