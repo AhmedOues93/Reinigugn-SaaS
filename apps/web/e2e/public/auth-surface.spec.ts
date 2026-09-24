@@ -121,12 +121,22 @@ test.describe('unauthenticated surface', () => {
     expect(reached.join(' ')).not.toContain(':no-focus-ring');
   });
 
-  test('the employee app is installable', async ({ page, request }) => {
+  test('the employee and admin apps expose standalone install manifests', async ({ page, request }) => {
     await page.goto('/admin/login');
-    const manifest = await request.get('/mitarbeiter/manifest.webmanifest');
-    expect(manifest.status()).toBe(200);
-    const body = await manifest.json();
-    expect(body.name ?? body.short_name).toBeTruthy();
-    expect(Array.isArray(body.icons) && body.icons.length).toBeTruthy();
+    for (const [manifestUrl, startUrl] of [
+      ['/mitarbeiter/manifest.webmanifest', '/mitarbeiter'],
+      ['/dashboard/manifest.webmanifest', '/dashboard'],
+    ] as const) {
+      const manifest = await request.get(manifestUrl);
+      expect(manifest.status()).toBe(200);
+      const body = await manifest.json();
+      expect(body.name ?? body.short_name).toBeTruthy();
+      expect(body.id).toBe(startUrl);
+      expect(body.start_url).toBe(startUrl);
+      expect(body.scope).toBe(startUrl);
+      expect(body.display).toBe('standalone');
+      expect(Array.isArray(body.icons) && body.icons.length).toBeTruthy();
+      expect(body.icons.some((icon: { purpose?: string }) => icon.purpose === 'maskable')).toBeTruthy();
+    }
   });
 });
