@@ -17,7 +17,6 @@ export async function LoginSurface({
   message?: string;
 }) {
   const locale = await currentLocale();
-  const next = variant === 'employee' ? '/mitarbeiter' : variant === 'portal' ? '/kunde' : '/dashboard';
 
   return (
     <AuthShell
@@ -33,18 +32,22 @@ export async function LoginSurface({
         ) : undefined
       }
     >
-      <form action={loginWithGoogle}>
-        <input type="hidden" name="next" value={next} />
-        <button type="submit" className="mb-5 flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-highlight">
-          <span aria-hidden="true" className="text-base font-bold">G</span>
-          Mit Google anmelden
-        </button>
-      </form>
-      <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
-        <span className="h-px flex-1 bg-border" />
-        <span>oder</span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
+      {variant === 'office' && (
+        <>
+          <form action={loginWithGoogle}>
+            <input type="hidden" name="next" value="/dashboard" />
+            <button type="submit" className="mb-5 flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-highlight">
+              <span aria-hidden="true" className="text-base font-bold">G</span>
+              Mit Google anmelden
+            </button>
+          </form>
+          <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+            <span className="h-px flex-1 bg-border" />
+            <span>oder</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
       <AuthForm action={login} locale={locale}>
         <AuthMessage error={error} message={message} />
         <AuthField
