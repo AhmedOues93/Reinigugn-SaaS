@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 export function GET() {
   return NextResponse.json(
     {
+      id: '/mitarbeiter',
       name: 'ReinPlan Mitarbeiter',
       short_name: 'ReinPlan',
       description: 'Einsätze, Zeiterfassung und Nachweise für Reinigungskräfte.',
