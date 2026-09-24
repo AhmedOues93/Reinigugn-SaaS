@@ -6,6 +6,7 @@ import { getCompanyBranding } from '@/lib/data/branding';
 import { type Locale } from '@/lib/i18n';
 import { landingPathForRole } from '@/lib/landing';
 import { cookieLocale } from '@/lib/i18n-server';
+import { PwaRegister } from '@/components/pwa-register';
 
 export const metadata: Metadata = {
   title: 'ReinPlan Admin',
@@ -39,7 +40,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ]);
 
   return (
-    <DashboardShell
+    <>
+      <PwaRegister worker="/app-sw.js" scope="/dashboard" />
+      <DashboardShell
       branding={branding}
       companyName={company.name}
       email={user.email ?? 'Konto'}
@@ -50,6 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       unreadComplaints={unreadComplaints ?? 0}
     >
       {children}
-    </DashboardShell>
+      </DashboardShell>
+    </>
   );
 }
