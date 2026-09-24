@@ -300,15 +300,18 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
     const initialQuantity = parseNumber(String(formData.get('initial_quantity') ?? ''));
     const initialFrequency = String(formData.get('initial_frequency') ?? 'PRO_WOCHE');
     const initialFrequencyCount = parseNumber(String(formData.get('initial_frequency_count') ?? '1')) ?? 1;
+    // The catalogue is only a convenience for defaults. The service entered
+    // in this wizard is the source of truth, so a stale/deleted catalogue
+    // selection must never block an otherwise valid offer.
     const selectedCatalog = catalogItemId
       ? await supabase
           .from('service_catalog_items')
-          .select('name, calculation_unit, default_productivity_per_hour, default_minutes_per_unit, default_material_cents, default_material_basis')
+          .select('id, name, calculation_unit, default_productivity_per_hour, default_minutes_per_unit, default_material_cents, default_material_basis')
           .eq('id', catalogItemId)
           .maybeSingle()
       : { data: null, error: null };
-    if (selectedCatalog.error) return failure('Die ausgewählte Leistung konnte nicht geladen werden.');
-    const catalogService = selectedCatalog.data;
+    const catalogService = selectedCatalog.error ? null : selectedCatalog.data;
+    const effectiveCatalogItemId = catalogService?.id ?? null;
     const serviceName = initialServiceName || catalogService?.name || String(formData.get('cleaning_type') ?? '').trim();
     const unit = String(catalogService?.calculation_unit ?? 'QM');
     const quantity = initialQuantity ?? 1;
@@ -326,7 +329,7 @@ export async function createCalculation(_: FormState, formData: FormData): Promi
         p_frequency: initialFrequency,
         p_frequency_count: initialFrequencyCount,
         p_area_sqm: unit === 'QM' ? quantity : null,
-        p_catalog_item_id: catalogItemId,
+        p_catalog_item_id: effectiveCatalogItemId,
         p_productivity: productivity,
         p_minutes_per_unit: minutesPerUnit,
         p_minutes_override: unit === 'QM' && productivity === null ? 60 : null,
