@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { EmployeeShell } from '@/components/employee/employee-shell';
+import { PwaHead } from '@/components/pwa-head';
 import {
   buildOfflineSnapshot,
   countMyUnreadNotifications,
@@ -30,6 +31,12 @@ export const metadata: Metadata = {
 /* The field app's own bar colour, so the status bar matches once installed. */
 export const viewport: Viewport = { themeColor: '#05785A' };
 
+const employeePwa = {
+  manifest: '/mitarbeiter/manifest.webmanifest',
+  icon: '/icons/employee-icon-192.png',
+  appleIcon: '/icons/employee-apple-touch-180.png',
+};
+
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   /*
    * The sign-in screen lives at /mitarbeiter/login, inside this layout, but it
@@ -45,7 +52,14 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
    * still goes through requireEmployee() below.
    */
   const pathname = (await headers()).get('x-pathname') ?? '';
-  if (pathname === '/mitarbeiter/login') return <>{children}</>;
+  if (pathname === '/mitarbeiter/login') {
+    return (
+      <>
+        <PwaHead {...employeePwa} />
+        {children}
+      </>
+    );
+  }
 
   // The snapshot is built server-side from the employee's own RLS-checked rows
   // and handed to the client, which is the only thing it is allowed to cache.
@@ -57,8 +71,11 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     buildOfflineSnapshot(),
   ]);
   return (
-    <EmployeeShell locale={locale} branding={branding} unread={unread} userId={user.id} snapshot={snapshot}>
-      {children}
-    </EmployeeShell>
+    <>
+      <PwaHead {...employeePwa} />
+      <EmployeeShell locale={locale} branding={branding} unread={unread} userId={user.id} snapshot={snapshot}>
+        {children}
+      </EmployeeShell>
+    </>
   );
 }

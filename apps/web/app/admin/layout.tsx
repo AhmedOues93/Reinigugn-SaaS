@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { PwaHead } from '@/components/pwa-head';
 
 /**
  * /admin holds the office sign-in screen. The office app itself lives under
@@ -25,6 +26,17 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: '#0F1F21' };
 
+const officePwa = {
+  manifest: '/dashboard/manifest.webmanifest',
+  icon: '/icons/admin-icon-192.png',
+  appleIcon: '/icons/admin-apple-touch-180.png',
+};
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <PwaHead {...officePwa} />
+      {children}
+    </>
+  );
 }

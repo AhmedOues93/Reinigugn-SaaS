@@ -163,4 +163,32 @@ test.describe('unauthenticated surface', () => {
     // twice and neither opens what its owner expects.
     expect(tiles[0]).not.toBe(tiles[1]);
   });
+
+  /*
+   * A browser only honours `<link rel="manifest">` while it parses <head>.
+   * Next streams metadata for any page that reads a dynamic API, and both
+   * sign-in screens do, so the link used to be emitted into the body about
+   * 13 KB down — the DOM looked right, the tab looked right, and Chrome
+   * reported "no-manifest" and never offered to install either app. Checking
+   * the served HTML is the only way to see it: every DOM-based assertion
+   * passes while the bug is present.
+   */
+  for (const { path, manifest } of [
+    { path: '/mitarbeiter/login', manifest: '/mitarbeiter/manifest.webmanifest' },
+    { path: '/admin/login', manifest: '/dashboard/manifest.webmanifest' },
+  ]) {
+    test(`${path} declares its manifest inside <head>`, async ({ request }) => {
+      const html = await (await request.get(path)).text();
+      const headEnd = html.indexOf('</head>');
+      const link = html.indexOf(`rel="manifest" href="${manifest}"`);
+      expect(headEnd, 'no </head> in the served HTML').toBeGreaterThan(0);
+      expect(link, `${manifest} is not declared at all`).toBeGreaterThan(0);
+      expect(link, `${path} declares its manifest after </head>, where no browser reads it`).toBeLessThan(headEnd);
+
+      // The touch icon is what iOS uses; it ignores the manifest entirely.
+      const apple = html.indexOf('rel="apple-touch-icon"');
+      expect(apple, `${path} has no apple-touch-icon`).toBeGreaterThan(0);
+      expect(apple, `${path} declares its touch icon after </head>`).toBeLessThan(headEnd);
+    });
+  }
 });

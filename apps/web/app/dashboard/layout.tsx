@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/components/dashboard-shell';
+import { PwaHead } from '@/components/pwa-head';
 import { getCurrentCompany } from '@/lib/auth';
 import { getCompanyBranding } from '@/lib/data/branding';
 import { type Locale } from '@/lib/i18n';
@@ -28,6 +29,12 @@ export const metadata: Metadata = {
 /* Tiefsee, the colour of the office rail. */
 export const viewport: Viewport = { themeColor: '#0F1F21' };
 
+const officePwa = {
+  manifest: '/dashboard/manifest.webmanifest',
+  icon: '/icons/admin-icon-192.png',
+  appleIcon: '/icons/admin-apple-touch-180.png',
+};
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, membership, supabase, profile } = await getCurrentCompany();
   if (!membership) redirect('/onboarding');
@@ -54,17 +61,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ]);
 
   return (
-    <DashboardShell
-      branding={branding}
-      companyName={company.name}
-      email={user.email ?? 'Konto'}
-      displayName={[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
-      role={membership.role as 'OWNER' | 'OFFICE'}
-      locale={locale}
-      unreadNotifications={unreadNotifications ?? 0}
-      unreadComplaints={unreadComplaints ?? 0}
-    >
-      {children}
-    </DashboardShell>
+    <>
+      <PwaHead {...officePwa} />
+      <DashboardShell
+        branding={branding}
+        companyName={company.name}
+        email={user.email ?? 'Konto'}
+        displayName={[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}
+        role={membership.role as 'OWNER' | 'OFFICE'}
+        locale={locale}
+        unreadNotifications={unreadNotifications ?? 0}
+        unreadComplaints={unreadComplaints ?? 0}
+      >
+        {children}
+      </DashboardShell>
+    </>
   );
 }
