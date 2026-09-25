@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
 import { LanguageSelector } from '@/components/language-selector';
 import { t, type Locale } from '@/lib/i18n';
+import type { CompanyBranding } from '@/lib/data/branding';
 
 /**
  * Account menu. Anchored to the trailing edge and width-capped so it stays on
@@ -17,11 +18,13 @@ export function DashboardUserMenu({
   email,
   displayName,
   companyName,
+  branding,
 }: {
   locale: Locale;
   email: string;
   displayName?: string;
   companyName?: string;
+  branding?: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
 }) {
   // Initials from the name when there is one, otherwise the address. Two
   // letters, because one is ambiguous the moment a company has two Sabines.
@@ -59,9 +62,16 @@ export function DashboardUserMenu({
         aria-label={email}
         className="flex min-h-touch items-center gap-2 rounded-lg ps-1 pe-1.5 text-sm transition-colors hover:bg-foreground/[0.05] md:min-h-10"
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-[12px] font-semibold text-highlight">
-          {initials || '?'}
-        </span>
+        branding?.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- signed tenant logo URL
+          <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-white p-1">
+            <img src={branding.logoUrl} alt={branding.name} className="max-h-full max-w-full object-contain" />
+          </span>
+        ) : (
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-[12px] font-semibold text-highlight">
+            {initials || '?'}
+          </span>
+        )
         {/* Who you are and which company you are in, because an office
             colleague can belong to more than one and acting in the wrong one
             is an expensive mistake to notice late. */}
