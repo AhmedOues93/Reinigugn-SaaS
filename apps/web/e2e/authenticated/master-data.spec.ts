@@ -73,7 +73,7 @@ test.describe('customers and objects', () => {
     // Editing is part of the same master-data contract: the write must remain
     // tenant-scoped and the changed object must still belong to this customer.
     await page.getByText(objectName).first().click();
-    await page.waitForURL(/\\/dashboard\\/objekte\\/[0-9a-f-]{36}/);
+    await page.waitForURL(/\/dashboard\/objekte\/[0-9a-f-]{36}/);
     await page.getByRole('link', { name: /bearbeiten/i }).click();
     await page.waitForURL(/bearbeiten/);
     const editedObjectName = `${objectName} bearbeitet`;
@@ -82,7 +82,7 @@ test.describe('customers and objects', () => {
     await page.getByRole('button', { name: /^weiter$/i }).click();
     await page.getByRole('button', { name: /^weiter$/i }).click();
     await page.getByRole('button', { name: /änderungen speichern/i }).click();
-    await page.waitForURL(/\\/dashboard\\/objekte\\/[0-9a-f-]{36}/, { timeout: 30_000 });
+    await page.waitForURL(/\/dashboard\/objekte\/[0-9a-f-]{36}/, { timeout: 30_000 });
     await expect(page.getByRole('heading', { level: 1 })).toContainText(editedObjectName);
     await expect(page.getByRole('link', { name: customerName })).toBeVisible();
   });
