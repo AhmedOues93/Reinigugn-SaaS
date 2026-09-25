@@ -21,6 +21,17 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const owner = first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—';
   const isDraft = quote.status === 'DRAFT';
+  const recipient = quote.recipient_snapshot && typeof quote.recipient_snapshot === 'object'
+    ? quote.recipient_snapshot as Record<string, unknown>
+    : {};
+  const recipientEmail = typeof recipient.email === 'string' ? recipient.email.trim() : '';
+  const validUntilExpired = Boolean(quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10));
+  const reviewWarnings = [
+    ...(quote.lines.length === 0 ? ['Keine Leistungsposition vorhanden.'] : []),
+    ...(quote.lines.some((line) => line.unit_price_cents <= 0 || line.net_amount_cents <= 0) ? ['Mindestens eine Position hat keinen plausiblen Preis.'] : []),
+    ...(!recipientEmail ? ['Beim Empfänger ist keine E-Mail-Adresse hinterlegt.'] : []),
+    ...(validUntilExpired ? ['Die Angebotsgültigkeit ist bereits abgelaufen.'] : []),
+  ];
   const hasRecurringWork = quote.lines.some((line) => line.recurrence !== 'ONE_OFF');
   const acceptanceLabel: Record<string, string> = {
     KEINE_ABNAHME_ERFORDERLICH: 'Keine Abnahme erforderlich',
@@ -70,6 +81,15 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         <p className="mb-5 rounded-md bg-danger-soft p-3 text-sm text-danger">
           {t(locale, 'sales.quote.declineReason')}: {quote.decline_reason}
         </p>
+      )}
+
+      {reviewWarnings.length > 0 && (
+        <Card className="mb-5 border-warning/30 bg-warning-soft p-4">
+          <p className="text-sm font-semibold text-foreground">Vor dem Versenden prüfen</p>
+          <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+            {reviewWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+          </ul>
+        </Card>
       )}
 
       <div className="mb-5 grid grid-cols-3 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
