@@ -22,7 +22,7 @@ import {
   UserRoundCheck,
   Users,
 } from 'lucide-react';
-import { CompanyBrand } from '@/components/company-brand';
+import { ProductLockup } from '@/components/company-brand';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardUserMenu } from '@/components/dashboard-user-menu';
 import { GlobalSearch } from '@/components/global-search';
@@ -122,8 +122,8 @@ export function DashboardShell({
     <div className="min-h-[100dvh] bg-background" dir={direction(locale)}>
       {/* Desktop rail on Tiefsee. A scrolling middle keeps the footer pinned. */}
       <aside className="surface-ink fixed inset-y-0 start-0 z-30 hidden w-[264px] flex-col lg:flex">
-        <div className="flex shrink-0 items-center px-5 pb-4 pt-5 [&_img]:brightness-0 [&_img]:invert">
-          <CompanyBrand branding={branding} href="/dashboard" className="text-white [&_span_span]:text-highlight" />
+        <div className="flex shrink-0 items-center px-5 pb-4 pt-5">
+          <ProductLockup href="/dashboard" />
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-color:hsl(var(--ink-line))_transparent] [scrollbar-width:thin]">
           <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} />
@@ -136,11 +136,7 @@ export function DashboardShell({
 
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background lg:ms-[264px]">
         <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center gap-2 px-4 sm:px-6 lg:px-8">
-          <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} mobile branding={branding} companyName={companyName} />
-          <div className="min-w-0 lg:hidden [&_span]:block [&_span]:truncate">
-            <CompanyBrand branding={branding} href="/dashboard" size="sm" className="min-w-0" />
-          </div>
-
+          <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} mobile companyName={companyName} />
           {/* Search takes the width it needs and no more; it is a tool, not a
               headline, and a full-bleed field makes the bar look empty. */}
           <GlobalSearch locale={locale} className="hidden min-w-0 flex-1 md:block lg:max-w-[26rem]" />
@@ -163,7 +159,13 @@ export function DashboardShell({
                 </span>
               )}
             </Link>
-            <DashboardUserMenu locale={locale} email={email} displayName={displayName} companyName={companyName} />
+            <DashboardUserMenu
+              locale={locale}
+              email={email}
+              displayName={displayName}
+              companyName={companyName}
+              branding={branding}
+            />
           </div>
         </div>
       </header>

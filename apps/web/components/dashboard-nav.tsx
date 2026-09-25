@@ -5,9 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@reinigung/ui';
-import { CompanyBrand } from '@/components/company-brand';
+import { ProductLockup } from '@/components/company-brand';
 import { navGroups, navIcons } from '@/components/dashboard-shell';
-import type { CompanyBranding } from '@/lib/data/branding';
 import { t, type Locale } from '@/lib/i18n';
 
 /**
@@ -21,14 +20,12 @@ export function DashboardNav({
   unread = 0,
   unreadComplaints = 0,
   mobile = false,
-  branding,
   companyName,
 }: {
   locale: Locale;
   unread?: number;
   unreadComplaints?: number;
   mobile?: boolean;
-  branding?: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
   companyName?: string;
 }) {
   const pathname = usePathname();
@@ -188,8 +185,10 @@ export function DashboardNav({
             aria-label={t(locale, 'common.mainNav')}
             className="surface-ink absolute inset-y-0 start-0 flex w-[288px] max-w-[86vw] animate-slide-in flex-col shadow-popover rtl:[animation-name:none]"
           >
-            <div className="flex h-16 shrink-0 items-center justify-between gap-2 ps-5 pe-2 [&_img]:brightness-0 [&_img]:invert">
-              <CompanyBrand branding={branding ?? null} className="text-white [&_span_span]:text-highlight" />
+            <div className="flex h-16 shrink-0 items-center justify-between gap-2 ps-5 pe-2">
+              {/* The product at the head of the drawer; the tenant's own name
+                  is already at its foot. */}
+              <ProductLockup />
               <button
                 ref={closeButton}
                 type="button"

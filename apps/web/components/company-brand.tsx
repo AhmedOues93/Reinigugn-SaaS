@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@reinigung/ui';
+import { BrandMark } from '@/components/brand-mark';
 import type { CompanyBranding } from '@/lib/data/branding';
 
 /**
@@ -39,6 +40,38 @@ export function CompanyBrand({
     </Link>
   ) : (
     <span className={wrapperClass}>{content}</span>
+  );
+}
+
+/**
+ * The official ReinPlan lockup: the mark and the wordmark, on a dark surface.
+ *
+ * This is the product speaking, not the tenant. It belongs at the top of a
+ * navigation rail, where the question being answered is "which software am I
+ * in" — the tenant's own name answers a different question and already sits at
+ * the foot of the same rail.
+ *
+ * Drawn rather than loaded. The rails tint any <img> with
+ * `brightness-0 invert` so a dark tenant logo stays legible on Tiefsee, which
+ * turns a light or mostly-transparent PNG into a plain white rectangle. A mark
+ * that takes its colour from `currentColor` cannot break that way.
+ */
+export function ProductLockup({ href, className }: { href?: string; className?: string }) {
+  const content = (
+    <>
+      <BrandMark className="size-8 shrink-0 text-highlight" />
+      <span className="truncate text-[1.15rem] font-semibold tracking-tight text-white">
+        Rein<span className="text-highlight">Plan</span>
+      </span>
+    </>
+  );
+  const wrapper = cn('flex min-w-0 items-center gap-2.5', className);
+  return href ? (
+    <Link href={href} className={wrapper} aria-label="ReinPlan">
+      {content}
+    </Link>
+  ) : (
+    <span className={wrapper}>{content}</span>
   );
 }
 
