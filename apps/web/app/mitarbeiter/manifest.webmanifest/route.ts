@@ -18,8 +18,8 @@ export function GET() {
       background_color: '#f8fafc',
       theme_color: '#0f766e',
       icons: [
-        { src: '/icons/app-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-        { src: '/icons/app-icon-maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+        { src: '/icons/reinplan-mitarbeiter.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+        { src: '/icons/reinplan-mitarbeiter.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
       ],
     },
     { headers: { 'content-type': 'application/manifest+json', 'cache-control': 'public, max-age=3600' } },
