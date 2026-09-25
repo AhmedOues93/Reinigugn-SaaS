@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ReinPlan">
-  <rect width="512" height="512" rx="112" fill="#0f766e"/>
-  <path d="M188 138h136a26 26 0 0 1 26 26v54H162v-54a26 26 0 0 1 26-26z" fill="#ffffff"/>
-  <rect x="236" y="218" width="40" height="76" fill="#ffffff"/>
-  <path d="M170 294h172l22 100a28 28 0 0 1-27 34H175a28 28 0 0 1-27-34z" fill="#ffffff" opacity="0.92"/>
-</svg>

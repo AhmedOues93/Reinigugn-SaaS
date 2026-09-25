@@ -121,12 +121,46 @@ test.describe('unauthenticated surface', () => {
     expect(reached.join(' ')).not.toContain(':no-focus-ring');
   });
 
-  test('the employee app is installable', async ({ page, request }) => {
+  test('both apps are installable, each with its own tile', async ({ page, request }) => {
     await page.goto('/admin/login');
-    const manifest = await request.get('/mitarbeiter/manifest.webmanifest');
-    expect(manifest.status()).toBe(200);
-    const body = await manifest.json();
-    expect(body.name ?? body.short_name).toBeTruthy();
-    expect(Array.isArray(body.icons) && body.icons.length).toBeTruthy();
+
+    const surfaces = [
+      { path: '/mitarbeiter/manifest.webmanifest', scope: '/mitarbeiter' },
+      { path: '/dashboard/manifest.webmanifest', scope: '/dashboard' },
+    ];
+    const tiles: string[] = [];
+
+    for (const surface of surfaces) {
+      const manifest = await request.get(surface.path);
+      expect(manifest.status(), `${surface.path} is not served`).toBe(200);
+      const body = await manifest.json();
+      expect(body.name ?? body.short_name).toBeTruthy();
+      expect(body.scope, `${surface.path} must own its own scope`).toBe(surface.scope);
+
+      // Chrome only offers to install when the manifest carries a square PNG of
+      // at least 192px. A manifest of SVG alone passes a naive "has icons"
+      // check and still installs as a blank tile, which is the bug this guards.
+      const icons: { src: string; sizes?: string; type?: string; purpose?: string }[] = body.icons ?? [];
+      const square = icons.filter(
+        (icon) => icon.type === 'image/png' && Number((icon.sizes ?? '0x0').split('x')[0]) >= 192,
+      );
+      expect(square.length, `${surface.path} has no PNG of at least 192px`).toBeGreaterThan(0);
+      expect(
+        icons.some((icon) => icon.purpose === 'maskable'),
+        `${surface.path} has no maskable icon`,
+      ).toBe(true);
+
+      // Every icon it promises must actually be served.
+      for (const icon of icons) {
+        const asset = await request.get(icon.src);
+        expect(asset.status(), `${icon.src} is missing`).toBe(200);
+      }
+
+      tiles.push(icons.map((icon) => icon.src).join('|'));
+    }
+
+    // The two apps must not share a tile, or a home screen shows the same icon
+    // twice and neither opens what its owner expects.
+    expect(tiles[0]).not.toBe(tiles[1]);
   });
 });

@@ -7,9 +7,9 @@
  * to one user and cleared on sign-out. A cache keyed only by URL could not make
  * that distinction and would survive a user switch.
  */
-const SHELL_CACHE = 'sauberwerk-employee-shell-v2';
+const SHELL_CACHE = 'sauberwerk-employee-shell-v3';
 const OFFLINE_DOCUMENT = '/mitarbeiter/offline';
-const SHELL_ASSETS = [OFFLINE_DOCUMENT, '/icons/app-icon.svg', '/icons/app-icon-maskable.svg'];
+const SHELL_ASSETS = [OFFLINE_DOCUMENT, '/icons/employee-icon.svg', '/icons/employee-icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

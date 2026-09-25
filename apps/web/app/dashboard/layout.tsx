@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { getCurrentCompany } from '@/lib/auth';
@@ -5,6 +6,27 @@ import { getCompanyBranding } from '@/lib/data/branding';
 import { type Locale } from '@/lib/i18n';
 import { landingPathForRole } from '@/lib/landing';
 import { cookieLocale } from '@/lib/i18n-server';
+
+/**
+ * The office app is installable in its own right, with its own manifest, its
+ * own scope and its own tile. Someone who works in the office should be able to
+ * put it on a home screen next to — and tell it apart from — the field app.
+ */
+export const metadata: Metadata = {
+  title: 'ReinPlan Büro',
+  manifest: '/dashboard/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'ReinPlan' },
+  icons: {
+    icon: [
+      { url: '/icons/admin-icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/admin-icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/admin-apple-touch-180.png', sizes: '180x180', type: 'image/png' }],
+  },
+};
+
+/* Tiefsee, the colour of the office rail. */
+export const viewport: Viewport = { themeColor: '#0F1F21' };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, membership, supabase, profile } = await getCurrentCompany();
