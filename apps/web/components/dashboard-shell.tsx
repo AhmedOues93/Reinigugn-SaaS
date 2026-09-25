@@ -22,7 +22,8 @@ import {
   UserRoundCheck,
   Users,
 } from 'lucide-react';
-import { CompanyBrand } from '@/components/company-brand';
+import { ProductBrand } from '@/components/company-brand';
+import { BrandMark } from '@/components/brand-mark';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardUserMenu } from '@/components/dashboard-user-menu';
 import { GlobalSearch } from '@/components/global-search';
@@ -123,7 +124,10 @@ export function DashboardShell({
       {/* Desktop rail on Tiefsee. A scrolling middle keeps the footer pinned. */}
       <aside className="surface-ink fixed inset-y-0 start-0 z-30 hidden w-[264px] flex-col lg:flex">
         <div className="flex shrink-0 items-center px-5 pb-4 pt-5 [&_img]:brightness-0 [&_img]:invert">
-          <CompanyBrand branding={branding} href="/dashboard" className="text-white [&_span_span]:text-highlight" />
+          <Link href="/dashboard" className="flex min-h-11 items-center gap-2.5" aria-label="ReinPlan – Dashboard">
+            <BrandMark className="size-8" />
+            <ProductBrand className="text-white [&_span]:text-highlight" />
+          </Link>
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-color:hsl(var(--ink-line))_transparent] [scrollbar-width:thin]">
           <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} />
@@ -138,7 +142,10 @@ export function DashboardShell({
         <div className="mx-auto flex h-16 w-full max-w-[1560px] items-center gap-2 px-4 sm:px-6 lg:px-8">
           <DashboardNav locale={locale} unread={unreadNotifications} unreadComplaints={unreadComplaints} mobile branding={branding} companyName={companyName} />
           <div className="min-w-0 lg:hidden [&_span]:block [&_span]:truncate">
-            <CompanyBrand branding={branding} href="/dashboard" size="sm" className="min-w-0" />
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2" aria-label="ReinPlan – Dashboard">
+              <BrandMark className="size-7" />
+              <ProductBrand className="truncate text-base" />
+            </Link>
           </div>
 
           {/* Search takes the width it needs and no more; it is a tool, not a
@@ -163,7 +170,7 @@ export function DashboardShell({
                 </span>
               )}
             </Link>
-            <DashboardUserMenu locale={locale} email={email} displayName={displayName} companyName={companyName} />
+            <DashboardUserMenu locale={locale} email={email} displayName={displayName} companyName={companyName} branding={branding} />
           </div>
         </div>
       </header>
