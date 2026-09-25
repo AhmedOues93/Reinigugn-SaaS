@@ -13,6 +13,11 @@ const arabic = IBM_Plex_Sans_Arabic({ subsets: ['arabic'], weight: ['400', '500'
 export const metadata: Metadata = {
   title: 'ReinPlan',
   description: 'Die Betriebssoftware für Reinigungsunternehmen.',
+  icons: {
+    icon: '/icons/reinplan-brand.svg',
+    shortcut: '/icons/reinplan-brand.svg',
+    apple: '/icons/reinplan-brand.svg',
+  },
 };
 
 export const viewport: Viewport = {
