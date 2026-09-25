@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@reinigung/ui';
-import { CompanyBrand } from '@/components/company-brand';
+import { ProductBrand } from '@/components/company-brand';
+import { BrandMark } from '@/components/brand-mark';
 import { navGroups, navIcons } from '@/components/dashboard-shell';
 import type { CompanyBranding } from '@/lib/data/branding';
 import { t, type Locale } from '@/lib/i18n';
@@ -189,7 +190,10 @@ export function DashboardNav({
             className="surface-ink absolute inset-y-0 start-0 flex w-[288px] max-w-[86vw] animate-slide-in flex-col shadow-popover rtl:[animation-name:none]"
           >
             <div className="flex h-16 shrink-0 items-center justify-between gap-2 ps-5 pe-2 [&_img]:brightness-0 [&_img]:invert">
-              <CompanyBrand branding={branding ?? null} className="text-white [&_span_span]:text-highlight" />
+              <Link href="/dashboard" onClick={() => setOpen(false)} className="flex min-w-0 items-center gap-2.5" aria-label="ReinPlan – Dashboard">
+                <BrandMark className="size-8" />
+                <ProductBrand className="truncate text-white [&_span]:text-highlight" />
+              </Link>
               <button
                 ref={closeButton}
                 type="button"
