@@ -1,4 +1,4 @@
-import { Clock3, Download } from 'lucide-react';
+import { CalendarCheck, Clock3, Download } from 'lucide-react';
 import { Badge, Button, ButtonLink, EmptyState, Input, PageHeader, Select, StatBand } from '@/components/ui';
 import { DataTable, FilterBar } from '@/components/data-table';
 import { listTimeEntries } from '@/lib/data/time-entries';
@@ -31,7 +31,14 @@ export default async function TimeEntriesPage({
   ]);
 
   const finished = entries.filter((entry) => entry.duration_minutes != null);
-  const net = finished.reduce((total, entry) => total + Math.max(0, (entry.duration_minutes ?? 0) - (entry.break_minutes ?? 0)), 0);
+  /*
+   * duration_minutes is already net: ensure_time_entry_integrity subtracts the
+   * breaks when it writes the row. Subtracting break_minutes again here took
+   * every paused shift down a second time — an eight-hour day with a half-hour
+   * break was reported as 7:00 instead of 7:30, on this screen and in the CSV
+   * the office hands to its Lohnbüro. Asserted in monthly-summary.test.sql.
+   */
+  const net = finished.reduce((total, entry) => total + Math.max(0, entry.duration_minutes ?? 0), 0);
   const breaks = entries.reduce((total, entry) => total + (entry.break_minutes ?? 0), 0);
   const running = entries.length - finished.length;
   const corrected = entries.filter((entry) => (entry.time_entry_audit_logs?.[0]?.count ?? 0) > 0).length;
@@ -42,6 +49,12 @@ export default async function TimeEntriesPage({
         <PageHeader
           title="Arbeitszeiten"
           description="Erfasste Einsatzzeiten aus der Mitarbeiter-App – netto, nach Abzug der Pausen."
+          actions={
+            <ButtonLink href="/dashboard/arbeitszeiten/monatsabschluss" variant="outline">
+              <CalendarCheck className="size-4 shrink-0" aria-hidden="true" />
+              Monatsabschluss
+            </ButtonLink>
+          }
         />
 
         <FilterBar className="min-w-0 max-w-full">

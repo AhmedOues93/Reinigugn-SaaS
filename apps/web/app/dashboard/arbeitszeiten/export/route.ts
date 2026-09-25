@@ -25,7 +25,8 @@ export async function GET(request: Request) {
       const member = first(entry.company_members);
       const profile = first(member?.profiles);
       const job = first(entry.jobs);
-      const net = entry.duration_minutes == null ? '' : Math.max(0, entry.duration_minutes - (entry.break_minutes ?? 0));
+      // Already net — the trigger deducted the break when the row was written.
+      const net = entry.duration_minutes == null ? '' : Math.max(0, entry.duration_minutes);
       return [
         [profile?.first_name, profile?.last_name].filter(Boolean).join(' '),
         first(job?.customers)?.name ?? '',

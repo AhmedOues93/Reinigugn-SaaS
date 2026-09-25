@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChevronRight, Clock3 } from 'lucide-react';
 import { Card, CardHeader, DataRow } from '@/components/ui';
 import { EmployeePageHeader } from '@/components/employee/employee-shell';
 import { AvatarForm } from '@/components/employee/avatar-form';
@@ -21,6 +23,27 @@ export default async function EmployeeProfilePage() {
   return (
     <>
       <EmployeePageHeader title={t(locale, 'emp.profile.title')} subtitle={profile.companyName ?? undefined} />
+
+      {/*
+        The employee's own hours. On the profile rather than in the bottom bar:
+        it is a record about them, it is read now and then rather than daily,
+        and a sixth tab would crowd a phone.
+      */}
+      <Link
+        href="/mitarbeiter/stunden"
+        className="mb-4 flex min-h-touch items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-card transition-colors hover:border-primary/40"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+            <Clock3 className="size-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-medium">{t(locale, 'emp.hours.title')}</span>
+            <span className="block truncate text-sm text-muted-foreground">{t(locale, 'emp.hours.intro')}</span>
+          </span>
+        </span>
+        <ChevronRight className="size-5 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />
+      </Link>
 
       <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-5 md:space-y-0 [&>*]:md:mt-0">
         <Card className="p-5">
