@@ -56,6 +56,11 @@ test.describe('customers and objects', () => {
     await page.locator('input[name=street]').fill('Teststraße 1');
     await page.locator('input[name=postal_code]').fill('20095');
     await page.locator('input[name=city]').fill('Hamburg');
+    // The object form is a four-step wizard. Walk it like an office user; a
+    // stale test that jumps straight to submit would never exercise the real UI.
+    await page.getByRole('button', { name: /^weiter$/i }).click();
+    await page.getByRole('button', { name: /^weiter$/i }).click();
+    await page.getByRole('button', { name: /^weiter$/i }).click();
     await page.getByRole('button', { name: /objekt anlegen/i }).click();
     await page.waitForURL(/\/dashboard\/objekte/, { timeout: 30_000 });
 
@@ -64,6 +69,22 @@ test.describe('customers and objects', () => {
     await page.getByRole('link', { name: customerName }).first().click();
     await page.waitForURL(/\/dashboard\/kunden\/[0-9a-f-]{36}/);
     await expect(page.getByText(objectName).first()).toBeVisible();
+
+    // Editing is part of the same master-data contract: the write must remain
+    // tenant-scoped and the changed object must still belong to this customer.
+    await page.getByText(objectName).first().click();
+    await page.waitForURL(/\/dashboard\/objekte\/[0-9a-f-]{36}/);
+    await page.getByRole('link', { name: /bearbeiten/i }).click();
+    await page.waitForURL(/bearbeiten/);
+    const editedObjectName = `${objectName} bearbeitet`;
+    await page.locator('input[name=name]').fill(editedObjectName);
+    await page.getByRole('button', { name: /^weiter$/i }).click();
+    await page.getByRole('button', { name: /^weiter$/i }).click();
+    await page.getByRole('button', { name: /^weiter$/i }).click();
+    await page.getByRole('button', { name: /änderungen speichern/i }).click();
+    await page.waitForURL(/\/dashboard\/objekte\/[0-9a-f-]{36}/, { timeout: 30_000 });
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(editedObjectName);
+    await expect(page.getByRole('link', { name: customerName })).toBeVisible();
   });
 
   test('archiving hides a customer from the active list, and restoring brings it back', async ({ page }) => {
