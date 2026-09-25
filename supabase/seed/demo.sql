@@ -81,6 +81,11 @@ declare
   demo_thread uuid; checklist_template uuid;
   job_row record;
   billed integer := 0;
+  shift record;
+  day_row record;
+  shift_job uuid;
+  shift_entry uuid;
+  day_net integer;
 begin
   if exists (select 1 from public.companies where slug like 'demo-sauberwerk%') then return; end if;
 
@@ -274,6 +279,94 @@ begin
   for job_row in select id, scheduled_date from public.jobs where company_id = demo_company and status = 'COMPLETED' loop
     insert into public.job_time_entries (company_id, job_id, member_id, started_at, finished_at)
     values (demo_company, job_row.id, employee_member, job_row.scheduled_date + time '07:02', job_row.scheduled_date + time '09:50');
+  end loop;
+
+  -- ---------------------------------------------------------------------
+  -- A real month of recorded time, for every employee
+  -- ---------------------------------------------------------------------
+  -- Without this the Monatsabschluss is misleading rather than empty: one
+  -- employee would carry a handful of hours and the other three would show
+  -- 0:00 against a full Soll, which reads as a company in trouble instead of a
+  -- demo with no data. The block below fills the previous and the current month
+  -- with one visit per working day per person.
+  --
+  -- Working days only, and never on a nationwide holiday, because the Soll is
+  -- computed the same way — working a day the Soll does not count would invent
+  -- overtime out of the calendar.
+
+  -- Genehmigte Abwesenheiten. Sie senken das Soll, und an diesen Tagen wird
+  -- unten keine Zeit erfasst — sonst stuende jemand gleichzeitig im Urlaub und
+  -- an der Maschine.
+  insert into public.employee_absences (company_id, member_id, absence_type, status, start_date, end_date, note)
+  values
+    (demo_company, employee_member, 'VACATION', 'APPROVED',
+     date_trunc('month', current_date - interval '1 month')::date + 7,
+     date_trunc('month', current_date - interval '1 month')::date + 11, 'Jahresurlaub'),
+    (demo_company, employee2_member, 'SICKNESS', 'APPROVED',
+     date_trunc('month', current_date)::date + 2,
+     date_trunc('month', current_date)::date + 3, 'Krankmeldung');
+
+  for shift in
+    select * from (values
+      -- member, object, customer, Nettominuten/Tag, Pause, Beginn, nur Mo-Do
+      (employee_member,  object_alster, customer_nord, 360, 30, time '08:00', false),
+      (employee2_member, object_sued,   customer_sued, 300,  0, time '17:30', false),
+      (employee3_member, object_hafen,  customer_nord, 468, 45, time '06:30', false),
+      -- Minijob: nur Montag bis Donnerstag, deshalb planmaessig unter dem Soll.
+      (employee4_member, object_alster, customer_nord, 120,  0, time '18:00', true)
+    ) as t(member_id, object_id, customer_id, net_minutes, break_minutes, starts_at, weekdays_only)
+  loop
+    for day_row in
+      select gs::date as work_date
+      from generate_series(
+             date_trunc('month', current_date - interval '1 month'),
+             current_date,
+             interval '1 day') gs
+      where extract(isodow from gs) < 6
+        and gs::date not in (
+          select holiday from public.german_public_holidays(extract(year from gs)::integer))
+    loop
+      -- Freitags arbeitet der Minijob nicht.
+      continue when shift.weekdays_only and extract(isodow from day_row.work_date) = 5;
+      -- Kein Eintrag an einem genehmigten Abwesenheitstag.
+      continue when exists (
+        select 1 from public.employee_absences absence
+        where absence.member_id = shift.member_id
+          and absence.status = 'APPROVED'
+          and day_row.work_date between absence.start_date and absence.end_date);
+
+      -- Montags eine halbe Stunde laenger: so entstehen sichtbare Ueberstunden,
+      -- statt dass jede Zeile exakt auf dem Soll landet.
+      day_net := shift.net_minutes + case when extract(isodow from day_row.work_date) = 1 then 30 else 0 end;
+
+      insert into public.jobs (company_id, customer_id, cleaning_object_id, title, scheduled_date,
+                               planned_start_at, planned_end_at, status)
+      values (demo_company, shift.customer_id, shift.object_id, 'Unterhaltsreinigung', day_row.work_date,
+              day_row.work_date + shift.starts_at,
+              day_row.work_date + shift.starts_at + make_interval(mins => day_net + shift.break_minutes),
+              'COMPLETED')
+      returning id into shift_job;
+
+      insert into public.job_assignments (company_id, job_id, member_id, assigned_by)
+      values (demo_company, shift_job, shift.member_id, owner_profile);
+
+      insert into public.job_time_entries (company_id, job_id, member_id, started_at, finished_at)
+      values (demo_company, shift_job, shift.member_id,
+              day_row.work_date + shift.starts_at,
+              day_row.work_date + shift.starts_at + make_interval(mins => day_net + shift.break_minutes))
+      returning id into shift_entry;
+
+      if shift.break_minutes > 0 then
+        insert into public.job_time_breaks (company_id, time_entry_id, started_at, ended_at)
+        values (demo_company, shift_entry,
+                day_row.work_date + shift.starts_at + make_interval(mins => day_net / 2),
+                day_row.work_date + shift.starts_at + make_interval(mins => day_net / 2 + shift.break_minutes));
+        -- Die Pause wird beim Schreiben des Eintrags verrechnet, nicht beim
+        -- Anlegen der Pause. Diese Beruehrung laesst den Trigger neu rechnen,
+        -- danach stehen in duration_minutes die Nettominuten.
+        update public.job_time_entries set updated_at = now() where id = shift_entry;
+      end if;
+    end loop;
   end loop;
 
   insert into public.complaints (company_id, customer_id, cleaning_object_id, title, description, priority, status, created_by)

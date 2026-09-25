@@ -147,6 +147,32 @@ select pg_temp.assert(
   'beantragter, nicht genehmigter Urlaub zaehlt nicht');
 
 -- ---------------------------------------------------------------------------
+-- Das Soll eines laufenden Monats endet heute
+-- ---------------------------------------------------------------------------
+-- Sonst steht Mitte des Monats das volle Monatssoll gegen die bisher
+-- geleisteten Tage, und jede Person erscheint im Minus, ohne etwas versaeumt
+-- zu haben.
+select pg_temp.assert(
+  public.working_days_between(date '2026-02-02', date '2026-02-06') = 5,
+  'eine volle Woche Mo-Fr sind fuenf Arbeitstage');
+select pg_temp.assert(
+  public.working_days_between(date '2026-02-06', date '2026-02-02') = 0,
+  'ein rueckwaerts laufender Zeitraum hat keine Arbeitstage');
+select pg_temp.assert(
+  public.working_days_between(date '2026-05-01', date '2026-05-31') = 18,
+  'working_days_between deckt sich mit working_days_in_month');
+
+-- Ein kuenftiger Monat kann kein Soll haben: niemand konnte dort arbeiten.
+select pg_temp.assert(
+  (select target_minutes from public.member_month_figures(
+     (select emp from lm), (date_trunc('month', current_date) + interval '2 months')::date)) = 0,
+  'ein Monat in der Zukunft hat kein Soll');
+select pg_temp.assert(
+  (select worked_minutes from public.member_month_figures(
+     (select emp from lm), (date_trunc('month', current_date) + interval '2 months')::date)) = 0,
+  'und auch keine Iststunden');
+
+-- ---------------------------------------------------------------------------
 -- No agreed week means no Soll — and therefore no claim about overtime
 -- ---------------------------------------------------------------------------
 select pg_temp.assert(
