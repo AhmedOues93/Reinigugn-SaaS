@@ -108,10 +108,11 @@ export function JobForm({
       <FormMessage status={state.status} message={state.message} />
 
       {state.conflictWarning && (
-        <label className="block rounded-xl border border-warning/30 bg-warning-soft p-4 text-sm text-warning">
-          <strong>Planungskonflikt:</strong> {state.conflictWarning}
-          <span className="mt-3 flex items-center gap-2">
-            <input name="confirm_conflicts" value="true" type="checkbox" />
+        <label className="block rounded-xl border border-warning/30 bg-warning-soft p-4 text-sm text-foreground">
+          <strong className="text-warning">Bitte vor dem Speichern prüfen:</strong>{' '}
+          <span className="break-anywhere">{state.conflictWarning}</span>
+          <span className="mt-3 flex min-h-touch items-center gap-2 font-medium">
+            <input name="confirm_conflicts" value="true" type="checkbox" className="size-4" />
             Trotzdem speichern
           </span>
         </label>
