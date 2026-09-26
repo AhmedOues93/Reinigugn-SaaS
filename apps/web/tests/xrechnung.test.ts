@@ -227,3 +227,90 @@ describe('Rueckfall auf den Firmenstamm', () => {
     expect(validateXRechnung(input!).join(' ')).toContain('Firmenstraße fehlt');
   });
 });
+
+/*
+ * Die DEMO-Rechnung aus supabase/seed/demo-for-account.sql.
+ *
+ * Genau die Zahlen und Stammdaten, die das Seed in die Datenbank schreibt
+ * (nachgeprueft gegen eine frische Datenbank). Damit faellt hier auf, wenn das
+ * Seed eine Rechnung erzeugt, die sich nicht als E-Rechnung ausgeben laesst —
+ * und nicht erst beim Testversand.
+ */
+describe('Demo-Rechnung aus dem Seed', () => {
+  const seeded = {
+    status: 'ISSUED',
+    invoice_number: 'RE-2026-0001',
+    issue_date: '2026-09-26',
+    due_date: '2026-10-10',
+    service_period_start: '2026-08-01',
+    service_period_end: '2026-08-31',
+    currency: 'EUR',
+    buyer_reference: '991-01234-56',
+    net_total_cents: 648_000,
+    vat_total_cents: 123_120,
+    gross_total_cents: 771_120,
+    company_snapshot: {
+      name: 'ReinPlan Demo (Testdaten)',
+      legal_form: 'GmbH',
+      street: 'Musterweg 3',
+      postal_code: '20095',
+      city: 'Hamburg',
+      country: 'Deutschland',
+      phone: '+49 40 1112233',
+      email: 'demo@reinplan.test',
+      tax_number: '22/815/08154',
+      vat_id: 'DE999999999',
+      iban: 'DE02120300000000202051',
+      bic: 'BYLADEM1001',
+    },
+    customer_snapshot: {
+      name: 'Hausverwaltung Elbe GmbH',
+      billing_address: 'Elbchaussee 21',
+      postal_code: '22765',
+      city: 'Hamburg',
+      country: 'Deutschland',
+      email: 'kunde-elbe@reinplan.test',
+    },
+    lines: [
+      {
+        position: 1,
+        description: 'Unterhaltsreinigung Buerohaus Elbpalais, Vormonat',
+        quantity: 160,
+        unit: 'Std',
+        unit_price_cents: 3900,
+        vat_rate_basis_points: 1900,
+        net_amount_cents: 624_000,
+        vat_amount_cents: 118_560,
+      },
+      {
+        position: 2,
+        description: 'Glasreinigung innen, Treppenhaus',
+        quantity: 1,
+        unit: 'Pauschale',
+        unit_price_cents: 24_000,
+        vat_rate_basis_points: 1900,
+        net_amount_cents: 24_000,
+        vat_amount_cents: 4560,
+      },
+    ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+
+  it('ist ohne Nacharbeit XRechnung-faehig', () => {
+    const input = invoiceToXRechnungInput(seeded);
+    expect(input).not.toBeNull();
+    expect(validateXRechnung(input!)).toEqual([]);
+  });
+
+  it('traegt die Leitweg-ID und die Summen der EN 16931', () => {
+    const xml = renderXRechnung(invoiceToXRechnungInput(seeded)!);
+    // Der CI-Job prueft auch dieses Dokument gegen den KoSIT-Validator, damit
+    // die Demo-Rechnung nicht nur unseren eigenen Regeln genuegt.
+    mkdirSync(SAMPLE_DIR, { recursive: true });
+    writeFileSync(join(SAMPLE_DIR, 'demo-invoice.xml'), xml, 'utf8');
+    expect(xml).toContain('<cbc:BuyerReference>991-01234-56</cbc:BuyerReference>');
+    expect(xml).toContain('<cbc:TaxExclusiveAmount currencyID="EUR">6480.00</cbc:TaxExclusiveAmount>');
+    expect(xml).toContain('<cbc:TaxInclusiveAmount currencyID="EUR">7711.20</cbc:TaxInclusiveAmount>');
+    expect(xml).toContain('<cbc:Telephone>+49 40 1112233</cbc:Telephone>');
+  });
+});

@@ -111,7 +111,13 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <Download className="size-4" aria-hidden="true" />
               PDF herunterladen
             </a>
-            {xrechnung.ready && (
+            {/*
+              The XML is the legally required part of the invoice, so it is never
+              hidden. When something is missing the button leads to the setting
+              that fixes it instead of disappearing and leaving the office
+              guessing why a download it was promised is not there.
+            */}
+            {xrechnung.ready ? (
               <a
                 href={`/dashboard/abrechnung/${invoice.id}/xrechnung`}
                 className={buttonVariants({ variant: 'outline' })}
@@ -119,6 +125,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 <FileText className="size-4" aria-hidden="true" />
                 XRechnung XML
               </a>
+            ) : (
+              <ButtonLink
+                href="/dashboard/settings"
+                variant="outline"
+                className="border-warning/40 text-warning"
+                title={xrechnung.errors.join(' ')}
+              >
+                <FileText className="size-4" aria-hidden="true" />
+                XRechnung XML: Angaben fehlen
+              </ButtonLink>
             )}
           </div>
         )}

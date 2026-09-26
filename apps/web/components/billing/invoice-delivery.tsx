@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useId, useState } from 'react';
 import { BellRing, Mail, PackageCheck } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
@@ -74,8 +75,20 @@ export function SendInvoicePanel({
           </SubmitButton>
         </form>
       ) : (
-        <div className="rounded-lg border border-border bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
-          Direkter E-Mail-Versand ist noch nicht verbunden. Das PDF kann heruntergeladen und extern versendet werden.
+        <div className="rounded-lg border border-warning/30 bg-warning-soft px-3.5 py-3 text-sm leading-6 text-foreground">
+          <p className="font-medium text-warning">E-Mail-Versand ist nicht eingerichtet.</p>
+          <p className="mt-1">
+            Solange kein Anbieter verbunden ist, kann ReinPlan nichts verschicken – und behauptet es
+            auch nicht. PDF und XRechnung-XML lassen sich herunterladen und extern versenden. Den
+            Anbieter verbinden und mit einer Testmail prüfen:{' '}
+            <Link
+              href="/dashboard/settings"
+              className="font-medium text-warning underline underline-offset-4"
+            >
+              Einstellungen → E-Mail-Versand
+            </Link>
+            .
+          </p>
         </div>
       )}
 

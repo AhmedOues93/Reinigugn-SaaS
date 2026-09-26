@@ -41,6 +41,7 @@ declare
   shift_job uuid;
   shift_entry uuid;
   day_net integer;
+  demo_invoice uuid;
   members uuid[] := '{}';
 begin
   if coalesce(current_setting('sauberwerk.seed_confirmed', true), '') <> 'demo-account' then
@@ -71,9 +72,17 @@ begin
     return;
   end if;
 
-  insert into public.companies (name, slug, legal_form, street, postal_code, city, phone, email, default_payment_terms_days, default_language)
+  -- Die Stammdaten des Demo-Betriebs sind vollstaendig, damit die E-Rechnung
+  -- ohne Nacharbeit erzeugt werden kann. Alle Werte sind offizielle Test- und
+  -- Dokumentationswerte, keine echten Firmen-, Steuer- oder Bankdaten:
+  --   USt-IdNr. DE999999999  -> reservierter Testwert
+  --   IBAN DE02120300000000202051 -> Testkonto der Deutschen Bundesbank
+  -- Sie gehoeren zu einem Betrieb, der schon im Namen "Testdaten" traegt.
+  insert into public.companies (name, slug, legal_form, street, postal_code, city, phone, email,
+                                tax_number, vat_id, iban, bic, default_payment_terms_days, default_language)
   values ('ReinPlan Demo (Testdaten)', 'reinplan-demo-konto', 'GmbH', 'Musterweg 3', '20095', 'Hamburg',
-          '+49 40 1112233', owner_email, 14, 'de')
+          '+49 40 1112233', owner_email,
+          '22/815/08154', 'DE999999999', 'DE02120300000000202051', 'BYLADEM1001', 14, 'de')
   returning id into demo_company;
   update public.companies set default_hourly_rate_cents = 3900 where id = demo_company;
 
@@ -206,5 +215,40 @@ begin
     end loop;
   end loop;
 
+  -- ---------------------------------------------------------------------------
+  -- Eine vollstaendige, ausgestellte DEMO-Rechnung fuer den E-Rechnungs-Test.
+  --
+  -- Sie wird neu angelegt, damit niemand eine bereits ausgestellte Rechnung
+  -- nachtraeglich anfassen muss: der company_snapshot einer ausgestellten
+  -- Rechnung ist eingefroren und darf es bleiben. Die Rechnung traegt eine
+  -- Leitweg-ID (BT-10, in der XRechnung Pflicht) und haengt an einem Objekt,
+  -- damit auch die Zuordnung Objekt -> Rechnung sichtbar ist.
+  --
+  -- Die Billing-RPCs arbeiten ueber billing_actor(), also ueber auth.uid().
+  -- Fuer die Dauer dieser Transaktion tritt das Skript als das Zielkonto auf.
+  -- ---------------------------------------------------------------------------
+  perform set_config('request.jwt.claim.sub', owner_user::text, true);
+
+  demo_invoice := public.create_draft_invoice(
+    customer_a,
+    date_trunc('month', current_date - interval '1 month')::date,
+    (date_trunc('month', current_date)::date - 1),
+    14::smallint,
+    'Demo-Rechnung fuer den E-Rechnungs-Test. Keine Zahlungsaufforderung.'::text,
+    '991-01234-56'::text);
+
+  perform public.add_invoice_line(
+    demo_invoice,
+    'Unterhaltsreinigung Buerohaus Elbpalais, Vormonat',
+    160::numeric, 'Std'::text, 3900::bigint, 1900, null, null, object_a);
+  perform public.add_invoice_line(
+    demo_invoice,
+    'Glasreinigung innen, Treppenhaus',
+    1::numeric, 'Pauschale'::text, 24000::bigint, 1900, null, null, object_a);
+
+  perform public.issue_invoice(demo_invoice, current_date);
+  perform set_config('request.jwt.claim.sub', '', true);
+
   raise notice 'Demo-Betrieb "ReinPlan Demo (Testdaten)" fuer % angelegt.', owner_email;
+  raise notice 'Demo-Rechnung mit Leitweg-ID 991-01234-56 ausgestellt: unter Abrechnung pruefbar (PDF und XRechnung-XML).';
 end $$;

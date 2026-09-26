@@ -110,10 +110,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Die Unit-Tests rendern dabei eine vollstaendige Beispielrechnung nach
-      # apps/web/.xrechnung/sample.xml. So wird genau das Dokument geprueft,
-      # das der Code wirklich erzeugt, und kein von Hand gepflegtes Abbild.
-      - name: Beispielrechnung erzeugen
+      # Die Unit-Tests rendern dabei die Dokumente nach apps/web/.xrechnung/:
+      # sample.xml aus dem Code und demo-invoice.xml mit genau den Zahlen, die
+      # supabase/seed/demo-for-account.sql in die Datenbank schreibt. So wird
+      # geprueft, was der Code wirklich erzeugt, und kein von Hand gepflegtes
+      # Abbild — und auch die Rechnung, mit der getestet wird.
+      - name: Rechnungen erzeugen
         run: pnpm --filter @reinigung/web exec vitest run tests/xrechnung.test.ts
 
       - name: KoSIT-Validator und XRechnung-Szenarien laden
@@ -134,16 +136,24 @@ jobs:
             -s .kosit/scenarios/scenarios.xml \
             -r .kosit/scenarios \
             -h -o .kosit/report \
-            apps/web/.xrechnung/sample.xml
+            apps/web/.xrechnung/sample.xml \
+            apps/web/.xrechnung/demo-invoice.xml
           # Der Validator meldet einen Befund im Report, nicht im Exit-Code.
           # Ohne diese Zeile waere der Job gruen, waehrend die Rechnung beim
           # Empfaenger durchfaellt.
           if grep -q "<accepted>false</accepted>" .kosit/report/*.xml; then
-            echo "::error::Die erzeugte XRechnung wurde vom KoSIT-Validator abgelehnt."
+            echo "::error::Eine erzeugte XRechnung wurde vom KoSIT-Validator abgelehnt."
             cat .kosit/report/*.xml
             exit 1
           fi
-          echo "XRechnung akzeptiert."
+          # Zwei Eingabedateien muessen zwei Reports ergeben. Ohne diese Zeile
+          # waere der Job auch gruen, wenn eine Datei nie geprueft wurde.
+          reports=$(ls .kosit/report/*.xml | wc -l)
+          if [ "$reports" -lt 2 ]; then
+            echo "::error::Es wurden nur $reports Rechnungen geprueft, erwartet sind 2."
+            exit 1
+          fi
+          echo "XRechnung akzeptiert ($reports Dokumente).""
 
       - name: Report aufbewahren, wenn etwas schiefging
         if: failure()
