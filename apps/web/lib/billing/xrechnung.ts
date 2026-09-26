@@ -38,6 +38,25 @@ const xml = (value: unknown) =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;');
 
+// Stammdaten verwenden deutsche Laendernamen; EN 16931 erwartet ISO 3166-1 alpha-2.
+const countryCode = (value: string | null): string | null => {
+  const country = (value ?? 'DE').trim();
+  const aliases: Record<string, string> = {
+    deutschland: 'DE', germany: 'DE',
+    oesterreich: 'AT', österreich: 'AT', austria: 'AT',
+    schweiz: 'CH', switzerland: 'CH',
+    frankreich: 'FR', france: 'FR',
+    niederlande: 'NL', netherlands: 'NL',
+    belgien: 'BE', belgium: 'BE',
+    polen: 'PL', poland: 'PL',
+    italien: 'IT', italy: 'IT',
+    spanien: 'ES', spain: 'ES',
+    tunesien: 'TN', tunisia: 'TN',
+  };
+  const code = aliases[country.toLocaleLowerCase('de-DE')] ?? country.toUpperCase();
+  return /^[A-Z]{2}$/.test(code) ? code : null;
+};
+
 const amount = (cents: number) => (cents / 100).toFixed(2);
 const pct = (basisPoints: number) => (basisPoints / 100).toFixed(2).replace(/\.00$/, '');
 
@@ -80,6 +99,15 @@ export function validateXRechnung(input: XRechnungInput): string[] {
     ['Kunden-E-Mail', customer, 'email'],
   ] as const) {
     if (!str(record, key)) errors.push(`${label} fehlt.`);
+  }
+
+  for (const [label, record] of [
+    ['Firmenland', company],
+    ['Kundenland', customer],
+  ] as const) {
+    if (!countryCode(str(record, 'country'))) {
+      errors.push(`${label}: bitte einen ISO-3166-1-Laendercode (z. B. DE) angeben.`);
+    }
   }
 
   if (!str(company, 'vat_id') && !str(company, 'tax_number')) {
@@ -155,8 +183,8 @@ export function renderXRechnung(input: XRechnungInput): string {
 
   const company = input.company;
   const customer = input.customer;
-  const companyCountry = str(company, 'country') || 'DE';
-  const customerCountry = str(customer, 'country') || 'DE';
+  const companyCountry = countryCode(str(company, 'country'))!;
+  const customerCountry = countryCode(str(customer, 'country'))!;
 
   const vatGroups = new Map<number, { net: number; vat: number }>();
   for (const line of input.lines) {
