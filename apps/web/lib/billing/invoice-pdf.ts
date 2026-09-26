@@ -36,6 +36,12 @@ export type InvoicePdfInput = {
   lines: {
     position: number;
     description: string;
+    /**
+     * Das gereinigte Objekt. Eine Hausverwaltung mit zwoelf Haeusern kann eine
+     * Rechnung ohne diese Angabe keinem Gebaeude zuordnen — die Verknuepfung
+     * lag in invoice_lines.cleaning_object_id, wurde aber nie ausgegeben.
+     */
+    objectName?: string | null;
     quantity: number;
     unit: string;
     unit_price_cents: number;
@@ -247,7 +253,12 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
 
   tableHeader();
   for (const item of input.lines) {
-    const descLines = wrap(item.description, regular, 9.5, descWidth);
+    const descLines = wrap(
+      item.objectName ? `${item.description}\n${item.objectName}` : item.description,
+      regular,
+      9.5,
+      descWidth,
+    );
     const height = descLines.length * 12 + 8;
     if (y - height < margin.bottom + 20) newPage();
     draw(String(item.position), cols.pos, y, { size: 9.5, color: muted });

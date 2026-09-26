@@ -21,6 +21,8 @@ export type InvoiceDocumentData = {
   lines: {
     position: number;
     description: string;
+    /** Das gereinigte Objekt, damit der Empfaenger die Zeile zuordnen kann. */
+    objectName?: string | null;
     quantity: number;
     unit: string;
     unit_price_cents: number;
@@ -159,6 +161,9 @@ export function InvoiceDocument({
         {data.lines.map((line) => (
           <li key={line.position} className="rounded-md border border-border p-3">
             <p className="break-anywhere text-sm font-medium">{line.description}</p>
+            {line.objectName && (
+              <p className="break-anywhere text-xs text-muted-foreground">{line.objectName}</p>
+            )}
             <dl className="mt-2 space-y-1 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t(locale, 'billing.quantity')}</dt>
@@ -204,7 +209,10 @@ export function InvoiceDocument({
           {data.lines.map((line) => (
             <tr key={line.position}>
               <td className="py-2.5 align-top tabular-nums">{line.position}</td>
-              <td className="py-2.5 align-top">{line.description}</td>
+              <td className="break-anywhere py-2.5 align-top">
+                {line.description}
+                {line.objectName && <span className="block text-xs text-muted-foreground">{line.objectName}</span>}
+              </td>
               <td className="py-2.5 text-end align-top tabular-nums">
                 {line.quantity} {line.unit}
               </td>

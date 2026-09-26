@@ -46,3 +46,44 @@ describe('money rendering', () => {
     expect(formatPercent('de', 0)).toContain('0');
   });
 });
+
+/*
+ * Objekt -> Rechnung.
+ *
+ * Die Verknuepfung lag immer in invoice_lines.cleaning_object_id, wurde aber
+ * nirgends ausgegeben. Eine Hausverwaltung mit zwoelf Haeusern kann eine
+ * Rechnung ohne den Objektnamen keinem Gebaeude zuordnen und die Kosten nicht
+ * umlegen — fuer eine Gebaeudereinigung ist das die haeufigste Rueckfrage
+ * ueberhaupt.
+ */
+describe('Objektzuordnung auf der Rechnung', () => {
+  it('nimmt den Objektnamen mit in die Positionsbeschreibung', async () => {
+    const { renderInvoicePdf } = await import('@/lib/billing/invoice-pdf');
+    const bytes = await renderInvoicePdf({
+      invoiceNumber: 'RE-2026-0001',
+      issueDate: '2026-09-01',
+      dueDate: '2026-09-15',
+      servicePeriodStart: '2026-08-01',
+      servicePeriodEnd: '2026-08-31',
+      currency: 'EUR',
+      netTotalCents: 10000,
+      vatTotalCents: 1900,
+      grossTotalCents: 11900,
+      customerNote: null,
+      cancelledAt: null,
+      customer: { name: 'Hausverwaltung Nord GmbH', billing_address: 'Weg 1', postal_code: '20095', city: 'Hamburg' },
+      company: { name: 'Ahmed Gebäudereinigung GmbH', street: 'Str. 1', postal_code: '20095', city: 'Hamburg' },
+      lines: [{
+        position: 1,
+        description: 'Unterhaltsreinigung August',
+        objectName: 'Bürohaus Alsterpalais',
+        quantity: 1,
+        unit: 'Monat',
+        unit_price_cents: 10000,
+        vat_rate_basis_points: 1900,
+        net_amount_cents: 10000,
+      }],
+    });
+    expect(bytes.byteLength).toBeGreaterThan(1000);
+  });
+});

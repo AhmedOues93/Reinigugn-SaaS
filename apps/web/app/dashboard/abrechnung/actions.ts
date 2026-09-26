@@ -395,6 +395,24 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
   ]);
   if (!rendered) return failure('Das PDF konnte nicht erzeugt werden.');
 
+  /*
+   * Eine Rechnung ohne ihre E-Rechnung geht nicht raus.
+   *
+   * Vorher wurde das XML nur angehaengt, wenn es sich erzeugen liess — sonst
+   * ging dieselbe Mail stillschweigend mit dem PDF allein hinaus und wurde als
+   * versendet protokolliert. Das Buero glaubte, eine gesetzeskonforme
+   * E-Rechnung verschickt zu haben, und erfuhr das Gegenteil erst vom Kunden.
+   *
+   * Die fehlenden Angaben stehen in der Meldung, damit sie ergaenzt werden
+   * koennen; die ausgestellte Rechnung selbst bleibt unberuehrt.
+   */
+  if (kind === 'INVOICE' && (!xrechnung?.xml || !xrechnung.fileName)) {
+    const missing = xrechnung?.errors?.length ? ` Es fehlt: ${xrechnung.errors.join(' ')}` : '';
+    return failure(
+      `Nicht gesendet: Die E-Rechnung (XRechnung) konnte nicht erzeugt werden, und eine Rechnung ohne sie ist in Deutschland nicht zulässig.${missing}`,
+    );
+  }
+
   const company = (invoice.company_snapshot ?? {}) as Record<string, string | null>;
   const payments = kind === 'REMINDER' ? await listInvoicePayments(invoiceId) : [];
   const paidCents = payments.reduce((sum, payment) => sum + payment.amount_cents, 0);
