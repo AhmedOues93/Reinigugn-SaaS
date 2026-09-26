@@ -103,7 +103,13 @@ export function CompanySettingsForm({
           <Input id="managing_director" name="managing_director" defaultValue={String(company.managing_director ?? '')} />
           <input type="hidden" name="managing_director_was_set" value={directorWasSet ? 'true' : 'false'} />
         </Field>
-        <Field label="Telefon" htmlFor="phone" optional>
+        {/*
+          Nicht mehr optional: BR-DE-6 verlangt die Telefonnummer des
+          Verkaeufers in jeder XRechnung. Ohne sie laesst sich keine Rechnung
+          per E-Mail versenden, also gehoert der Hinweis an das Feld und nicht
+          erst auf die Rechnung.
+        */}
+        <Field label="Telefon" htmlFor="phone" info="Pflichtangabe für die E-Rechnung (XRechnung).">
           <Input id="phone" name="phone" type="tel" autoComplete="tel" defaultValue={String(company.phone ?? '')} />
         </Field>
         <Field label="Allgemeine E-Mail" htmlFor="email" optional>

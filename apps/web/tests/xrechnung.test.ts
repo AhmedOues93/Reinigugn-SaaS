@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 /** Gitignoriert; nur der CI-Job fuer die E-Rechnung liest hier. */
 const SAMPLE_DIR = join(__dirname, '..', '.xrechnung');
 import { renderXRechnung, validateXRechnung, type XRechnungInput } from '@/lib/billing/xrechnung';
+import { invoiceToXRechnungInput } from '@/lib/billing/invoice-xrechnung-data';
 
 const base: XRechnungInput = {
   invoiceNumber: 'RE-2026-0042',
@@ -48,6 +49,25 @@ const base: XRechnungInput = {
     vat_amount_cents: 1900,
   }],
 };
+
+/** Die Form, in der getInvoice eine ausgestellte Rechnung liefert. */
+const invoiceShape = {
+  status: 'ISSUED',
+  invoice_number: base.invoiceNumber,
+  issue_date: base.issueDate,
+  due_date: base.dueDate,
+  service_period_start: base.servicePeriodStart,
+  service_period_end: base.servicePeriodEnd,
+  currency: base.currency,
+  buyer_reference: base.buyerReference,
+  net_total_cents: base.netTotalCents,
+  vat_total_cents: base.vatTotalCents,
+  gross_total_cents: base.grossTotalCents,
+  customer_snapshot: base.customer,
+  company_snapshot: base.company,
+  lines: base.lines,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any;
 
 describe('XRechnung', () => {
   it('requires the XRechnung buyer reference instead of inventing one', () => {
@@ -161,5 +181,49 @@ describe('EN 16931: die Betraege muessen aufgehen', () => {
      */
     mkdirSync(SAMPLE_DIR, { recursive: true });
     writeFileSync(join(SAMPLE_DIR, 'sample.xml'), xmlDocument, 'utf8');
+  });
+});
+
+/*
+ * Kontaktangaben aus dem Firmenstamm nachreichen.
+ *
+ * company_snapshot friert beim Ausstellen ein, und das ist richtig. Die
+ * Verkaeufer-Kontaktgruppe wurde aber erst mit der XRechnung zur Pflicht:
+ * ohne Rueckfall bliebe jede vorher ausgestellte Rechnung fuer immer
+ * unvollstaendig — das Buero traegt die Telefonnummer nach, und die Rechnung
+ * scheitert weiterhin am eingefrorenen Abzug.
+ */
+describe('Rueckfall auf den Firmenstamm', () => {
+  const ohneTelefon = (() => {
+    const { phone, ...rest } = base.company as Record<string, unknown>;
+    void phone;
+    return rest;
+  })();
+
+  it('reicht eine fehlende Telefonnummer aus dem Firmenstamm nach', () => {
+    const input = invoiceToXRechnungInput(
+      { ...invoiceShape, company_snapshot: ohneTelefon },
+      { phone: '+49 40 1234567' },
+    );
+    expect(input).not.toBeNull();
+    expect(validateXRechnung(input!)).toEqual([]);
+    expect(renderXRechnung(input!)).toContain('<cbc:Telephone>+49 40 1234567</cbc:Telephone>');
+  });
+
+  it('ueberschreibt eine vorhandene Angabe nicht', () => {
+    const input = invoiceToXRechnungInput(invoiceShape, { phone: '+49 999 999999' });
+    expect(renderXRechnung(input!)).toContain('<cbc:Telephone>+49 69 1234567</cbc:Telephone>');
+  });
+
+  it('reicht Betraege und Adressen NICHT nach', () => {
+    // Nur Kontaktangaben duerfen nachgereicht werden. Strasse und Ort gehoeren
+    // zum Inhalt der Rechnung und bleiben so, wie sie ausgestellt wurde.
+    const { street, ...ohneStrasse } = base.company as Record<string, unknown>;
+    void street;
+    const input = invoiceToXRechnungInput(
+      { ...invoiceShape, company_snapshot: ohneStrasse },
+      { street: 'Nachtraeglich 9' },
+    );
+    expect(validateXRechnung(input!).join(' ')).toContain('Firmenstraße fehlt');
   });
 });

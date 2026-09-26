@@ -61,6 +61,7 @@ describe('Objektzuordnung auf der Rechnung', () => {
     const { renderInvoicePdf } = await import('@/lib/billing/invoice-pdf');
     const bytes = await renderInvoicePdf({
       invoiceNumber: 'RE-2026-0001',
+      status: 'ISSUED',
       issueDate: '2026-09-01',
       dueDate: '2026-09-15',
       servicePeriodStart: '2026-08-01',

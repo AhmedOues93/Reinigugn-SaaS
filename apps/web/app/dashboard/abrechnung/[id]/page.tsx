@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Check, ClipboardCheck, Download, Eye, FileText } from 'lucide-react';
+import { Building2, Check, ClipboardCheck, Download, Eye, FileText } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { BackLink, ButtonLink, buttonVariants, Card, DataRow, Notice } from '@/components/ui';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
@@ -22,6 +22,7 @@ import { berlinDateKey } from '@/lib/date';
 import { formatDate, formatDateTime, formatMoney, formatPercent } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
+import { getCompanyProfile } from '@/lib/data/onboarding';
 import {
   addAllBillableJobs,
   addInvoiceLine,
@@ -67,7 +68,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const snapshotEmail = (invoice.customer_snapshot as Record<string, string | null> | null)?.email ?? null;
   const recipient = customerEmail ?? snapshotEmail;
   const canMail = mailConfigured();
-  const xrechnung = xrechnungReadiness(invoice);
+  const liveCompany = await getCompanyProfile();
+  const xrechnung = xrechnungReadiness(invoice, liveCompany as Record<string, unknown> | null);
   const today = berlinDateKey();
 
   const steps = [
@@ -366,12 +368,24 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 XRechnung noch nicht vollständig
               </summary>
               <div className="pt-3">
+                {/*
+                  Nicht mehr „zusätzlich": seit 2025 ist die E-Rechnung im
+                  deutschen B2B die geforderte Form, und der Versand ist ohne
+                  sie gesperrt. Der Hinweis führt jetzt dorthin, wo sich der
+                  Mangel beheben lässt — eine Liste ohne Weg dahin lässt
+                  jemanden suchen.
+                */}
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Die PDF-Rechnung bleibt die sichtbare Rechnung. Für eine zusätzliche maschinenlesbare XRechnung (XML) fehlen noch:
+                  Für die maschinenlesbare XRechnung (XML) fehlen noch folgende Angaben. Ohne sie kann die Rechnung
+                  nicht per E-Mail versendet werden.
                 </p>
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
                   {xrechnung.errors.map((error) => <li key={error}>{error}</li>)}
                 </ul>
+                <ButtonLink href="/dashboard/settings" variant="outline" size="sm" className="mt-4">
+                  <Building2 className="size-4 shrink-0" aria-hidden="true" />
+                  Unternehmensdaten öffnen
+                </ButtonLink>
               </div>
             </details>
           )}
