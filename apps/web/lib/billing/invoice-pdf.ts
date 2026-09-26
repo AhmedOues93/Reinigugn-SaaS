@@ -28,6 +28,7 @@ export type InvoicePdfInput = {
   vatTotalCents: number;
   grossTotalCents: number;
   customerNote: string | null;
+  buyerReference?: string | null;
   cancelledAt: string | null;
   correctsInvoiceNumber?: string | null;
   customer: Record<string, unknown> | null;
@@ -35,6 +36,12 @@ export type InvoicePdfInput = {
   lines: {
     position: number;
     description: string;
+    /**
+     * Das gereinigte Objekt. Eine Hausverwaltung mit zwoelf Haeusern kann eine
+     * Rechnung ohne diese Angabe keinem Gebaeude zuordnen — die Verknuepfung
+     * lag in invoice_lines.cleaning_object_id, wurde aber nie ausgegeben.
+     */
+    objectName?: string | null;
     quantity: number;
     unit: string;
     unit_price_cents: number;
@@ -59,7 +66,8 @@ const winAnsiExtras = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•
 export function safe(value: unknown): string {
   const input = String(value ?? '')
     .replace(/[\u202f\u2009\u2007]/g, ' ')
-    .replace(/\u2212/g, '-')
+    .replace(/−/g, '-')
+    .replace(/•/g, '·')
     .replace(/[\r\t]/g, ' ');
   let out = '';
   for (const char of input) {
@@ -120,8 +128,8 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
   pdf.setTitle(`${title} ${input.invoiceNumber}`);
   pdf.setAuthor(safe(companyName));
   pdf.setSubject(`${title} ${input.invoiceNumber}`);
-  pdf.setCreator('SauberWerk');
-  pdf.setProducer('SauberWerk');
+  pdf.setCreator('ReinPlan');
+  pdf.setProducer('ReinPlan');
   pdf.setLanguage('de-DE');
 
   let logo: PDFImage | null = null;
@@ -190,6 +198,7 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
   ];
   const customerNumber = str(customer, 'customer_number');
   if (customerNumber) meta.push(['Kundennummer', customerNumber]);
+  if (input.buyerReference) meta.push(['Käuferreferenz', input.buyerReference]);
   const metaLabelX = A4.width - margin.x - 210;
   meta.forEach(([label, value], index) => {
     draw(label, metaLabelX, y - 18 - index * 14, { size: 9, color: muted });
@@ -224,7 +233,7 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
 
   const tableHeader = () => {
     page.drawRectangle({ x: margin.x - 6, y: y - 6, width: contentWidth + 12, height: 20, color: rgb(0.94, 0.96, 0.96) });
-    draw('Pos.', cols.pos, y, { size: 8, font: bold, color: muted });
+    draw('Nr.', cols.pos, y, { size: 8, font: bold, color: muted });
     draw('Beschreibung', cols.desc, y, { size: 8, font: bold, color: muted });
     draw('Menge', cols.qty, y, { size: 8, font: bold, color: muted, align: 'right' });
     draw('Einzelpreis', cols.price + 12, y, { size: 8, font: bold, color: muted, align: 'right' });
@@ -244,7 +253,12 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
 
   tableHeader();
   for (const item of input.lines) {
-    const descLines = wrap(item.description, regular, 9.5, descWidth);
+    const descLines = wrap(
+      item.objectName ? `${item.description}\n${item.objectName}` : item.description,
+      regular,
+      9.5,
+      descWidth,
+    );
     const height = descLines.length * 12 + 8;
     if (y - height < margin.bottom + 20) newPage();
     draw(String(item.position), cols.pos, y, { size: 9.5, color: muted });

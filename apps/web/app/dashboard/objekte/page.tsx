@@ -61,6 +61,7 @@ export default async function ObjectsPage({ searchParams }: { searchParams: Prom
         rows={objects}
         rowKey={(object) => object.id}
         rowHref={(object) => `/dashboard/objekte/${object.id}`}
+        rowActions={(object) => <ButtonLink href={`/dashboard/objekte/${object.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           { key: 'name', header: 'Objekt', mobile: 'title', cell: (object) => object.name },
           { key: 'customer', header: 'Kunde', mobile: 'subtitle', cell: (object) => object.customers?.[0]?.name ?? '—' },

@@ -1,7 +1,7 @@
 import { requireStaffCompany } from '@/lib/auth';
 import { getCurrentCompany } from '@/lib/auth';
 
-const complaintSelection = 'id, customer_id, cleaning_object_id, job_id, title, description, priority, status, assigned_member_id, due_date, internal_note, follow_up_job_id, created_at, updated_at, customers(id, name), cleaning_objects(id, name), jobs!complaints_job_id_fkey(id, title), company_members!complaints_assigned_member_id_fkey(id, profiles!company_members_profile_id_fkey(first_name, last_name))';
+const complaintSelection = 'id, customer_id, cleaning_object_id, job_id, title, description, priority, status, assigned_member_id, due_date, internal_note, follow_up_job_id, created_at, updated_at, customers(id, name), cleaning_objects(id, name), jobs!complaints_job_id_fkey(id, title, scheduled_date), company_members!complaints_assigned_member_id_fkey(id, profiles!company_members_profile_id_fkey(first_name, last_name))';
 
 export async function listComplaints({ objectId, customerId }: { objectId?: string; customerId?: string } = {}) {
   const { supabase, company } = await requireStaffCompany();
@@ -21,12 +21,21 @@ export async function getComplaint(id: string) {
   ]);
   if (error || employeesError) throw new Error('Reklamation konnte nicht geladen werden.');
   if (!complaint) return null;
-  const { data: updates, error: updatesError } = await supabase
-    .from('complaint_updates')
-    .select('id, status, note, created_at, company_members!complaint_updates_author_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
-    .eq('complaint_id', id).order('created_at', { ascending: false });
-  if (updatesError) throw new Error('Reklamationsverlauf konnte nicht geladen werden.');
-  return { complaint, updates: updates ?? [], employees: employees ?? [] };
+  const [{ data: updates, error: updatesError }, { data: jobAssignments, error: assignmentsError }] = await Promise.all([
+    supabase
+      .from('complaint_updates')
+      .select('id, status, note, created_at, company_members!complaint_updates_author_member_id_fkey(role, profiles!company_members_profile_id_fkey(first_name, last_name))')
+      .eq('complaint_id', id)
+      .order('created_at', { ascending: false }),
+    complaint.job_id
+      ? supabase
+          .from('job_assignments')
+          .select('member_id, company_members!job_assignments_member_id_fkey(id, profiles!company_members_profile_id_fkey(first_name, last_name))')
+          .eq('job_id', complaint.job_id)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (updatesError || assignmentsError) throw new Error('Reklamationsverlauf konnte nicht geladen werden.');
+  return { complaint, updates: updates ?? [], employees: employees ?? [], jobAssignments: jobAssignments ?? [] };
 }
 
 export async function listComplaintFormOptions() {
@@ -56,4 +65,17 @@ export async function listMyOperationalComplaints() {
   const { data, error } = await supabase.from('complaints').select('id, title, description, status, due_date, cleaning_objects(name), jobs!complaints_job_id_fkey(title)').order('due_date', { ascending: true, nullsFirst: false });
   if (error) throw new Error('Eigene Reklamationen konnten nicht geladen werden.');
   return data ?? [];
+}
+
+
+export async function getQualityInspection(id: string) {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase
+    .from('quality_inspections')
+    .select('id, cleaning_object_id, job_id, inspected_at, result, score, criteria, notes, follow_up_required, created_at, cleaning_objects(id, name, customer_id), jobs(id, title, scheduled_date), company_members!quality_inspections_inspector_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
+    .eq('company_id', company.id)
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error('Qualitätskontrolle konnte nicht geladen werden.');
+  return data;
 }

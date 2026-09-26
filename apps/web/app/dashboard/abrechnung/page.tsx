@@ -1,4 +1,4 @@
-import { Download, Plus, Receipt } from 'lucide-react';
+import { FileDown, Plus, Receipt } from 'lucide-react';
 import { ButtonLink, EmptyState, FilterTabs, PageHeader, StatBand } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
@@ -23,12 +23,22 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader
         title={t(locale, 'billing.title')}
-        description="Vom Entwurf über Festschreibung und Versand bis zum Zahlungseingang."
+        description="Von der Leistung über Ausstellung und Versand bis zum Zahlungseingang."
         actions={
-          <ButtonLink href="/dashboard/abrechnung/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            {t(locale, 'billing.new')}
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/abrechnung/buchhaltung" variant="outline">
+              <FileDown className="size-4" aria-hidden="true" />
+              Buchhaltung CSV
+            </ButtonLink>
+            <ButtonLink href="/dashboard/abrechnung/datev" variant="outline">
+              <FileDown className="size-4" aria-hidden="true" />
+              DATEV CSV
+            </ButtonLink>
+            <ButtonLink href="/dashboard/abrechnung/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              {t(locale, 'billing.new')}
+            </ButtonLink>
+          </div>
         }
       />
 
@@ -64,17 +74,23 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         rows={invoices}
         rowKey={(invoice) => invoice.id}
         rowHref={(invoice) => `/dashboard/abrechnung/${invoice.id}`}
-        rowActions={(invoice) =>
-          invoice.status !== 'DRAFT' ? (
-            <a
-              href={`/dashboard/abrechnung/${invoice.id}/pdf`}
-              className="relative z-10 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary max-md:size-touch"
-              aria-label={`PDF ${invoice.invoice_number} herunterladen`}
-            >
-              <Download className="size-4" aria-hidden="true" />
-            </a>
-          ) : null
-        }
+        rowActions={(invoice) => (
+          <div className="relative z-10 flex items-center gap-2">
+            <ButtonLink href={`/dashboard/abrechnung/${invoice.id}`} variant="outline">Öffnen</ButtonLink>
+            {invoice.status !== 'DRAFT' && (
+              <a
+                href={`/dashboard/abrechnung/${invoice.id}/pdf`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted max-md:min-h-11"
+                aria-label={`PDF ${invoice.invoice_number} ansehen`}
+              >
+                <FileDown className="size-4" aria-hidden="true" />
+                PDF
+              </a>
+            )}
+          </div>
+        )}
         columns={[
           {
             key: 'number',

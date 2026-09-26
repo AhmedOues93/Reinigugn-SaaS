@@ -1,15 +1,27 @@
-import nodemailer from 'nodemailer';
+import { decideRecipient } from '@/lib/mail/guard';
+import { selectProvider, sender } from '@/lib/mail/provider';
 
 /**
- * Outbound e-mail for transactional documents.
+ * The one way a transactional message leaves the application.
  *
- * Configured through SMTP_* environment variables, which works with any
- * provider that speaks SMTP (Postmark, Mailjet, SES, a company relay, or the
- * local Mailpit in development). When nothing is configured, the result says so
- * explicitly — callers record `NOT_CONFIGURED` and never report a delivery that
- * did not happen.
+ * Everything funnels through here so the recipient guard, the provider choice
+ * and the honesty rule are applied once rather than per feature:
+ *
+ * - nothing configured  → `NOT_CONFIGURED`, never a claimed delivery
+ * - guard refuses       → `FAILED`, naming why
+ * - provider refuses    → `FAILED`, carrying the provider's own reason
+ * - provider accepts    → `SENT`, carrying the provider's message id
+ *
+ * "Accepted by the provider" is the strongest claim this layer can make.
+ * Whether the mailbox at the far end took it is a later question, which is
+ * what the Resend webhook route is for.
  */
-export type MailResult = { status: 'SENT' | 'FAILED' | 'NOT_CONFIGURED'; detail: string };
+export type MailResult = {
+  status: 'SENT' | 'FAILED' | 'NOT_CONFIGURED';
+  detail: string;
+  provider: 'resend' | 'smtp' | null;
+  providerMessageId: string | null;
+};
 
 export type MailMessage = {
   to: string;
@@ -17,39 +29,62 @@ export type MailMessage = {
   text: string;
   replyTo?: string | null;
   attachments?: { filename: string; content: Uint8Array; contentType: string }[];
+  /** Pass a stable value to make a retry safe. See `ProviderMessage`. */
+  idempotencyKey?: string;
 };
 
 export function mailConfigured() {
-  return Boolean(process.env.SMTP_HOST && process.env.MAIL_FROM);
+  return Boolean(selectProvider() && process.env.MAIL_FROM);
+}
+
+/** Which provider is configured, for display and for the health endpoint. */
+export function configuredProvider(): 'resend' | 'smtp' | null {
+  return selectProvider()?.name ?? null;
 }
 
 export async function sendMail(message: MailMessage): Promise<MailResult> {
-  if (!mailConfigured()) {
-    return { status: 'NOT_CONFIGURED', detail: 'Kein E-Mail-Versand konfiguriert (SMTP_HOST / MAIL_FROM fehlen).' };
+  const provider = selectProvider();
+  const { from, replyTo } = sender();
+
+  if (!provider || !from) {
+    return {
+      status: 'NOT_CONFIGURED',
+      detail: 'Kein E-Mail-Versand konfiguriert (RESEND_API_KEY oder SMTP_HOST, und MAIL_FROM).',
+      provider: null,
+      providerMessageId: null,
+    };
   }
-  try {
-    const port = Number(process.env.SMTP_PORT ?? 587);
-    const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: process.env.SMTP_SECURE === 'true' || port === 465,
-      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' } : undefined,
-    });
-    const info = await transport.sendMail({
-      from: process.env.MAIL_FROM,
-      to: message.to,
-      replyTo: message.replyTo ?? undefined,
-      subject: message.subject,
-      text: message.text,
-      attachments: message.attachments?.map((attachment) => ({
-        filename: attachment.filename,
-        content: Buffer.from(attachment.content),
-        contentType: attachment.contentType,
-      })),
-    });
-    return { status: 'SENT', detail: `Angenommen vom Mailserver (${info.messageId ?? 'ohne ID'}).` };
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Unbekannter Fehler';
-    return { status: 'FAILED', detail: `Versand fehlgeschlagen: ${reason}`.slice(0, 900) };
+
+  // Non-production environments never mail a real recipient unannounced.
+  const decision = decideRecipient(message.to, message.subject);
+  if (decision.action === 'block') {
+    return {
+      status: 'FAILED',
+      detail: `Nicht gesendet. ${decision.reason}`,
+      provider: provider.name,
+      providerMessageId: null,
+    };
   }
+
+  const result = await provider.send({
+    from,
+    to: decision.to,
+    subject: decision.subject,
+    text: decision.notice ? `${decision.notice}\n\n${message.text}` : message.text,
+    replyTo: message.replyTo ?? replyTo,
+    attachments: message.attachments,
+    idempotencyKey: message.idempotencyKey,
+  });
+
+  if (!result.ok) {
+    return { status: 'FAILED', detail: result.detail, provider: provider.name, providerMessageId: null };
+  }
+
+  const redirected = decision.to === message.to ? '' : ` Umgeleitet an ${decision.to}.`;
+  return {
+    status: 'SENT',
+    detail: `${result.detail}${redirected}`,
+    provider: provider.name,
+    providerMessageId: result.providerMessageId,
+  };
 }

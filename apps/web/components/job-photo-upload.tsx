@@ -25,10 +25,14 @@ export function JobPhotoUpload({
   action,
   checklistItems,
   locale = 'de',
+  category = 'DOCUMENTATION',
+  title,
 }: {
   action: Action;
   checklistItems: ChecklistItem[];
   locale?: Locale;
+  category?: 'BEFORE' | 'AFTER' | 'DOCUMENTATION';
+  title?: string;
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [preview, setPreview] = useState<string | null>(null);
@@ -39,16 +43,12 @@ export function JobPhotoUpload({
     [preview],
   );
 
-  const categories = [
-    { value: 'BEFORE', label: t(locale, 'emp.photo.before') },
-    { value: 'AFTER', label: t(locale, 'emp.photo.after') },
-    { value: 'DOCUMENTATION', label: t(locale, 'emp.photo.documentation') },
-  ];
-
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3">
       <FormMessage status={state.status} message={state.message} />
-      <label className="group relative flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed border-foreground/15 bg-subtle p-4 text-center transition-colors hover:border-primary/50 focus-within:border-primary">
+      <input type="hidden" name="category" value={category} />
+      {title && <p className="text-sm font-semibold">{title}</p>}
+      <label className="group relative flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-foreground/15 bg-subtle p-4 text-center transition-colors hover:border-primary/50 focus-within:border-primary">
         {preview ? (
           <img src={preview} alt={t(locale, 'emp.photo.file')} className="absolute inset-0 size-full object-cover" />
         ) : (
@@ -77,20 +77,6 @@ export function JobPhotoUpload({
           }}
         />
       </label>
-
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium">{t(locale, 'emp.photo.category')}</legend>
-        <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
-          {categories.map((category) => (
-            <label key={category.value} className="relative">
-              <input type="radio" name="category" value={category.value} defaultChecked={category.value === 'DOCUMENTATION'} className="peer sr-only" />
-              <span className="flex min-h-touch cursor-pointer items-center justify-center rounded-lg px-2 text-center text-sm font-medium text-muted-foreground transition-colors peer-checked:bg-card peer-checked:text-foreground peer-checked:shadow-[0_1px_2px_0_rgb(11_42_51/0.12)] peer-focus-visible:ring-2 peer-focus-visible:ring-ring">
-                {category.label}
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
 
       <details className="group rounded-xl border border-border/80">
         <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 text-sm font-medium text-muted-foreground">

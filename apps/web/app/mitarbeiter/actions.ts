@@ -9,6 +9,8 @@ import { employeeLocale } from '@/lib/data/employee';
 import { isLocale, localeCookie, t } from '@/lib/i18n';
 import { cookies } from 'next/headers';
 import { jobPhotoExtension, validateJobPhotoFile } from '@/lib/photo-validation';
+import { sendMail } from '@/lib/mail/transport';
+import { appUrl } from '@/lib/utils';
 
 /**
  * Every employee action resolves the membership from the session and refuses any
@@ -38,6 +40,60 @@ async function employeeLocaleSafe() {
   }
 }
 
+type PortalAcceptanceMailTarget = {
+  service_record_id: string;
+  customer_id: string;
+  customer_name: string;
+  job_title: string;
+  scheduled_date: string;
+  recipient_email: string;
+  recipient_name: string | null;
+  request_sent_at: string | null;
+  reminder_sent_at: string | null;
+};
+
+async function sendPortalAcceptanceRequest(
+  context: NonNullable<Awaited<ReturnType<typeof employeeContext>>>,
+  jobId: string,
+) {
+  const { data, error } = await context.supabase.rpc('get_portal_acceptance_mail_target', { p_job_id: jobId });
+  if (error) {
+    console.error('portal acceptance mail target failed', error.message);
+    return;
+  }
+  const target = (Array.isArray(data) ? data[0] : data) as PortalAcceptanceMailTarget | null;
+  if (!target?.recipient_email || target.request_sent_at) return;
+
+  const { data: company } = await context.supabase
+    .from('companies')
+    .select('name')
+    .eq('id', context.membership.company_id)
+    .maybeSingle();
+
+  const companyName = company?.name ?? 'ReinPlan';
+  const result = await sendMail({
+    to: target.recipient_email,
+    subject: `Abnahme erforderlich: ${target.job_title}`,
+    text:
+      `Guten Tag${target.recipient_name ? ` ${target.recipient_name}` : ''},\n\n` +
+      `${companyName} hat die Leistung „${target.job_title}“ abgeschlossen. ` +
+      `Bitte prüfen und bestätigen Sie den Leistungsnachweis im Kundenportal.\n\n` +
+      `${appUrl(`/portal/leistungen/${jobId}`)}\n\n` +
+      `Mit freundlichen Grüßen\n${companyName}`,
+    idempotencyKey: `acceptance-request-${target.service_record_id}`,
+  });
+
+  if (result.status !== 'SENT') {
+    console.error('portal acceptance request not sent', result.detail);
+    return;
+  }
+
+  const { error: recordError } = await context.supabase.rpc('record_portal_acceptance_mail', {
+    p_job_id: jobId,
+    p_kind: 'REQUEST',
+  });
+  if (recordError) console.error('portal acceptance request audit failed', recordError.message);
+}
 type TimeOperation = 'start_my_job' | 'stop_my_job' | 'pause_my_job' | 'resume_my_job';
 const timeMessages = { start_my_job: 'emp.job.started', stop_my_job: 'emp.job.stopped', pause_my_job: 'emp.job.pauseStarted', resume_my_job: 'emp.job.resumed' } as const;
 
@@ -46,10 +102,25 @@ async function runTimeAction(jobId: string, operation: TimeOperation): Promise<F
   if (!context) return denied();
   const locale = await employeeLocaleSafe();
   const { error } = await context.supabase.rpc(operation, { p_job_id: jobId });
-  if (error) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (error) {
+    if (operation === 'stop_my_job' && error.message.includes('Required checklist items are incomplete')) {
+      return { status: 'error', message: t(locale, 'emp.job.requiredBeforeFinish') };
+    }
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+  if (operation === 'stop_my_job') {
+    try {
+      await sendPortalAcceptanceRequest(context, jobId);
+    } catch (mailError) {
+      console.error('portal acceptance request failed', mailError);
+    }
+  }
+
   revalidateEmployee(jobId);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/arbeitszeiten');
+  revalidatePath('/dashboard/leistungsnachweise');
+  revalidatePath('/portal/leistungen');
   return { status: 'success', message: t(locale, timeMessages[operation]) };
 }
 
@@ -98,7 +169,13 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
   const { error: uploadError } = await context.supabase.storage
     .from('job-photos')
     .upload(path, file, { contentType: file.type, upsert: false });
-  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (uploadError) {
+    console.error('job photo storage upload failed', uploadError);
+    return {
+      status: 'error',
+      message: 'Foto konnte nicht hochgeladen werden. Bitte JPG, PNG oder WebP bis 10 MB verwenden und erneut versuchen.',
+    };
+  }
   const { error: metadataError } = await context.supabase.rpc('create_my_job_photo_metadata', {
     p_job_id: jobId,
     p_storage_path: path,
@@ -107,8 +184,9 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
     p_description: description || null,
   });
   if (metadataError) {
+    console.error('job photo metadata failed', metadataError);
     await context.supabase.storage.from('job-photos').remove([path]);
-    return { status: 'error', message: t(locale, 'common.errorBody') };
+    return { status: 'error', message: 'Foto wurde nicht gespeichert. Bitte Seite neu laden und erneut versuchen.' };
   }
   revalidateEmployee(jobId);
   revalidatePath(`/dashboard/auftraege/${jobId}`);
@@ -176,6 +254,69 @@ export async function uploadMyAuDocument(absenceId: string, _: FormState, formDa
   revalidatePath('/mitarbeiter/abwesenheit');
   revalidatePath('/dashboard/urlaub-krankheit');
   return { status: 'success', message: t(locale, 'emp.absence.auUploaded') };
+}
+
+/**
+ * The Kundenabnahme on site.
+ *
+ * Only reached when the contract asks for a signature — the employee is never
+ * offered a choice of acceptance method, because that is a commercial
+ * arrangement, not a decision for the doorway.
+ *
+ * The signature image goes to a private bucket first and the record is only
+ * marked accepted afterwards, so a failed upload cannot leave an acceptance
+ * claiming evidence that was never stored. A failed acceptance takes the
+ * orphaned file back out.
+ *
+ * This is business evidence and audit documentation. It is not a claim about
+ * legal signature equivalence.
+ */
+export async function confirmOnSiteAcceptance(
+  jobId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+
+  const signerName = String(formData.get('signer_name') ?? '').trim();
+  if (signerName.length < 2 || signerName.length > 160) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.nameRequired') };
+  }
+
+  const signature = String(formData.get('signature') ?? '');
+  if (!signature) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  }
+
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(signature);
+  if (!match) return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  const bytes = Buffer.from(match[1], 'base64');
+  // A handwritten scribble is a few kilobytes; anything larger is not one.
+  if (bytes.byteLength === 0 || bytes.byteLength > 512 * 1024) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  }
+
+  const path = `${context.membership.company_id}/service/${jobId}/${randomUUID()}.png`;
+  const { error: uploadError } = await context.supabase.storage
+    .from('service-signatures')
+    .upload(path, bytes, { contentType: 'image/png', upsert: false });
+  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+
+  const { error } = await context.supabase.rpc('sign_service_record_on_site', {
+    p_job_id: jobId,
+    p_signer_name: signerName,
+    p_signature_path: path,
+  });
+  if (error) {
+    if (path) await context.supabase.storage.from('service-signatures').remove([path]);
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+
+  revalidateEmployee(jobId);
+  revalidatePath('/dashboard/leistungsnachweise');
+  return { status: 'success', message: t(locale, 'emp.acceptance.confirmed') };
 }
 
 export async function markMyNotificationRead(notificationId: string): Promise<void> {

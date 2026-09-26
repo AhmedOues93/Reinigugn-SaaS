@@ -1,18 +1,25 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, KeyRound, MapPin, Navigation, Phone, Sparkles, TriangleAlert, User } from 'lucide-react';
+import { ChevronLeft, FileImage, KeyRound, MapPin, Navigation, Phone, Sparkles, User } from 'lucide-react';
 import { Badge, EmptyState } from '@/components/ui';
 import { OfflineJobChecklist } from '@/components/employee/offline-checklist';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
 import { JobPhotoUpload } from '@/components/job-photo-upload';
 import { JobTimeControl } from '@/components/job-time-control';
-import { employeeLocale, requireEmployee } from '@/lib/data/employee';
+import {
+  ServiceAcceptancePanel,
+  ServiceAcceptedNotice,
+  ServiceAwaitingPortalNotice,
+} from '@/components/employee/service-acceptance';
+import { employeeLocale, getMyJobAcceptance, requireEmployee } from '@/lib/data/employee';
 import { getMyAssignedJob } from '@/lib/data/jobs';
 import { listMyJobPhotos } from '@/lib/data/job-photos';
 import { formatDate, formatTimeRange } from '@/lib/format';
 import { t } from '@/lib/i18n';
+import { stripDemoPrefix } from '@/lib/demo-label';
 import {
   completeMyChecklistItem,
+  confirmOnSiteAcceptance,
   deleteMyJobPhoto,
   pauseMyJob,
   resumeMyJob,
@@ -33,7 +40,12 @@ function first<T>(value: T | T[] | null) {
 export default async function EmployeeJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { membership } = await requireEmployee();
   const { id } = await params;
-  const [locale, job, photos] = await Promise.all([employeeLocale(), getMyAssignedJob(id), listMyJobPhotos(id)]);
+  const [locale, job, photos, acceptance] = await Promise.all([
+    employeeLocale(),
+    getMyAssignedJob(id),
+    listMyJobPhotos(id),
+    getMyJobAcceptance(id),
+  ]);
   if (!job) notFound();
 
   const customer = first(job.customers);
@@ -78,20 +90,39 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
           resumeAction={resumeMyJob.bind(null, job.id)}
           running={running}
           startedAt={entry?.started_at}
+          plannedStartAt={job.planned_start_at}
           finishedAt={entry?.finished_at}
           durationMinutes={entry?.duration_minutes}
           breaks={breaks}
           incompleteRequiredItems={incompleteRequiredItems}
-          canStart={editable}
+          canStart={editable && !acceptance?.signature_required}
           locale={locale}
         />
 
+        {/*
+          What happens after Finish, decided by the contract rather than here.
+          A visit that needs no acceptance shows nothing at all — which is the
+          common case and should stay quiet.
+        */}
+        {acceptance?.signature_required && (
+          <ServiceAcceptancePanel action={confirmOnSiteAcceptance.bind(null, job.id)} locale={locale} />
+        )}
+        {acceptance?.status === 'ABGENOMMEN' && (
+          <ServiceAcceptedNotice
+            locale={locale}
+            name={acceptance.accepted_by_name}
+            at={acceptance.accepted_at}
+          />
+        )}
+        {acceptance?.acceptance_policy === 'PORTAL_ABNAHME' &&
+          acceptance.status === 'ABNAHME_AUSSTEHEND' && <ServiceAwaitingPortalNotice locale={locale} />}
+
         {job.employee_instructions && (
-          <section className="flex gap-3 rounded-2xl border border-warning/25 bg-warning-soft p-4">
-            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
+          <section className="flex gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
+            <FileImage className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-warning">{t(locale, 'emp.job.instructions')}</h2>
-              <p className="break-anywhere mt-1 whitespace-pre-wrap text-[15px] leading-6 text-foreground">{job.employee_instructions}</p>
+              <h2 className="text-sm font-semibold">{t(locale, 'emp.job.instructions')}</h2>
+              <p className="break-anywhere mt-1 whitespace-pre-wrap text-[15px] leading-6 text-muted-foreground">{stripDemoPrefix(job.employee_instructions)}</p>
             </div>
           </section>
         )}
@@ -107,7 +138,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                 <MapPin className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span className="break-anywhere min-w-0 flex-1 text-[15px]">{address}</span>
                 <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
                   target="_blank"
                   rel="noreferrer"
                   aria-label={t(locale, 'emp.job.navigate')}
@@ -122,7 +153,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                 <KeyRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{t(locale, 'emp.job.access')}</p>
-                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{object.access_instructions}</p>
+                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{stripDemoPrefix(object.access_instructions)}</p>
                 </div>
               </li>
             )}
@@ -149,7 +180,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                 <Sparkles className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{t(locale, 'emp.job.cleaningNotes')}</p>
-                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{object.cleaning_instructions}</p>
+                  <p className="break-anywhere mt-0.5 whitespace-pre-wrap text-[15px] leading-6">{stripDemoPrefix(object.cleaning_instructions)}</p>
                 </div>
               </li>
             )}
@@ -164,16 +195,42 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
           <EmptyState title={t(locale, 'emp.job.noChecklist')} className="rounded-3xl py-8" />
         )}
 
-        <section aria-labelledby="photos-title" className="space-y-4 rounded-3xl border border-border/80 bg-card p-5 shadow-card">
-          <h2 id="photos-title" className="text-lg font-semibold">
-            {t(locale, 'emp.job.photos')}
-          </h2>
+        <section aria-labelledby="photos-title" className="space-y-4 rounded-3xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
+          <div>
+            <h2 id="photos-title" className="text-lg font-semibold">{t(locale, 'emp.job.photos')}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Vorher und Nachher getrennt dokumentieren. Zusätzliche Fotos sind optional.</p>
+          </div>
           {editable && (
-            <JobPhotoUpload
-              action={uploadMyJobPhoto.bind(null, job.id)}
-              checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
-              locale={locale}
-            />
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <JobPhotoUpload
+                  action={uploadMyJobPhoto.bind(null, job.id)}
+                  checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
+                  locale={locale}
+                  category="BEFORE"
+                  title="Vorher"
+                />
+                <JobPhotoUpload
+                  action={uploadMyJobPhoto.bind(null, job.id)}
+                  checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
+                  locale={locale}
+                  category="AFTER"
+                  title="Nachher"
+                />
+              </div>
+              <details className="rounded-xl border border-border">
+                <summary className="min-h-12 cursor-pointer list-none px-4 py-3 text-sm font-semibold">Weitere Dokumentation</summary>
+                <div className="border-t border-border p-4">
+                  <JobPhotoUpload
+                    action={uploadMyJobPhoto.bind(null, job.id)}
+                    checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
+                    locale={locale}
+                    category="DOCUMENTATION"
+                    title="Dokumentationsfoto"
+                  />
+                </div>
+              </details>
+            </>
           )}
           <JobPhotoGallery
             photos={photos}

@@ -44,3 +44,17 @@ export async function getServiceRecord(jobId: string): Promise<ServiceRecord | n
     photos,
   };
 }
+
+
+/** A Leistungsnachweis exists only after the operational workflow created its immutable record. */
+export async function hasStoredServiceRecord(jobId: string): Promise<boolean> {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase
+    .from('service_records')
+    .select('id')
+    .eq('company_id', company.id)
+    .eq('job_id', jobId)
+    .maybeSingle();
+  if (error) throw new Error('Leistungsnachweis konnte nicht geprüft werden.');
+  return Boolean(data?.id);
+}

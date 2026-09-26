@@ -5,32 +5,40 @@
 /*
  * SauberWerk visual system — "Tiefsee & Nebel".
  *
- * Tiefsee (a deep petrol ink) is reserved for navigation and for the one moment
- * on each surface that matters most: the rail in the office app, the next job in
- * the field app, the amount due in the portal. Everything else sits on Nebel, a
- * cool mist workspace, so white surfaces read as deliberate rather than default.
+ * Tiefsee (a near-black petrol) is reserved for navigation and for the one
+ * moment on each surface that matters most: the rail in the office app, the next
+ * job in the field app, the amount due in the portal. Everything else sits on
+ * Nebel, a cool mist workspace, so white surfaces read as deliberate rather than
+ * default.
+ *
+ * Smaragd is the single accent: the one colour that means "this is the action".
+ * It comes in two weights, and which one applies is decided by the surface, not
+ * by taste — `--primary` is mixed dark enough to carry white text at 4.5:1 on a
+ * button, `--highlight` is the bright form that only ever appears on Tiefsee,
+ * where a dark green would disappear. Using the bright one on white is the
+ * mistake this pair exists to prevent.
  */
 @layer base {
   :root {
-    --background: 195 14% 94.5%; /* Nebel  #EEF2F3 — workspace */
+    --background: 195 16% 96.5%; /* Nebel  #F4F7F8 — workspace */
     --foreground: 196 27% 13%; /* Graphit #17262B */
     --card: 0 0% 100%; /* Kreide — raised surface */
     --card-foreground: 196 27% 13%;
-    --muted: 195 16% 91%; /* sunken surface / quiet fills */
+    --muted: 195 16% 92%; /* sunken surface / quiet fills */
     --muted-foreground: 196 11% 40%;
-    --subtle: 195 20% 97%; /* table headers, inset panels on white */
-    --border: 195 14% 86%;
-    --input: 195 12% 80%;
+    --subtle: 195 22% 97.5%; /* table headers, inset panels on white */
+    --border: 195 14% 88%;
+    --input: 195 12% 82%;
 
-    --primary: 189 80% 27%; /* Petrol #0D6E7C */
+    --primary: 162 88% 25%; /* Smaragd #05785A — white text clears AA */
     --primary-foreground: 0 0% 100%;
-    --primary-soft: 189 45% 93%;
+    --primary-soft: 160 45% 93%;
 
-    --ink: 193 65% 12%; /* Tiefsee #0B2A33 */
-    --ink-foreground: 190 30% 96%;
-    --ink-muted: 191 18% 68%;
-    --ink-line: 192 40% 20%;
-    --highlight: 185 64% 62%; /* Gischt #5FD4DE — accent on ink only */
+    --ink: 186 36% 9%; /* Tiefsee #0F1F21 — the rail */
+    --ink-foreground: 180 22% 96%;
+    --ink-muted: 186 12% 65%;
+    --ink-line: 186 25% 18%;
+    --highlight: 158 64% 52%; /* Gischt #34D399 — accent on ink only */
 
     --success: 152 60% 27%;
     --success-soft: 150 45% 92%;
@@ -41,7 +49,7 @@
     --info: 210 70% 42%;
     --info-soft: 210 80% 94%;
 
-    --ring: 189 80% 34%;
+    --ring: 162 82% 30%;
     --radius: 0.75rem;
   }
 
@@ -97,9 +105,35 @@
   .surface-ink {
     background-color: hsl(var(--ink));
     background-image:
-      linear-gradient(115deg, transparent 0%, transparent 38%, hsl(185 64% 62% / 0.08) 38.5%, hsl(185 64% 62% / 0.02) 52%, transparent 52.5%),
-      radial-gradient(120% 90% at 100% 0%, hsl(189 80% 27% / 0.55) 0%, transparent 60%);
+      linear-gradient(115deg, transparent 0%, transparent 38%, hsl(158 64% 52% / 0.07) 38.5%, hsl(158 64% 52% / 0.02) 52%, transparent 52.5%),
+      radial-gradient(120% 90% at 100% 0%, hsl(168 70% 22% / 0.5) 0%, transparent 60%);
     color: hsl(var(--ink-foreground));
+  }
+
+  /*
+   * The veil that makes a photograph usable as a backdrop.
+   *
+   * Two jobs at once: it darkens enough that white text clears AA over any part
+   * of the image, and it pulls the whole frame toward Tiefsee so a stock-looking
+   * photograph joins the product instead of sitting on top of it. Kept here
+   * rather than in each auth screen, because a login that reads well and an
+   * employee login that does not is how contrast bugs ship.
+   */
+  .photo-veil::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(100deg, hsl(186 42% 5% / 0.9) 0%, hsl(186 40% 6% / 0.66) 38%, hsl(186 34% 9% / 0.42) 72%, hsl(186 40% 7% / 0.62) 100%),
+      radial-gradient(110% 80% at 8% 30%, hsl(186 45% 4% / 0.55) 0%, transparent 60%);
+  }
+
+  /* The same veil, weighted for a single centred column on a phone. */
+  .photo-veil-center::after {
+    background:
+      linear-gradient(180deg, hsl(186 40% 6% / 0.86) 0%, hsl(186 38% 8% / 0.7) 45%, hsl(186 40% 6% / 0.93) 100%),
+      radial-gradient(90% 55% at 50% 30%, hsl(168 60% 18% / 0.3) 0%, transparent 70%);
   }
 
   /* Hairline grid used behind the auth composition — facade/tile rhythm. */
@@ -119,6 +153,81 @@
     opacity: 0.06;
     mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /*
+   * Form controls on the sign-in card.
+   *
+   * The card sits on a night photograph, so the white `Input` from the
+   * primitive set would punch four bright holes in it. Restyled here in one
+   * place rather than by threading a `dark` prop through four auth screens and
+   * every field on them — the scope is exactly one card, and the primitives
+   * stay untouched for the rest of the product.
+   */
+  .auth-surface label {
+    color: hsl(0 0% 100% / 0.88);
+  }
+
+  .auth-surface input:not([type='checkbox']):not([type='radio']) {
+    background-color: hsl(0 0% 100% / 0.06);
+    border-color: hsl(0 0% 100% / 0.16);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .auth-surface input::placeholder {
+    color: hsl(0 0% 100% / 0.42);
+  }
+
+  .auth-surface input:hover:not(:disabled) {
+    border-color: hsl(0 0% 100% / 0.3);
+  }
+
+  .auth-surface input:focus {
+    border-color: hsl(var(--highlight));
+    box-shadow: 0 0 0 3px hsl(var(--highlight) / 0.22);
+  }
+
+  /* Chrome and Safari paint a solid white block over an autofilled field. */
+  .auth-surface input:-webkit-autofill,
+  .auth-surface input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    caret-color: #fff;
+    transition: background-color 100000s;
+  }
+
+  .auth-surface input[aria-invalid='true'] {
+    border-color: hsl(4 90% 72%);
+  }
+
+  /* Danger at its light-surface weight is unreadable here. */
+  .auth-surface [role='alert'],
+  .auth-surface .text-danger {
+    color: hsl(4 92% 78%);
+  }
+
+  .auth-surface [role='status'] {
+    color: hsl(40 95% 72%);
+  }
+
+  /*
+   * The language switch on the sign-in backdrop. The same control as
+   * everywhere else, dressed for a dark surface rather than reimplemented.
+   */
+  .auth-language select {
+    min-height: 2.25rem;
+    border-color: hsl(0 0% 100% / 0.16);
+    background-color: hsl(0 0% 100% / 0.06);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .auth-language select:hover {
+    border-color: hsl(0 0% 100% / 0.3);
+  }
+
+  .auth-language select option {
+    color: hsl(var(--foreground));
   }
 
   /* Hide scrollbars on horizontal chip rows while keeping them scrollable. */

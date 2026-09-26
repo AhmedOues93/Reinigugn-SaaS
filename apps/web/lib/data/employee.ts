@@ -72,6 +72,33 @@ export async function listMyTodayAndUpcoming() {
   };
 }
 
+export async function getMyMonthlyWorkSummary(month?: string) {
+  const { supabase, membership } = await requireEmployee();
+  const today = berlinDateKey();
+  const monthKey = /^\d{4}-\d{2}$/.test(month ?? '') ? month! : today.slice(0, 7);
+  const [year, monthNumber] = monthKey.split('-').map(Number);
+  const from = `${monthKey}-01`;
+  const toDate = new Date(Date.UTC(year, monthNumber, 0));
+  const to = `${monthKey}-${String(toDate.getUTCDate()).padStart(2, '0')}`;
+
+  const { data, error } = await supabase
+    .from('job_time_entries')
+    .select('id, started_at, finished_at, duration_minutes, break_minutes, jobs!inner(id, title, scheduled_date, cleaning_objects(name), customers(name))')
+    .eq('member_id', membership.id)
+    .gte('started_at', `${from}T00:00:00Z`)
+    .lte('started_at', `${to}T23:59:59Z`)
+    .order('started_at', { ascending: false });
+  if (error) throw new Error('Arbeitszeiten konnten nicht geladen werden.');
+
+  const entries = data ?? [];
+  const workedMinutes = entries.reduce(
+    (sum, entry) => sum + Math.max(0, Number(entry.duration_minutes ?? 0) - Number(entry.break_minutes ?? 0)),
+    0,
+  );
+  const daysWorked = new Set(entries.map((entry) => entry.started_at.slice(0, 10))).size;
+  return { monthKey, from, to, entries, workedMinutes, daysWorked };
+}
+
 export async function listMyNotifications(limit = 50) {
   const { supabase, membership } = await requireEmployee();
   const { data, error } = await supabase
@@ -98,11 +125,36 @@ export async function listMyAbsences() {
   const { supabase, membership } = await requireEmployee();
   const { data, error } = await supabase
     .from('employee_absences')
-    .select('id, absence_type, status, start_date, end_date, note, au_storage_path, created_at')
+    .select('id, absence_type, status, decision, reviewed_at, review_note, start_date, end_date, note, au_storage_path, created_at')
     .eq('member_id', membership.id)
     .order('start_date', { ascending: false });
   if (error) throw new Error('Abwesenheiten konnten nicht geladen werden.');
   return data ?? [];
+}
+
+export type JobAcceptance = {
+  service_record_id: string;
+  company_id: string;
+  status: 'ERFASST' | 'ABNAHME_AUSSTEHEND' | 'ABGENOMMEN' | 'PROBLEM_GEMELDET';
+  acceptance_policy: 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME';
+  accepted_at: string | null;
+  accepted_by_name: string | null;
+  signature_required: boolean;
+};
+
+/**
+ * Whether this visit needs somebody to accept it, and whether anyone already
+ * has. The contract decides; the field app only asks the question.
+ *
+ * Null until the visit is finished, because there is no Leistungsnachweis
+ * before then.
+ */
+export async function getMyJobAcceptance(jobId: string): Promise<JobAcceptance | null> {
+  const { supabase } = await requireEmployee();
+  const { data, error } = await supabase.rpc('get_my_job_acceptance', { p_job_id: jobId });
+  if (error) return null;
+  const rows = (data ?? []) as JobAcceptance[];
+  return rows[0] ?? null;
 }
 
 /**

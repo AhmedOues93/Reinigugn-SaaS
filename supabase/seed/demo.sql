@@ -11,11 +11,50 @@
 -- run against anything that is not a local Supabase stack.
 \set ON_ERROR_STOP on
 
+/*
+ * Refusing to run anywhere it does not belong.
+ *
+ * The header above always claimed this was local-only, but for a long time
+ * nothing enforced it: pointing psql at a staging or production database and
+ * running this file would have created sign-in-able users with a password
+ * printed in the README. Two independent guards now stand in the way, because
+ * either one alone is too easy to defeat by accident.
+ *
+ * 1. Real data present. A database that already holds a company which is not
+ *    the demo one is somebody's real tenant. There is no situation in which
+ *    seeding demo users into it is correct.
+ *
+ * 2. Explicit acknowledgement. An empty production database would pass the
+ *    first guard, so the operator must also say out loud what they are doing:
+ *
+ *      psql -v ON_ERROR_STOP=1 \
+ *           -c "set sauberwerk.seed_confirmed = 'local-development'" \
+ *           -f supabase/seed/demo.sql
+ *
+ *    or, in one session, `set sauberwerk.seed_confirmed = 'local-development';`
+ *    before running this file. The value is deliberately a phrase rather than a
+ *    boolean, so it cannot be set true by a stray flag.
+ */
 do $$
+declare foreign_companies integer;
 begin
   if current_setting('server_version_num')::int < 150000 then
     raise exception 'PostgreSQL 15 or newer required';
   end if;
+
+  select count(*) into foreign_companies
+  from public.companies where slug not like 'demo-sauberwerk%';
+  if foreign_companies > 0 then
+    raise exception
+      'Refusing to seed: this database already holds % real tenant(s). The demo seed is for an empty local database only.',
+      foreign_companies;
+  end if;
+
+  if coalesce(current_setting('sauberwerk.seed_confirmed', true), '') <> 'local-development' then
+    raise exception
+      'Refusing to seed: set sauberwerk.seed_confirmed to ''local-development'' first (see the comment at the top of this file).';
+  end if;
+
   if exists (select 1 from public.companies where slug like 'demo-sauberwerk%') then
     raise notice 'Demo data already present; nothing to do.';
     return;
@@ -29,8 +68,11 @@ declare
   office_user uuid := '0a000000-0000-4000-8000-000000000002';
   employee_user uuid := '0a000000-0000-4000-8000-000000000003';
   portal_user uuid := '0a000000-0000-4000-8000-000000000004';
-  owner_member uuid; office_member uuid; employee_member uuid; portal_member uuid;
-  owner_profile uuid; employee_profile uuid; portal_profile uuid;
+  employee2_user uuid := '0a000000-0000-4000-8000-000000000005';
+  employee3_user uuid := '0a000000-0000-4000-8000-000000000006';
+  employee4_user uuid := '0a000000-0000-4000-8000-000000000007';
+  owner_member uuid; office_member uuid; employee_member uuid; employee2_member uuid; employee3_member uuid; employee4_member uuid; portal_member uuid;
+  owner_profile uuid; employee_profile uuid; employee2_profile uuid; employee3_profile uuid; employee4_profile uuid; portal_profile uuid;
   customer_nord uuid; customer_sued uuid;
   object_alster uuid; object_hafen uuid; object_sued uuid;
   schedule_weekly uuid;
@@ -39,6 +81,11 @@ declare
   demo_thread uuid; checklist_template uuid;
   job_row record;
   billed integer := 0;
+  shift record;
+  day_row record;
+  shift_job uuid;
+  shift_entry uuid;
+  day_net integer;
 begin
   if exists (select 1 from public.companies where slug like 'demo-sauberwerk%') then return; end if;
 
@@ -60,7 +107,10 @@ begin
     (owner_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'inhaber@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Miriam","last_name":"Kessler"}', now(), now(), '', '', '', '', '', ''),
     (office_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'buero@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Tobias","last_name":"Renner"}', now(), now(), '', '', '', '', '', ''),
     (employee_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'mitarbeiter@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Olena","last_name":"Kovalenko"}', now(), now(), '', '', '', '', '', ''),
-    (portal_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'kunde@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Sabine","last_name":"Lorenz"}', now(), now(), '', '', '', '', '', '')
+    (portal_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'kunde@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Sabine","last_name":"Lorenz"}', now(), now(), '', '', '', '', '', ''),
+    (employee2_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'maria@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Maria","last_name":"Nowak"}', now(), now(), '', '', '', '', '', ''),
+    (employee3_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'mehmet@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Mehmet","last_name":"Yilmaz"}', now(), now(), '', '', '', '', '', ''),
+    (employee4_user, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'anna@demo.test', extensions.crypt('DemoPasswort2026!', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"first_name":"Anna","last_name":"Schneider"}', now(), now(), '', '', '', '', '', '')
   on conflict (id) do nothing;
 
   -- GoTrue links an email/password account through `auth.identities`; without a
@@ -72,36 +122,93 @@ begin
     (gen_random_uuid(), owner_user, owner_user::text, jsonb_build_object('sub', owner_user::text, 'email', 'inhaber@demo.test', 'email_verified', true), 'email', now(), now(), now()),
     (gen_random_uuid(), office_user, office_user::text, jsonb_build_object('sub', office_user::text, 'email', 'buero@demo.test', 'email_verified', true), 'email', now(), now(), now()),
     (gen_random_uuid(), employee_user, employee_user::text, jsonb_build_object('sub', employee_user::text, 'email', 'mitarbeiter@demo.test', 'email_verified', true), 'email', now(), now(), now()),
-    (gen_random_uuid(), portal_user, portal_user::text, jsonb_build_object('sub', portal_user::text, 'email', 'kunde@demo.test', 'email_verified', true), 'email', now(), now(), now())
+    (gen_random_uuid(), portal_user, portal_user::text, jsonb_build_object('sub', portal_user::text, 'email', 'kunde@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee2_user, employee2_user::text, jsonb_build_object('sub', employee2_user::text, 'email', 'maria@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee3_user, employee3_user::text, jsonb_build_object('sub', employee3_user::text, 'email', 'mehmet@demo.test', 'email_verified', true), 'email', now(), now(), now()),
+    (gen_random_uuid(), employee4_user, employee4_user::text, jsonb_build_object('sub', employee4_user::text, 'email', 'anna@demo.test', 'email_verified', true), 'email', now(), now(), now())
   on conflict (provider_id, provider) do nothing;
 
   select id into owner_profile from public.profiles where auth_user_id = owner_user;
   select id into employee_profile from public.profiles where auth_user_id = employee_user;
   select id into portal_profile from public.profiles where auth_user_id = portal_user;
+  select id into employee2_profile from public.profiles where auth_user_id = employee2_user;
+  select id into employee3_profile from public.profiles where auth_user_id = employee3_user;
+  select id into employee4_profile from public.profiles where auth_user_id = employee4_user;
 
   insert into public.companies (name, slug, legal_form, street, postal_code, city, phone, email, website, tax_number, vat_id, iban, bic, default_payment_terms_days, default_language)
-  values ('SauberWerk Demo GmbH', 'demo-sauberwerk', 'GmbH', 'Reeperbahn 42', '20359', 'Hamburg', '+49 40 1234567', 'kontakt@demo.test', 'https://demo.test', '22/815/01234', 'DE123456789', 'DE02120300000000202051', 'BYLADEM1001', 14, 'de')
+  values ('ReinPlan Demo GmbH', 'demo-sauberwerk', 'GmbH', 'Reeperbahn 42', '20359', 'Hamburg', '+49 40 1234567', 'kontakt@demo.test', 'https://demo.test', '22/815/01234', 'DE123456789', 'DE02120300000000202051', 'BYLADEM1001', 14, 'de')
   returning id into demo_company;
   update public.companies set default_hourly_rate_cents = 3900 where id = demo_company;
+
+  -- A demo company that meets "Im Leistungskatalog ist noch nichts hinterlegt"
+  -- demonstrates nothing. It is set up the way the first-run wizard would leave
+  -- it: a profile, a costing model derived from days, and a starting catalogue.
+  update public.companies set
+    managing_director = 'Miriam Kessler',
+    default_vat_rate_basis_points = 1900,
+    service_focus = array['UNTERHALTSREINIGUNG', 'BUEROREINIGUNG', 'SANITAERREINIGUNG',
+                          'TREPPENHAUSREINIGUNG', 'GLASREINIGUNG', 'GRUNDREINIGUNG'],
+    onboarding_steps = array['unternehmen', 'rechnung', 'kalkulation', 'schwerpunkte', 'branding', 'abschluss'],
+    -- Already finished, so the demo lands on the dashboard rather than in the
+    -- wizard. The wizard itself stays reachable at /dashboard/einrichtung.
+    onboarding_completed_at = now()
+  where id = demo_company;
+
+  -- The assumptions a demo needs to price anything. Illustrative figures for a
+  -- fictional Hamburg company — not a recommendation and not an industry
+  -- benchmark. The productive share is derived from the days below rather than
+  -- asserted: 260 Arbeitstage − 53 Ausfalltage, minus 45 unproduktive Minuten
+  -- of 468 a day, which is 71,96 %.
+  insert into public.company_calculation_defaults (
+    company_id, wage_cents_per_hour, ancillary_rate_bp, productive_rate_bp,
+    overhead_rate_bp, target_margin_bp,
+    weekly_hours, working_days_per_week, vacation_days, public_holidays,
+    sick_days, training_days, unproductive_minutes_per_day, productive_rate_is_manual,
+    min_hourly_rate_cents, default_material_cents_per_visit,
+    default_machine_cents_per_month, default_travel_cents_per_visit,
+    default_setup_minutes_per_visit
+  ) values (
+    demo_company, 1500, 2100,
+    public.derive_productive_rate_bp(39, 5, 30, 11, 10, 2, 45),
+    1200, 2500,
+    39, 5, 30, 11, 10, 2, 45, false,
+    2800, 300, 0, 800, 10
+  )
+  on conflict (company_id) do nothing;
+
+  perform public.seed_service_catalog_for(
+    demo_company,
+    array['UNTERHALTSREINIGUNG', 'BUEROREINIGUNG', 'SANITAERREINIGUNG',
+          'TREPPENHAUSREINIGUNG', 'GLASREINIGUNG', 'GRUNDREINIGUNG']);
 
   insert into public.company_members (company_id, profile_id, role, status, invited_email, joined_at)
   values
     (demo_company, owner_profile, 'OWNER', 'ACTIVE', 'inhaber@demo.test', now()),
     (demo_company, (select id from public.profiles where auth_user_id = office_user), 'OFFICE', 'ACTIVE', 'buero@demo.test', now()),
     (demo_company, employee_profile, 'EMPLOYEE', 'ACTIVE', 'mitarbeiter@demo.test', now()),
+    (demo_company, employee2_profile, 'EMPLOYEE', 'ACTIVE', 'maria@demo.test', now()),
+    (demo_company, employee3_profile, 'EMPLOYEE', 'ACTIVE', 'mehmet@demo.test', now()),
+    (demo_company, employee4_profile, 'EMPLOYEE', 'ACTIVE', 'anna@demo.test', now()),
     (demo_company, portal_profile, 'CUSTOMER', 'ACTIVE', 'kunde@demo.test', now());
 
   select id into owner_member from public.company_members where company_id = demo_company and role = 'OWNER';
   select id into office_member from public.company_members where company_id = demo_company and role = 'OFFICE';
   select id into employee_member from public.company_members where company_id = demo_company and role = 'EMPLOYEE';
+  select id into employee2_member from public.company_members where company_id = demo_company and profile_id = employee2_profile;
+  select id into employee3_member from public.company_members where company_id = demo_company and profile_id = employee3_profile;
+  select id into employee4_member from public.company_members where company_id = demo_company and profile_id = employee4_profile;
   select id into portal_member from public.company_members where company_id = demo_company and role = 'CUSTOMER';
 
-  insert into public.employee_details (company_id, profile_id, employee_number, weekly_hours, employment_start_date, employment_type, preferred_language, is_active)
+  insert into public.employee_details (company_id, profile_id, employee_number, weekly_hours, employment_start_date, employment_type, preferred_language, is_active, wage_group, hourly_wage_cents)
   -- German, so the demo employee app is legible to a German-speaking reviewer.
   -- Any of the five shipped locales works here; the employee changes it in the
   -- app under Profil, and nothing about the localisation behaviour depends on
   -- this value.
-  values (demo_company, employee_profile, 'M-0001', 30, current_date - 400, 'PART_TIME', 'de', true);
+  values
+    (demo_company, employee_profile, 'M-0001', 30, current_date - 400, 'PART_TIME', 'de', true, 'LG 1', 1425),
+    (demo_company, employee2_profile, 'M-0002', 25, current_date - 280, 'PART_TIME', 'de', true, 'LG 1', 1425),
+    (demo_company, employee3_profile, 'M-0003', 39, current_date - 620, 'FULL_TIME', 'de', true, 'LG 6', 1810),
+    (demo_company, employee4_profile, 'M-0004', 10, current_date - 95, 'MINIJOB', 'de', true, 'LG 1', 1425);
 
   insert into public.customers (company_id, name, contact_person, email, phone, billing_address, postal_code, city)
   values
@@ -172,6 +279,94 @@ begin
   for job_row in select id, scheduled_date from public.jobs where company_id = demo_company and status = 'COMPLETED' loop
     insert into public.job_time_entries (company_id, job_id, member_id, started_at, finished_at)
     values (demo_company, job_row.id, employee_member, job_row.scheduled_date + time '07:02', job_row.scheduled_date + time '09:50');
+  end loop;
+
+  -- ---------------------------------------------------------------------
+  -- A real month of recorded time, for every employee
+  -- ---------------------------------------------------------------------
+  -- Without this the Monatsabschluss is misleading rather than empty: one
+  -- employee would carry a handful of hours and the other three would show
+  -- 0:00 against a full Soll, which reads as a company in trouble instead of a
+  -- demo with no data. The block below fills the previous and the current month
+  -- with one visit per working day per person.
+  --
+  -- Working days only, and never on a nationwide holiday, because the Soll is
+  -- computed the same way — working a day the Soll does not count would invent
+  -- overtime out of the calendar.
+
+  -- Genehmigte Abwesenheiten. Sie senken das Soll, und an diesen Tagen wird
+  -- unten keine Zeit erfasst — sonst stuende jemand gleichzeitig im Urlaub und
+  -- an der Maschine.
+  insert into public.employee_absences (company_id, member_id, absence_type, status, start_date, end_date, note)
+  values
+    (demo_company, employee_member, 'VACATION', 'APPROVED',
+     date_trunc('month', current_date - interval '1 month')::date + 7,
+     date_trunc('month', current_date - interval '1 month')::date + 11, 'Jahresurlaub'),
+    (demo_company, employee2_member, 'SICKNESS', 'APPROVED',
+     date_trunc('month', current_date)::date + 2,
+     date_trunc('month', current_date)::date + 3, 'Krankmeldung');
+
+  for shift in
+    select * from (values
+      -- member, object, customer, Nettominuten/Tag, Pause, Beginn, nur Mo-Do
+      (employee_member,  object_alster, customer_nord, 360, 30, time '08:00', false),
+      (employee2_member, object_sued,   customer_sued, 300,  0, time '17:30', false),
+      (employee3_member, object_hafen,  customer_nord, 468, 45, time '06:30', false),
+      -- Minijob: nur Montag bis Donnerstag, deshalb planmaessig unter dem Soll.
+      (employee4_member, object_alster, customer_nord, 120,  0, time '18:00', true)
+    ) as t(member_id, object_id, customer_id, net_minutes, break_minutes, starts_at, weekdays_only)
+  loop
+    for day_row in
+      select gs::date as work_date
+      from generate_series(
+             date_trunc('month', current_date - interval '1 month'),
+             current_date,
+             interval '1 day') gs
+      where extract(isodow from gs) < 6
+        and gs::date not in (
+          select holiday from public.german_public_holidays(extract(year from gs)::integer))
+    loop
+      -- Freitags arbeitet der Minijob nicht.
+      continue when shift.weekdays_only and extract(isodow from day_row.work_date) = 5;
+      -- Kein Eintrag an einem genehmigten Abwesenheitstag.
+      continue when exists (
+        select 1 from public.employee_absences absence
+        where absence.member_id = shift.member_id
+          and absence.status = 'APPROVED'
+          and day_row.work_date between absence.start_date and absence.end_date);
+
+      -- Montags eine halbe Stunde laenger: so entstehen sichtbare Ueberstunden,
+      -- statt dass jede Zeile exakt auf dem Soll landet.
+      day_net := shift.net_minutes + case when extract(isodow from day_row.work_date) = 1 then 30 else 0 end;
+
+      insert into public.jobs (company_id, customer_id, cleaning_object_id, title, scheduled_date,
+                               planned_start_at, planned_end_at, status)
+      values (demo_company, shift.customer_id, shift.object_id, 'Unterhaltsreinigung', day_row.work_date,
+              day_row.work_date + shift.starts_at,
+              day_row.work_date + shift.starts_at + make_interval(mins => day_net + shift.break_minutes),
+              'COMPLETED')
+      returning id into shift_job;
+
+      insert into public.job_assignments (company_id, job_id, member_id, assigned_by)
+      values (demo_company, shift_job, shift.member_id, owner_profile);
+
+      insert into public.job_time_entries (company_id, job_id, member_id, started_at, finished_at)
+      values (demo_company, shift_job, shift.member_id,
+              day_row.work_date + shift.starts_at,
+              day_row.work_date + shift.starts_at + make_interval(mins => day_net + shift.break_minutes))
+      returning id into shift_entry;
+
+      if shift.break_minutes > 0 then
+        insert into public.job_time_breaks (company_id, time_entry_id, started_at, ended_at)
+        values (demo_company, shift_entry,
+                day_row.work_date + shift.starts_at + make_interval(mins => day_net / 2),
+                day_row.work_date + shift.starts_at + make_interval(mins => day_net / 2 + shift.break_minutes));
+        -- Die Pause wird beim Schreiben des Eintrags verrechnet, nicht beim
+        -- Anlegen der Pause. Diese Beruehrung laesst den Trigger neu rechnen,
+        -- danach stehen in duration_minutes die Nettominuten.
+        update public.job_time_entries set updated_at = now() where id = shift_entry;
+      end if;
+    end loop;
   end loop;
 
   insert into public.complaints (company_id, customer_id, cleaning_object_id, title, description, priority, status, created_by)

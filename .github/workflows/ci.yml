@@ -1,0 +1,226 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Everything here is safe on any pull request, including from a fork: no job
+# reads a secret, and no job touches a deployed environment. The suites that
+# need credentials — the authenticated end-to-end specs, and the Supabase
+# integration tests — live in staging-e2e.yml, which runs on request against a
+# reviewer-approved environment.
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  # Static checks are fast and catch most of what a reviewer would. They run
+  # first so a typo never waits behind a database.
+  static:
+    name: Types, lint and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+
+  # The schema is the product's real contract, so every push proves the whole
+  # migration history still applies to an empty database and that the SQL
+  # invariants — tenant isolation, billing immutability, invoice numbering —
+  # still hold. No Docker or Supabase stack needed: harness.sql stands in for
+  # the Supabase-managed schemas.
+  database:
+    name: Migrations and SQL invariants
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends postgresql-client
+
+      - name: Apply every migration and run the SQL assertions
+        run: supabase/test/run.sh
+
+  # Die E-Rechnung ist in Deutschland kein Komfortthema, sondern Pflicht. Eine
+  # selbst geschriebene Pruefung beweist nur, dass wir unsere eigene Vorstellung
+  # einhalten; ob ein Empfaenger das Dokument annimmt, entscheidet der
+  # Validator des KoSIT gegen die offiziellen XRechnung-Szenarien. Deshalb
+  # laeuft er hier bei jedem Push.
+  einvoice:
+    name: E-Rechnung gegen den KoSIT-Validator
+    runs-on: ubuntu-latest
+    env:
+      VALIDATOR_VERSION: '1.5.0'
+      CONFIG_VERSION: '2024-06-20'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - run: pnpm install --frozen-lockfile
+
+      # Die Unit-Tests rendern dabei die Dokumente nach apps/web/.xrechnung/:
+      # sample.xml aus dem Code und demo-invoice.xml mit genau den Zahlen, die
+      # supabase/seed/demo-for-account.sql in die Datenbank schreibt. So wird
+      # geprueft, was der Code wirklich erzeugt, und kein von Hand gepflegtes
+      # Abbild — und auch die Rechnung, mit der getestet wird.
+      - name: Rechnungen erzeugen
+        run: pnpm --filter @reinigung/web exec vitest run tests/xrechnung.test.ts
+
+      - name: KoSIT-Validator und XRechnung-Szenarien laden
+        run: |
+          set -euo pipefail
+          mkdir -p .kosit/scenarios
+          curl -fsSL -o .kosit/validator.zip \
+            "https://github.com/itplr-kosit/validator/releases/download/v${VALIDATOR_VERSION}/validator-${VALIDATOR_VERSION}-distribution.zip"
+          unzip -q .kosit/validator.zip -d .kosit
+          curl -fsSL -o .kosit/scenarios.zip \
+            "https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/download/release-${CONFIG_VERSION}/validator-configuration-xrechnung_3.0.2_${CONFIG_VERSION}.zip"
+          unzip -q .kosit/scenarios.zip -d .kosit/scenarios
+
+      - name: Rechnung pruefen
+        run: |
+          set -euo pipefail
+          java -jar .kosit/validationtool-${VALIDATOR_VERSION}-standalone.jar \
+            -s .kosit/scenarios/scenarios.xml \
+            -r .kosit/scenarios \
+            -h -o .kosit/report \
+            apps/web/.xrechnung/sample.xml \
+            apps/web/.xrechnung/demo-invoice.xml
+          # Der Validator meldet einen Befund im Report, nicht im Exit-Code.
+          # Ohne diese Zeile waere der Job gruen, waehrend die Rechnung beim
+          # Empfaenger durchfaellt.
+          if grep -q "<accepted>false</accepted>" .kosit/report/*.xml; then
+            echo "::error::Eine erzeugte XRechnung wurde vom KoSIT-Validator abgelehnt."
+            cat .kosit/report/*.xml
+            exit 1
+          fi
+          # Zwei Eingabedateien muessen zwei Reports ergeben. Ohne diese Zeile
+          # waere der Job auch gruen, wenn eine Datei nie geprueft wurde.
+          reports=$(ls .kosit/report/*.xml | wc -l)
+          if [ "$reports" -lt 2 ]; then
+            echo "::error::Es wurden nur $reports Rechnungen geprueft, erwartet sind 2."
+            exit 1
+          fi
+          echo "XRechnung akzeptiert ($reports Dokumente).""
+
+      - name: Report aufbewahren, wenn etwas schiefging
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kosit-report
+          path: .kosit/report/
+          retention-days: 7
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The build inlines NEXT_PUBLIC_* values, so it needs them present. These
+      # are placeholders that reach nothing: CI proves the app compiles and
+      # renders, while the real values come from the hosting platform.
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_APP_ENV: local
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-credential
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+
+  # The end-to-end specs that need no backend. They catch a broken bundle, a
+  # form that stopped validating, or a layout that overflows a phone — none of
+  # which a unit test sees.
+  e2e:
+    name: End-to-end (unauthenticated surface)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install the Playwright browser
+        run: pnpm --filter @reinigung/web exec playwright install --with-deps chromium
+
+      - name: Run the public end-to-end suite
+        run: pnpm --filter @reinigung/web test:e2e:public
+        env:
+          NEXT_PUBLIC_APP_ENV: local
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-credential
+
+      - name: Keep the report when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

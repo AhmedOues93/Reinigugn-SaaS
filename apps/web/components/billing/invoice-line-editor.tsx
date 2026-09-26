@@ -31,6 +31,9 @@ type BillableJob = {
   service_schedule_id: string | null;
   suggested_unit_price_cents: number | null;
   suggested_vat_rate_basis_points: number | null;
+  /** From the contract's billing mode, not from the stopwatch. */
+  suggested_quantity: number;
+  suggested_unit: string;
 };
 
 /**
@@ -76,7 +79,7 @@ export function InvoiceLineEditor({
                 >
                   <button
                     type="submit"
-                    aria-label={`Position entfernen: ${line.description}`}
+                    aria-label={`Leistung entfernen: ${line.description}`}
                     className="grid min-h-touch min-w-touch place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-danger"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
@@ -88,8 +91,13 @@ export function InvoiceLineEditor({
         ))}
       </ul>
 
-      <form action={formAction} className="space-y-4 rounded-xl border border-dashed border-foreground/15 bg-subtle p-4">
-        <FormMessage status={state.status} message={state.message} />
+      <details className="rounded-xl border border-border/80 bg-card">
+        <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">
+          {t(locale, 'billing.addManualService')}
+          <span className="text-xs font-normal text-muted-foreground">optional</span>
+        </summary>
+        <form action={formAction} className="space-y-4 border-t border-border/80 p-4">
+          <FormMessage status={state.status} message={state.message} />
 
         {billableJobs.length > 0 && (
           <Field
@@ -112,8 +120,11 @@ export function InvoiceLineEditor({
                 };
                 if (!job) return;
                 set('description', job.title.includes(job.object_name) ? `${job.title} · ${job.scheduled_date}` : `${job.title} · ${job.object_name}`);
-                if (job.duration_minutes > 0)
-                  set('quantity', (job.duration_minutes / 60).toFixed(2));
+                // The contract decides the quantity. Prefilling recorded hours
+                // against a fixed price per visit is how a 48 € visit became a
+                // 120 € invoice line.
+                set('quantity', String(job.suggested_quantity));
+                set('unit', job.suggested_unit);
                 if (job.suggested_unit_price_cents)
                   set('unit_price', (job.suggested_unit_price_cents / 100).toFixed(2));
                 if (job.suggested_vat_rate_basis_points)
@@ -138,8 +149,8 @@ export function InvoiceLineEditor({
         <input type="hidden" name="cleaning_object_id" />
         <input type="hidden" name="service_schedule_id" />
 
-        <Field label="Beschreibung" htmlFor="line-description">
-          <Input id="line-description" name="description" maxLength={500} required />
+        <Field label={t(locale, 'billing.description')} htmlFor="line-description">
+          <Input id="line-description" name="description" placeholder="z. B. Unterhaltsreinigung Bürofläche" autoComplete="off" maxLength={500} required />
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-4">
@@ -154,11 +165,13 @@ export function InvoiceLineEditor({
               required
             />
           </Field>
-          <Field label="Einheit" htmlFor="line-unit">
-            <Input id="line-unit" name="unit" defaultValue="Std" maxLength={20} />
+          <Field label={t(locale, 'billing.unit')} htmlFor="line-unit">
+            <Select id="line-unit" name="unit" defaultValue="Std">
+              <option value="Std">Stunde</option><option value="Monat">Monat</option><option value="Einsatz">Einsatz</option><option value="m²">m²</option><option value="Stück">Stück</option><option value="Pauschal">Pauschal</option>
+            </Select>
           </Field>
           <Field label={t(locale, 'billing.unitPrice')} htmlFor="line-price">
-            <Input id="line-price" name="unit_price" type="number" step="0.01" min="0" required />
+            <Input id="line-price" name="unit_price" type="number" inputMode="decimal" step="0.01" min="0" placeholder="z. B. 45,00" required />
           </Field>
           <Field label={`${t(locale, 'billing.vatRate')} %`} htmlFor="line-vat" info="Regelsatz 19 %. Für steuerfreie oder abweichende Leistungen den Satz anpassen; die Beträge berechnet die Datenbank.">
             <Input
@@ -174,10 +187,11 @@ export function InvoiceLineEditor({
           </Field>
         </div>
 
-        <SubmitButton locale={locale} variant="outline">
-          Position hinzufügen
-        </SubmitButton>
-      </form>
+          <SubmitButton locale={locale} variant="outline">
+            {t(locale, 'billing.addService')}
+          </SubmitButton>
+        </form>
+      </details>
     </div>
   );
 }

@@ -29,7 +29,31 @@ create table auth.users (
   raw_app_meta_data jsonb not null default '{}'::jsonb,
   raw_user_meta_data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- Supabase's own auth.users carries these; they are unused by the product but
+  -- the demo seed writes them, so leaving them out made the seed impossible to
+  -- run against this harness — and therefore impossible to check in CI.
+  confirmation_token text,
+  recovery_token text,
+  email_change_token_new text,
+  email_change text,
+  email_change_token_current text,
+  reauthentication_token text
+);
+
+-- Supabase links each user to one or more identity providers. The product never
+-- reads this table; the demo seed writes it, so it exists here for the same
+-- reason the extra auth.users columns do.
+create table auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider_id text not null,
+  identity_data jsonb not null default '{}'::jsonb,
+  provider text not null,
+  last_sign_in_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider_id, provider)
 );
 
 -- Tests set this to impersonate a signed-in user.

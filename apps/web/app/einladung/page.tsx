@@ -1,5 +1,10 @@
 import { cookies } from 'next/headers';
-import { invitationCookieName, type InvitationPreview } from '@/lib/invitations';
+import {
+  invitationCookieName,
+  isInvitationState,
+  type InvitationPreview,
+  type InvitationState,
+} from '@/lib/invitations';
 import { createClient } from '@/lib/supabase/server';
 import { InvitationAcceptButton, InvitationSignUp } from '@/components/invitation-acceptance';
 import { AuthFooterLink, AuthShell } from '@/components/auth-shell';
@@ -13,21 +18,50 @@ const roleKeys: Record<string, TranslationKey> = {
   CUSTOMER: 'role.CUSTOMER',
 };
 
-export default async function InvitationPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const [{ error }, locale] = await Promise.all([searchParams, currentLocale()]);
+/**
+ * What to say for a link that is not live.
+ *
+ * An accepted invitation is not a failure: the account was created and works.
+ * Telling that person their link is "invalid, expired or already used" is both
+ * unhelpful and slightly alarming, when all they need is the sign-in page.
+ *
+ * None of these reveal anything about the account beyond what the holder of
+ * the link already knew.
+ */
+const stateCopy: Record<
+  Exclude<InvitationState, 'GUELTIG'>,
+  { title: TranslationKey; body: TranslationKey }
+> = {
+  ANGENOMMEN: { title: 'auth.inviteAccepted', body: 'auth.inviteAcceptedBody' },
+  ABGELAUFEN: { title: 'auth.inviteExpired', body: 'auth.inviteExpiredBody' },
+  ZURUECKGEZOGEN: { title: 'auth.inviteRevoked', body: 'auth.inviteRevokedBody' },
+  UNBEKANNT: { title: 'auth.inviteUnavailable', body: 'auth.inviteUnavailableBody' },
+};
+
+export default async function InvitationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; state?: string }>;
+}) {
+  const [{ error, state }, locale] = await Promise.all([searchParams, currentLocale()]);
   const token = (await cookies()).get(invitationCookieName)?.value;
+
+  const outcome = (
+    isInvitationState(state) && state !== 'GUELTIG' ? state : 'UNBEKANNT'
+  ) as Exclude<InvitationState, 'GUELTIG'>;
+  const copy = stateCopy[outcome];
 
   const unavailable = (
     <AuthShell
       locale={locale}
-      title={t(locale, 'auth.inviteUnavailable')}
-      description={t(locale, 'auth.inviteUnavailableBody')}
+      title={t(locale, copy.title)}
+      description={t(locale, copy.body)}
       footer={<AuthFooterLink href="/login">{t(locale, 'auth.toSignIn')}</AuthFooterLink>}
     >
       <div />
     </AuthShell>
   );
-  if (!token || error) return unavailable;
+  if (!token || error || (isInvitationState(state) && state !== 'GUELTIG')) return unavailable;
 
   const supabase = await createClient();
   const [{ data }, { data: { user } }] = await Promise.all([

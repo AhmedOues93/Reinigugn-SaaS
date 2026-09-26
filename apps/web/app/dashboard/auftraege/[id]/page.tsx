@@ -1,17 +1,310 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ClipboardCheck, Pencil } from 'lucide-react';
-import { getServiceRecord } from '@/lib/data/service-record';
-import { Button, Card, DataRow, ButtonLink } from '@/components/ui';
-import { JobStatusBadge, formatJobTime } from '@/components/job-badges';
+import { Building2, ClipboardCheck, MapPin, Pencil, User } from 'lucide-react';
+import { cn } from '@reinigung/ui';
+import { getServiceRecord, hasStoredServiceRecord, type ServiceRecord } from '@/lib/data/service-record';
+import {
+  BackLink,
+  ButtonLink,
+  DataRow,
+  EmptyState,
+  Notice,
+  PageHeader,
+  Section,
+} from '@/components/ui';
+import { DataTable, type Column } from '@/components/data-table';
+import { JobStatusBadge } from '@/components/job-badges';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
+import { formatDate, formatDateTime, formatTimeRange } from '@/lib/format';
 import { deleteOperationalJobPhoto } from '../actions';
+import { stripDemoPrefix } from '@/lib/demo-label';
 
-function dateTime(value: string | null) { return value ? new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : 'Noch offen'; }
-function duration(minutes: number | null) { return minutes == null ? 'Läuft' : `${Math.floor(minutes / 60)} h ${minutes % 60} min`; }
+type TimeEntry = ServiceRecord['timeEntries'][number];
 
-export default async function JobDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ success?: string }> }) {
-  const { id } = await params; const { success } = await searchParams; const record = await getServiceRecord(id); if (!record) notFound();
+function duration(minutes: number | null) {
+  if (minutes == null) return 'Läuft';
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`;
+}
+
+export default async function JobDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ success?: string }>;
+}) {
+  const { id } = await params;
+  const { success } = await searchParams;
+  const [record, hasProof] = await Promise.all([getServiceRecord(id), hasStoredServiceRecord(id)]);
+  if (!record) notFound();
+
   const completedItems = record.checklistItems.filter((item) => item.completedAt).length;
-  return <div className="mx-auto max-w-5xl"><Link href="/dashboard/auftraege" className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />Zurück zu Aufträgen</Link>{success && <p className="mb-5 rounded bg-primary-soft p-3 text-sm text-primary">{success}</p>}<div className="mb-7 flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-medium text-primary">Auftrag</p><h1 className="mt-1 text-2xl font-semibold">{record.job.title}</h1><p className="mt-2 text-muted-foreground">{new Intl.DateTimeFormat('de-DE').format(new Date(`${record.job.scheduled_date}T12:00:00`))} · {formatJobTime(record.job.planned_start_at, record.job.planned_end_at)}</p></div><div className="flex flex-wrap gap-2"><ButtonLink href={`/dashboard/auftraege/${record.job.id}/leistungsnachweis`} variant="outline"><ClipboardCheck className="size-4" aria-hidden="true" />Leistungsnachweis</ButtonLink><ButtonLink href={`/dashboard/auftraege/${record.job.id}/bearbeiten`} variant="outline"><Pencil className="size-4" aria-hidden="true" />Bearbeiten</ButtonLink></div></div><div className="grid gap-5 md:grid-cols-2"><Card className="p-5"><h2 className="font-semibold">Planung</h2><dl className="mt-4 divide-y divide-border text-sm"><DataRow label="Kunde" value={record.job.customer?.name ?? 'Nicht hinterlegt'} /><DataRow label="Objekt" value={<>{record.job.object?.name ?? 'Nicht hinterlegt'}<br />{[record.job.object?.street, record.job.object?.postal_code, record.job.object?.city].filter(Boolean).join(', ') || 'Keine Adresse hinterlegt'}</>} /><DataRow label="Geplanter Zeitraum" value={formatJobTime(record.job.planned_start_at, record.job.planned_end_at)} /><DataRow label="Status" value={<JobStatusBadge status={record.job.status} />} /></dl></Card><Card className="p-5"><h2 className="font-semibold">Mitarbeiter</h2>{record.assignments.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Keine Mitarbeiter zugewiesen.</p> : <ul className="mt-3 space-y-2 text-sm">{record.assignments.map((assignment) => <li key={assignment.id}>{assignment.name}</li>)}</ul>}<h2 className="mt-6 font-semibold">Checkliste</h2><p className="mt-3 text-sm">{record.checklistItems.length === 0 ? 'Keine Checkliste hinterlegt.' : `${completedItems} von ${record.checklistItems.length} Punkten erledigt.`}</p></Card><Card className="p-5 md:col-span-2"><h2 className="font-semibold">Arbeitszeiten</h2>{record.timeEntries.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Noch keine Arbeitszeit erfasst.</p> : <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="text-xs uppercase text-muted-foreground"><tr><th className="pb-2">Mitarbeiter</th><th className="pb-2">Start</th><th className="pb-2">Ende</th><th className="pb-2">Dauer</th></tr></thead><tbody className="divide-y">{record.timeEntries.map((entry) => <tr key={entry.id}><td className="py-3 font-medium">{entry.name}</td><td className="py-3">{dateTime(entry.startedAt)}</td><td className="py-3">{dateTime(entry.finishedAt)}</td><td className="py-3">{duration(entry.durationMinutes)}</td></tr>)}</tbody></table></div>}</Card><Card className="p-5 md:col-span-2"><h2 className="font-semibold">Hinweise</h2><p className="mt-3 whitespace-pre-wrap text-sm">{record.job.employee_instructions || 'Keine Arbeitsanweisung hinterlegt.'}</p>{record.job.internal_notes && <p className="mt-4 whitespace-pre-wrap text-sm text-muted-foreground">Interne Notiz: {record.job.internal_notes}</p>}</Card></div><JobPhotoGallery photos={record.photos} deletablePhotoIds={record.photos.map((photo) => photo.id)} deleteAction={deleteOperationalJobPhoto} /></div>;
+  const totalItems = record.checklistItems.length;
+  const address = [
+    record.job.object?.street,
+    record.job.object?.postal_code,
+    record.job.object?.city,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const workedMinutes = record.timeEntries.reduce(
+    (total, entry) => total + (entry.durationMinutes ?? 0),
+    0,
+  );
+
+  const columns: Column<TimeEntry>[] = [
+    { key: 'name', header: 'Mitarbeiter', mobile: 'title', cell: (entry) => entry.name },
+    { key: 'start', header: 'Start', cell: (entry) => formatDateTime('de', entry.startedAt) },
+    {
+      key: 'end',
+      header: 'Ende',
+      cell: (entry) =>
+        entry.finishedAt ? (
+          formatDateTime('de', entry.finishedAt)
+        ) : (
+          <span className="text-primary">Läuft</span>
+        ),
+    },
+    {
+      key: 'duration',
+      header: 'Dauer',
+      align: 'end',
+      cell: (entry) => duration(entry.durationMinutes),
+    },
+  ];
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <BackLink href="/dashboard/auftraege">Aufträge</BackLink>
+      {success && (
+        <Notice tone="success" className="mb-5">
+          {success}
+        </Notice>
+      )}
+
+      <PageHeader
+        title={record.job.title}
+        meta={
+          <>
+            <JobStatusBadge status={record.job.status} />
+            <span className="text-sm text-muted-foreground">
+              {formatDate('de', record.job.scheduled_date, 'long')}
+            </span>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {formatTimeRange('de', record.job.planned_start_at, record.job.planned_end_at)}
+            </span>
+          </>
+        }
+        actions={
+          <>
+            {hasProof && (
+              <ButtonLink
+                href={`/dashboard/auftraege/${record.job.id}/leistungsnachweis`}
+                variant="outline"
+              >
+                <ClipboardCheck className="size-4" aria-hidden="true" />
+                Leistungsnachweis
+              </ButtonLink>
+            )}
+            <ButtonLink href={`/dashboard/auftraege/${record.job.id}/bearbeiten`}>
+              <Pencil className="size-4" aria-hidden="true" />
+              Bearbeiten
+            </ButtonLink>
+          </>
+        }
+      />
+
+      <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-6">
+        <aside className="space-y-4 lg:space-y-6">
+          <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
+            <h2 className="mb-4 text-[15px] font-semibold">Kunde &amp; Objekt</h2>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3 text-sm">
+                <User className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="break-anywhere min-w-0">
+                  {record.job.customer?.name ?? (
+                    <span className="text-muted-foreground">Kein Kunde hinterlegt</span>
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-3 text-sm">
+                <Building2
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="break-anywhere min-w-0">
+                  {record.job.object?.name ?? (
+                    <span className="text-muted-foreground">Kein Objekt hinterlegt</span>
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-3 text-sm">
+                <MapPin
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="break-anywhere min-w-0">
+                  {address || (
+                    <span className="text-muted-foreground">Keine Adresse hinterlegt</span>
+                  )}
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <section className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
+            <h2 className="mb-1 text-[15px] font-semibold">Eingeteilt</h2>
+            {record.assignments.length === 0 ? (
+              <p className="mt-3 text-sm font-medium text-danger">Niemand eingeteilt</p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm">
+                {record.assignments.map((assignment) => (
+                  <li key={assignment.id} className="break-anywhere font-medium text-foreground">
+                    {assignment.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <dl className="mt-5 divide-y divide-border/70 border-t border-border/70">
+              <DataRow
+                label="Erfasste Zeit"
+                value={workedMinutes ? duration(workedMinutes) : '—'}
+              />
+              <DataRow
+                label="Checkliste"
+                value={totalItems === 0 ? 'Keine hinterlegt' : `${completedItems} / ${totalItems}`}
+              />
+            </dl>
+            {totalItems > 0 && (
+              <div
+                className="mt-3 h-1 overflow-hidden rounded-full bg-muted"
+                role="img"
+                aria-label={`${completedItems} von ${totalItems} Punkten erledigt`}
+              >
+                <div
+                  className={cn(
+                    'h-full transition-all',
+                    completedItems === totalItems ? 'bg-success' : 'bg-primary',
+                  )}
+                  style={{ width: `${Math.round((completedItems / totalItems) * 100)}%` }}
+                />
+              </div>
+            )}
+            {totalItems > 0 && (
+              <ol className="mt-4 hidden space-y-2 border-t border-border/70 pt-4 lg:block">
+                {record.checklistItems.map((item) => (
+                  <li key={item.id} className="flex items-start gap-2 text-xs leading-5">
+                    <span
+                      className={cn(
+                        'mt-1.5 size-1.5 shrink-0 rounded-full',
+                        item.completedAt ? 'bg-success' : 'bg-border',
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span className={item.completedAt ? 'text-foreground' : 'text-muted-foreground'}>
+                      {item.title}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </aside>
+
+        <div className="min-w-0 space-y-5 lg:space-y-8">
+          {record.checklistItems.length > 0 && (
+            <Section title="Checkliste">
+              <ol className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-card">
+                {record.checklistItems.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-start gap-3 border-b border-border/70 px-4 py-3 last:border-0"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'mt-0.5 size-2 shrink-0 rounded-full',
+                        item.completedAt ? 'bg-success' : 'bg-border',
+                      )}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          'block text-sm font-medium',
+                          !item.completedAt && 'text-muted-foreground',
+                        )}
+                      >
+                        {item.title}
+                        {!item.isRequired && (
+                          <span className="ms-2 text-xs font-normal text-muted-foreground">
+                            optional
+                          </span>
+                        )}
+                      </span>
+                      {item.instruction && (
+                        <span className="mt-0.5 block text-sm text-muted-foreground">
+                          {item.instruction}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {item.completedAt ? formatDateTime('de', item.completedAt) : 'Offen'}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </Section>
+          )}
+
+          <Section
+            title="Arbeitszeiten"
+            description={
+              record.timeEntries.length > 0
+                ? `${record.timeEntries.length} Erfassung${record.timeEntries.length === 1 ? '' : 'en'}`
+                : 'Noch keine Zeiterfassung'
+            }
+          >
+            {record.timeEntries.length > 0 ? (
+              <DataTable
+                rows={record.timeEntries}
+                columns={columns}
+                rowKey={(entry) => entry.id}
+                caption="Erfasste Arbeitszeiten"
+              />
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-4">
+                <p className="text-sm font-medium">Noch keine Arbeitszeit erfasst</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sobald ein Mitarbeiter den Einsatz startet, erscheint die Zeit hier.
+                </p>
+              </div>
+            )}
+          </Section>
+
+          <Section title="Hinweise">
+            <div className="rounded-xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
+              <p className="whitespace-pre-wrap break-anywhere text-sm leading-6">
+                {stripDemoPrefix(record.job.employee_instructions) || (
+                  <span className="text-muted-foreground">Keine Arbeitsanweisung hinterlegt.</span>
+                )}
+              </p>
+              {stripDemoPrefix(record.job.internal_notes) && (
+                <div className="mt-4 border-t border-border/70 pt-4">
+                  <p className="text-[13px] font-medium text-muted-foreground">Interne Notiz</p>
+                  <p className="mt-1 whitespace-pre-wrap break-anywhere text-sm leading-6 text-muted-foreground">
+                    {stripDemoPrefix(record.job.internal_notes)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Section>
+
+          <JobPhotoGallery
+            photos={record.photos}
+            deletablePhotoIds={record.photos.map((photo) => photo.id)}
+            deleteAction={deleteOperationalJobPhoto}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }

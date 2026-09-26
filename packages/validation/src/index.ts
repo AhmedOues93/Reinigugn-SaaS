@@ -49,6 +49,10 @@ export const customerSchema = z.object({
   billing_recipient_address: optionalText(500, 'Die abweichende Rechnungsadresse'),
   payment_terms_days: z.preprocess((value) => value === '' ? undefined : value, z.coerce.number().int().min(0).max(365).optional()),
   vat_id: optionalText(64, 'Die USt-IdNr.'),
+  datev_debtor_account: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().regex(/^\d{4,11}$/, 'Das DATEV-Debitorenkonto muss aus 4 bis 11 Ziffern bestehen.').optional(),
+  ),
   notes: optionalText(4_000, 'Die Notizen'),
 });
 
@@ -78,6 +82,28 @@ const optionalHours = z.preprocess(
   z.coerce.number({ invalid_type_error: 'Bitte gib eine gültige Wochenstundenzahl ein.' }).min(0, 'Die Wochenstunden dürfen nicht negativ sein.').max(168, 'Die Wochenstunden dürfen maximal 168 betragen.').optional(),
 );
 
+/**
+ * Ein Stundenlohn in Euro, wie er im Formular steht, als Cent zurueckgegeben.
+ * In Cent, weil Geld als Gleitkomma frueher oder spaeter einen Cent verliert —
+ * und dieser Satz geht in die Nachkalkulation ein.
+ *
+ * Komma und Punkt sind beide erlaubt: auf einer deutschen Tastatur tippt
+ * niemand 14.50.
+ */
+const optionalWageCents = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string' || value.trim() === '') return undefined;
+    const normalised = Number(value.trim().replace(',', '.'));
+    return Number.isFinite(normalised) ? Math.round(normalised * 100) : value;
+  },
+  z
+    .number({ invalid_type_error: 'Bitte gib einen gültigen Stundenlohn ein.' })
+    .int('Bitte gib einen gültigen Stundenlohn ein.')
+    .min(0, 'Der Stundenlohn darf nicht negativ sein.')
+    .max(100_000, 'Der Stundenlohn ist zu hoch.')
+    .optional(),
+);
+
 const optionalDate = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gültiges Datum ein.').optional(),
@@ -85,28 +111,51 @@ const optionalDate = z.preprocess(
 
 /** The five product locales, kept in one place so the schemas, the UI and the
  * database language constraints cannot drift apart. */
-export const supportedLocaleSchema = z.enum(['de', 'en', 'ar', 'tr', 'uk'], {
+export const supportedLocaleSchema = z.enum(['de', 'en', 'ar', 'tr', 'uk', 'ru'], {
   errorMap: () => ({ message: 'Bitte wähle eine unterstützte Sprache.' }),
 });
 
 export const employeeRoleSchema = z.enum(['OFFICE', 'EMPLOYEE'], { errorMap: () => ({ message: 'Bitte wähle eine gültige Rolle.' }) });
 
-export const employeeInvitationSchema = z.object({
+const employeeMasterDataSchema = z.object({
   first_name: z.string().trim().min(1, 'Bitte gib einen Vornamen ein.').max(120, 'Der Vorname ist zu lang.'),
   last_name: z.string().trim().min(1, 'Bitte gib einen Nachnamen ein.').max(120, 'Der Nachname ist zu lang.'),
-  email: emailSchema,
   phone: optionalText(64, 'Die Telefonnummer'),
   role: employeeRoleSchema,
   employee_number: optionalText(64, 'Die Personalnummer'),
   weekly_hours: optionalHours,
   employment_start_date: optionalDate,
   employment_end_date: optionalDate,
-  employment_type: z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
+  employment_type: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
+  ),
   preferred_language: supportedLocaleSchema.default('de'),
+  wage_group: optionalText(40, 'Die Lohngruppe'),
+  hourly_wage_cents: optionalWageCents,
   notes: optionalText(4_000, 'Die Notizen'),
-}).refine((value) => !value.employment_end_date || !value.employment_start_date || value.employment_end_date >= value.employment_start_date, { message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.', path: ['employment_end_date'] });
+});
 
-export const employeeUpdateSchema = employeeInvitationSchema;
+function employmentDatesAreValid(value: { employment_start_date?: string; employment_end_date?: string }) {
+  return !value.employment_end_date || !value.employment_start_date || value.employment_end_date >= value.employment_start_date;
+}
+
+export const employeeInvitationSchema = employeeMasterDataSchema
+  .extend({ email: emailSchema })
+  .refine(employmentDatesAreValid, {
+    message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.',
+    path: ['employment_end_date'],
+  });
+
+/**
+ * Editing an existing employee must not require a hidden e-mail field. The
+ * login address belongs to the invitation/account and is shown read-only in
+ * the form; employment master data can still be maintained before acceptance.
+ */
+export const employeeUpdateSchema = employeeMasterDataSchema.refine(employmentDatesAreValid, {
+  message: 'Das Austrittsdatum darf nicht vor dem Eintrittsdatum liegen.',
+  path: ['employment_end_date'],
+});
 
 export const customerPortalInvitationSchema = z.object({
   first_name: z.string().trim().min(1, 'Bitte gib einen Vornamen ein.').max(120, 'Der Vorname ist zu lang.'),
@@ -148,6 +197,28 @@ export const scheduleRuleSchema = z.object({
   planned_end_time: timeSchema,
 }).refine((value) => value.planned_end_time > value.planned_start_time, { message: 'Das geplante Ende muss nach dem Beginn liegen.', path: ['planned_end_time'] });
 
+/**
+ * Whether a visit under this contract needs a Kundenabnahme, and how. It is a
+ * commercial arrangement, so it is agreed once on the Leistungsplan — the
+ * employee in the field is never asked to decide it.
+ */
+export const acceptancePolicySchema = z.enum([
+  'KEINE_ABNAHME_ERFORDERLICH',
+  'VOR_ORT_UNTERSCHRIFT',
+  'PORTAL_ABNAHME',
+]);
+
+/**
+ * How the agreed price is meant. Only STUNDENSATZ lets the working time the
+ * cleaners record decide what the customer is charged; everything else is a
+ * price that was agreed regardless of the clock.
+ */
+export const billingModeSchema = z.enum([
+  'PAUSCHALE_PRO_EINSATZ',
+  'STUNDENSATZ',
+  'MONATSPAUSCHALE',
+]);
+
 export const serviceScheduleSchema = z.object({
   customer_id: z.string().uuid('Bitte wähle einen gültigen Kunden aus.'),
   cleaning_object_id: z.string().uuid('Bitte wähle ein gültiges Objekt aus.'),
@@ -157,6 +228,8 @@ export const serviceScheduleSchema = z.object({
   valid_until: optionalDate,
   member_ids: uuidArraySchema,
   checklist_template_id: optionalUuid,
+  acceptance_policy: acceptancePolicySchema.default('KEINE_ABNAHME_ERFORDERLICH'),
+  billing_mode: billingModeSchema.default('PAUSCHALE_PRO_EINSATZ'),
   rules: z.array(scheduleRuleSchema).min(1, 'Bitte hinterlege mindestens einen Wochentag.').max(7),
 }).refine((value) => !value.valid_until || value.valid_until >= value.valid_from, { message: 'Das Enddatum darf nicht vor dem Startdatum liegen.', path: ['valid_until'] });
 

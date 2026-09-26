@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ClipboardList } from 'lucide-react';
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
+import { Badge, ButtonLink, Card, EmptyState, PageHeader } from '@/components/ui';
+import { SalesSectionNav } from '@/components/sales/sales-section-nav';
 import { listSurveys } from '@/lib/data/sales';
 import { formatDateTime } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -16,6 +17,7 @@ export default async function SurveysPage() {
   return (
     <>
       <PageHeader title={t(locale, 'sales.surveys.title')} />
+      <SalesSectionNav active="besichtigungen" locale={locale} />
       {surveys.length === 0 ? (
         <EmptyState icon={<ClipboardList className="size-5" />} title={t(locale, 'sales.survey.empty')} />
       ) : (
@@ -24,10 +26,10 @@ export default async function SurveysPage() {
             {surveys.map((survey) => {
               const owner = first(survey.leads)?.organisation ?? first(survey.customers)?.name ?? '—';
               return (
-                <li key={survey.id}>
+                <li key={survey.id} className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <Link
                     href={`/dashboard/vertrieb/besichtigungen/${survey.id}`}
-                    className="flex flex-wrap items-center justify-between gap-3 p-5 hover:bg-muted"
+                    className="min-w-0 flex-1 rounded-md hover:text-primary"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{survey.site_name}</p>
@@ -35,10 +37,13 @@ export default async function SurveysPage() {
                         {owner} · {formatDateTime(locale, survey.scheduled_at)}
                       </p>
                     </div>
+                  </Link>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Badge tone={survey.status === 'COMPLETED' ? 'success' : survey.status === 'CANCELLED' ? 'danger' : 'warning'}>
                       {t(locale, `sales.survey.status.${survey.status}`)}
                     </Badge>
-                  </Link>
+                    <ButtonLink href={`/dashboard/vertrieb/besichtigungen/${survey.id}`} variant="outline">Ansehen</ButtonLink>
+                  </div>
                 </li>
               );
             })}
