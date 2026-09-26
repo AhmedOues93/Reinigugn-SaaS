@@ -15,36 +15,36 @@ import { FilterBar } from '@/components/data-table';
 import { ExtendHorizonButton } from '@/components/extend-horizon';
 import { AutomaticPlanningAssistant } from '@/components/automatic-planning-assistant';
 import { addDays, berlinDateKey } from '@/lib/date';
+import {
+  isoWeek,
+  mondayOf,
+  planningWindow,
+  type PlanningView,
+} from '@/lib/planning-window';
 import { formatDate, formatTimeRange } from '@/lib/format';
-import { createAutomaticWeekPlan, extendScheduleHorizon } from './actions';
+import { createAutomaticPlan, extendScheduleHorizon } from './actions';
 
 type Query = {
+  /** Anchor of the shown window. `week` is the older link shape, still honoured. */
+  start?: string;
   week?: string;
+  /** `kw` snaps the window to the calendar week; anything else rolls from a date. */
+  view?: string;
   customer?: string;
   object?: string;
   employee?: string;
   status?: string;
 };
 
-/** Monday of the week a date key falls in, as a date key. Never leaves string maths. */
-function mondayOf(dateKey: string) {
-  const day = new Date(`${dateKey}T12:00:00Z`).getUTCDay() || 7;
-  return addDays(dateKey, 1 - day);
-}
 
-function isoWeek(dateKey: string) {
-  const target = new Date(`${dateKey}T12:00:00Z`);
-  target.setUTCDate(target.getUTCDate() + 4 - (target.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  return Math.ceil(((target.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
-}
 
 function statusFilter(value?: string): JobStatusFilter {
   return value === 'PLANNED' || value === 'CONFIRMED' || value === 'CANCELLED' ? value : 'all';
 }
 
-function weekHref(query: Query, week: string) {
-  const params = new URLSearchParams({ week });
+/** Keeps the filters while moving the window, so navigating never widens a search. */
+function planHref(query: Query, view: PlanningView, start: string) {
+  const params = new URLSearchParams({ start, view: view === 'week' ? 'kw' : 'ab' });
   if (query.customer) params.set('customer', query.customer);
   if (query.object) params.set('object', query.object);
   if (query.employee) params.set('employee', query.employee);
@@ -73,9 +73,8 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
   const query = await searchParams;
   const currentStatus = statusFilter(query.status);
   const today = berlinDateKey();
-  const start = mondayOf(query.week && /^\d{4}-\d{2}-\d{2}$/.test(query.week) ? query.week : today);
-  const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
-  const end = days[6]!;
+
+  const { view, start, days, end, atToday } = planningWindow(query, today);
 
   const [jobs, customers, objects, employees, affectedAssignments, runningOut] = await Promise.all([
     listJobs({
@@ -95,7 +94,6 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
 
   const affectedJobIds = new Set(affectedAssignments.map((assignment) => assignment.jobId));
   const byDay = new Map(days.map((day) => [day, jobs.filter((job) => job.scheduled_date === day)]));
-  const thisWeek = mondayOf(today) === start;
 
   /** One visit on the board. The status spine is the only colour it carries. */
   const visit = (job: (typeof jobs)[number]) => {
@@ -164,7 +162,11 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
           <>
             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
               <CalendarRange className="size-4 text-muted-foreground" aria-hidden="true" />
-              KW {isoWeek(start)}
+              {view === 'week'
+                ? `KW ${isoWeek(start)}`
+                : start === today
+                  ? 'Die nächsten 7 Tage'
+                  : '7 Tage'}
             </span>
             <span className="text-sm tabular-nums text-muted-foreground">
               {dayMonthLong.format(new Date(`${start}T12:00:00Z`))} –{' '}
@@ -189,7 +191,7 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
         }
       />
 
-      <AutomaticPlanningAssistant weekStart={start} action={createAutomaticWeekPlan} />
+      <AutomaticPlanningAssistant from={start} to={end} action={createAutomaticPlan} />
 
       {runningOut.length > 0 && (
         <Notice
@@ -242,7 +244,8 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
         employee fold away until they are wanted.
       */}
       <FilterBar className="min-w-0 max-w-full">
-        <input type="hidden" name="week" value={start} />
+        <input type="hidden" name="start" value={start} />
+        <input type="hidden" name="view" value={view === 'week' ? 'kw' : 'ab'} />
         <Select name="status" defaultValue={currentStatus} aria-label="Status">
           <option value="all">Alle Status</option>
           <option value="PLANNED">Geplant</option>
@@ -293,32 +296,64 @@ export default async function PlanningPage({ searchParams }: { searchParams: Pro
         </Button>
       </FilterBar>
 
-      {/* Week navigation sits on the workspace, not in a box: it steers the board below. */}
-      <nav aria-label="Woche wechseln" className="mb-3 flex items-center gap-2">
+      {/*
+        Navigation sits on the workspace, not in a box: it steers the board below.
+        Both controls move the same window, so the board never jumps to a date
+        the office did not ask for.
+      */}
+      <nav
+        aria-label="Zeitraum wechseln"
+        className="mb-3 flex flex-wrap items-center gap-2 sm:flex-nowrap"
+      >
         <ButtonLink
-          href={weekHref(query, addDays(start, -7))}
+          href={planHref(query, view, addDays(start, -7))}
           variant="outline"
           size="sm"
-          aria-label="Vorherige Woche"
+          aria-label={view === 'week' ? 'Vorherige Woche' : 'Sieben Tage zurück'}
         >
           <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         </ButtonLink>
         <ButtonLink
-          href={weekHref(query, mondayOf(today))}
-          variant={thisWeek ? 'subtle' : 'outline'}
+          href={planHref(query, view, view === 'week' ? mondayOf(today) : today)}
+          variant={atToday ? 'subtle' : 'outline'}
           size="sm"
-          aria-current={thisWeek ? 'page' : undefined}
+          aria-current={atToday ? 'page' : undefined}
         >
-          Diese Woche
+          Heute
         </ButtonLink>
         <ButtonLink
-          href={weekHref(query, addDays(start, 7))}
+          href={planHref(query, view, addDays(start, 7))}
           variant="outline"
           size="sm"
-          aria-label="Nächste Woche"
+          aria-label={view === 'week' ? 'Nächste Woche' : 'Sieben Tage vor'}
         >
           <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
         </ButtonLink>
+
+        <div
+          role="group"
+          aria-label="Ansicht"
+          className="ms-auto flex w-full min-w-0 gap-1 rounded-xl border border-border/80 bg-card p-1 sm:w-auto"
+        >
+          <ButtonLink
+            href={planHref(query, 'rolling', today)}
+            variant={view === 'rolling' ? 'subtle' : 'ghost'}
+            size="sm"
+            aria-current={view === 'rolling' ? 'true' : undefined}
+            className="flex-1 sm:flex-none"
+          >
+            Ab heute
+          </ButtonLink>
+          <ButtonLink
+            href={planHref(query, 'week', mondayOf(start))}
+            variant={view === 'week' ? 'subtle' : 'ghost'}
+            size="sm"
+            aria-current={view === 'week' ? 'true' : undefined}
+            className="flex-1 sm:flex-none"
+          >
+            Kalenderwoche
+          </ButtonLink>
+        </div>
       </nav>
 
       {/* Desktop: one continuous board, seven columns divided by hairlines. */}

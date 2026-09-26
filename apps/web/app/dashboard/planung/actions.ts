@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { serviceScheduleSchema } from '@reinigung/validation';
 import { type FormState } from '@/lib/actions';
+import { planningSummary, toPlanningVisits, type PlanningState } from '@/lib/planning';
 import { requireStaffCompany } from '@/lib/auth';
 
 const weekdays = [1, 2, 3, 4, 5, 6, 7];
@@ -169,80 +170,52 @@ export async function extendScheduleHorizon() {
 
 
 /**
- * Builds the office-approved automatic plan for the selected week.
+ * Plan a date window and report the outcome per visit.
+ *
  * The database planner is the safety authority: it checks weekly capacity,
  * employment dates, approved vacation/sickness and overlapping work before
- * selecting anyone. Only AUTO schedules are changed.
+ * selecting anyone, and it reports the blocking rule per candidate. Only AUTO
+ * schedules are changed, and job generation is idempotent, so existing visits
+ * are never removed or duplicated.
  */
-export async function createAutomaticWeekPlan(_: FormState, formData: FormData): Promise<FormState> {
-  const weekStart = String(formData.get('week_start') ?? '');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return failure('Die ausgewählte Woche ist ungültig.');
+export async function createAutomaticPlan(
+  _: PlanningState,
+  formData: FormData,
+): Promise<PlanningState> {
+  const from = String(formData.get('from') ?? '');
+  const to = String(formData.get('to') ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to < from) {
+    return { status: 'error', message: 'Der ausgewählte Zeitraum ist ungültig.' };
+  }
 
   try {
-    const { supabase, company } = await requireStaffCompany();
-    const weekEndDate = new Date(`${weekStart}T12:00:00Z`);
-    weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
-    const weekEnd = weekEndDate.toISOString().slice(0, 10);
+    const { supabase } = await requireStaffCompany();
+    const { data, error } = await supabase.rpc('plan_window_automatically', {
+      p_from: from,
+      p_to: to,
+    });
 
-    const { data: schedules, error: scheduleError } = await supabase
-      .from('service_schedules')
-      .select('id, name, valid_from, valid_until, assignment_mode')
-      .eq('company_id', company.id)
-      .eq('is_active', true)
-      .eq('assignment_mode', 'AUTO')
-      .lte('valid_from', weekEnd)
-      .or(`valid_until.is.null,valid_until.gte.${weekStart}`);
-
-    if (scheduleError) return failure('Die automatische Planung konnte nicht vorbereitet werden.');
-    if (!schedules?.length) {
-      return failure('Für diese Woche gibt es keine aktiven Pläne mit automatischer Teamplanung.');
+    if (error) {
+      return {
+        status: 'error',
+        message: `Die automatische Planung ist fehlgeschlagen: ${error.message}`,
+      };
     }
 
-    let planned = 0;
-    const unresolved: string[] = [];
-
-    for (const schedule of schedules) {
-      const { data: memberId, error: assignmentError } = await supabase.rpc('auto_assign_schedule_employee', {
-        p_schedule_id: schedule.id,
-      });
-      if (assignmentError) {
-        unresolved.push(schedule.name);
-        continue;
-      }
-      if (!memberId) {
-        unresolved.push(schedule.name);
-        continue;
-      }
-
-      const { error: generationError } = await supabase.rpc('generate_jobs_for_schedule', {
-        p_schedule_id: schedule.id,
-        p_until: weekEnd,
-      });
-      if (generationError) {
-        unresolved.push(schedule.name);
-        continue;
-      }
-      planned += 1;
-    }
+    const visits = toPlanningVisits(data as Parameters<typeof toPlanningVisits>[0]);
 
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/planung');
     revalidatePath('/dashboard/auftraege');
 
-    if (unresolved.length) {
-      return {
-        status: planned ? 'success' : 'error',
-        message: planned
-          ? `${planned} automatische Pläne wurden aktualisiert. Für ${unresolved.length} Plan/Pläne wurde wegen Verfügbarkeit, Urlaub, Krankheit, Arbeitszeit oder Konflikten keine sichere Zuweisung vorgenommen: ${unresolved.slice(0, 3).join(', ')}${unresolved.length > 3 ? ' …' : ''}`
-          : `Keine sichere automatische Zuweisung möglich. Bitte Verfügbarkeit, Urlaub/Krankheit, Wochenstunden und bestehende Einsätze prüfen.`,
-      };
-    }
-
     return {
-      status: 'success',
-      message: `${planned} automatische Pläne wurden für die ausgewählte Woche geprüft und übernommen. Die zugewiesenen Mitarbeiter erhalten ihre Einsatzbenachrichtigungen.`,
+      status: visits.some((visit) => !visit.assigned) ? 'error' : 'success',
+      message: planningSummary(visits),
+      from,
+      to,
+      visits,
     };
   } catch {
-    return failure('Die automatische Wochenplanung konnte nicht erstellt werden.');
+    return { status: 'error', message: 'Die automatische Planung konnte nicht ausgeführt werden.' };
   }
 }
