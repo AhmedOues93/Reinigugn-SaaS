@@ -29,7 +29,7 @@ export async function inviteEmployee(_: FormState, formData: FormData): Promise<
     });
     const invitation = data?.[0];
     if (error || !invitation) return failure('Die Einladung konnte nicht erstellt werden.');
-    const { error: masterDataError } = await supabase.rpc('set_employee_master_data', { p_member_id: invitation.member_id, p_employee_number: parsed.data.employee_number ?? '', p_weekly_hours: parsed.data.weekly_hours ?? null, p_employment_start_date: parsed.data.employment_start_date ?? null, p_employment_end_date: parsed.data.employment_end_date ?? null, p_employment_type: parsed.data.employment_type ?? null, p_preferred_language: parsed.data.preferred_language, p_notes: parsed.data.notes ?? '' });
+    const { error: masterDataError } = await supabase.rpc('set_employee_master_data', { p_member_id: invitation.member_id, p_employee_number: parsed.data.employee_number ?? '', p_weekly_hours: parsed.data.weekly_hours ?? null, p_employment_start_date: parsed.data.employment_start_date ?? null, p_employment_end_date: parsed.data.employment_end_date ?? null, p_employment_type: parsed.data.employment_type ?? null, p_preferred_language: parsed.data.preferred_language, p_notes: parsed.data.notes ?? '', p_wage_group: parsed.data.wage_group ?? null, p_hourly_wage_cents: parsed.data.hourly_wage_cents ?? null });
     if (masterDataError) return failure('Die Einladung wurde erstellt, aber die Arbeitsdaten konnten nicht gespeichert werden.');
     const delivery = await mailService.sendInvitation({ to: parsed.data.email, companyName: company.name, firstName: parsed.data.first_name, role: parsed.data.role, token });
     let authFallbackSent = false;
@@ -116,7 +116,7 @@ export async function updateEmployee(memberId: string, _: FormState, formData: F
       p_employee_number: parsed.data.employee_number ?? '', p_weekly_hours: parsed.data.weekly_hours ?? null, p_employment_start_date: parsed.data.employment_start_date ?? null, p_notes: parsed.data.notes ?? '',
     });
     if (error) return failure('Der Mitarbeiter konnte nicht aktualisiert werden.');
-    const { error: masterDataError } = await supabase.rpc('set_employee_master_data', { p_member_id: memberId, p_employee_number: parsed.data.employee_number ?? '', p_weekly_hours: parsed.data.weekly_hours ?? null, p_employment_start_date: parsed.data.employment_start_date ?? null, p_employment_end_date: parsed.data.employment_end_date ?? null, p_employment_type: parsed.data.employment_type ?? null, p_preferred_language: parsed.data.preferred_language, p_notes: parsed.data.notes ?? '' });
+    const { error: masterDataError } = await supabase.rpc('set_employee_master_data', { p_member_id: memberId, p_employee_number: parsed.data.employee_number ?? '', p_weekly_hours: parsed.data.weekly_hours ?? null, p_employment_start_date: parsed.data.employment_start_date ?? null, p_employment_end_date: parsed.data.employment_end_date ?? null, p_employment_type: parsed.data.employment_type ?? null, p_preferred_language: parsed.data.preferred_language, p_notes: parsed.data.notes ?? '', p_wage_group: parsed.data.wage_group ?? null, p_hourly_wage_cents: parsed.data.hourly_wage_cents ?? null });
     if (masterDataError) return failure('Der Mitarbeiter wurde gespeichert, aber die Arbeitsdaten konnten nicht aktualisiert werden.');
     revalidatePath('/dashboard/mitarbeiter'); revalidatePath(`/dashboard/mitarbeiter/${memberId}`);
     return { status: 'success', id: memberId };

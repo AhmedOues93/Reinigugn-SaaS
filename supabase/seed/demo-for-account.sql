@@ -84,11 +84,11 @@ begin
   -- ausprobiert werden kann.
   for emp in
     select * from (values
-      ('demo-olena@reinplan.test',  'Olena',  'Kovalenko', 'M-0001', 30.0, 360, 30, time '08:00', false),
-      ('demo-maria@reinplan.test',  'Maria',  'Nowak',     'M-0002', 25.0, 300,  0, time '17:30', false),
-      ('demo-mehmet@reinplan.test', 'Mehmet', 'Yilmaz',    'M-0003', 39.0, 468, 45, time '06:30', false),
-      ('demo-anna@reinplan.test',   'Anna',   'Schneider', 'M-0004', 10.0, 120,  0, time '18:00', true)
-    ) as t(email, first_name, last_name, number, weekly, net_minutes, break_minutes, starts_at, weekdays_only)
+      ('demo-olena@reinplan.test',  'Olena',  'Kovalenko', 'M-0001', 30.0, 360, 30, time '08:00', false, 'LG 1', 1425),
+      ('demo-maria@reinplan.test',  'Maria',  'Nowak',     'M-0002', 25.0, 300,  0, time '17:30', false, 'LG 1', 1425),
+      ('demo-mehmet@reinplan.test', 'Mehmet', 'Yilmaz',    'M-0003', 39.0, 468, 45, time '06:30', false, 'LG 6', 1810),
+      ('demo-anna@reinplan.test',   'Anna',   'Schneider', 'M-0004', 10.0, 120,  0, time '18:00', true,  'LG 1', 1425)
+    ) as t(email, first_name, last_name, number, weekly, net_minutes, break_minutes, starts_at, weekdays_only, wage_group, wage_cents)
   loop
     declare
       emp_user uuid := gen_random_uuid();
@@ -117,8 +117,10 @@ begin
       values (demo_company, emp_profile, 'EMPLOYEE', 'ACTIVE') returning id into emp_member;
 
       insert into public.employee_details (company_id, profile_id, employee_number, weekly_hours,
-                                           employment_start_date, preferred_language, is_active)
-      values (demo_company, emp_profile, emp.number, emp.weekly, current_date - 300, 'de', true);
+                                           employment_start_date, preferred_language, is_active,
+                                           wage_group, hourly_wage_cents)
+      values (demo_company, emp_profile, emp.number, emp.weekly, current_date - 300, 'de', true,
+              emp.wage_group, emp.wage_cents);
 
       members := members || emp_member;
     end;

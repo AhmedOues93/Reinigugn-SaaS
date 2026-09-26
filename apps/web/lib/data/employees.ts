@@ -4,7 +4,7 @@ import { berlinDateKey } from '@/lib/date';
 export type MemberFilter = 'all' | 'INVITED' | 'ACTIVE' | 'DISABLED';
 export type RoleFilter = 'all' | 'OFFICE' | 'EMPLOYEE';
 
-const employeeDetailSelect = 'profile_id, employee_number, weekly_hours, employment_start_date, employment_end_date, employment_type, preferred_language, notes, is_active';
+const employeeDetailSelect = 'profile_id, employee_number, weekly_hours, employment_start_date, employment_end_date, employment_type, preferred_language, wage_group, hourly_wage_cents, notes, is_active';
 
 async function employeeDetailsByProfile(
   supabase: Awaited<ReturnType<typeof requireStaffCompany>>['supabase'],

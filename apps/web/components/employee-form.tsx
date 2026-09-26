@@ -7,7 +7,7 @@ import { type FormState, initialFormState } from '@/lib/actions';
 import { Button, Field, Input, Select } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
-type EmployeeRecord = { id?: string; role?: 'OFFICE' | 'EMPLOYEE'; invited_first_name?: string | null; invited_last_name?: string | null; invited_phone?: string | null; invited_email?: string | null; profiles?: { first_name?: string | null; last_name?: string | null; phone?: string | null } | { first_name?: string | null; last_name?: string | null; phone?: string | null }[] | null; employee_details?: { employee_number?: string | null; weekly_hours?: number | null; employment_start_date?: string | null; employment_end_date?: string | null; employment_type?: string | null; preferred_language?: string | null; notes?: string | null }[] | null; };
+type EmployeeRecord = { id?: string; role?: 'OFFICE' | 'EMPLOYEE'; invited_first_name?: string | null; invited_last_name?: string | null; invited_phone?: string | null; invited_email?: string | null; profiles?: { first_name?: string | null; last_name?: string | null; phone?: string | null } | { first_name?: string | null; last_name?: string | null; phone?: string | null }[] | null; employee_details?: { employee_number?: string | null; weekly_hours?: number | null; employment_start_date?: string | null; employment_end_date?: string | null; employment_type?: string | null; preferred_language?: string | null; wage_group?: string | null; hourly_wage_cents?: number | null; notes?: string | null }[] | null; };
 type EmployeeAction = (state: FormState, formData: FormData) => Promise<FormState>;
 
 function profileFor(record?: EmployeeRecord) { return Array.isArray(record?.profiles) ? record?.profiles[0] : record?.profiles; }
@@ -56,6 +56,50 @@ export function EmployeeForm({ employee, action, submitLabel, currentRole, invit
         </Field>
         <Field label="Wochen-Sollstunden" htmlFor="weekly_hours">
           <Input id="weekly_hours" name="weekly_hours" type="number" min="0" max="168" step="0.25" defaultValue={details?.weekly_hours ?? ''} />
+        </Field>
+        {/*
+          Lohngruppe und Stundenlohn. Der Satz ist eine Kostenangabe fuer die
+          Nachkalkulation, keine Lohnabrechnung — deshalb steht hier nur ein
+          Wert und keine Zuschlaege, Steuern oder Abgaben.
+
+          Die Gruppen sind Vorschlaege, kein Zwang: der Rahmentarif des
+          Gebaeudereinigerhandwerks aendert sich, und eine feste Liste waere bei
+          jeder Tarifrunde ein Update. Ein Betrieb ohne Tarifbindung traegt
+          einfach seinen eigenen Text ein.
+        */}
+        <Field label="Lohngruppe" htmlFor="wage_group" optional>
+          <Input
+            id="wage_group"
+            name="wage_group"
+            list="wage-group-options"
+            defaultValue={details?.wage_group ?? ''}
+            maxLength={40}
+            placeholder="z. B. LG 1"
+            autoComplete="off"
+          />
+          <datalist id="wage-group-options">
+            <option value="LG 1">LG 1 – Unterhaltsreinigung</option>
+            <option value="LG 2">LG 2 – Vorarbeiter</option>
+            <option value="LG 3">LG 3 – Objektleiter</option>
+            <option value="LG 6">LG 6 – Glas- und Fassadenreinigung</option>
+            <option value="LG 7">LG 7 – Glas- und Fassadenreinigung, Vorarbeiter</option>
+          </datalist>
+        </Field>
+        <Field
+          label="Stundenlohn"
+          htmlFor="hourly_wage_cents"
+          optional
+          info="Bruttolohn je Stunde in Euro. Dient der Nachkalkulation; abgerechnet wird er hier nicht."
+        >
+          <Input
+            id="hourly_wage_cents"
+            name="hourly_wage_cents"
+            inputMode="decimal"
+            defaultValue={details?.hourly_wage_cents != null ? (details.hourly_wage_cents / 100).toFixed(2).replace('.', ',') : ''}
+            placeholder="z. B. 14,25"
+            maxLength={10}
+            autoComplete="off"
+          />
         </Field>
         <Field label="Beschäftigungsart" htmlFor="employment_type">
           <Select id="employment_type" name="employment_type" defaultValue={details?.employment_type ?? ''}>

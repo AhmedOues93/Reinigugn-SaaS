@@ -67,3 +67,29 @@ describe('validation schemas', () => {
     expect(serviceScheduleSchema.safeParse(plan({ billing_mode: 'NACH_GEFUEHL' })).success).toBe(false);
   });
 });
+
+describe('Stundenlohn', () => {
+  it('nimmt Komma und Punkt und rechnet in Cent', () => {
+    const komma = employeeInvitationSchema.safeParse({
+      first_name: 'Mira', last_name: 'Muster', email: 'mira@example.de', role: 'EMPLOYEE', hourly_wage_cents: '14,50',
+    });
+    const punkt = employeeInvitationSchema.safeParse({
+      first_name: 'Mira', last_name: 'Muster', email: 'mira@example.de', role: 'EMPLOYEE', hourly_wage_cents: '14.50',
+    });
+    expect(komma.success && komma.data.hourly_wage_cents).toBe(1450);
+    expect(punkt.success && punkt.data.hourly_wage_cents).toBe(1450);
+  });
+
+  it('laesst das Feld leer, statt null zu erfinden', () => {
+    const leer = employeeInvitationSchema.safeParse({
+      first_name: 'Mira', last_name: 'Muster', email: 'mira@example.de', role: 'EMPLOYEE', hourly_wage_cents: '',
+    });
+    expect(leer.success && leer.data.hourly_wage_cents).toBeUndefined();
+  });
+
+  it('weist einen negativen Satz ab', () => {
+    expect(employeeInvitationSchema.safeParse({
+      first_name: 'Mira', last_name: 'Muster', email: 'mira@example.de', role: 'EMPLOYEE', hourly_wage_cents: '-3',
+    }).success).toBe(false);
+  });
+});

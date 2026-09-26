@@ -15,6 +15,7 @@ export type MonthlySummaryRow = {
   member_id: string;
   employee_name: string;
   employee_number: string | null;
+  wage_group: string | null;
   weekly_hours: number | null;
   worked_minutes: number;
   break_minutes: number;

@@ -15,6 +15,15 @@ create or replace function pg_temp.sign_out() returns void language plpgsql as $
 begin reset role; perform set_config('request.jwt.claim.sub', '', true); end; $$;
 create or replace function pg_temp.assert(c boolean, m text) returns void language plpgsql as $$
 begin if not c then raise exception 'ASSERTION FAILED: %', m; end if; end; $$;
+create or replace function pg_temp.assert_rejected(p_sql text, p_expected text) returns void language plpgsql as $$
+begin
+  begin execute p_sql;
+  exception when others then
+    if position(lower(p_expected) in lower(sqlerrm)) = 0 then
+      raise exception 'WRONG REJECTION for %: expected "%", got "%"', p_sql, p_expected, sqlerrm; end if; return;
+  end;
+  raise exception 'NOT REJECTED: % (expected "%")', p_sql, p_expected;
+end; $$;
 
 -- ---------------------------------------------------------------------------
 -- The calendar, checked against dates anyone can verify
@@ -245,6 +254,55 @@ select pg_temp.sign_in('c2000000-0000-4000-8000-000000000001');
 select pg_temp.assert(
   (select worked_minutes from public.member_month_figures((select other from lm), date '2026-02-01')) = 450,
   'der Monatsabschluss uebernimmt die Nettominuten unveraendert');
+
+-- ---------------------------------------------------------------------------
+-- Lohngruppe und Stundenlohn
+-- ---------------------------------------------------------------------------
+select pg_temp.sign_in('c2000000-0000-4000-8000-000000000001');
+
+select public.set_employee_master_data(
+  (select emp from lm), 'MA-001', 40, null, null, 'FULL_TIME'::public.employment_type, 'de', '',
+  'LG 1', 1425);
+
+select pg_temp.assert(
+  (select wage_group from public.employee_details
+    where profile_id = (select emp_profile from lctx)) = 'LG 1',
+  'die Lohngruppe wird gespeichert');
+select pg_temp.assert(
+  (select hourly_wage_cents from public.employee_details
+    where profile_id = (select emp_profile from lctx)) = 1425,
+  'der Stundenlohn liegt in Cent, nicht als Gleitkommazahl');
+select pg_temp.assert(
+  (select wage_group from public.list_monthly_work_summary(date '2026-02-01')
+    where member_id = (select emp from lm)) = 'LG 1',
+  'der Monatsabschluss zeigt die Lohngruppe mit');
+
+-- Ein negativer oder unsinnig hoher Satz kommt gar nicht erst hinein.
+select pg_temp.assert_rejected(
+  format('select public.set_employee_master_data(%L, %L, 40, null, null, %L, %L, %L, %L, -100)',
+         (select emp from lm), 'MA-001', 'FULL_TIME', 'de', '', 'LG 1'),
+  'Invalid hourly wage');
+select pg_temp.assert_rejected(
+  format('select public.set_employee_master_data(%L, %L, 40, null, null, %L, %L, %L, %L, 999999)',
+         (select emp from lm), 'MA-001', 'FULL_TIME', 'de', '', 'LG 1'),
+  'Invalid hourly wage');
+
+-- Ohne Angabe bleibt das Feld leer, statt auf null gesetzt zu raten.
+select public.set_employee_master_data(
+  (select other from lm), 'MA-002', null, null, null, null, 'de', '');
+select pg_temp.assert(
+  (select hourly_wage_cents from public.employee_details
+    where profile_id = (select other_profile from lctx)) is null,
+  'ohne Angabe bleibt der Stundenlohn leer');
+
+-- Genau eine Signatur: eine zweite Ueberladung hat dieses Projekt schon einmal
+-- komplett lahmgelegt.
+select pg_temp.assert(
+  (select count(*) from pg_proc where proname = 'set_employee_master_data') = 1,
+  'set_employee_master_data existiert genau einmal');
+select pg_temp.assert(
+  (select count(*) from pg_proc where proname = 'list_monthly_work_summary') = 1,
+  'list_monthly_work_summary existiert genau einmal');
 
 select pg_temp.sign_out();
 rollback;

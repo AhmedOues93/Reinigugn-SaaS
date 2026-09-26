@@ -82,6 +82,28 @@ const optionalHours = z.preprocess(
   z.coerce.number({ invalid_type_error: 'Bitte gib eine gültige Wochenstundenzahl ein.' }).min(0, 'Die Wochenstunden dürfen nicht negativ sein.').max(168, 'Die Wochenstunden dürfen maximal 168 betragen.').optional(),
 );
 
+/**
+ * Ein Stundenlohn in Euro, wie er im Formular steht, als Cent zurueckgegeben.
+ * In Cent, weil Geld als Gleitkomma frueher oder spaeter einen Cent verliert —
+ * und dieser Satz geht in die Nachkalkulation ein.
+ *
+ * Komma und Punkt sind beide erlaubt: auf einer deutschen Tastatur tippt
+ * niemand 14.50.
+ */
+const optionalWageCents = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string' || value.trim() === '') return undefined;
+    const normalised = Number(value.trim().replace(',', '.'));
+    return Number.isFinite(normalised) ? Math.round(normalised * 100) : value;
+  },
+  z
+    .number({ invalid_type_error: 'Bitte gib einen gültigen Stundenlohn ein.' })
+    .int('Bitte gib einen gültigen Stundenlohn ein.')
+    .min(0, 'Der Stundenlohn darf nicht negativ sein.')
+    .max(100_000, 'Der Stundenlohn ist zu hoch.')
+    .optional(),
+);
+
 const optionalDate = z.preprocess(
   (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Bitte gib ein gültiges Datum ein.').optional(),
@@ -109,6 +131,8 @@ const employeeMasterDataSchema = z.object({
     z.enum(['FULL_TIME', 'PART_TIME', 'MINIJOB', 'OTHER']).optional(),
   ),
   preferred_language: supportedLocaleSchema.default('de'),
+  wage_group: optionalText(40, 'Die Lohngruppe'),
+  hourly_wage_cents: optionalWageCents,
   notes: optionalText(4_000, 'Die Notizen'),
 });
 

@@ -83,6 +83,12 @@ export default async function MonthlySummaryPage({
             cell: (row) => row.employee_number ?? '—',
           },
           {
+            key: 'wage_group',
+            header: 'Lohngruppe',
+            hideBelow: 'lg',
+            cell: (row) => row.wage_group ?? '—',
+          },
+          {
             key: 'worked',
             header: 'Ist',
             align: 'end',

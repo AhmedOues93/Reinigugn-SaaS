@@ -36,12 +36,13 @@ export async function GET(request: Request) {
   const rows: unknown[][] = [
     ['Monatsabschluss', month],
     [],
-    ['Mitarbeiter', 'Personalnr.', 'Wochenstunden', 'Iststunden', 'Istminuten', 'Sollstunden', 'Sollminuten', 'Differenz', 'Differenz Minuten', 'Arbeitstage', 'Urlaubstage', 'Kranktage'],
+    ['Mitarbeiter', 'Personalnr.', 'Lohngruppe', 'Wochenstunden', 'Iststunden', 'Istminuten', 'Sollstunden', 'Sollminuten', 'Differenz', 'Differenz Minuten', 'Arbeitstage', 'Urlaubstage', 'Kranktage'],
     ...summary.map((row) => {
       const diff = overtimeMinutes(row);
       return [
         row.employee_name,
         row.employee_number ?? '',
+        row.wage_group ?? '',
         row.weekly_hours ?? '',
         hoursAndMinutes(row.worked_minutes),
         row.worked_minutes,

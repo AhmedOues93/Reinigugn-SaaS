@@ -53,7 +53,25 @@ export default async function EmployeeDetailPage({
     phone: string | null;
     avatar_storage_path: string | null;
   } | null;
-  const details = employee.employee_details?.[0];
+  /*
+    Die Zeile kommt aus einer dynamisch getippten Abfrage; ohne diese Form
+    kennt TypeScript die neuen Stammdatenfelder nicht. Die Werte selbst bleiben
+    optional, weil ein Betrieb ohne Tarifbindung weder Lohngruppe noch Satz
+    hinterlegen muss.
+  */
+  const details = employee.employee_details?.[0] as
+    | {
+        employee_number?: string | null;
+        weekly_hours?: number | null;
+        employment_start_date?: string | null;
+        employment_end_date?: string | null;
+        employment_type?: string | null;
+        preferred_language?: string | null;
+        wage_group?: string | null;
+        hourly_wage_cents?: number | null;
+        notes?: string | null;
+      }
+    | undefined;
   const invitations = employee.company_invitations ?? [];
   const lastInvitation = invitations.sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -223,6 +241,17 @@ export default async function EmployeeDetailPage({
                 <DataRow
                   label="Wochen-Sollstunden"
                   value={details?.weekly_hours != null ? `${details.weekly_hours} Stunden` : '—'}
+                />
+                <DataRow label="Lohngruppe" value={details?.wage_group ?? '—'} />
+                <DataRow
+                  label="Stundenlohn"
+                  value={
+                    details?.hourly_wage_cents != null
+                      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(
+                          details.hourly_wage_cents / 100,
+                        )
+                      : '—'
+                  }
                 />
                 <DataRow
                   label="Bevorzugte Sprache"
