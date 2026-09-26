@@ -68,6 +68,10 @@ export function validateXRechnung(input: XRechnungInput): string[] {
     ['Firmen-PLZ', company, 'postal_code'],
     ['Firmenort', company, 'city'],
     ['Firmen-E-Mail', company, 'email'],
+    // BR-DE-6: die Telefonnummer des Verkaeufers ist fuer die XRechnung
+    // Pflicht. Fehlt sie, lehnt der Empfaenger ab — das muss hier auffallen
+    // und nicht beim Kunden.
+    ['Firmen-Telefonnummer', company, 'phone'],
     ['IBAN', company, 'iban'],
     ['Kundenname', customer, 'name'],
     ['Kundenadresse', customer, 'billing_address'],
@@ -236,6 +240,18 @@ export function renderXRechnung(input: XRechnungInput): string {
       </cac:PostalAddress>
       ${sellerTax}
       <cac:PartyLegalEntity><cbc:RegistrationName>${xml(str(company, 'name'))}</cbc:RegistrationName></cac:PartyLegalEntity>
+      <!--
+        BG-6 SELLER CONTACT. Fuer die XRechnung nicht optional: BR-DE-2
+        verlangt die Gruppe, BR-DE-5 bis BR-DE-7 verlangen Name, Telefon und
+        E-Mail darin. Ohne sie besteht das Dokument zwar das XSD-Schema, wird
+        aber vom KoSIT-Validator abgelehnt — genau daran ist der erste Lauf
+        dieses Dokuments gescheitert.
+      -->
+      <cac:Contact>
+        <cbc:Name>${xml(str(company, 'name'))}</cbc:Name>
+        <cbc:Telephone>${xml(str(company, 'phone'))}</cbc:Telephone>
+        <cbc:ElectronicMail>${xml(str(company, 'email'))}</cbc:ElectronicMail>
+      </cac:Contact>
     </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>

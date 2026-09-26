@@ -23,6 +23,7 @@ const base: XRechnungInput = {
     postal_code: '60311',
     city: 'Frankfurt am Main',
     country: 'DE',
+    phone: '+49 69 1234567',
     email: 'rechnung@example.de',
     vat_id: 'DE123456789',
     iban: 'DE02120300000000202051',
@@ -79,6 +80,22 @@ describe('XRechnung', () => {
  * aufgehen. Jede Zusicherung hier prueft, dass genau diese Abweichung vor dem
  * Versand auffaellt — und nicht erst beim Kunden.
  */
+describe('XRechnung: die deutschen Geschaeftsregeln', () => {
+  it('meldet eine fehlende Telefonnummer des Verkaeufers (BR-DE-6)', () => {
+    const { phone, ...ohneTelefon } = base.company as Record<string, unknown>;
+    void phone;
+    const errors = validateXRechnung({ ...base, company: ohneTelefon });
+    expect(errors.join(' ')).toContain('Firmen-Telefonnummer fehlt');
+  });
+
+  it('schreibt die Verkaeufer-Kontaktgruppe BG-6 ins Dokument (BR-DE-2)', () => {
+    const xmlDocument = renderXRechnung(base);
+    expect(xmlDocument).toContain('<cac:Contact>');
+    expect(xmlDocument).toContain('<cbc:Telephone>+49 69 1234567</cbc:Telephone>');
+    expect(xmlDocument).toContain('<cbc:ElectronicMail>rechnung@example.de</cbc:ElectronicMail>');
+  });
+});
+
 describe('EN 16931: die Betraege muessen aufgehen', () => {
   it('meldet eine Nettosumme, die nicht zu den Positionen passt', () => {
     const errors = validateXRechnung({ ...base, netTotalCents: 9900 });
