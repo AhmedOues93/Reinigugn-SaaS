@@ -86,6 +86,62 @@ export function validateXRechnung(input: XRechnungInput): string[] {
     errors.push('XRechnung mit 0 % USt. braucht eine explizite Steuerkategorie/Steuerbefreiung.');
   }
 
+  /*
+   * Die Rechenregeln der EN 16931.
+   *
+   * Bis hierher wurde nur geprueft, ob Felder da sind. Ein Empfaenger lehnt
+   * eine XRechnung aber vor allem dann ab, wenn die Betraege nicht aufgehen —
+   * das ist der haeufigste Grund, und er faellt ohne diese Pruefung erst beim
+   * Kunden auf, nicht beim Versenden.
+   *
+   * Geprueft wird gegen die Summen, die tatsaechlich ins XML geschrieben
+   * werden, nicht gegen eine zweite Rechnung daneben. Die Steuer wird je
+   * Steuersatz gerechnet und nicht je Position aufsummiert: bei mehreren
+   * Positionen mit demselben Satz weichen beide Wege um Rundungscent
+   * voneinander ab, und massgeblich ist der Kategoriebetrag.
+   */
+  const money = (cents: number) => (cents / 100).toFixed(2);
+
+  const lineNetSum = input.lines.reduce((total, line) => total + line.net_amount_cents, 0);
+  if (lineNetSum !== input.netTotalCents) {
+    errors.push(
+      `Nettosumme stimmt nicht: Positionen ergeben ${money(lineNetSum)}, angegeben ist ${money(input.netTotalCents)}.`,
+    );
+  }
+
+  const byRate = new Map<number, number>();
+  for (const line of input.lines) {
+    byRate.set(line.vat_rate_basis_points, (byRate.get(line.vat_rate_basis_points) ?? 0) + line.net_amount_cents);
+  }
+  const categoryVatSum = [...byRate.entries()].reduce(
+    (total, [rate, net]) => total + Math.round((net * rate) / 10_000),
+    0,
+  );
+  if (categoryVatSum !== input.vatTotalCents) {
+    errors.push(
+      `Steuerbetrag stimmt nicht: aus den Steuersaetzen ergeben sich ${money(categoryVatSum)}, angegeben ist ${money(input.vatTotalCents)}.`,
+    );
+  }
+
+  if (input.netTotalCents + input.vatTotalCents !== input.grossTotalCents) {
+    errors.push(
+      `Bruttosumme stimmt nicht: ${money(input.netTotalCents)} + ${money(input.vatTotalCents)} ergibt nicht ${money(input.grossTotalCents)}.`,
+    );
+  }
+
+  for (const line of input.lines) {
+    const expected = Math.round(line.quantity * line.unit_price_cents);
+    if (expected !== line.net_amount_cents) {
+      errors.push(
+        `Position ${line.position}: ${line.quantity} × ${money(line.unit_price_cents)} ergibt ${money(expected)}, angegeben ist ${money(line.net_amount_cents)}.`,
+      );
+    }
+  }
+
+  if (input.dueDate && input.issueDate && input.dueDate < input.issueDate) {
+    errors.push('Das Fälligkeitsdatum liegt vor dem Rechnungsdatum.');
+  }
+
   return errors;
 }
 
