@@ -84,6 +84,24 @@ describe('XRechnung', () => {
     expect(xml).toContain('<cbc:PayableAmount currencyID="EUR">119.00</cbc:PayableAmount>');
   });
 
+  it('normalisiert deutsche Laendernamen zu ISO-Codes (BR-CL-14)', () => {
+    const result = renderXRechnung({
+      ...base,
+      company: { ...base.company, country: 'Deutschland' },
+      customer: { ...base.customer, country: 'Deutschland' },
+    });
+    expect(result.match(/<cbc:IdentificationCode>DE<\/cbc:IdentificationCode>/g)).toHaveLength(2);
+    expect(result).not.toContain('<cbc:IdentificationCode>Deutschland</cbc:IdentificationCode>');
+  });
+
+  it('blockiert ungueltige Laenderangaben vor dem Versand', () => {
+    const errors = validateXRechnung({
+      ...base,
+      customer: { ...base.customer, country: 'unbekanntes Land' },
+    });
+    expect(errors).toContain('Kundenland: bitte einen ISO-3166-1-Laendercode (z. B. DE) angeben.');
+  });
+
   it('escapes customer-controlled text in XML', () => {
     const xml = renderXRechnung({
       ...base,
@@ -312,5 +330,6 @@ describe('Demo-Rechnung aus dem Seed', () => {
     expect(xml).toContain('<cbc:TaxExclusiveAmount currencyID="EUR">6480.00</cbc:TaxExclusiveAmount>');
     expect(xml).toContain('<cbc:TaxInclusiveAmount currencyID="EUR">7711.20</cbc:TaxInclusiveAmount>');
     expect(xml).toContain('<cbc:Telephone>+49 40 1112233</cbc:Telephone>');
+    expect(xml.match(/<cbc:IdentificationCode>DE<\/cbc:IdentificationCode>/g)).toHaveLength(2);
   });
 });
