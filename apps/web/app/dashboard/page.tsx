@@ -31,7 +31,7 @@ import { landingPathForRole } from '@/lib/landing';
 import { getCurrentCompany } from '@/lib/auth';
 import { getBillingSummary, getMonthlyRevenue, getOfficeActionItems } from '@/lib/data/billing';
 import { getJobStatusDistribution, listTodayBoard } from '@/lib/data/jobs';
-import { getPortfolioCounts, getQualitySummary, getRecentActivity } from '@/lib/data/dashboard';
+import { getFieldActivity, getPortfolioCounts, getQualitySummary, getRecentActivity } from '@/lib/data/dashboard';
 import { BrandBackdrop } from '@/components/brand-backdrop';
 import { brandImage } from '@/lib/brand-assets';
 import { formatDate, formatMoney, formatMoneyCompact, formatTimeRange } from '@/lib/format';
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
   }
 
   const year = new Date().getFullYear();
-  const [portfolio, revenue, board, jobStatus, billing, actions, activity, quality, locale] =
+  const [portfolio, revenue, board, jobStatus, billing, actions, activity, quality, locale, field] =
     await Promise.all([
       getPortfolioCounts(),
       getMonthlyRevenue(year),
@@ -97,6 +97,7 @@ export default async function DashboardPage() {
       getRecentActivity(5),
       getQualitySummary(),
       currentLocale(),
+      getFieldActivity(),
     ]);
 
   const firstName = profile?.first_name || '';
@@ -122,6 +123,43 @@ export default async function DashboardPage() {
           {formatDate(locale, berlinDateKey(), 'long')}
         </p>
       </header>
+
+
+      {/* Real field time entries, not merely planned shifts. */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {([
+          { title: 'Jetzt im Einsatz', entries: field.active, empty: 'Momentan ist niemand im Einsatz.' },
+          { title: 'Zuletzt abgeschlossen', entries: field.completed, empty: 'Noch keine abgeschlossenen Einsätze.' },
+        ] as const).map((section) => (
+          <SectionCard key={section.title} title={section.title} flush>
+            {section.entries.length === 0 ? (
+              <p className="px-5 py-5 text-sm text-muted-foreground">{section.empty}</p>
+            ) : (
+              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 py-4">
+                {section.entries.map((entry) => {
+                  const job = first(entry.jobs);
+                  const employee = first(entry.company_members);
+                  const profile = first(employee?.profiles);
+                  const customer = first(job?.customers);
+                  const object = first(job?.cleaning_objects);
+                  const minutes = Math.max(0, Math.floor(
+                    ((entry.finished_at ? new Date(entry.finished_at).getTime() : Date.now())
+                      - new Date(entry.started_at).getTime()) / 60000,
+                  ));
+                  return (
+                    <Link key={entry.id} href={`/dashboard/auftraege/${entry.job_id}`}
+                      className="block w-[min(82vw,18rem)] shrink-0 snap-start rounded-xl border border-border/80 bg-card p-4 transition-colors hover:bg-subtle">
+                      <p className="font-semibold">{[profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter'}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{customer?.name ?? 'Kunde'} · {object?.name ?? job?.title}</p>
+                      <p className="mt-3 text-sm font-medium text-primary">{entry.finished_at ? 'Abgeschlossen' : 'Im Einsatz'} · {minutes} Min.</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </SectionCard>
+        ))}
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         {/* ================= main column ================= */}
