@@ -140,6 +140,23 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         )}
       </header>
 
+      {!isDraft && !xrechnung.ready && (
+        <section className="mb-5 rounded-xl border border-warning/40 bg-warning/5 p-4" aria-label="Fehlende Angaben für XRechnung">
+          <h2 className="font-semibold text-foreground">XRechnung: Diese Angaben fehlen</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
+            {xrechnung.errors.map((error) => <li key={error}>{error}</li>)}
+          </ul>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Angaben einer bereits ausgestellten Rechnung sind als Rechnungssnapshot gespeichert.
+            Änderungen an den Firmeneinstellungen aktualisieren alte Rechnungen nicht automatisch.
+            Bitte Rechnungsdaten prüfen und bei Bedarf eine korrekte Rechnung ausstellen.
+          </p>
+          <ButtonLink href="/dashboard/settings" variant="outline" className="mt-3">
+            Firmendaten prüfen
+          </ButtonLink>
+        </section>
+      )}
+
       {/* Lifecycle. Cancelled invoices keep their history but show the stop. */}
       {invoice.status !== 'CANCELLED' ? (
         <ol className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/80 bg-border/80 shadow-card sm:grid-cols-4" aria-label="Rechnungsverlauf">
