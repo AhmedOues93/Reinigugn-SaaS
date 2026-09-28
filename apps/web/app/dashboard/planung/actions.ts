@@ -46,23 +46,33 @@ async function saveSchedule(scheduleId: string | null, formData: FormData): Prom
     } else {
       const { error } = await supabase.from('service_schedules').update({ customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: acceptancePolicy, billing_mode: billingMode, assignment_mode: assignmentMode, is_active: activateAfterSave }).eq('id', id).eq('company_id', company.id);
       if (error) return failure('Der wiederkehrende Plan konnte nicht aktualisiert werden.');
-      await supabase.from('schedule_rules').update({ is_active: false }).eq('service_schedule_id', id);
-      await supabase.from('service_schedule_assignments').delete().eq('service_schedule_id', id);
+      const { error: deactivateRulesError } = await supabase.from('schedule_rules').update({ is_active: false }).eq('service_schedule_id', id);
+      if (deactivateRulesError) return failure('Der Plan wurde aktualisiert, aber die bisherigen Regeln konnten nicht deaktiviert werden.');
+      const { error: removeAssignmentsError } = await supabase.from('service_schedule_assignments').delete().eq('service_schedule_id', id);
+      if (removeAssignmentsError) return failure('Der Plan wurde aktualisiert, aber die bisherigen Teamzuweisungen konnten nicht entfernt werden.');
     }
     for (const rule of parsed.data.rules) {
       const suppliedId = (rule as typeof rule & { id?: string }).id;
-      if (suppliedId && /^[0-9a-f-]{36}$/i.test(suppliedId)) await supabase.from('schedule_rules').update({ weekday: rule.weekday, planned_start_time: rule.planned_start_time, planned_end_time: rule.planned_end_time, is_active: true }).eq('id', suppliedId).eq('service_schedule_id', id);
-      else await supabase.from('schedule_rules').insert({ service_schedule_id: id, weekday: rule.weekday, planned_start_time: rule.planned_start_time, planned_end_time: rule.planned_end_time, is_active: true });
+      if (suppliedId && /^[0-9a-f-]{36}$/i.test(suppliedId)) {
+        const { data: updatedRule, error: ruleError } = await supabase.from('schedule_rules')
+          .update({ weekday: rule.weekday, planned_start_time: rule.planned_start_time, planned_end_time: rule.planned_end_time, is_active: true })
+          .eq('id', suppliedId).eq('service_schedule_id', id).select('id').maybeSingle();
+        if (ruleError || !updatedRule) return failure('Eine Planregel konnte nicht aktualisiert werden. Bitte Plan prüfen.');
+      } else {
+        const { error: ruleError } = await supabase.from('schedule_rules').insert({ service_schedule_id: id, weekday: rule.weekday, planned_start_time: rule.planned_start_time, planned_end_time: rule.planned_end_time, is_active: true });
+        if (ruleError) return failure('Eine Planregel konnte nicht gespeichert werden. Bitte Plan prüfen.');
+      }
     }
     if (!id) return failure('Der wiederkehrende Plan konnte nicht gespeichert werden.');
     if (assignmentMode === 'MANUAL' && parsed.data.member_ids.length) {
-      await supabase.from('service_schedule_assignments').insert(
+      const { error: assignmentError } = await supabase.from('service_schedule_assignments').insert(
         parsed.data.member_ids.map((memberId) => ({
           company_id: company.id,
           service_schedule_id: id,
           member_id: memberId,
         })),
       );
+      if (assignmentError) return failure('Die Teamzuweisungen konnten nicht gespeichert werden. Bitte Plan prüfen.');
     }
     if (assignmentMode === 'AUTO') {
       const { data: autoMember, error: autoError } = await supabase.rpc('auto_assign_schedule_employee', {
