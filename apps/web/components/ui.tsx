@@ -494,7 +494,7 @@ export function StatCard({
 
   if (!href) {
     return (
-      <div className={cn('rounded-card border border-border/80 bg-card p-5 shadow-card', className)}>
+      <div className={cn('min-w-0 max-w-full rounded-card border border-border/80 bg-card p-5 shadow-card', className)}>
         {body}
       </div>
     );
@@ -503,7 +503,7 @@ export function StatCard({
     <Link
       href={href}
       className={cn(
-        'group relative rounded-card border border-border/80 bg-card p-5 shadow-card transition-colors hover:border-primary/30 hover:bg-subtle',
+        'group relative block min-w-0 max-w-full rounded-card border border-border/80 bg-card p-5 shadow-card transition-colors hover:border-primary/30 hover:bg-subtle',
         className,
       )}
     >
