@@ -6,6 +6,7 @@ import {
   CalendarClock,
   CalendarPlus,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   FileSignature,
   Inbox,
@@ -108,7 +109,7 @@ export default async function DashboardPage() {
   const monthNames = monthLabels(locale);
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-clip">
       {/* --- Greeting ------------------------------------------------------ */}
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
         <div className="min-w-0">
@@ -125,60 +126,87 @@ export default async function DashboardPage() {
       </header>
 
 
-      {/* Real work activity. Photo cards are deliberately a single mobile column:
-          the old horizontal scroller could push the entire dashboard off-screen. */}
+      {/* Mobile-first photo cards: one visible record per section, with an
+          accessible native disclosure for the rest. No horizontal overflow. */}
       <div className="grid min-w-0 gap-5 lg:grid-cols-2">
         {([
-          { title: 'Jetzt im Einsatz', entries: field.active, empty: 'Momentan ist niemand im Einsatz.' },
-          { title: 'Zuletzt abgeschlossen', entries: field.completed, empty: 'Noch keine abgeschlossenen Einsätze.' },
-        ] as const).map((section) => (
-          <section key={section.title} className="min-w-0 space-y-3" aria-label={section.title}>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold tracking-tight">{section.title}</h2>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground">{section.entries.length}</span>
-            </div>
-            {field.loadError ? (
-              <p role="alert" className="rounded-xl bg-danger-soft p-4 text-sm text-danger">Einsatzdaten konnten nicht geladen werden. Bitte Seite neu laden.</p>
-            ) : section.entries.length === 0 ? (
-              <p className="rounded-xl bg-card p-5 text-sm text-muted-foreground">{section.empty}</p>
-            ) : (
-              <div className="grid min-w-0 gap-3">
-                {section.entries.slice(0, 4).map((entry) => {
-                  const job = first(entry.jobs);
-                  const employee = first(entry.company_members);
-                  const person = first(employee?.profiles);
-                  const customer = first(job?.customers);
-                  const object = first(job?.cleaning_objects);
-                  const minutes = Math.max(0, Math.floor(
-                    ((entry.finished_at ? new Date(entry.finished_at).getTime() : Date.now())
-                      - new Date(entry.started_at).getTime()) / 60000,
-                  ));
-                  const running = !entry.finished_at;
-                  return (
-                    <Link key={entry.id} href={`/dashboard/auftraege/${entry.job_id}`}
-                      className="group relative isolate block min-w-0 overflow-hidden rounded-2xl bg-[#14292a] p-4 text-white shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:p-5">
-                      <BrandBackdrop photo={brandImage.dashboardHero} />
-                      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#071a1c]/95 via-[#071a1c]/80 to-[#071a1c]/35" />
-                      <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', running ? 'bg-emerald-700/90' : 'bg-white/20')}>
-                        {running ? <CalendarClock className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
-                        {running ? 'Im Einsatz' : 'Abgeschlossen'}
-                      </span>
-                      <p className="mt-3 truncate text-lg font-semibold">{[person?.first_name, person?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter'}</p>
-                      <p className="mt-1 truncate text-sm text-white/85">{customer?.name ?? 'Kunde'} · {object?.name ?? job?.title}</p>
-                      <div className="mt-4 flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-emerald-300">{running ? 'Seit Beginn' : 'Arbeitszeit'} · {minutes} Min.</p>
-                        <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-white/85 transition-transform group-hover:translate-x-1" />
-                      </div>
-                    </Link>
-                  );
-                })}
+          { title: field.active.length ? 'Jetzt im Einsatz' : 'Nächster Einsatz', entries: field.active, empty: 'Momentan ist niemand im Einsatz.', running: true },
+          { title: 'Zuletzt abgeschlossen', entries: field.completed, empty: 'Noch keine abgeschlossenen Einsätze.', running: false },
+        ] as const).map((section) => {
+          const renderCard = (entry: (typeof field.active)[number]) => {
+            const job = first(entry.jobs);
+            const employee = first(entry.company_members);
+            const person = first(employee?.profiles);
+            const customer = first(job?.customers);
+            const object = first(job?.cleaning_objects);
+            const rawMinutes = entry.finished_at
+              ? (new Date(entry.finished_at).getTime() - new Date(entry.started_at).getTime()) / 60000
+              : (Date.now() - new Date(entry.started_at).getTime()) / 60000;
+            const minutes = Number.isFinite(rawMinutes) ? Math.max(0, Math.floor(rawMinutes)) : 0;
+            const duration = minutes < 1 ? 'Unter 1 Min.' : `${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)} Std. ` : ''}${minutes % 60 ? `${minutes % 60} Min.` : minutes < 60 ? `${minutes} Min.` : ''}`;
+            return (
+              <Link key={entry.id} href={`/dashboard/auftraege/${entry.job_id}`}
+                className="group relative isolate block min-w-0 overflow-hidden rounded-2xl bg-[#14292a] p-4 text-white shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:p-5">
+                <BrandBackdrop photo={brandImage.dashboardHero} />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#071a1c]/95 via-[#071a1c]/80 to-[#071a1c]/35" />
+                <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', section.running ? 'bg-emerald-700/90' : 'bg-white/20')}>
+                  {section.running ? <CalendarClock className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
+                  {section.running ? 'Im Einsatz' : 'Abgeschlossen'}
+                </span>
+                <p className="mt-3 truncate text-lg font-semibold">{[person?.first_name, person?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter'}</p>
+                <p className="mt-1 truncate text-sm text-white/85">{customer?.name ?? 'Kunde'} · {object?.name ?? job?.title}</p>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-emerald-300">{section.running ? 'Seit Beginn' : 'Arbeitszeit'} · {duration}</p>
+                  <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-white/85 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            );
+          };
+          const next = !field.active.length && section.running
+            ? board.find((job) => job.status !== 'COMPLETED' && job.status !== 'CANCELLED' && !job.job_time_entries?.some((entry) => !entry.finished_at))
+            : null;
+          return (
+            <section key={section.title} className="min-w-0 space-y-3" aria-label={section.title}>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="min-w-0 text-lg font-semibold tracking-tight">{section.title}</h2>
+                <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tabular-nums text-muted-foreground">{section.entries.length}</span>
               </div>
-            )}
-          </section>
-        ))}
+              {field.loadError ? (
+                <p role="alert" className="rounded-xl bg-card p-4 text-sm text-danger">Einsatzdaten konnten nicht geladen werden. Bitte Seite neu laden.</p>
+              ) : section.entries.length ? (
+                <>
+                  {renderCard(section.entries[0])}
+                  {section.entries.length > 1 && (
+                    <details className="group/disclosure min-w-0">
+                      <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-xl bg-card px-4 py-3 text-sm font-semibold text-primary shadow-sm [&::-webkit-details-marker]:hidden">
+                        <span className="group-open/disclosure:hidden">Weitere Einsätze anzeigen ({section.entries.length - 1})</span>
+                        <span className="hidden group-open/disclosure:inline">Weniger anzeigen</span>
+                        <ChevronDown aria-hidden="true" className="size-4 transition-transform group-open/disclosure:rotate-180" />
+                      </summary>
+                      <div className="mt-3 grid min-w-0 gap-3">
+                        {section.entries.slice(1).map(renderCard)}
+                      </div>
+                    </details>
+                  )}
+                </>
+              ) : next ? (
+                <Link href={`/dashboard/auftraege/${next.id}`} className="group relative isolate block min-w-0 overflow-hidden rounded-2xl bg-[#14292a] p-5 text-white shadow-sm">
+                  <BrandBackdrop photo={brandImage.dashboardHero} />
+                  <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#071a1c]/95 via-[#071a1c]/80 to-[#071a1c]/35" />
+                  <span className="inline-flex rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold">Geplant</span>
+                  <p className="mt-3 truncate text-lg font-semibold">{first(next.cleaning_objects)?.name ?? next.title}</p>
+                  <p className="mt-1 truncate text-sm text-white/85">{first(next.customers)?.name ?? 'Kunde'}</p>
+                  <p className="mt-4 text-sm font-medium text-emerald-300">{next.planned_start_at ? formatTimeRange(locale, next.planned_start_at, next.planned_end_at) : 'Uhrzeit noch offen'}</p>
+                </Link>
+              ) : (
+                <p className="rounded-xl bg-card p-5 text-sm text-muted-foreground">{section.running ? 'Momentan niemand im Einsatz. Heute kein weiterer Einsatz geplant.' : section.empty}</p>
+              )}
+            </section>
+          );
+        })}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         {/* ================= main column ================= */}
         <div className="min-w-0 space-y-5">
           {/* --- A. What the company looks after --------------------------- */}
@@ -218,7 +246,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* --- B. Revenue and today, side by side ------------------------ */}
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-5 lg:grid-cols-2">
             <SectionCard
               title={t(locale, 'dashboard.revenueTrend')}
               action={<span className="text-[13px] font-medium tabular-nums text-muted-foreground">{year}</span>}
