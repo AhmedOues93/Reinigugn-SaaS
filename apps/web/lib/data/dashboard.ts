@@ -190,21 +190,22 @@ export async function getQualitySummary(days = 90): Promise<QualitySummary> {
 /** Live field activity: actual time entries, never scheduled visits presented as work. */
 export async function getFieldActivity() {
   const { supabase, company } = await requireStaffCompany();
-  const { data, error } = await supabase
-    .from('job_time_entries')
-    .select('id, job_id, member_id, started_at, finished_at, duration_minutes, jobs!inner(id, title, company_id, customers(name), cleaning_objects(name)), company_members!job_time_entries_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))')
-    .eq('company_id', company.id)
-    .eq('jobs.company_id', company.id)
-    .order('started_at', { ascending: false })
-    .limit(100);
-  if (error) {
-    console.error('Dashboard field activity could not load:', error.message);
-    return { active: [], completed: [] };
+  const select = 'id, job_id, member_id, started_at, finished_at, duration_minutes, jobs!inner(id, title, company_id, customers(name), cleaning_objects(name)), company_members!job_time_entries_member_id_fkey(profiles!company_members_profile_id_fkey(first_name, last_name))';
+
+  // Active work must never disappear because newer completed entries filled a page.
+  // Completed work is ordered by its finish time, not its start time.
+  const [running, recent] = await Promise.all([
+    supabase.from('job_time_entries').select(select)
+      .eq('company_id', company.id).eq('jobs.company_id', company.id)
+      .is('finished_at', null).order('started_at', { ascending: false }),
+    supabase.from('job_time_entries').select(select)
+      .eq('company_id', company.id).eq('jobs.company_id', company.id)
+      .not('finished_at', 'is', null)
+      .order('finished_at', { ascending: false }).limit(20),
+  ]);
+  if (running.error || recent.error) {
+    console.error('Dashboard field activity could not load:', running.error?.message ?? recent.error?.message);
+    return { active: [], completed: [], loadError: true };
   }
-  const rows = data ?? [];
-  return {
-    active: rows.filter((entry) => !entry.finished_at),
-    completed: rows.filter((entry) => entry.finished_at).sort((a, b) =>
-      (b.finished_at ?? '').localeCompare(a.finished_at ?? '')).slice(0, 20),
-  };
+  return { active: running.data ?? [], completed: recent.data ?? [], loadError: false };
 }
