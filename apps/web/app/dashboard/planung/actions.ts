@@ -198,6 +198,16 @@ export async function createAutomaticPlan(
     return { status: 'error', message: 'Der ausgewählte Zeitraum ist ungültig.' };
   }
 
+  // Server-side bound: a handcrafted request must not schedule years of work.
+  const fromMs = Date.parse(`${from}T00:00:00Z`);
+  const toMs = Date.parse(`${to}T00:00:00Z`);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)
+    || new Date(fromMs).toISOString().slice(0, 10) !== from
+    || new Date(toMs).toISOString().slice(0, 10) !== to
+    || (toMs - fromMs) / 86_400_000 > 56) {
+    return { status: 'error', message: 'Bitte einen gültigen Zeitraum von höchstens 57 Tagen wählen.' };
+  }
+
   try {
     const { supabase } = await requireStaffCompany();
     const { data, error } = await supabase.rpc('plan_window_automatically', {
