@@ -32,7 +32,7 @@ import { landingPathForRole } from '@/lib/landing';
 import { getCurrentCompany } from '@/lib/auth';
 import { getBillingSummary, getMonthlyRevenue, getOfficeActionItems } from '@/lib/data/billing';
 import { getJobStatusDistribution, listTodayBoard } from '@/lib/data/jobs';
-import { getFieldActivity, getPortfolioCounts, getQualitySummary, getRecentActivity } from '@/lib/data/dashboard';
+import { getFieldActivity, getNextFieldJob, getPortfolioCounts, getQualitySummary, getRecentActivity } from '@/lib/data/dashboard';
 import { BrandBackdrop } from '@/components/brand-backdrop';
 import { brandImage } from '@/lib/brand-assets';
 import { formatDate, formatMoney, formatMoneyCompact, formatTimeRange } from '@/lib/format';
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
   }
 
   const year = new Date().getFullYear();
-  const [portfolio, revenue, board, jobStatus, billing, actions, activity, quality, locale, field] =
+  const [portfolio, revenue, board, jobStatus, billing, actions, activity, quality, locale, field, nextField] =
     await Promise.all([
       getPortfolioCounts(),
       getMonthlyRevenue(year),
@@ -99,6 +99,7 @@ export default async function DashboardPage() {
       getQualitySummary(),
       currentLocale(),
       getFieldActivity(),
+      getNextFieldJob(),
     ]);
 
   const firstName = profile?.first_name || '';
@@ -143,7 +144,7 @@ export default async function DashboardPage() {
               ? (new Date(entry.finished_at).getTime() - new Date(entry.started_at).getTime()) / 60000
               : (Date.now() - new Date(entry.started_at).getTime()) / 60000;
             const minutes = Number.isFinite(rawMinutes) ? Math.max(0, Math.floor(rawMinutes)) : 0;
-            const duration = minutes < 1 ? 'Unter 1 Min.' : `${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)} Std. ` : ''}${minutes % 60 ? `${minutes % 60} Min.` : minutes < 60 ? `${minutes} Min.` : ''}`;
+            const duration = minutes < 1 ? 'Unter 1 Min.' : minutes >= 60 ? `${Math.floor(minutes / 60)} Std. ${minutes % 60} Min.` : `${minutes} Min.`;
             return (
               <Link key={entry.id} href={`/dashboard/auftraege/${entry.job_id}`}
                 className="group relative isolate block min-w-0 overflow-hidden rounded-2xl bg-[#14292a] p-4 text-white shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:p-5">
@@ -162,9 +163,7 @@ export default async function DashboardPage() {
               </Link>
             );
           };
-          const next = !field.active.length && section.running
-            ? board.find((job) => job.status !== 'COMPLETED' && job.status !== 'CANCELLED' && !job.job_time_entries?.some((entry) => !entry.finished_at))
-            : null;
+          const next = !field.active.length && section.running ? nextField.job : null;
           return (
             <section key={section.title} className="min-w-0 space-y-3" aria-label={section.title}>
               <div className="flex items-center justify-between gap-3">
@@ -196,10 +195,10 @@ export default async function DashboardPage() {
                   <span className="inline-flex rounded-full bg-white/20 px-2.5 py-1 text-xs font-semibold">Geplant</span>
                   <p className="mt-3 truncate text-lg font-semibold">{first(next.cleaning_objects)?.name ?? next.title}</p>
                   <p className="mt-1 truncate text-sm text-white/85">{first(next.customers)?.name ?? 'Kunde'}</p>
-                  <p className="mt-4 text-sm font-medium text-emerald-300">{next.planned_start_at ? formatTimeRange(locale, next.planned_start_at, next.planned_end_at) : 'Uhrzeit noch offen'}</p>
+                  <p className="mt-4 text-sm font-medium text-emerald-300">{next.planned_start_at ? `${formatDate(locale, next.planned_start_at, 'long')} · ${new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }).format(new Date(next.planned_start_at))} Uhr` : 'Uhrzeit noch offen'}</p>
                 </Link>
               ) : (
-                <p className="rounded-xl bg-card p-5 text-sm text-muted-foreground">{section.running ? 'Momentan niemand im Einsatz. Heute kein weiterer Einsatz geplant.' : section.empty}</p>
+                <p className="rounded-xl bg-card p-5 text-sm text-muted-foreground">{section.running ? 'Momentan niemand im Einsatz. Kein weiterer Einsatz geplant.' : section.empty}</p>
               )}
             </section>
           );
