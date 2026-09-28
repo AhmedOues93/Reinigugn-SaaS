@@ -132,7 +132,9 @@ export default async function DashboardPage() {
           { title: 'Zuletzt abgeschlossen', entries: field.completed, empty: 'Noch keine abgeschlossenen Einsätze.' },
         ] as const).map((section) => (
           <SectionCard key={section.title} title={section.title} flush>
-            {section.entries.length === 0 ? (
+            {field.loadError ? (
+              <p role="alert" className="px-5 py-5 text-sm text-danger">Einsatzdaten konnten nicht geladen werden. Bitte Seite neu laden.</p>
+            ) : section.entries.length === 0 ? (
               <p className="px-5 py-5 text-sm text-muted-foreground">{section.empty}</p>
             ) : (
               <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 py-4">
