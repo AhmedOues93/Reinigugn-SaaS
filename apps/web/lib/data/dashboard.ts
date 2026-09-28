@@ -187,6 +187,23 @@ export async function getQualitySummary(days = 90): Promise<QualitySummary> {
   };
 }
 
+/** Next planned visit, shown only when nobody is currently clocked in. */
+export async function getNextFieldJob() {
+  const { supabase, company } = await requireStaffCompany();
+  const { data, error } = await supabase.from('jobs')
+    .select('id, title, planned_start_at, customers(name), cleaning_objects(name)')
+    .eq('company_id', company.id)
+    .in('status', ['PLANNED', 'CONFIRMED'])
+    .gte('planned_start_at', new Date().toISOString())
+    .order('planned_start_at', { ascending: true })
+    .limit(1).maybeSingle();
+  if (error) {
+    console.error('Next field job could not load:', error.message);
+    return { job: null, loadError: true };
+  }
+  return { job: data, loadError: false };
+}
+
 /** Live field activity: actual time entries, never scheduled visits presented as work. */
 export async function getFieldActivity() {
   const { supabase, company } = await requireStaffCompany();
