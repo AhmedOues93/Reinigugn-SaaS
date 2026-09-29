@@ -150,6 +150,27 @@ export async function completeMyChecklistItem(itemId: string, completed: boolean
   return { status: 'success', message: t(locale, 'common.save') };
 }
 
+/**
+ * Die Notiz der Mitarbeiterin zu ihrem Einsatz.
+ *
+ * Die Datenbank entscheidet, ob sie darf: nur der eigene Einsatz, und nur
+ * solange der Leistungsnachweis nicht abgenommen ist. Ihre Begruendung wird
+ * durchgereicht, weil "gespeichert" oder "nicht gespeichert" hier zu wenig ist.
+ */
+export async function saveMyJobReport(jobId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const note = String(formData.get('note') ?? '');
+  if (note.length > 2000) {
+    return { status: 'error', message: 'Die Notiz ist zu lang (höchstens 2000 Zeichen).' };
+  }
+  const { error } = await context.supabase.rpc('set_my_job_report', { p_job_id: jobId, p_note: note });
+  if (error) return { status: 'error', message: error.message || t(locale, 'common.errorBody') };
+  revalidateEmployee();
+  return { status: 'success', message: 'Notiz gespeichert.' };
+}
+
 export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: FormData): Promise<FormState> {
   const context = await employeeContext();
   if (!context) return denied();

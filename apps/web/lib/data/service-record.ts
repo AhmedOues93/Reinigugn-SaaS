@@ -9,7 +9,7 @@ function personName(member: { profiles: { first_name: string | null; last_name: 
 
 export type ServiceRecord = {
   company: { name: string; street: string | null; postal_code: string | null; city: string | null; country: string | null };
-  job: { id: string; title: string; status: string; scheduled_date: string; planned_start_at: string; planned_end_at: string; employee_instructions: string | null; internal_notes: string | null; customer: { name: string } | null; object: { name: string; street: string | null; postal_code: string | null; city: string | null; country: string | null } | null };
+  job: { id: string; title: string; status: string; scheduled_date: string; planned_start_at: string; planned_end_at: string; employee_instructions: string | null; employee_report: string | null; internal_notes: string | null; customer: { name: string } | null; object: { name: string; street: string | null; postal_code: string | null; city: string | null; country: string | null } | null };
   assignments: { id: string; name: string }[];
   timeEntries: { id: string; memberId: string; name: string; startedAt: string; finishedAt: string | null; durationMinutes: number | null }[];
   checklistItems: { id: string; position: number; title: string; instruction: string | null; isRequired: boolean; completedAt: string | null; completedBy: string | null }[];
@@ -19,7 +19,7 @@ export type ServiceRecord = {
 export async function getServiceRecord(jobId: string): Promise<ServiceRecord | null> {
   const { supabase, company } = await requireStaffCompany();
   const { data: job, error: jobError } = await supabase.from('jobs')
-    .select('id, title, status, scheduled_date, planned_start_at, planned_end_at, employee_instructions, internal_notes, customers(name), cleaning_objects(name, street, postal_code, city, country)')
+    .select('id, title, status, scheduled_date, planned_start_at, planned_end_at, employee_instructions, employee_report, internal_notes, customers(name), cleaning_objects(name, street, postal_code, city, country)')
     .eq('company_id', company.id).eq('id', jobId).maybeSingle();
   if (jobError) throw new Error('Leistungsnachweis konnte nicht geladen werden.');
   if (!job) return null;
@@ -37,7 +37,7 @@ export async function getServiceRecord(jobId: string): Promise<ServiceRecord | n
   const checklistItems = (checklists?.job_checklist_items ?? []).map((item) => ({ id: item.id, position: item.position, title: item.title, instruction: item.instruction, isRequired: item.is_required, completedAt: item.completed_at, completedBy: item.completed_at ? personName(first(item.company_members)) : null })).sort((a, b) => a.position - b.position);
   return {
     company: companyData ?? { name: company.name, street: null, postal_code: null, city: null, country: null },
-    job: { id: job.id, title: job.title, status: job.status, scheduled_date: job.scheduled_date, planned_start_at: job.planned_start_at, planned_end_at: job.planned_end_at, employee_instructions: job.employee_instructions, internal_notes: job.internal_notes, customer, object },
+    job: { id: job.id, title: job.title, status: job.status, scheduled_date: job.scheduled_date, planned_start_at: job.planned_start_at, planned_end_at: job.planned_end_at, employee_instructions: job.employee_instructions, employee_report: job.employee_report, internal_notes: job.internal_notes, customer, object },
     assignments: (assignments ?? []).map((assignment) => ({ id: assignment.member_id, name: personName(first(assignment.company_members)) })),
     timeEntries: (timeEntries ?? []).map((entry) => ({ id: entry.id, memberId: entry.member_id, name: personName(first(entry.company_members)), startedAt: entry.started_at, finishedAt: entry.finished_at, durationMinutes: entry.duration_minutes })),
     checklistItems,

@@ -245,6 +245,18 @@ export function ServiceRecordView({ record }: { record: ServiceRecord }) {
         )}
       </SheetSection>
 
+      {/*
+        Die Notiz vom Einsatz steht auf dem Nachweis, weil sie die Kundin
+        betrifft: ein abgeschlossener Raum erklaert eine fehlende Checkbox.
+        Ohne Notiz erscheint der Abschnitt gar nicht, damit das Blatt nicht
+        mit einer leeren Ueberschrift laenger wird.
+      */}
+      {record.job.employee_report && (
+        <SheetSection title="Notiz vom Einsatz">
+          <p className="mt-3 whitespace-pre-wrap break-words">{record.job.employee_report}</p>
+        </SheetSection>
+      )}
+
       <SheetSection
         title="Fotodokumentation"
         aside={

@@ -198,7 +198,7 @@ export async function getMyAssignedJob(id: string) {
     // Operational site detail the assigned cleaner needs on location. The row is
     // already readable to them under "employees can view assigned job objects";
     // `cleaning_objects.notes` stays excluded because it is an internal note.
-    .select('id, title, scheduled_date, planned_start_at, planned_end_at, status, employee_instructions, customers(name), cleaning_objects(name, street, postal_code, city, contact_person, contact_phone, access_instructions, cleaning_instructions), job_time_entries(id, started_at, finished_at, duration_minutes, break_minutes, job_time_breaks(started_at, ended_at)), job_checklists(id, job_checklist_items(id, position, title, instruction, is_required, completed_at, completed_by))')
+    .select('id, title, scheduled_date, planned_start_at, planned_end_at, status, employee_instructions, employee_report, customers(name), cleaning_objects(name, street, postal_code, city, contact_person, contact_phone, access_instructions, cleaning_instructions), job_time_entries(id, started_at, finished_at, duration_minutes, break_minutes, job_time_breaks(started_at, ended_at)), job_checklists(id, job_checklist_items(id, position, title, instruction, is_required, completed_at, completed_by))')
     .eq('id', id).maybeSingle();
   if (error) { console.error('getMyAssignedJob', error); throw new Error('Eigener Einsatz konnte nicht geladen werden.'); }
   return data;

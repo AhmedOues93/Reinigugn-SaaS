@@ -287,6 +287,18 @@ export default async function JobDetailPage({
                   <span className="text-muted-foreground">Keine Arbeitsanweisung hinterlegt.</span>
                 )}
               </p>
+              {/*
+                Was vom Einsatz zurueckkommt. Steht ueber der internen Notiz,
+                weil es das Einzige hier ist, worauf das Buero reagieren muss.
+              */}
+              {record.job.employee_report && (
+                <div className="mt-4 border-t border-border/70 pt-4">
+                  <p className="text-[13px] font-medium text-primary">Notiz vom Einsatz</p>
+                  <p className="mt-1 whitespace-pre-wrap break-anywhere text-sm leading-6">
+                    {record.job.employee_report}
+                  </p>
+                </div>
+              )}
               {stripDemoPrefix(record.job.internal_notes) && (
                 <div className="mt-4 border-t border-border/70 pt-4">
                   <p className="text-[13px] font-medium text-muted-foreground">Interne Notiz</p>

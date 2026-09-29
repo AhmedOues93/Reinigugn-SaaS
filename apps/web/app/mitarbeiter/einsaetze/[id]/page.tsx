@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, FileImage, KeyRound, MapPin, Navigation, Phone, Sparkles, User } from 'lucide-react';
 import { Badge, EmptyState } from '@/components/ui';
+import { JobReport } from '@/components/employee/job-report';
 import { OfflineJobChecklist } from '@/components/employee/offline-checklist';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
 import { JobPhotoUpload } from '@/components/job-photo-upload';
@@ -23,6 +24,7 @@ import {
   deleteMyJobPhoto,
   pauseMyJob,
   resumeMyJob,
+  saveMyJobReport,
   startMyJob,
   stopMyJob,
   uploadMyJobPhoto,
@@ -194,6 +196,12 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
         ) : (
           <EmptyState title={t(locale, 'emp.job.noChecklist')} className="rounded-3xl py-8" />
         )}
+
+        <JobReport
+          action={saveMyJobReport.bind(null, job.id)}
+          defaultValue={job.employee_report ?? ''}
+          locked={acceptance?.status === 'ABGENOMMEN'}
+        />
 
         <section aria-labelledby="photos-title" className="space-y-4 rounded-3xl border border-border/80 bg-card p-4 shadow-card sm:p-5">
           <div>
