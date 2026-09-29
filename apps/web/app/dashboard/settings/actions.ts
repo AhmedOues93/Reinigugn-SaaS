@@ -19,6 +19,38 @@ export async function updateCompanySettings(_: FormState, formData: FormData): P
   if (name.length < 2 || name.length > 120) return { status: 'error', message: 'Bitte gib einen gültigen Firmennamen ein.' };
   if (!isLocale(language)) return { status: 'error', message: 'Bitte wähle eine gültige Standardsprache.' };
   const paymentTerms = String(value.default_payment_terms_days ?? ''); if (paymentTerms && (!/^\d+$/.test(paymentTerms) || Number(paymentTerms) > 365)) return { status: 'error', message: 'Das Zahlungsziel muss zwischen 0 und 365 Tagen liegen.' };
+  // Validate every user-controlled field before the first database write.
+  // Previously an invalid DATEV value could leave core company details saved
+  // while the form reported an error, making a retry confusing.
+  const rateRawPre = String(value.default_hourly_rate ?? '').replace(',', '.').trim();
+  if (rateRawPre) {
+    const rate = Number(rateRawPre);
+    if (!Number.isFinite(rate) || rate < 0 || rate > 1_000_000) return { status: 'error', message: 'Bitte gib einen gültigen Stundensatz an.' };
+  }
+  const vatRawPre = String(value.vat_rate ?? '').replace(',', '.').trim();
+  if (vatRawPre) {
+    const vat = Number(vatRawPre);
+    if (!Number.isFinite(vat) || vat < 0 || vat > 100) return { status: 'error', message: 'Bitte gib einen gültigen Umsatzsteuersatz an.' };
+  }
+  const directorPre = String(value.managing_director ?? '').trim();
+  if ((!directorPre && String(value.managing_director_was_set ?? '') === 'true')
+    || (!vatRawPre && String(value.vat_rate_was_set ?? '') === 'true')) {
+    return { status: 'error', message: 'Geschäftsführung oder Umsatzsteuersatz können derzeit nicht geleert werden. Andere Änderungen wurden nicht gespeichert.' };
+  }
+  const datevFields = {
+    p_beraternummer: String(value.datev_beraternummer ?? '').trim(),
+    p_mandantennummer: String(value.datev_mandantennummer ?? '').trim(),
+    p_kontenrahmen: String(value.datev_kontenrahmen ?? '').trim(),
+    p_revenue_account_19: String(value.datev_revenue_account_19 ?? '').trim(),
+    p_revenue_account_7: String(value.datev_revenue_account_7 ?? '').trim(),
+    p_revenue_account_0: String(value.datev_revenue_account_0 ?? '').trim(),
+  };
+  if (datevFields.p_beraternummer && !/^\d{1,7}$/.test(datevFields.p_beraternummer)) return { status: 'error', message: 'Die DATEV-Beraternummer ist ungültig.' };
+  if (datevFields.p_mandantennummer && !/^\d{1,5}$/.test(datevFields.p_mandantennummer)) return { status: 'error', message: 'Die DATEV-Mandantennummer ist ungültig.' };
+  if (datevFields.p_kontenrahmen && !['SKR03', 'SKR04', 'INDIVIDUELL'].includes(datevFields.p_kontenrahmen)) return { status: 'error', message: 'Bitte wähle einen gültigen Kontenrahmen.' };
+  for (const account of [datevFields.p_revenue_account_19, datevFields.p_revenue_account_7, datevFields.p_revenue_account_0]) {
+    if (account && !/^\d{4,11}$/.test(account)) return { status: 'error', message: 'DATEV-Konten müssen aus 4 bis 11 Ziffern bestehen.' };
+  }
   try { const { supabase } = await requireOwnerCompany(); const { error } = await supabase.rpc('update_my_company_master_data', { p_name: name, p_legal_form: String(value.legal_form ?? ''), p_street: String(value.street ?? ''), p_postal_code: String(value.postal_code ?? ''), p_city: String(value.city ?? ''), p_country: String(value.country ?? 'Deutschland'), p_phone: String(value.phone ?? ''), p_email: String(value.email ?? ''), p_website: String(value.website ?? ''), p_tax_number: String(value.tax_number ?? ''), p_vat_id: String(value.vat_id ?? ''), p_billing_email: String(value.billing_email ?? ''), p_iban: String(value.iban ?? ''), p_bic: String(value.bic ?? ''), p_payment_terms: paymentTerms ? Number(paymentTerms) : null, p_timezone: String(value.timezone ?? 'Europe/Berlin'), p_language: language }); if (error) return databaseFailure('Die Kern-Firmendaten wurden nicht gespeichert:', error); const rateRaw = String(value.default_hourly_rate ?? '').replace(',', '.').trim();
     if (rateRaw) {
       const parsed = Number(rateRaw);
@@ -72,20 +104,6 @@ export async function updateCompanySettings(_: FormState, formData: FormData): P
       }
     }
 
-    const datevFields = {
-      p_beraternummer: String(value.datev_beraternummer ?? '').trim(),
-      p_mandantennummer: String(value.datev_mandantennummer ?? '').trim(),
-      p_kontenrahmen: String(value.datev_kontenrahmen ?? '').trim(),
-      p_revenue_account_19: String(value.datev_revenue_account_19 ?? '').trim(),
-      p_revenue_account_7: String(value.datev_revenue_account_7 ?? '').trim(),
-      p_revenue_account_0: String(value.datev_revenue_account_0 ?? '').trim(),
-    };
-    if (datevFields.p_beraternummer && !/^\d{1,7}$/.test(datevFields.p_beraternummer)) return { status: 'error', message: 'Die DATEV-Beraternummer ist ungültig.' };
-    if (datevFields.p_mandantennummer && !/^\d{1,5}$/.test(datevFields.p_mandantennummer)) return { status: 'error', message: 'Die DATEV-Mandantennummer ist ungültig.' };
-    if (datevFields.p_kontenrahmen && !['SKR03', 'SKR04', 'INDIVIDUELL'].includes(datevFields.p_kontenrahmen)) return { status: 'error', message: 'Bitte wähle einen gültigen Kontenrahmen.' };
-    for (const account of [datevFields.p_revenue_account_19, datevFields.p_revenue_account_7, datevFields.p_revenue_account_0]) {
-      if (account && !/^\d{4,11}$/.test(account)) return { status: 'error', message: 'DATEV-Konten müssen aus 4 bis 11 Ziffern bestehen.' };
-    }
     const { error: datevError } = await supabase.rpc('set_company_datev_settings', datevFields);
     if (datevError) return databaseFailure('Die DATEV-Einstellungen wurden nicht gespeichert:', datevError);
 
