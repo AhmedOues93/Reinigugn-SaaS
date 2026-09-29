@@ -26,8 +26,6 @@ export function CompanySettingsForm({
   const [editing, setEditing] = useState(false);
   const router = useRouter();
   const chosenFocus = new Set(serviceFocus);
-  const directorWasSet = Boolean(String(company.managing_director ?? '').trim());
-  const vatWasSet = company.default_vat_rate_basis_points != null;
 
   useEffect(() => {
     if (state.status === 'success') { setEditing(false); setStep(0); router.refresh(); }
@@ -101,7 +99,6 @@ export function CompanySettingsForm({
         </Field>
         <Field label="Geschäftsführung" htmlFor="managing_director" optional info="Erscheint im Impressum-Block Ihrer Angebote und Rechnungen.">
           <Input id="managing_director" name="managing_director" defaultValue={String(company.managing_director ?? '')} />
-          <input type="hidden" name="managing_director_was_set" value={directorWasSet ? 'true' : 'false'} />
         </Field>
         {/*
           Nicht mehr optional: BR-DE-6 verlangt die Telefonnummer des
@@ -151,9 +148,8 @@ export function CompanySettingsForm({
         <Field label="Standard-Stundensatz in Euro" htmlFor="default_hourly_rate" optional>
           <Input id="default_hourly_rate" name="default_hourly_rate" type="number" min="0" step="0.01" inputMode="decimal" defaultValue={company.default_hourly_rate_cents ? String(Number(company.default_hourly_rate_cents) / 100) : ''} />
         </Field>
-        <Field label="Umsatzsteuersatz in Prozent" htmlFor="vat_rate" info="Standardsatz für neue Rechnungspositionen. Je Position änderbar.">
+        <Field label="Umsatzsteuersatz in Prozent" htmlFor="vat_rate" info="Standardsatz für neue Rechnungspositionen. Je Position änderbar. Leer lassen setzt auf 19 % zurück.">
           <Input id="vat_rate" name="vat_rate" inputMode="decimal" defaultValue={company.default_vat_rate_basis_points != null ? String(Number(company.default_vat_rate_basis_points) / 100).replace('.', ',') : '19'} />
-          <input type="hidden" name="vat_rate_was_set" value={vatWasSet ? 'true' : 'false'} />
         </Field>
         <details className="sm:col-span-2 rounded-xl border border-border/80 bg-muted/20">
           <summary className="flex min-h-touch cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium">

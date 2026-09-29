@@ -32,11 +32,6 @@ export async function updateCompanySettings(_: FormState, formData: FormData): P
     const vat = Number(vatRawPre);
     if (!Number.isFinite(vat) || vat < 0 || vat > 100) return { status: 'error', message: 'Bitte gib einen gültigen Umsatzsteuersatz an.' };
   }
-  const directorPre = String(value.managing_director ?? '').trim();
-  if ((!directorPre && String(value.managing_director_was_set ?? '') === 'true')
-    || (!vatRawPre && String(value.vat_rate_was_set ?? '') === 'true')) {
-    return { status: 'error', message: 'Geschäftsführung oder Umsatzsteuersatz können derzeit nicht geleert werden. Andere Änderungen wurden nicht gespeichert.' };
-  }
   const datevFields = {
     p_beraternummer: String(value.datev_beraternummer ?? '').trim(),
     p_mandantennummer: String(value.datev_mandantennummer ?? '').trim(),
@@ -74,34 +69,27 @@ export async function updateCompanySettings(_: FormState, formData: FormData): P
       vatBp = Math.round(parsedVat * 100);
     }
     const director = String(value.managing_director ?? '').trim();
-    const clearsDirector = !director && String(value.managing_director_was_set ?? '') === 'true';
-    const clearsVatRate = !vatRaw && String(value.vat_rate_was_set ?? '') === 'true';
 
-    // The currently deployed profile RPC intentionally coalesces null values,
-    // which makes a blank field look saved while retaining the old value. Do
-    // not pretend a destructive edit worked. A future explicit-clear RPC can
-    // replace this guard without weakening the owner/RLS boundary.
-    if (clearsDirector || clearsVatRate) {
-      const cleared = [clearsDirector && 'Geschäftsführung', clearsVatRate && 'Umsatzsteuersatz']
-        .filter(Boolean)
-        .join(' und ');
-      return {
-        status: 'error',
-        message: `Die Kern-Firmendaten wurden gespeichert. ${cleared} wurde nicht entfernt, weil die aktuelle Datenbankfunktion leere Werte bewusst beibehält.`,
-      };
-    }
+    /*
+      Das Formular schickt beide Felder bei jedem Speichern mit, also heisst ein
+      leeres Feld hier "loeschen". set_company_management schreibt genau das —
+      im Gegensatz zu save_company_profile, das aus dem Onboarding stammt und
+      leere Werte bewusst festhaelt. Vorher lehnte die Aktion ein geleertes
+      Feld rundheraus ab, sodass sich Geschaeftsfuehrung und Steuersatz
+      ueberhaupt nicht entfernen liessen.
 
-    if (director || vatBp !== null) {
-      const { error: profileError } = await supabase.rpc('save_company_profile', {
-        p_managing_director: director || null,
-        p_vat_rate_bp: vatBp,
-      });
-      if (profileError) {
-        return databaseFailure(
-          'Die Kern-Firmendaten wurden gespeichert, Geschäftsführung oder Umsatzsteuersatz jedoch nicht:',
-          profileError,
-        );
-      }
+      Der Steuersatz ist in der Datenbank NOT NULL: ein leeres Feld bedeutet
+      dort den gesetzlichen Regelsatz, nicht "kein Steuersatz".
+    */
+    const { error: managementError } = await supabase.rpc('set_company_management', {
+      p_managing_director: director,
+      p_vat_rate_bp: vatBp,
+    });
+    if (managementError) {
+      return databaseFailure(
+        'Die Kern-Firmendaten wurden gespeichert, Geschäftsführung oder Umsatzsteuersatz jedoch nicht:',
+        managementError,
+      );
     }
 
     const { error: datevError } = await supabase.rpc('set_company_datev_settings', datevFields);
