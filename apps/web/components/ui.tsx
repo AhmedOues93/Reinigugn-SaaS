@@ -280,9 +280,20 @@ export function PageHeader({
         <div className="flex min-w-0 items-start gap-4">
           {media && <div className="shrink-0">{media}</div>}
           <div className="min-w-0">
-            <h1 className="text-[1.6rem] font-semibold leading-tight sm:text-[1.85rem]">{title}</h1>
+            {/*
+              Silbentrennung statt Ueberlauf: "Kalkulationsgrundlagen" braucht
+              bei 25,6px rund 293px, im Inhaltsbereich eines 320px-Telefons
+              stehen aber nur etwa 280px zur Verfuegung. Ohne die Trennung
+              verbreitert der Browser die Layout-Breite, bis das Wort passt --
+              sichtbar wird das als herausgezoomte Seite, nicht als
+              abgeschnittener Text. Gilt fuer jede Seite im Dashboard, deshalb
+              steht es hier und nicht je Seite.
+            */}
+            <h1 className="hyphenate text-[1.6rem] font-semibold leading-tight sm:text-[1.85rem]">
+              {title}
+            </h1>
             {description && (
-              <p className="mt-1.5 max-w-2xl text-[15px] leading-6 text-muted-foreground">
+              <p className="hyphenate mt-1.5 max-w-2xl text-[15px] leading-6 text-muted-foreground">
                 {description}
               </p>
             )}

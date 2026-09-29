@@ -46,7 +46,7 @@ export default async function EmployeeTodayPage() {
     <div className="space-y-7">
       <header>
         <p className="text-sm font-medium text-muted-foreground">{formatDate(locale, todayKey, 'long')}</p>
-        <h1 className="mt-0.5 text-[1.6rem] font-semibold leading-tight">
+        <h1 className="hyphenate mt-0.5 text-[1.6rem] font-semibold leading-tight">
           {profile?.first_name ? t(locale, 'emp.today.greeting', { name: profile.first_name }) : t(locale, 'emp.tab.today')}
         </h1>
       </header>

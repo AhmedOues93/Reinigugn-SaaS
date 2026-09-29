@@ -51,6 +51,18 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     // The employee app is used one-handed on a phone; 390px is the real target.
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    /*
+      320px ist die schmalste Breite, die in der Praxis noch vorkommt (iPhone SE
+      der ersten Generation, kleine Android-Geraete, und jedes Telefon mit
+      grosser Systemschrift). Pixel 7 mit 412px verzeiht zu viel: ein Layout,
+      das dort passt, kann hier trotzdem seitlich herauslaufen. Nur die
+      oeffentlichen Seiten laufen in CI mit, die brauchen kein Backend.
+    */
+    {
+      name: 'narrow',
+      testMatch: /public\/.*\.spec\.ts/,
+      use: { ...devices['Pixel 7'], viewport: { width: 320, height: 640 } },
+    },
   ],
 
   // Only manage a server when we were not pointed at one.

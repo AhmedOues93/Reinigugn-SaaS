@@ -88,6 +88,60 @@ Afterwards, confirm the project actually matches the repository:
 npx supabase db diff --linked   # expected output: no schema differences
 ```
 
+## Was in Production noch fehlt
+
+Welche Migrationen eine gehostete Datenbank bereits kennt, weiss nur diese
+Datenbank. Supabase fuehrt sie in `supabase_migrations.schema_migrations`.
+Ohne Zugriff darauf laesst sich der Rueckstand nicht erraten, und eine
+Vermutung waere hier die gefaehrlichste Antwort. So wird er festgestellt:
+
+```bash
+npx supabase link --project-ref <production-project-ref>
+
+# Was die Produktionsdatenbank kennt, gegen das, was im Repository liegt.
+npx supabase migration list --linked
+```
+
+Die Ausgabe stellt beide Seiten nebeneinander; jede Zeile ohne Eintrag in der
+Remote-Spalte fehlt dort. Danach, in dieser Reihenfolge:
+
+```bash
+supabase/test/run.sh              # 1. gegen eine leere Datenbank beweisen
+npx supabase db push --dry-run    # 2. lesen, was angewendet wuerde
+npx supabase db push              # 3. anwenden
+npx supabase db diff --linked     # 4. erwartete Ausgabe: keine Unterschiede
+```
+
+### Die Migrationen dieser Reihe
+
+Stand 29.09.2026, aelteste zuerst. Jede behebt einen Fehler, der sich in
+Production zeigt; keine davon aendert oder loescht bestehende Daten.
+
+| Migration | Behebt |
+|---|---|
+| `20261006000024_wage_group` | Lohngruppe und Stundenlohn an den Stammdaten |
+| `20261006000025_week_plan_reasons` | legt `current_company_member()` an — ohne sie brechen automatische Teamplanung **und** DATEV-Einstellungen mit „function does not exist" ab; meldet ausserdem den Grund pro Einsatz statt einer pauschalen Fehlermeldung |
+| `20261006000026_manual_assignment_capacity` | warnt bei manueller Zuweisung vor Ueberschreitung der Wochenstunden |
+| `20261006000026_public_quote_signature_once` | verhindert das Ueberschreiben einer bereits unterschriebenen Angebotsannahme |
+| `20261006000027_fix_datev_company_update` | zweite Ursache des DATEV-Fehlers: die Funktion schrieb `companies.updated_at`, eine Spalte, die es nicht gibt |
+| `20261006000028_company_management_fields` | Geschaeftsfuehrung und Umsatzsteuersatz lassen sich wieder leeren |
+| `20261006000029_atomic_schedule_save` | speichert einen wiederkehrenden Plan in einer Transaktion; vorher konnte ein Fehlschlag einen aktiven Plan ohne Wochentag und ohne Team hinterlassen |
+| `20261006000030_employee_job_report` | Notiz der Mitarbeiterin zum Einsatz, bis auf den Leistungsnachweis |
+
+Die beiden `...26`-Migrationen tragen dieselbe Nummer aus zwei parallelen
+Zweigen. Das ist unschoen, aber harmlos: angewendet wird nach Dateiname, und
+beide sind voneinander unabhaengig. Umbenennen wuerde die Append-only-Regel
+brechen — eine bereits angewendete Migration bekommt keinen neuen Namen.
+
+### Was dabei nicht passiert
+
+`supabase db push` wendet ausschliesslich Schema-Migrationen an. Die Seeds
+unter `supabase/seed/` laufen dabei **nicht** mit und gehoeren nie in
+Production: `demo-for-account.sql` legt einen Demo-Betrieb samt
+Testrechnung an. Es bricht von sich aus ab, wenn das Zielkonto bereits zu
+einem Betrieb gehoert, aber darauf sollte sich niemand verlassen — in
+Production wird es schlicht nicht ausgefuehrt.
+
 ### What the migrations already cover
 
 Everything, including the parts that are easy to forget: tables, enums,

@@ -99,6 +99,23 @@
   }
 
   /*
+   * Grosse Ueberschriften mit deutschen Komposita.
+   *
+   * "Allgemeine Geschaeftsbedingungen" hat bei 32px eine Mindestbreite von
+   * 334px. Auf einem 320px-Telefon verbreitert Chromium daraufhin die
+   * Layout-Breite, bis das Wort passt -- sichtbar wird das als ganze Seite,
+   * die herausgezoomt ist, nicht als abgeschnittener Text. Silbentrennung
+   * loest es typografisch richtig (lang steht am <html>, sonst wuerde sie
+   * nicht greifen); overflow-wrap ist der Notnagel fuer Woerter, an denen die
+   * Trennung keine Stelle findet -- und nur "anywhere" senkt die
+   * Mindestbreite wirklich, "break-word" tut es nicht.
+   */
+  .hyphenate {
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
+
+  /*
    * The squeegee streak: one diagonal band of light across a dark surface, the
    * way a pass of the wiper leaves glass. Used on ink surfaces only, sparingly.
    */

@@ -37,7 +37,7 @@ export function LegalPage({
           Zur Startseite
         </Link>
 
-        <h1 className="mt-6 text-[2rem] font-semibold leading-tight tracking-[-0.03em] text-foreground sm:text-[2.4rem]">
+        <h1 className="hyphenate mt-6 text-[2rem] font-semibold leading-tight tracking-[-0.03em] text-foreground sm:text-[2.4rem]">
           {title}
         </h1>
         {intro && <p className="mt-4 text-[15px] leading-7 text-muted-foreground">{intro}</p>}
