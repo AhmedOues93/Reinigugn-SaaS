@@ -37,6 +37,55 @@ export function mailConfigured() {
   return Boolean(selectProvider() && process.env.MAIL_FROM);
 }
 
+export type MailSetupStep = {
+  /** Der Name der Variablen, so wie sie beim Hoster eingetragen wird. */
+  variable: string;
+  label: string;
+  present: boolean;
+  hint: string;
+};
+
+/**
+ * Was zum Versand noch fehlt, benannt.
+ *
+ * "E-Mail-Versand nicht verbunden" allein ist nicht handlungsfaehig: wer
+ * RESEND_API_KEY setzt und MAIL_FROM vergisst, sieht dieselbe Meldung wie
+ * jemand, der gar nichts gesetzt hat. Deshalb wird jeder Baustein einzeln
+ * gemeldet.
+ *
+ * Es werden nur Namen und ein Ja/Nein zurueckgegeben, nie ein Wert: dieser
+ * Bericht geht in die Oberflaeche.
+ */
+export function mailSetupStatus(): { configured: boolean; steps: MailSetupStep[] } {
+  const hasResend = Boolean(process.env.RESEND_API_KEY?.trim());
+  const hasSmtp = Boolean(process.env.SMTP_HOST?.trim());
+  const hasFrom = Boolean(process.env.MAIL_FROM?.trim());
+
+  return {
+    configured: (hasResend || hasSmtp) && hasFrom,
+    steps: [
+      {
+        variable: hasSmtp && !hasResend ? 'SMTP_HOST' : 'RESEND_API_KEY',
+        label: 'Anbieter',
+        present: hasResend || hasSmtp,
+        hint: hasResend
+          ? 'Resend ist verbunden.'
+          : hasSmtp
+            ? 'Ein SMTP-Server ist hinterlegt.'
+            : 'Entweder RESEND_API_KEY (empfohlen) oder SMTP_HOST beim Hoster setzen.',
+      },
+      {
+        variable: 'MAIL_FROM',
+        label: 'Absenderadresse',
+        present: hasFrom,
+        hint: hasFrom
+          ? 'Absenderadresse ist gesetzt.'
+          : 'Absender im Format „Firma <rechnung@ihre-domain.de>". Die Domain muss beim Anbieter verifiziert sein.',
+      },
+    ],
+  };
+}
+
 /** Which provider is configured, for display and for the health endpoint. */
 export function configuredProvider(): 'resend' | 'smtp' | null {
   return selectProvider()?.name ?? null;

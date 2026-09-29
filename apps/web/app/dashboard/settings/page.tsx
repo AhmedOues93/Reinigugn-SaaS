@@ -7,7 +7,7 @@ import { AccountPasswordForm } from '@/components/account-password-form';
 import { MailHealthPanel } from '@/components/mail-health-panel';
 import { getCompanyBranding } from '@/lib/data/branding';
 import { getQuote, listQuotes } from '@/lib/data/sales';
-import { configuredProvider, mailConfigured } from '@/lib/mail/transport';
+import { configuredProvider, mailConfigured, mailSetupStatus } from '@/lib/mail/transport';
 import { removeCompanyLogo, sendOwnerTestEmail, updateCompanyBranding, updateCompanySettings } from './actions';
 
 export default async function SettingsPage() {
@@ -98,6 +98,7 @@ export default async function SettingsPage() {
         <MailHealthPanel
           configured={mailConfigured()}
           provider={configuredProvider()}
+          steps={mailSetupStatus().steps}
           action={sendOwnerTestEmail}
         />
       </Section>
