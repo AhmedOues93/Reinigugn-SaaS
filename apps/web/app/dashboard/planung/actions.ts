@@ -14,86 +14,80 @@ function scheduleInput(formData: FormData) {
 }
 function horizon() { return new Date(Date.now() + 56 * 86_400_000).toISOString().slice(0, 10); }
 
+/**
+ * Einen wiederkehrenden Plan speichern -- in einer einzigen Transaktion.
+ *
+ * Das war vorher eine Folge einzelner Schreibvorgaenge, die mittendrin
+ * stehenbleiben konnte: Regeln deaktiviert, Team geloescht, und dann ein
+ * Fehler. Uebrig blieb ein aktiver Plan ohne Wochentag und ohne Team, waehrend
+ * die Oberflaeche einen Fehler meldete. save_service_schedule() macht alles
+ * oder nichts; die Bedingungen eines angenommenen Angebots setzt es selbst
+ * durch, damit sie sich nicht ueber das Formular aushebeln lassen.
+ */
 async function saveSchedule(scheduleId: string | null, formData: FormData): Promise<FormState> {
   const parsed = serviceScheduleSchema.safeParse(scheduleInput(formData));
   const activateAfterSave = String(formData.get('activate_after_save') ?? '') === 'true';
   const assignmentMode = String(formData.get('assignment_mode') ?? 'AUTO') === 'MANUAL' ? 'MANUAL' : 'AUTO';
   if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
-  try {
-    const { supabase, company } = await requireStaffCompany();
-    let id = scheduleId;
-    let acceptancePolicy = parsed.data.acceptance_policy;
-    let billingMode = parsed.data.billing_mode;
 
-    if (scheduleId) {
-      const { data: sourceQuote, error: sourceQuoteError } = await supabase
-        .from('quotes')
-        .select('acceptance_policy, billing_mode')
-        .eq('company_id', company.id)
-        .eq('created_schedule_id', scheduleId)
-        .eq('status', 'ACCEPTED')
-        .maybeSingle();
-      if (sourceQuoteError) return failure('Die vereinbarten Angebotsbedingungen konnten nicht geprüft werden.');
-      if (sourceQuote) {
-        acceptancePolicy = sourceQuote.acceptance_policy;
-        billingMode = sourceQuote.billing_mode;
-      }
+  try {
+    const { supabase } = await requireStaffCompany();
+
+    const { data, error } = await supabase.rpc('save_service_schedule', {
+      p_schedule_id: scheduleId,
+      p_customer_id: parsed.data.customer_id,
+      p_cleaning_object_id: parsed.data.cleaning_object_id,
+      p_checklist_template_id: parsed.data.checklist_template_id ?? null,
+      p_name: parsed.data.name,
+      p_description: parsed.data.description ?? '',
+      p_valid_from: parsed.data.valid_from,
+      p_valid_until: parsed.data.valid_until ?? null,
+      p_acceptance_policy: parsed.data.acceptance_policy,
+      p_billing_mode: parsed.data.billing_mode,
+      p_assignment_mode: assignmentMode,
+      p_is_active: activateAfterSave,
+      p_member_ids: assignmentMode === 'MANUAL' ? parsed.data.member_ids : [],
+      p_rules: parsed.data.rules.map((rule) => {
+        const suppliedId = (rule as typeof rule & { id?: string }).id;
+        return {
+          id: suppliedId && /^[0-9a-f-]{36}$/i.test(suppliedId) ? suppliedId : null,
+          weekday: rule.weekday,
+          planned_start_time: rule.planned_start_time,
+          planned_end_time: rule.planned_end_time,
+        };
+      }),
+      p_generate_until: activateAfterSave ? horizon() : null,
+    });
+
+    if (error) {
+      // Die Datenbank benennt den Grund -- fehlende Wochenstunden, ein Objekt,
+      // das nicht zum Kunden gehoert. Nichts davon wurde gespeichert.
+      return failure(error.message || 'Der wiederkehrende Plan konnte nicht gespeichert werden.');
     }
-    if (!id) {
-      const { data, error } = await supabase.from('service_schedules').insert({ company_id: company.id, customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: acceptancePolicy, billing_mode: billingMode, assignment_mode: assignmentMode, is_active: activateAfterSave }).select('id').single();
-      if (error || !data) return failure('Der wiederkehrende Plan konnte nicht erstellt werden.');
-      id = data.id;
-    } else {
-      const { error } = await supabase.from('service_schedules').update({ customer_id: parsed.data.customer_id, cleaning_object_id: parsed.data.cleaning_object_id, checklist_template_id: parsed.data.checklist_template_id ?? null, name: parsed.data.name, description: parsed.data.description ?? '', valid_from: parsed.data.valid_from, valid_until: parsed.data.valid_until ?? null, acceptance_policy: acceptancePolicy, billing_mode: billingMode, assignment_mode: assignmentMode, is_active: activateAfterSave }).eq('id', id).eq('company_id', company.id);
-      if (error) return failure('Der wiederkehrende Plan konnte nicht aktualisiert werden.');
-      const { error: deactivateRulesError } = await supabase.from('schedule_rules').update({ is_active: false }).eq('service_schedule_id', id);
-      if (deactivateRulesError) return failure('Der Plan wurde aktualisiert, aber die bisherigen Regeln konnten nicht deaktiviert werden.');
-      const { error: removeAssignmentsError } = await supabase.from('service_schedule_assignments').delete().eq('service_schedule_id', id);
-      if (removeAssignmentsError) return failure('Der Plan wurde aktualisiert, aber die bisherigen Teamzuweisungen konnten nicht entfernt werden.');
-    }
-    for (const rule of parsed.data.rules) {
-      const suppliedId = (rule as typeof rule & { id?: string }).id;
-      if (suppliedId && /^[0-9a-f-]{36}$/i.test(suppliedId)) {
-        const { data: updatedRule, error: ruleError } = await supabase.from('schedule_rules')
-          .update({ weekday: rule.weekday, planned_start_time: rule.planned_start_time, planned_end_time: rule.planned_end_time, is_active: true })
-          .eq('id', suppliedId).eq('service_schedule_id', id).select('id').maybeSingle();
-        if (ruleError || !updatedRule) return failure('Eine Planregel konnte nicht aktualisiert werden. Bitte Plan prüfen.');
-      } else {
-        const { error: ruleError } = await supabase.from('schedule_rules').insert({ service_schedule_id: id, weekday: rule.weekday, planned_start_time: rule.planned_start_time, planned_end_time: rule.planned_end_time, is_active: true });
-        if (ruleError) return failure('Eine Planregel konnte nicht gespeichert werden. Bitte Plan prüfen.');
-      }
-    }
+
+    const saved = (Array.isArray(data) ? data[0] : data) as
+      | { schedule_id: string; assigned_member: string | null }
+      | null;
+    const id = saved?.schedule_id;
     if (!id) return failure('Der wiederkehrende Plan konnte nicht gespeichert werden.');
-    if (assignmentMode === 'MANUAL' && parsed.data.member_ids.length) {
-      const { error: assignmentError } = await supabase.from('service_schedule_assignments').insert(
-        parsed.data.member_ids.map((memberId) => ({
-          company_id: company.id,
-          service_schedule_id: id,
-          member_id: memberId,
-        })),
-      );
-      if (assignmentError) return failure('Die Teamzuweisungen konnten nicht gespeichert werden. Bitte Plan prüfen.');
-    }
-    if (assignmentMode === 'AUTO') {
-      const { data: autoMember, error: autoError } = await supabase.rpc('auto_assign_schedule_employee', {
-        p_schedule_id: id,
-      });
-      if (autoError) return failure('Der Plan wurde gespeichert, aber die automatische Teamplanung ist fehlgeschlagen.');
-      if (!autoMember && activateAfterSave) {
-        return failure('Kein passender Mitarbeiter mit freien Wochenstunden gefunden. Bitte Wochen-Sollstunden prüfen oder manuell zuweisen.');
-      }
-    }
-    if (activateAfterSave) {
-      const { error: generationError } = await supabase.rpc('generate_jobs_for_schedule', { p_schedule_id: id, p_until: horizon() });
-      if (generationError) return failure('Der Plan wurde gespeichert, aber die Einsätze konnten nicht erzeugt werden.');
-    }
-    revalidatePath('/dashboard'); revalidatePath('/dashboard/planung'); revalidatePath('/dashboard/auftraege'); revalidatePath(`/dashboard/planung/plaene/${id}`);
-    return { status: 'success', id, message: activateAfterSave
-      ? assignmentMode === 'AUTO'
-        ? 'Plan aktiviert. ReinPlan hat die Stammbesetzung nach freien Wochenstunden gewählt.'
-        : 'Plan aktiviert. Einsätze und Teamzuweisungen wurden aktualisiert.'
-      : 'Plan wurde gespeichert.' };
-  } catch { return failure('Der wiederkehrende Plan konnte nicht gespeichert werden.'); }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/planung');
+    revalidatePath('/dashboard/auftraege');
+    revalidatePath(`/dashboard/planung/plaene/${id}`);
+
+    return {
+      status: 'success',
+      id,
+      message: activateAfterSave
+        ? assignmentMode === 'AUTO'
+          ? 'Plan aktiviert. ReinPlan hat die Stammbesetzung nach freien Wochenstunden gewählt.'
+          : 'Plan aktiviert. Einsätze und Teamzuweisungen wurden aktualisiert.'
+        : 'Plan wurde gespeichert.',
+    };
+  } catch {
+    return failure('Der wiederkehrende Plan konnte nicht gespeichert werden.');
+  }
 }
 
 export async function createServiceSchedule(_: FormState, formData: FormData) { return saveSchedule(null, formData); }
