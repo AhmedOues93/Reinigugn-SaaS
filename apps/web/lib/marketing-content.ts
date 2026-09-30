@@ -89,24 +89,104 @@ export const features = [
   },
 ] as const;
 
+/**
+ * Der Demofilm.
+ *
+ * Zwei Wege, je nachdem was produziert wird: `videoUrl` fuer eine Einbettung
+ * (YouTube, Vimeo), `videoFile` fuer eine selbst gehostete Datei unter
+ * `public/marketing/`. Die eigene Datei ist der bessere Weg -- sie laedt keinen
+ * fremden Player nach, setzt kein Cookie und braucht damit keinen Hinweis im
+ * Consent-Banner. Ist beides leer, bleibt der Rahmen reserviert und sagt
+ * ehrlich, dass der Film noch fehlt; ein Abspielknopf, der nichts tut, waere
+ * schlechter als eine klare Bildunterschrift.
+ */
 export const demo = {
   eyebrow: 'In drei Minuten',
   title: 'Sehen Sie ReinPlan im Einsatz',
   body: 'Ein Durchlauf vom Angebot bis zur Rechnung – ohne Anmeldung, ohne Termin.',
-  /** Swap for the real embed (or a poster + <video>) once it is produced. */
   videoUrl: null as string | null,
+  /** z. B. '/marketing/reinplan-demo.mp4' */
+  videoFile: null as string | null,
+  /** Standbild hinter dem Abspielknopf, bis der Film laeuft. */
+  poster: '/brand/dashboard-hero.jpg',
   posterCaption: 'Demo-Video folgt',
 } as const;
 
 /**
- * Screenshot slots. `src` stays null until the real captures land in
- * `public/marketing/`; each frame then renders the image instead of the
- * placeholder without any layout change.
+ * Die Bereiche, die das Karussell zeigt.
+ *
+ * Ein Eintrag je Bereich, in der Reihenfolge, in der ein Betrieb ihn erlebt:
+ * planen, arbeiten, erfassen, nachweisen, abrechnen, Kundin, Qualitaet,
+ * Ueberblick. `src` zeigt auf eine schematische Vorschau in den Projektfarben
+ * unter `public/marketing/`; sobald es echte Bildschirmfotos gibt, wird hier
+ * der Pfad getauscht und sonst nichts -- der Rahmen reserviert sein
+ * Seitenverhaeltnis ohnehin.
  */
-export const screenshots = [
-  { id: 'dashboard', frame: 'browser', title: 'Büro-Dashboard', caption: 'Offene Aufgaben, Umsatz und heutige Einsätze auf einen Blick.', src: '/marketing/dashboard-preview.svg' },
-  { id: 'planung', frame: 'browser', title: 'Wochenplanung', caption: 'Einsätze je Objekt und Mitarbeiter, Woche für Woche.', src: '/marketing/planning-preview.svg' },
-  { id: 'einsatz', frame: 'phone', title: 'Einsatz auf dem Handy', caption: 'Zeiterfassung, Checkliste und Fotos für die Reinigungskraft.', src: '/marketing/mobile-preview.svg' },
+export const showcase = [
+  {
+    id: 'planung',
+    frame: 'browser',
+    title: 'Wochenplanung',
+    caption: 'Ab heute sieben Tage, umschaltbar auf die Kalenderwoche.',
+    points: ['Automatisch nach freien Wochenstunden', 'Urlaub und Krankheit werden berücksichtigt', 'Nicht besetzt? Der Grund steht am Einsatz'],
+    src: '/marketing/planung-preview.svg',
+  },
+  {
+    id: 'einsatz',
+    frame: 'phone',
+    title: 'Einsatz auf dem Handy',
+    caption: 'Die Reinigungskraft sieht genau einen Einsatz – ihren.',
+    points: ['Start, Pause, Feierabend', 'Checkliste zum Abhaken', 'Vorher- und Nachher-Foto'],
+    src: '/marketing/einsatz-preview.svg',
+  },
+  {
+    id: 'zeiterfassung',
+    frame: 'browser',
+    title: 'Arbeitszeiten',
+    caption: 'Brutto, Pause und Netto – je Tag nachvollziehbar.',
+    points: ['Pausen zählen genau einmal', 'Korrekturen bleiben protokolliert', 'Export für das Lohnbüro'],
+    src: '/marketing/zeiterfassung-preview.svg',
+  },
+  {
+    id: 'leistungsnachweis',
+    frame: 'browser',
+    title: 'Leistungsnachweis',
+    caption: 'Was geleistet wurde – belegt statt behauptet.',
+    points: ['Zeit, Checkliste und Fotos in einem Blatt', 'Notiz der Reinigungskraft', 'Abnahme vor Ort oder im Portal'],
+    src: '/marketing/leistungsnachweis-preview.svg',
+  },
+  {
+    id: 'abrechnung',
+    frame: 'browser',
+    title: 'Rechnung und E-Rechnung',
+    caption: 'PDF und XRechnung aus denselben Zahlen.',
+    points: ['XRechnung 3.0 nach EN 16931', 'Gegen den KoSIT-Validator geprüft', 'Zahlungsstatus und Mahnstufen'],
+    src: '/marketing/abrechnung-preview.svg',
+  },
+  {
+    id: 'kundenportal',
+    frame: 'browser',
+    title: 'Kundenportal',
+    caption: 'Die Kundin sieht ihre Leistungen, ohne anzurufen.',
+    points: ['Nachweise und Rechnungen einsehen', 'Abnahme mit einem Klick', 'Reklamation direkt melden'],
+    src: '/marketing/kundenportal-preview.svg',
+  },
+  {
+    id: 'qualitaet',
+    frame: 'browser',
+    title: 'Qualität und Reklamationen',
+    caption: 'Kontrolle, Nacharbeit und Nachweis in einem Vorgang.',
+    points: ['Bewertung je Kriterium', 'Nacharbeit mit Frist', 'Verlauf bis zur Bestätigung'],
+    src: '/marketing/qualitaet-preview.svg',
+  },
+  {
+    id: 'dashboard',
+    frame: 'browser',
+    title: 'Büro-Dashboard',
+    caption: 'Umsatz, offene Rechnungen und die Einsätze von heute.',
+    points: ['Offene Beträge und Mahnstufen', 'Stunden im Monat und Auslastung', 'Qualität auf einen Blick'],
+    src: '/marketing/dashboard-preview.svg',
+  },
 ] as const;
 
 /**

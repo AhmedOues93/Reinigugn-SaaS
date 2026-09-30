@@ -4,8 +4,8 @@ import { DemoVideo } from '@/components/marketing/demo-video';
 import { Features } from '@/components/marketing/features';
 import { Hero } from '@/components/marketing/hero';
 import { Pricing } from '@/components/marketing/pricing';
-import { Screenshots } from '@/components/marketing/screenshots';
 import { SiteFooter } from '@/components/marketing/site-footer';
+import { ShowcaseCarousel } from '@/components/marketing/showcase-carousel';
 import { SiteHeader } from '@/components/marketing/site-header';
 import { Steps } from '@/components/marketing/steps';
 
@@ -32,7 +32,7 @@ export default function Home() {
         <Steps />
         <Features />
         <DemoVideo />
-        <Screenshots />
+        <ShowcaseCarousel />
         <Pricing />
         <ClosingCta />
       </main>
