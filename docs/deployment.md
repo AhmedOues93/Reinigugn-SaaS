@@ -132,6 +132,7 @@ Production zeigt; keine davon aendert oder loescht bestehende Daten.
 | `20261006000033_offline_job_photos` | Vorher-/Nachher-Fotos ohne Empfang; `client_upload_id` verhindert doppelte Uploads |
 | `20261006000034_payroll_period_release` | Monatsabschluss mit Freigabe: nach der Freigabe sind Arbeitszeiten gesperrt, der Lohnexport bleibt reproduzierbar |
 | `20261006000035_auth_throttle_and_mfa` | Anmeldebremse (pro IP, nicht pro E-Mail-Adresse) und der Schalter `companies.require_staff_mfa` |
+| `20261006000036_capacity_and_onboarding_reach` | Soll/Ist und Auslastung fuer das Dashboard (Soll **bis heute**, nicht fuer den ganzen Monat); die Einrichtung reicht jetzt bis zum ersten geplanten Einsatz |
 
 Die beiden `...26`-Migrationen tragen dieselbe Nummer aus zwei parallelen
 Zweigen. Das ist unschoen, aber harmlos: angewendet wird nach Dateiname, und

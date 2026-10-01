@@ -259,6 +259,8 @@ export function FinishStep({
     { done: status?.has_survey ?? false, label: 'Erste Besichtigung planen', href: '/dashboard/vertrieb/besichtigungen' },
     { done: status?.has_calculation ?? false, label: 'Erste Kalkulation erstellen', href: '/dashboard/kalkulation/neu' },
     { done: status?.has_quote ?? false, label: 'Erstes Angebot versenden', href: '/dashboard/kalkulation' },
+    { done: status?.has_schedule ?? false, label: 'Wiederkehrenden Plan anlegen', href: '/dashboard/auftraege/neu' },
+    { done: status?.has_planned_job ?? false, label: 'Ersten Einsatz einplanen', href: '/dashboard/planung' },
   ];
   const open = items.filter((item) => !item.done).length;
 
@@ -268,8 +270,8 @@ export function FinishStep({
         <h2 className="text-lg font-semibold">Fast fertig</h2>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
           {open === 0
-            ? 'Alles eingerichtet. Diese Übersicht bleibt in den Einstellungen erreichbar.'
-            : `Noch ${open} ${open === 1 ? 'Schritt' : 'Schritte'} bis zum ersten Angebot. Sie können jederzeit hier weitermachen — die Einrichtung erscheint nicht erneut.`}
+            ? 'Alles eingerichtet, der erste Einsatz steht im Plan. Diese Übersicht bleibt in den Einstellungen erreichbar.'
+            : `Noch ${open} ${open === 1 ? 'Schritt' : 'Schritte'} bis zum ersten geplanten Einsatz. Sie können jederzeit hier weitermachen — die Einrichtung erscheint nicht erneut.`}
         </p>
       </div>
 

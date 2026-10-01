@@ -33,6 +33,8 @@ import { getCurrentCompany } from '@/lib/auth';
 import { getBillingSummary, getMonthlyRevenue, getOfficeActionItems } from '@/lib/data/billing';
 import { getJobStatusDistribution, listTodayBoard } from '@/lib/data/jobs';
 import { getFieldActivity, getNextFieldJob, getPortfolioCounts, getQualitySummary, getRecentActivity } from '@/lib/data/dashboard';
+import { getCapacitySnapshot } from '@/lib/data/capacity';
+import { CapacityCard } from '@/components/capacity-card';
 import { BrandBackdrop } from '@/components/brand-backdrop';
 import { brandImage } from '@/lib/brand-assets';
 import { formatDate, formatMoney, formatMoneyCompact, formatTimeRange } from '@/lib/format';
@@ -87,7 +89,7 @@ export default async function DashboardPage() {
   }
 
   const year = new Date().getFullYear();
-  const [portfolio, revenue, board, jobStatus, billing, actions, activity, quality, locale, field, nextField] =
+  const [portfolio, revenue, board, jobStatus, billing, actions, activity, quality, locale, field, nextField, capacity] =
     await Promise.all([
       getPortfolioCounts(),
       getMonthlyRevenue(year),
@@ -100,6 +102,7 @@ export default async function DashboardPage() {
       currentLocale(),
       getFieldActivity(),
       getNextFieldJob(),
+      getCapacitySnapshot(),
     ]);
 
   const firstName = profile?.first_name || '';
@@ -323,8 +326,9 @@ export default async function DashboardPage() {
             </SectionCard>
           </div>
 
-          {/* --- C. Job status and money ----------------------------------- */}
+          {/* --- C. Job status, utilisation and money ---------------------- */}
           <div className="grid gap-5 lg:grid-cols-2">
+            {capacity ? <CapacityCard snapshot={capacity} locale={locale} /> : null}
             <SectionCard title={t(locale, 'dashboard.jobStatus')}>
               <StatusDonut
                 total={jobStatus.total}

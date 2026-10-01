@@ -27,6 +27,10 @@ export type OnboardingStatus = {
   has_survey: boolean;
   has_calculation: boolean;
   has_quote: boolean;
+  /** Ein aktiver wiederkehrender Plan. */
+  has_schedule: boolean;
+  /** Ein Einsatz, der noch bevorsteht -- erst damit arbeitet der Betrieb. */
+  has_planned_job: boolean;
 };
 
 export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
