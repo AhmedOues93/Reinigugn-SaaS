@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { PwaHead } from '@/components/pwa-head';
-import { getCurrentCompany } from '@/lib/auth';
+import { getCurrentCompany, staffMfaRedirect } from '@/lib/auth';
 import { getCompanyBranding } from '@/lib/data/branding';
 import { type Locale } from '@/lib/i18n';
 import { landingPathForRole } from '@/lib/landing';
@@ -42,6 +42,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!company) redirect('/onboarding');
   // The dashboard is staff only: employees have the mobile app, customers the portal.
   if (membership.role !== 'OWNER' && membership.role !== 'OFFICE') redirect(landingPathForRole(membership.role));
+
+  /*
+   * Der Zwei-Faktor-Riegel. Er steht zusaetzlich hier, weil nicht jede
+   * Buero-Seite `requireStaffCompany` aufruft und das Layout die einzige
+   * Stelle ist, die jede von ihnen sieht.
+   */
+  const mfaTarget = await staffMfaRedirect(
+    supabase,
+    (membership.companies as unknown as { require_staff_mfa?: boolean | null } | null)?.require_staff_mfa === true,
+  );
+  if (mfaTarget) redirect(mfaTarget);
 
   const storedLocale = await cookieLocale();
   const locale: Locale = storedLocale ?? 'de';

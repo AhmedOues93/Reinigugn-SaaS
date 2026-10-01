@@ -34,6 +34,18 @@ refresh_token_reuse_interval = 10
 enable_signup = true
 enable_confirmations = true
 
+# Zwei-Faktor fuer die Buero-Konten. Lokal eingeschaltet, damit die
+# Einrichtung getestet werden kann, ohne sie erst im Dashboard zu suchen.
+# In einem gehosteten Projekt steht derselbe Schalter unter
+# Authentication -> Multi-Factor Authentication; ohne ihn antwortet
+# `mfa.enroll` mit "MFA is not enabled".
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 # Mailpit: web UI on 54324. The SMTP port is exposed so the app's invoice e-mail
 # can be pointed at it locally (SMTP_HOST=127.0.0.1, SMTP_PORT=54325). Takes
 # effect after `supabase stop && supabase start`.

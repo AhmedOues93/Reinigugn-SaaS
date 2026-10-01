@@ -127,6 +127,11 @@ Production zeigt; keine davon aendert oder loescht bestehende Daten.
 | `20261006000028_company_management_fields` | Geschaeftsfuehrung und Umsatzsteuersatz lassen sich wieder leeren |
 | `20261006000029_atomic_schedule_save` | speichert einen wiederkehrenden Plan in einer Transaktion; vorher konnte ein Fehlschlag einen aktiven Plan ohne Wochentag und ohne Team hinterlassen |
 | `20261006000030_employee_job_report` | Notiz der Mitarbeiterin zum Einsatz, bis auf den Leistungsnachweis |
+| `20261006000031_offline_time_tracking` | Zeiterfassung ohne Empfang: nachgetragene Zeiten mit Plausibilitaetsgrenzen, doppelte Nachsendungen bleiben wirkungslos |
+| `20261006000032_schedule_coverage` | Planungsreichweite und Vertretungsvorschlaege bei Abwesenheit |
+| `20261006000033_offline_job_photos` | Vorher-/Nachher-Fotos ohne Empfang; `client_upload_id` verhindert doppelte Uploads |
+| `20261006000034_payroll_period_release` | Monatsabschluss mit Freigabe: nach der Freigabe sind Arbeitszeiten gesperrt, der Lohnexport bleibt reproduzierbar |
+| `20261006000035_auth_throttle_and_mfa` | Anmeldebremse (pro IP, nicht pro E-Mail-Adresse) und der Schalter `companies.require_staff_mfa` |
 
 Die beiden `...26`-Migrationen tragen dieselbe Nummer aus zwei parallelen
 Zweigen. Das ist unschoen, aber harmlos: angewendet wird nach Dateiname, und
@@ -149,6 +154,19 @@ indexes, constraints, triggers, RPC and `security definer` functions, RLS
 policies, **and the four storage buckets with their policies**. There is no
 manual post-deployment step and nothing to click in the dashboard except Auth
 URLs (below).
+
+### Zwei-Faktor einschalten
+
+`20261006000035` legt nur den betrieblichen Schalter an. Die Faktoren selbst
+verwaltet Supabase Auth, und TOTP muss im Projekt eingeschaltet sein:
+Authentication → Multi-Factor Authentication → TOTP (App Authenticator).
+Ist es aus, antwortet `mfa.enroll` mit „MFA is not enabled" und die Seite
+`/dashboard/sicherheit` zeigt diese Meldung im Formular. Lokal ist der
+Schalter in `supabase/config.toml` unter `[auth.mfa.totp]` gesetzt.
+
+Der Zwang fuer alle Buero-Konten (`companies.require_staff_mfa`) bleibt
+bewusst aus, bis die Inhaberin ihn selbst einschaltet — ein bestehender
+Betrieb soll sich mit dem Einspielen dieser Migration nicht aussperren.
 
 ### Auth URLs
 

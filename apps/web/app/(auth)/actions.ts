@@ -1,6 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -8,9 +8,65 @@ import { companyNameSchema, loginSchema, passwordSchema, signUpSchema } from '@r
 import { appUrl } from '@/lib/utils';
 import { SESSION_ONLY_COOKIE } from '@/lib/supabase/session-scope';
 import { createClient } from '@/lib/supabase/server';
+import {
+  LOGIN_THROTTLE,
+  PASSWORD_RESET_THROTTLE,
+  type ThrottleConfig,
+  clientAddress,
+  throttleMessage,
+} from '@/lib/auth-throttle';
+
+type AnonClient = Awaited<ReturnType<typeof createClient>>;
 
 function withMessage(path: string, key: 'error' | 'message', message: string): never {
   redirect(`${path}?${key}=${encodeURIComponent(message)}`);
+}
+
+/** Die Kopfzeilen lesen; ausserhalb eines Requests gibt es keine Adresse. */
+async function currentAddress(): Promise<string | null> {
+  try {
+    const jar = await headers();
+    return clientAddress((name) => jar.get(name));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Einen Versuch anmelden und sagen, wie lange gesperrt ist -- oder null, wenn
+ * weitergemacht werden darf.
+ *
+ * Faellt die Zaehlung aus, wird durchgelassen. Eine kaputte Bremse darf keine
+ * geschlossene Tuer sein: sonst haengt die Anmeldung aller Betriebe an einer
+ * Hilfstabelle.
+ */
+async function throttleGate(
+  supabase: AnonClient,
+  config: ThrottleConfig,
+  bucket: string | null,
+): Promise<number | null> {
+  if (!bucket) return null;
+
+  const { data, error } = await supabase.rpc('register_auth_attempt', {
+    p_scope: config.scope,
+    p_bucket: bucket,
+    p_limit: config.limit,
+    p_window_seconds: config.windowSeconds,
+  });
+  if (error) {
+    console.error('Auth throttle unavailable:', error.message);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || row.allowed) return null;
+  return Number(row.retry_after_seconds ?? config.windowSeconds);
+}
+
+/** Nach einer gelungenen Anmeldung soll der Zaehler nicht nachwirken. */
+async function clearThrottle(supabase: AnonClient, config: ThrottleConfig, bucket: string | null) {
+  if (!bucket) return;
+  const { error } = await supabase.rpc('clear_auth_attempts', { p_scope: config.scope, p_bucket: bucket });
+  if (error) console.error('Auth throttle reset failed:', error.message);
 }
 
 export async function signUp(formData: FormData) {
@@ -59,8 +115,13 @@ export async function login(formData: FormData) {
   else jar.delete(SESSION_ONLY_COOKIE);
 
   const supabase = await createClient();
+  const address = await currentAddress();
+  const lockedFor = await throttleGate(supabase, LOGIN_THROTTLE, address);
+  if (lockedFor !== null) withMessage('/login', 'error', throttleMessage(lockedFor));
+
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) withMessage('/login', 'error', 'E-Mail-Adresse oder Passwort ist nicht korrekt.');
+  await clearThrottle(supabase, LOGIN_THROTTLE, address);
   redirect('/dashboard');
 }
 
@@ -77,6 +138,15 @@ export async function requestPasswordReset(formData: FormData) {
   if (!parsed.success) withMessage('/forgot-password', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   const supabase = await createClient();
+  const lockedFor = await throttleGate(supabase, PASSWORD_RESET_THROTTLE, await currentAddress());
+  if (lockedFor !== null) {
+    withMessage(
+      '/forgot-password',
+      'error',
+      'Zu viele Anfragen von diesem Anschluss. Bitte warte einige Minuten, bevor du einen weiteren Link anforderst.',
+    );
+  }
+
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: appUrl('/auth/callback?next=/reset-password'),
   });
