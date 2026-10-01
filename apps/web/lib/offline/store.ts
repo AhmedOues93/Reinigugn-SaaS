@@ -37,17 +37,40 @@ export type CachedJob = {
 
 export type CachedSnapshot = { userId: string; cachedAt: string; jobs: CachedJob[] };
 
-/** One queued write. `id` is client-generated and is what makes a retry idempotent. */
-export type QueuedOperation = {
+/**
+ * Eine Buchung in der Warteschlange.
+ *
+ * `id` ist auf dem Geraet erzeugt und macht einen erneuten Versuch harmlos.
+ * `clientTime` ist der Moment, in dem getippt wurde -- beim Abhaken entscheidet
+ * er ueber Konflikte, bei der Zeiterfassung ist er die erfasste Zeit selbst.
+ *
+ * Das Schema bleibt bei Version 1: eine neue Art kommt hinzu, keine
+ * vorhandene aendert sich. Ein Versionssprung wuerde die Datenbank verwerfen
+ * und damit genau die Buchungen loeschen, die noch nicht beim Server sind.
+ */
+type BaseOperation = {
   id: string;
   userId: string;
-  kind: 'checklist';
-  itemId: string;
-  completed: boolean;
   clientTime: string;
   attempts: number;
   lastError?: string;
 };
+
+export type ChecklistOperation = BaseOperation & {
+  kind: 'checklist';
+  itemId: string;
+  completed: boolean;
+};
+
+export type TimeAction = 'start' | 'pause' | 'resume' | 'stop';
+
+export type TimeOperation = BaseOperation & {
+  kind: 'time';
+  action: TimeAction;
+  jobId: string;
+};
+
+export type QueuedOperation = ChecklistOperation | TimeOperation;
 
 function openDb(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === 'undefined') return Promise.resolve(null);
@@ -95,9 +118,27 @@ export async function enqueue(operation: QueuedOperation) {
   await tx(QUEUE_STORE, 'readwrite', (store) => store.put(operation));
 }
 
+/**
+ * Die Warteschlange dieses Nutzers, in der Reihenfolge, in der getippt wurde.
+ *
+ * Die Sortierung ist nicht Kosmetik: Start, Pause, Fortsetzen und Feierabend
+ * ergeben nur in dieser Reihenfolge einen Sinn. IndexedDB liefert nach
+ * Schluessel, und der Schluessel ist eine zufaellige UUID -- ohne Sortierung
+ * kaeme der Feierabend vor dem Start beim Server an.
+ */
 export async function listQueue(userId: string): Promise<QueuedOperation[]> {
   const all = (await tx<QueuedOperation[]>(QUEUE_STORE, 'readonly', (store) => store.getAll())) ?? [];
-  return all.filter((operation) => operation.userId === userId);
+  return all
+    .filter((operation) => operation.userId === userId)
+    .sort((a, b) => a.clientTime.localeCompare(b.clientTime));
+}
+
+/** Die noch nicht uebertragenen Zeitbuchungen eines Einsatzes. */
+export async function listQueuedTime(userId: string, jobId: string): Promise<TimeOperation[]> {
+  const queue = await listQueue(userId);
+  return queue.filter((operation): operation is TimeOperation =>
+    operation.kind === 'time' && operation.jobId === jobId,
+  );
 }
 
 export async function dequeue(id: string) {

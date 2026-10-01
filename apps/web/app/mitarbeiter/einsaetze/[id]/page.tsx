@@ -86,6 +86,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
         </header>
 
         <JobTimeControl
+          jobId={job.id}
           startAction={startMyJob.bind(null, job.id)}
           stopAction={stopMyJob.bind(null, job.id)}
           pauseAction={pauseMyJob.bind(null, job.id)}

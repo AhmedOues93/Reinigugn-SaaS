@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runSync } from '@/lib/offline/sync';
-import type { QueuedOperation } from '@/lib/offline/store';
+import type { ChecklistOperation, QueuedOperation } from '@/lib/offline/store';
 
 // The store talks to IndexedDB, which does not exist in the node test
 // environment; the queue is mocked so the replay semantics can be asserted.
@@ -20,7 +20,7 @@ vi.mock('@/lib/offline/store', () => ({
   },
 }));
 
-const op = (id: string, over: Partial<QueuedOperation> = {}): QueuedOperation => ({
+const op = (id: string, over: Partial<ChecklistOperation> = {}): ChecklistOperation => ({
   id,
   userId: 'user-1',
   kind: 'checklist',

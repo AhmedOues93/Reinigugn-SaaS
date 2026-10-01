@@ -2,7 +2,15 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { clearOfflineData, enqueue, listQueue, saveSnapshot, type CachedSnapshot } from '@/lib/offline/store';
+import {
+  clearOfflineData,
+  enqueue,
+  listQueue,
+  saveSnapshot,
+  type CachedSnapshot,
+  type TimeAction,
+  type TimeOperation,
+} from '@/lib/offline/store';
 import { runSync } from '@/lib/offline/sync';
 
 export type ConnectionState = 'offline' | 'syncing' | 'synced' | 'failed';
@@ -15,6 +23,10 @@ type OfflineValue = {
   cachedAt: string | null;
   sync: () => void;
   queueChecklistItem: (itemId: string, completed: boolean) => Promise<void>;
+  /** Stempelt eine Zeitbuchung auf dem Geraet und stellt sie in die Warteschlange. */
+  queueTimeAction: (jobId: string, action: TimeAction) => Promise<void>;
+  /** Noch nicht uebertragene Zeitbuchungen eines Einsatzes, aelteste zuerst. */
+  queuedTime: TimeOperation[];
 };
 
 const OfflineContext = createContext<OfflineValue | null>(null);
@@ -54,6 +66,7 @@ export function OfflineProvider({
   const [pending, setPending] = useState(0);
   const [conflicts, setConflicts] = useState(0);
   const [cachedAt, setCachedAt] = useState<string | null>(snapshot?.cachedAt ?? null);
+  const [queuedTime, setQueuedTime] = useState<TimeOperation[]>([]);
   const [ready, setReady] = useState(false);
   const running = useRef(false);
 
@@ -89,6 +102,9 @@ export function OfflineProvider({
   const refreshPending = useCallback(async () => {
     const queue = await listQueue(userId);
     setPending(queue.length);
+    // Die Zeitbuchungen getrennt halten: die Einsatzansicht rechnet sie auf
+    // den Serverstand drauf, damit die Uhr ohne Empfang trotzdem laeuft.
+    setQueuedTime(queue.filter((operation): operation is TimeOperation => operation.kind === 'time'));
     return queue.length;
   }, [userId]);
 
@@ -105,6 +121,26 @@ export function OfflineProvider({
       setState('syncing');
       const supabase = createClient();
       const outcome = await runSync(userId, async (operation) => {
+        if (operation.kind === 'time') {
+          /*
+            Die vier Zeitfunktionen nehmen den Tippzeitpunkt entgegen und sind
+            gegen eine zweite Zustellung abgesichert: ein bereits gestarteter
+            Einsatz liefert seine vorhandene Buchung zurueck statt eine zweite
+            anzulegen. Ein Konfliktbegriff wie bei der Checkliste existiert
+            hier nicht -- es gibt nur angewendet oder fehlgeschlagen.
+          */
+          const rpc = {
+            start: 'start_my_job',
+            pause: 'pause_my_job',
+            resume: 'resume_my_job',
+            stop: 'stop_my_job',
+          }[operation.action];
+          const { error } = await supabase.rpc(rpc, {
+            p_job_id: operation.jobId,
+            p_at: operation.clientTime,
+          });
+          return { data: 'APPLIED', error: error ? { message: error.message } : null };
+        }
         const { data, error } = await supabase.rpc('sync_my_checklist_item', {
           p_item_id: operation.itemId,
           p_completed: operation.completed,
@@ -156,9 +192,30 @@ export function OfflineProvider({
     [refreshPending, sync, userId],
   );
 
+  const queueTimeAction = useCallback(
+    async (jobId: string, action: TimeAction) => {
+      await enqueue({
+        id: crypto.randomUUID(),
+        userId,
+        kind: 'time',
+        action,
+        jobId,
+        // Der Moment des Tippens ist die erfasste Zeit. Der Server prueft ihn
+        // (nicht in der Zukunft, nicht aelter als 48 Stunden) und vermerkt die
+        // Buchung als nachgetragen.
+        clientTime: new Date().toISOString(),
+        attempts: 0,
+      });
+      await refreshPending();
+      setState(navigator.onLine ? 'syncing' : 'offline');
+      if (navigator.onLine) sync();
+    },
+    [refreshPending, sync, userId],
+  );
+
   const value = useMemo<OfflineValue>(
-    () => ({ online, state, pending, conflicts, cachedAt, sync, queueChecklistItem }),
-    [online, state, pending, conflicts, cachedAt, sync, queueChecklistItem],
+    () => ({ online, state, pending, conflicts, cachedAt, sync, queueChecklistItem, queueTimeAction, queuedTime }),
+    [online, state, pending, conflicts, cachedAt, sync, queueChecklistItem, queueTimeAction, queuedTime],
   );
 
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;

@@ -49,12 +49,20 @@ const pad = (value: number) => String(value).padStart(2, '0');
 /**
  * The field worker's clock, as the hero of the job screen.
  *
- * The server is the clock: start, pause, resume and finish are RPCs that stamp
- * server time, and this component only renders what they recorded. The ticking
- * counter is derived from those stamps (gross time minus breaks) so it can never
- * disagree with the stored net duration after a refresh.
+ * Der Server ist die Uhr: Start, Pause, Fortsetzen und Feierabend sind RPCs,
+ * die Serverzeit stempeln, und diese Komponente zeigt nur, was dort steht. Der
+ * laufende Zaehler wird aus diesen Stempeln gerechnet (brutto minus Pausen) und
+ * kann deshalb nach einem Neuladen nicht von der gespeicherten Nettozeit
+ * abweichen.
+ *
+ * Ohne Empfang gilt dasselbe mit einem Zwischenschritt: das Geraet stempelt den
+ * Moment des Tippens, legt ihn in die Warteschlange und rechnet ihn hier auf den
+ * Serverstand drauf. Vorher waren die Knoepfe offline schlicht deaktiviert --
+ * wer in einer Tiefgarage anfing, konnte seine Schicht nicht erfassen, und
+ * ausgerechnet die Funktion, von der die Bezahlung abhaengt, brauchte Empfang.
  */
 export function JobTimeControl({
+  jobId,
   startAction,
   stopAction,
   pauseAction,
@@ -69,6 +77,7 @@ export function JobTimeControl({
   canStart = true,
   locale = 'de',
 }: {
+  jobId: string;
   startAction: Action;
   stopAction: Action;
   pauseAction: Action;
@@ -90,24 +99,58 @@ export function JobTimeControl({
   const [resumeState, resume] = useActionState(resumeAction, initialFormState);
   const offline = useOffline();
   const online = offline?.online ?? true;
-  const openBreak = breaks.find((entry) => !entry.ended_at);
-  const paused = running && Boolean(openBreak);
+
+  /*
+    Was auf dem Geraet liegt und noch nicht beim Server ist, oben drauf. Die
+    Buchungen kommen nach Tippzeitpunkt sortiert, also ergibt ein einfacher
+    Durchlauf den Stand, den die Mitarbeiterin vor sich sieht.
+  */
+  const queued = (offline?.queuedTime ?? []).filter((operation) => operation.jobId === jobId);
+  const pendingBreaks: Break[] = [];
+  let queuedStart: string | null = null;
+  let queuedFinish: string | null = null;
+  for (const operation of queued) {
+    if (operation.action === 'start') queuedStart = operation.clientTime;
+    if (operation.action === 'stop') queuedFinish = operation.clientTime;
+    if (operation.action === 'pause') pendingBreaks.push({ started_at: operation.clientTime, ended_at: null });
+    if (operation.action === 'resume') {
+      const open = pendingBreaks.find((entry) => !entry.ended_at);
+      if (open) open.ended_at = operation.clientTime;
+    }
+  }
+
+  const effectiveStartedAt = startedAt ?? queuedStart;
+  const effectiveFinishedAt = finishedAt ?? queuedFinish;
+  const effectiveRunning = (running || Boolean(queuedStart)) && !effectiveFinishedAt;
+  const allBreaks = [...breaks, ...pendingBreaks];
+  const openBreak = allBreaks.find((entry) => !entry.ended_at);
+  const paused = effectiveRunning && Boolean(openBreak);
+
+  /**
+   * Ohne Empfang wird dieselbe Schaltflaeche zur Warteschlange. Der
+   * Server-Action-Pfad bleibt unveraendert -- online aendert sich nichts.
+   */
+  const queueInstead = (action: 'start' | 'pause' | 'resume' | 'stop') => (event: React.FormEvent<HTMLFormElement>) => {
+    if (online || !offline) return;
+    event.preventDefault();
+    void offline.queueTimeAction(jobId, action);
+  };
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!running) return;
+    if (!effectiveRunning) return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [running]);
+  }, [effectiveRunning]);
 
   const time = (value?: string | null) =>
     value ? new Intl.DateTimeFormat(localeTag(locale), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }).format(new Date(value)) : '—';
 
-  const breakMs = breaks.reduce(
+  const breakMs = allBreaks.reduce(
     (total, entry) => total + ((entry.ended_at ? new Date(entry.ended_at).getTime() : now) - new Date(entry.started_at).getTime()),
     0,
   );
-  const netMs = startedAt ? Math.max(0, now - new Date(startedAt).getTime() - breakMs) : 0;
+  const netMs = effectiveStartedAt ? Math.max(0, now - new Date(effectiveStartedAt).getTime() - breakMs) : 0;
   const netSeconds = Math.floor(netMs / 1000);
   const clock = `${pad(Math.floor(netSeconds / 3600))}:${pad(Math.floor((netSeconds % 3600) / 60))}:${pad(netSeconds % 60)}`;
   const breakMinutes = Math.floor(breakMs / 60000);
@@ -128,7 +171,7 @@ export function JobTimeControl({
         </div>
       )}
 
-      {finishedAt ? (
+      {effectiveFinishedAt ? (
         <div className="flex items-center gap-4">
           <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-highlight/15 text-highlight">
             <CheckCircle2 className="size-6" aria-hidden="true" />
@@ -136,17 +179,17 @@ export function JobTimeControl({
           <div className="min-w-0">
             <p className="text-lg font-semibold text-white">{t(locale, 'emp.job.finishedLabel')}</p>
             <p className="text-sm tabular-nums text-ink-muted">
-              {time(startedAt)} – {time(finishedAt)}
+              {time(effectiveStartedAt)} – {time(effectiveFinishedAt)}
               {durationMinutes != null && ` · ${Math.floor(durationMinutes / 60)} h ${pad(durationMinutes % 60)} min`}
               {breakMinutes > 0 && ` · ${t(locale, 'emp.job.breakTime')} ${breakMinutes} min`}
             </p>
           </div>
         </div>
-      ) : running ? (
+      ) : effectiveRunning ? (
         <>
           <p className="flex items-center gap-2 text-sm font-medium text-ink-muted">
             <span className={cn('size-2 rounded-full', paused ? 'bg-[hsl(38_95%_60%)]' : 'bg-highlight motion-safe:animate-pulse-dot')} aria-hidden="true" />
-            {paused ? t(locale, 'emp.job.pausedSince', { time: time(openBreak?.started_at) }) : t(locale, 'emp.job.startedAtLabel', { time: time(startedAt) })}
+            {paused ? t(locale, 'emp.job.pausedSince', { time: time(openBreak?.started_at) }) : t(locale, 'emp.job.startedAtLabel', { time: time(effectiveStartedAt) })}
           </p>
           <p className="mt-2 text-[3.25rem] font-semibold leading-none tracking-tight tabular-nums text-white" aria-live="off" suppressHydrationWarning>
             {clock}
@@ -164,20 +207,20 @@ export function JobTimeControl({
 
           <div className="mt-5 grid grid-cols-2 gap-2.5">
             {paused ? (
-              <form action={resume} className="col-span-2">
-                <ActionButton variant="go" icon={Play} pendingLabel={t(locale, 'auth.working')} disabled={!online}>
+              <form action={resume} onSubmit={queueInstead('resume')} className="col-span-2">
+                <ActionButton variant="go" icon={Play} pendingLabel={t(locale, 'auth.working')}>
                   {t(locale, 'emp.job.resume')}
                 </ActionButton>
               </form>
             ) : (
-              <form action={pause}>
-                <ActionButton variant="quiet" icon={Coffee} pendingLabel={t(locale, 'auth.working')} disabled={!online}>
+              <form action={pause} onSubmit={queueInstead('pause')}>
+                <ActionButton variant="quiet" icon={Coffee} pendingLabel={t(locale, 'auth.working')}>
                   {t(locale, 'emp.job.pause')}
                 </ActionButton>
               </form>
             )}
             <form action={stop} className={paused ? 'col-span-2' : undefined}>
-              <ActionButton variant={paused ? 'quiet' : 'stop'} icon={Square} pendingLabel={t(locale, 'emp.job.stopping')} disabled={!online}>
+              <ActionButton variant={paused ? 'quiet' : 'stop'} icon={Square} pendingLabel={t(locale, 'emp.job.stopping')}>
                 {paused ? t(locale, 'emp.job.stop') : t(locale, 'emp.job.finish')}
               </ActionButton>
             </form>
@@ -199,8 +242,8 @@ export function JobTimeControl({
             >
               Abbrechen
             </button>
-            <form action={start}>
-              <ActionButton variant="go" icon={Play} pendingLabel={t(locale, 'emp.job.starting')} disabled={!online || !canStart}>
+            <form action={start} onSubmit={queueInstead('start')}>
+              <ActionButton variant="go" icon={Play} pendingLabel={t(locale, 'emp.job.starting')} disabled={!canStart}>
                 Jetzt starten
               </ActionButton>
             </form>
@@ -213,7 +256,7 @@ export function JobTimeControl({
           </p>
           <button
             type="button"
-            disabled={!online || !canStart}
+            disabled={!canStart}
             onClick={() => setConfirmStart(true)}
             className="mt-4 flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-highlight px-4 text-base font-semibold text-ink transition active:scale-[0.99] disabled:opacity-60"
           >
@@ -223,10 +266,21 @@ export function JobTimeControl({
         </div>
       )}
 
-      {!online && !finishedAt && (
+      {/*
+        Vorher stand hier, dass eine Verbindung noetig sei. Das stimmt nicht
+        mehr: gezaehlt wird der Moment des Tippens, uebertragen wird spaeter.
+        Der Hinweis sagt deshalb, was gerade geschieht.
+      */}
+      {!online && !effectiveFinishedAt && (
         <p className="mt-4 flex items-start gap-2 text-sm text-ink-muted" role="status">
           <WifiOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {t(locale, 'emp.job.needsConnection')}
+          Kein Netz – die Zeit wird auf dem Gerät festgehalten und später übertragen.
+        </p>
+      )}
+      {online && queued.length > 0 && (
+        <p className="mt-4 flex items-start gap-2 text-sm text-ink-muted" role="status">
+          <WifiOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          {queued.length === 1 ? 'Eine Zeitbuchung wird übertragen.' : `${queued.length} Zeitbuchungen werden übertragen.`}
         </p>
       )}
       {latest?.status === 'success' && (
