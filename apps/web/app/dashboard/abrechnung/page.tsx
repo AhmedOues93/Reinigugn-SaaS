@@ -1,4 +1,4 @@
-import { FileDown, Plus, Receipt } from 'lucide-react';
+import { CalendarClock, FileDown, Plus, Receipt } from 'lucide-react';
 import { ButtonLink, EmptyState, FilterTabs, PageHeader, StatBand } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
 import { InvoiceStatusBadge } from '@/components/billing/invoice-status-badge';
@@ -26,6 +26,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         description="Von der Leistung über Ausstellung und Versand bis zum Zahlungseingang."
         actions={
           <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/abrechnung/monatslauf" variant="outline">
+              <CalendarClock className="size-4" aria-hidden="true" />
+              Monatslauf
+            </ButtonLink>
             <ButtonLink href="/dashboard/abrechnung/buchhaltung" variant="outline">
               <FileDown className="size-4" aria-hidden="true" />
               Buchhaltung CSV
