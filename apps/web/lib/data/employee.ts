@@ -62,12 +62,46 @@ export async function listMyJobs({ from, to }: { from: string; to: string }) {
   return data ?? [];
 }
 
+/**
+ * Einsaetze mit einer noch laufenden Uhr -- unabhaengig vom Datum.
+ *
+ * Wer abends den Feierabend vergisst, findet den Einsatz am naechsten Morgen
+ * sonst nirgends: die Listen beginnen bei heute. Gleichzeitig verweigert
+ * start_my_job jeden neuen Start, solange eine Uhr laeuft. Die Mitarbeiterin
+ * war damit vollstaendig blockiert -- sie konnte weder den alten Einsatz
+ * beenden noch den neuen beginnen.
+ */
+export async function listMyOpenJobs() {
+  const { supabase, membership } = await requireEmployee();
+  const { data, error } = await supabase
+    .from('jobs')
+    .select(`${jobSelection}, job_assignments!inner(member_id)`)
+    .eq('job_assignments.member_id', membership.id)
+    .is('job_time_entries.finished_at', null)
+    .not('job_time_entries', 'is', null)
+    .neq('status', 'CANCELLED')
+    .order('scheduled_date');
+  if (error) throw new Error('Offene Einsätze konnten nicht geladen werden.');
+  // Der Filter oben kann je nach Einbettung auch Einsaetze ohne Eintrag
+  // zurueckgeben; massgeblich ist, dass wirklich eine Uhr laeuft.
+  return (data ?? []).filter((job) =>
+    (job.job_time_entries ?? []).some((entry) => entry.finished_at === null),
+  );
+}
+
 export async function listMyTodayAndUpcoming() {
   const today = berlinDateKey();
-  const jobs = await listMyJobs({ from: today, to: addDays(today, 28) });
+  const [jobs, openJobs] = await Promise.all([
+    listMyJobs({ from: today, to: addDays(today, 28) }),
+    listMyOpenJobs(),
+  ]);
+  const shown = new Set(jobs.map((job) => job.id));
   return {
     today: jobs.filter((job) => job.scheduled_date === today),
     upcoming: jobs.filter((job) => job.scheduled_date > today),
+    // Nur das, was die Listen nicht ohnehin zeigen: ein heute gestarteter
+    // Einsatz steht bereits oben.
+    stillOpen: openJobs.filter((job) => !shown.has(job.id)),
     todayKey: today,
   };
 }

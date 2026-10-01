@@ -106,6 +106,23 @@ async function runTimeAction(jobId: string, operation: TimeOperation): Promise<F
     if (operation === 'stop_my_job' && error.message.includes('Required checklist items are incomplete')) {
       return { status: 'error', message: t(locale, 'emp.job.requiredBeforeFinish') };
     }
+    /*
+      Die haeufigste Sackgasse: gestern den Feierabend vergessen. Die Rohmeldung
+      der Datenbank ist englisch und sagt nicht, wo der offene Einsatz steht --
+      die Startseite zeigt ihn jetzt ganz oben, und darauf verweist dieser Satz.
+    */
+    if (error.message.includes('Another active job must be ended first')) {
+      return {
+        status: 'error',
+        message: 'Es läuft noch ein anderer Einsatz. Beende ihn zuerst – er steht oben auf deiner Startseite.',
+      };
+    }
+    if (error.message.includes('On-site customer acceptance is pending')) {
+      return {
+        status: 'error',
+        message: 'Für diesen Einsatz fehlt noch die Unterschrift der Kundin.',
+      };
+    }
     return { status: 'error', message: t(locale, 'common.errorBody') };
   }
   if (operation === 'stop_my_job') {

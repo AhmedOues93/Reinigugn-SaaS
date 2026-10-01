@@ -167,6 +167,94 @@ select pg_temp.assert(
   (select start_source from public.job_time_entries where job_id = (select job_b from ids))::text = 'OFFLINE',
   'der nachgetragene Start am zweiten Einsatz ist weiterhin als OFFLINE gefuehrt');
 
+
+-- ---------------------------------------------------------------------------
+-- Der vergessene Feierabend.
+--
+-- Wer abends nicht auf Feierabend tippt, hat am naechsten Morgen eine laufende
+-- Uhr -- und start_my_job verweigert jeden neuen Einsatz, solange sie laeuft.
+-- Der alte Einsatz muss also auffindbar bleiben, sonst ist die Mitarbeiterin
+-- blockiert: weder beenden noch beginnen. Die Startseite der App sucht ihn
+-- ueber genau diese Bedingung (eine Zeitbuchung ohne finished_at), unabhaengig
+-- vom Datum des Einsatzes.
+-- ---------------------------------------------------------------------------
+-- Die Uhr aus dem vorigen Abschnitt zuerst schliessen: es darf immer nur eine
+-- laufen, und genau darum geht es hier.
+-- In dieser Suite laeuft alles in einer Transaktion, now() ist also ueberall
+-- derselbe Zeitpunkt. Der Start wird zurueckdatiert, damit ein Feierabend
+-- ueberhaupt danach liegen kann.
+update public.job_time_entries
+set started_at = now() - interval '2 hours'
+where job_id = (select job_b from ids);
+
+select pg_temp.sign_in('f7000000-0000-4000-8000-000000000011');
+select public.stop_my_job((select job_b from ids), now() - interval '30 minutes');
+select pg_temp.sign_out();
+
+-- create_single_job verlangt eine Buero-Rolle.
+select pg_temp.sign_in('f7000000-0000-4000-8000-000000000001');
+create temporary table gestern as
+select public.create_single_job(
+  (select id from public.customers where company_id = (select company from ctx)),
+  (select id from public.cleaning_objects where company_id = (select company from ctx)),
+  'Keller gestern', '', current_date - 1, '18:00'::time, '20:00'::time,
+  'PLANNED'::public.job_status, 'NORMAL'::public.job_priority, '', '',
+  array[(select kraft from ids)]::uuid[], null::uuid) as id;
+-- Ein frischer Einsatz von heute, an dem sich zeigen laesst, dass neben einer
+-- laufenden Uhr nichts Neues beginnen kann.
+create temporary table heute as
+select public.create_single_job(
+  (select id from public.customers where company_id = (select company from ctx)),
+  (select id from public.cleaning_objects where company_id = (select company from ctx)),
+  'Keller heute', '', current_date, '09:00'::time, '11:00'::time,
+  'PLANNED'::public.job_status, 'NORMAL'::public.job_priority, '', '',
+  array[(select kraft from ids)]::uuid[], null::uuid) as id;
+select pg_temp.sign_out();
+grant select on gestern to authenticated;
+grant select on heute to authenticated;
+
+-- Gestern gestartet, Feierabend vergessen.
+select pg_temp.sign_in('f7000000-0000-4000-8000-000000000011');
+select public.start_my_job((select id from gestern), now() - interval '20 hours');
+select pg_temp.sign_out();
+
+select pg_temp.assert(
+  (select count(*) from public.job_time_entries
+    where job_id = (select id from gestern) and finished_at is null) = 1,
+  'die Uhr von gestern laeuft noch');
+
+-- Genau das, was die Startseite sucht: offene Uhren, egal von wann.
+select pg_temp.assert(
+  (select count(*) from public.jobs job
+    where exists (
+      select 1 from public.job_time_entries entry
+      where entry.job_id = job.id
+        and entry.member_id = (select kraft from ids)
+        and entry.finished_at is null)) = 1,
+  'der Einsatz von gestern ist ueber seine offene Uhr auffindbar');
+select pg_temp.assert(
+  (select scheduled_date from public.jobs where id = (select id from gestern)) < current_date,
+  'und er liegt vor heute, faellt also aus jeder Liste, die bei heute beginnt');
+
+-- Solange sie laeuft, geht nichts Neues -- deshalb muss er erreichbar sein.
+select pg_temp.sign_in('f7000000-0000-4000-8000-000000000011');
+do $$
+begin
+  begin
+    perform public.start_my_job((select id from heute));
+    raise exception 'NOT REJECTED: ein zweiter Einsatz wurde neben der laufenden Uhr gestartet';
+  exception when others then
+    if position('must be ended first' in sqlerrm) = 0 then raise; end if;
+  end;
+end $$;
+
+-- Und er laesst sich nachtraeglich schliessen.
+select public.stop_my_job((select id from gestern), now() - interval '18 hours');
+select pg_temp.sign_out();
+select pg_temp.assert(
+  (select duration_minutes from public.job_time_entries where job_id = (select id from gestern)) = 120,
+  'der nachgetragene Feierabend schliesst die Schicht von gestern mit zwei Stunden');
+
 rollback;
 \o
 \echo 'Zeiterfassung ohne Empfang: all assertions passed'

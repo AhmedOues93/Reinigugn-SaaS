@@ -19,7 +19,7 @@ function stateOf(job: Job) {
 }
 
 export default async function EmployeeTodayPage() {
-  const [{ profile }, locale, { today, upcoming, todayKey }, workMonth] = await Promise.all([
+  const [{ profile }, locale, { today, upcoming, stillOpen, todayKey }, workMonth] = await Promise.all([
     requireEmployee(),
     employeeLocale(),
     listMyTodayAndUpcoming(),
@@ -79,6 +79,44 @@ export default async function EmployeeTodayPage() {
           </span>
           <ChevronRight className="size-5 shrink-0 text-primary rtl:rotate-180" aria-hidden="true" />
         </Link>
+      )}
+
+      {/*
+        Eine Uhr, die seit gestern laeuft. Sie steht ganz oben, weil nichts
+        anderes geht, solange sie laeuft: start_my_job verweigert jeden neuen
+        Einsatz. Vorher war dieser Einsatz nirgends erreichbar, weil die
+        Listen bei heute beginnen -- die Mitarbeiterin konnte weder ihn
+        beenden noch den naechsten beginnen.
+      */}
+      {stillOpen.length > 0 && (
+        <section aria-labelledby="open-title" className="rounded-3xl border border-warning/30 bg-warning-soft p-4 sm:p-5">
+          <h2 id="open-title" className="text-[15px] font-semibold text-warning">
+            {stillOpen.length === 1 ? 'Ein Einsatz läuft noch' : `${stillOpen.length} Einsätze laufen noch`}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-foreground">
+            Hier wurde kein Feierabend erfasst. Solange die Uhr läuft, lässt sich kein neuer Einsatz starten.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {stillOpen.map((job) => (
+              <li key={job.id}>
+                <Link
+                  href={`/mitarbeiter/einsaetze/${job.id}`}
+                  className="flex min-h-touch items-center gap-3 rounded-2xl bg-card px-3.5 py-3 shadow-card transition-colors hover:bg-subtle"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="break-anywhere block text-[15px] font-medium text-foreground">
+                      {first(job.cleaning_objects)?.name || job.title}
+                    </span>
+                    <span className="block text-sm tabular-nums text-muted-foreground">
+                      {formatDate(locale, job.scheduled_date, 'long')}
+                    </span>
+                  </span>
+                  <ChevronRight className="size-5 shrink-0 text-warning rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {today.length === 0 ? (
