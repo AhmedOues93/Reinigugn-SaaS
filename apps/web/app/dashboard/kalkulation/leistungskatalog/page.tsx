@@ -1,5 +1,5 @@
-import { SquareStack } from 'lucide-react';
-import { BackLink, Card, EmptyState, PageHeader } from '@/components/ui';
+import { SquareStack, Upload } from 'lucide-react';
+import { BackLink, ButtonLink, Card, EmptyState, PageHeader } from '@/components/ui';
 import { CatalogItemEditor } from '@/components/kalkulation/catalog-editor';
 import { costBasisLabels, listCatalogItems, unitLabels } from '@/lib/data/kalkulation';
 import { formatMoney } from '@/lib/format';
@@ -27,6 +27,12 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Leistungskatalog"
         description="Ihre wiederverwendbaren Reinigungsleistungen. Sie liefern Zeit- und Materialvorgaben für neue Kalkulationen."
+        actions={
+          <ButtonLink href="/dashboard/kalkulation/leistungskatalog/import" variant="outline">
+            <Upload className="size-4" aria-hidden="true" />
+            CSV importieren
+          </ButtonLink>
+        }
       />
 
       <p className="mb-5 rounded-lg border border-border bg-muted/30 px-3.5 py-3 text-sm leading-6 text-muted-foreground">

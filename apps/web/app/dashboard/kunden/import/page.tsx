@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Download, FileSpreadsheet, ShieldCheck, Users } from 'lucide-react';
-import { CustomerImportForm } from '@/components/customer-import-form';
+import { CsvImportForm } from '@/components/csv-import-form';
 import { BackLink, buttonVariants, Card, PageHeader } from '@/components/ui';
 import { requireStaffCompany } from '@/lib/auth';
 import { importCustomersCsv } from './actions';
@@ -39,7 +39,18 @@ export default async function CustomerImportPage() {
       <Card className="p-5 sm:p-6">
         <h2 className="mb-1 text-base font-semibold">CSV-Datei hochladen</h2>
         <p className="mb-5 text-sm text-muted-foreground">Bis 1.000 Zeilen und 2 MB pro Import. Der Import verändert keine bereits vorhandenen Datensätze.</p>
-        <CustomerImportForm action={importCustomersCsv} />
+        <CsvImportForm
+          action={importCustomersCsv}
+          id="customer-import"
+          hint={
+            <>
+              Pflicht ist nur <strong className="text-foreground">Kunde</strong>. Optional können
+              Kundennummer, Kontakt- und Rechnungsdaten sowie Objekt, Objektnummer und Objektadresse in
+              derselben Zeile stehen. Vorhandene Kunden und Objekte werden wiederverwendet statt doppelt
+              angelegt.
+            </>
+          }
+        />
       </Card>
     </div>
   );

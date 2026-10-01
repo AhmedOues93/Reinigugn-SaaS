@@ -1,4 +1,4 @@
-import { Plus, Search, UserRoundCheck } from 'lucide-react';
+import { Plus, Search, Upload, UserRoundCheck } from 'lucide-react';
 import { listEmployees, type MemberFilter, type RoleFilter } from '@/lib/data/employees';
 import { requireStaffCompany } from '@/lib/auth';
 import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
@@ -39,10 +39,16 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
         title="Mitarbeiter"
         description="Büro- und Reinigungsteam, Einladungen und Arbeitsdaten."
         actions={
-          <ButtonLink href="/dashboard/mitarbeiter/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            Mitarbeiter einladen
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/mitarbeiter/import" variant="outline">
+              <Upload className="size-4" aria-hidden="true" />
+              CSV importieren
+            </ButtonLink>
+            <ButtonLink href="/dashboard/mitarbeiter/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Mitarbeiter einladen
+            </ButtonLink>
+          </div>
         }
       />
 
