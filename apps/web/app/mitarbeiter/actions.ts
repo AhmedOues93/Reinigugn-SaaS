@@ -202,6 +202,27 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
   const description = String(formData.get('description') ?? '').trim();
   if (description.length > 500) return { status: 'error', message: t(locale, 'common.errorBody') };
 
+  /*
+    Die Kennung des Geraets, falls die Aufnahme aus der Warteschlange kommt.
+    Vorher nachsehen, ob sie schon da ist: ohne diese Frage wuerde ein zweiter
+    Versuch erst eine Datei in den Speicher legen und dann am eindeutigen Index
+    scheitern -- die Datei bliebe als Waise liegen.
+  */
+  const clientUploadId = String(formData.get('client_upload_id') ?? '').trim() || null;
+  if (clientUploadId) {
+    if (clientUploadId.length < 8 || clientUploadId.length > 64) {
+      return { status: 'error', message: t(locale, 'common.errorBody') };
+    }
+    const { data: existing } = await context.supabase.rpc('my_job_photo_for_client_upload', {
+      p_job_id: jobId,
+      p_client_upload_id: clientUploadId,
+    });
+    if (existing) {
+      revalidateEmployee(jobId);
+      return { status: 'success', message: t(locale, 'emp.photo.upload') };
+    }
+  }
+
   // The tenant segment comes from the server-resolved membership, never the form.
   const path = `${context.membership.company_id}/${jobId}/${randomUUID()}.${jobPhotoExtension(file.type)}`;
   const { error: uploadError } = await context.supabase.storage
@@ -220,10 +241,19 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
     p_category: category,
     p_checklist_item_id: checklistItemId,
     p_description: description || null,
+    p_client_upload_id: clientUploadId,
   });
   if (metadataError) {
     console.error('job photo metadata failed', metadataError);
+    // Die eben hochgeladene Datei wieder entfernen, damit kein Bild ohne
+    // Eintrag im Speicher zurueckbleibt.
     await context.supabase.storage.from('job-photos').remove([path]);
+    if (metadataError.message.includes('abgenommen')) {
+      return {
+        status: 'error',
+        message: 'Der Leistungsnachweis ist bereits abgenommen – Fotos lassen sich nicht mehr ergänzen.',
+      };
+    }
     return { status: 'error', message: 'Foto wurde nicht gespeichert. Bitte Seite neu laden und erneut versuchen.' };
   }
   revalidateEmployee(jobId);

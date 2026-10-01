@@ -2,6 +2,7 @@ import { CompanyBrand } from '@/components/company-brand';
 import { SyncDocumentLocale } from '@/components/sync-document-locale';
 import { EmployeeBottomNav, EmployeeTopNav } from '@/components/employee/bottom-nav';
 import { OfflineProvider } from '@/components/employee/offline-provider';
+import { uploadMyJobPhoto } from '@/app/mitarbeiter/actions';
 import { SyncBanner, SyncStatus } from '@/components/employee/sync-status';
 import type { CachedSnapshot } from '@/lib/offline/store';
 import type { CompanyBranding } from '@/lib/data/branding';
@@ -35,7 +36,7 @@ export function EmployeeShell({
   snapshot: CachedSnapshot | null;
 }) {
   return (
-    <OfflineProvider userId={userId} snapshot={snapshot}>
+    <OfflineProvider userId={userId} snapshot={snapshot} uploadAction={uploadMyJobPhoto}>
       <div dir={direction(locale)} className="flex min-h-[100dvh] flex-col bg-background">
         <SyncDocumentLocale locale={locale} />
 

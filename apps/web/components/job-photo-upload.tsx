@@ -1,11 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Camera, ChevronDown } from 'lucide-react';
 import { Button, Select, Textarea } from '@/components/ui';
 import { FormMessage } from '@/components/form-controls';
+import { useOffline } from '@/components/employee/offline-provider';
 import { initialFormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
@@ -22,12 +23,18 @@ function UploadButton({ locale }: { locale: Locale }) {
 }
 
 export function JobPhotoUpload({
+  jobId,
   action,
   checklistItems,
   locale = 'de',
   category = 'DOCUMENTATION',
   title,
 }: {
+  /**
+   * Nur im Mitarbeiterportal gesetzt. Ohne Einsatz gibt es keine Warteschlange:
+   * die Buero-Seiten sind online-only, wie die Nachrichten auch.
+   */
+  jobId?: string;
   action: Action;
   checklistItems: ChecklistItem[];
   locale?: Locale;
@@ -36,6 +43,47 @@ export function JobPhotoUpload({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [preview, setPreview] = useState<string | null>(null);
+  const [localNote, setLocalNote] = useState<{ status: 'success' | 'error'; message: string } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const offline = useOffline();
+  const online = offline?.online ?? true;
+
+  /**
+   * Ohne Netz wandert die Aufnahme in die Warteschlange auf dem Geraet.
+   *
+   * Der Server-Action-Pfad bleibt unveraendert: online aendert sich nichts.
+   * Gesendet wird spaeter ueber dieselbe Action, damit Mandant und Einsatz
+   * weiterhin serverseitig geprueft werden.
+   */
+  const queueInstead = (event: React.FormEvent<HTMLFormElement>) => {
+    if (online || !offline || !jobId) return;
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const file = data.get('photo');
+    if (!(file instanceof File) || file.size === 0) {
+      setLocalNote({ status: 'error', message: t(locale, 'emp.photo.file') });
+      return;
+    }
+    void offline
+      .queuePhoto({
+        jobId,
+        file,
+        category,
+        description: String(data.get('description') ?? '').trim() || null,
+        checklistItemId: String(data.get('checklist_item_id') ?? '').trim() || null,
+      })
+      .then((result) => {
+        if (result.ok) {
+          setLocalNote({ status: 'success', message: 'Foto gespeichert. Es wird gesendet, sobald wieder Netz da ist.' });
+          form.reset();
+          if (preview) URL.revokeObjectURL(preview);
+          setPreview(null);
+        } else {
+          setLocalNote({ status: 'error', message: result.reason });
+        }
+      });
+  };
   useEffect(
     () => () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -44,8 +92,9 @@ export function JobPhotoUpload({
   );
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} onSubmit={queueInstead} className="space-y-3">
       <FormMessage status={state.status} message={state.message} />
+      {localNote && <FormMessage status={localNote.status} message={localNote.message} />}
       <input type="hidden" name="category" value={category} />
       {title && <p className="text-sm font-semibold">{title}</p>}
       <label className="group relative flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed border-foreground/15 bg-subtle p-4 text-center transition-colors hover:border-primary/50 focus-within:border-primary">
@@ -104,6 +153,11 @@ export function JobPhotoUpload({
         </div>
       </details>
       <UploadButton locale={locale} />
+      {!online && jobId && (
+        <p className="text-xs leading-5 text-muted-foreground">
+          Kein Netz – die Aufnahme wird auf dem Gerät gespeichert und später gesendet.
+        </p>
+      )}
     </form>
   );
 }

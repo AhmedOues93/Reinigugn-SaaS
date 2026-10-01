@@ -6,6 +6,7 @@ import { JobReport } from '@/components/employee/job-report';
 import { OfflineJobChecklist } from '@/components/employee/offline-checklist';
 import { JobPhotoGallery } from '@/components/job-photo-gallery';
 import { JobPhotoUpload } from '@/components/job-photo-upload';
+import { QueuedPhotos } from '@/components/employee/queued-photos';
 import { JobTimeControl } from '@/components/job-time-control';
 import {
   ServiceAcceptancePanel,
@@ -213,6 +214,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
             <>
               <div className="grid gap-4 sm:grid-cols-2">
                 <JobPhotoUpload
+                  jobId={job.id}
                   action={uploadMyJobPhoto.bind(null, job.id)}
                   checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
                   locale={locale}
@@ -220,6 +222,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                   title="Vorher"
                 />
                 <JobPhotoUpload
+                  jobId={job.id}
                   action={uploadMyJobPhoto.bind(null, job.id)}
                   checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
                   locale={locale}
@@ -231,6 +234,7 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
                 <summary className="min-h-12 cursor-pointer list-none px-4 py-3 text-sm font-semibold">Weitere Dokumentation</summary>
                 <div className="border-t border-border p-4">
                   <JobPhotoUpload
+                    jobId={job.id}
                     action={uploadMyJobPhoto.bind(null, job.id)}
                     checklistItems={items.map((item) => ({ id: item.id, title: item.title }))}
                     locale={locale}
@@ -241,6 +245,8 @@ export default async function EmployeeJobDetailPage({ params }: { params: Promis
               </details>
             </>
           )}
+          <QueuedPhotos jobId={job.id} />
+
           <JobPhotoGallery
             photos={photos}
             deletablePhotoIds={editable ? photos.filter((photo) => photo.member_id === membership.id).map((photo) => photo.id) : []}
