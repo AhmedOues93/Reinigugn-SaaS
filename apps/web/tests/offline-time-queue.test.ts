@@ -10,7 +10,7 @@ import type { QueuedOperation, TimeOperation } from '@/lib/offline/store';
  * Arbeitsbeginn"). Diese Tests halten die Sortierregel fest, die listQueue
  * anwendet, damit sie nicht wieder herausfaellt.
  */
-const bySortOrder = (queue: QueuedOperation[]) =>
+const bySortOrder = <T extends QueuedOperation>(queue: T[]): T[] =>
   [...queue].sort((a, b) => a.clientTime.localeCompare(b.clientTime));
 
 const time = (id: string, action: TimeOperation['action'], clientTime: string): TimeOperation => ({
@@ -69,7 +69,7 @@ describe('Hochrechnung auf dem Geraet', () => {
     const breaks: { started_at: string; ended_at: string | null }[] = [];
     let start: string | null = null;
     let finish: string | null = null;
-    for (const operation of bySortOrder(queued) as TimeOperation[]) {
+    for (const operation of bySortOrder(queued)) {
       if (operation.action === 'start') start = operation.clientTime;
       if (operation.action === 'stop') finish = operation.clientTime;
       if (operation.action === 'pause') breaks.push({ started_at: operation.clientTime, ended_at: null });

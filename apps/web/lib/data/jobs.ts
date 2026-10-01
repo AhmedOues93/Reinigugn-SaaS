@@ -213,34 +213,24 @@ export async function getMyAssignedJob(id: string) {
  * planning screen can offer to extend the ones that are running out.
  */
 export async function listSchedulesRunningOut(withinDays = 28) {
-  const { supabase, company } = await requireStaffCompany();
+  const { supabase } = await requireStaffCompany();
   const today = berlinDateKey();
-  const [{ data: schedules, error: scheduleError }, { data: jobs, error: jobError }] = await Promise.all([
-    supabase
-      .from('service_schedules')
-      .select('id, name, valid_until')
-      .eq('company_id', company.id)
-      .eq('is_active', true),
-    supabase
-      .from('jobs')
-      .select('service_schedule_id, scheduled_date')
-      .eq('company_id', company.id)
-      .not('service_schedule_id', 'is', null)
-      .gte('scheduled_date', today),
-  ]);
-  if (scheduleError || jobError) throw new Error('Die Planungsreichweite konnte nicht geladen werden.');
 
-  const lastBySchedule = new Map<string, string>();
-  for (const job of jobs ?? []) {
-    const key = job.service_schedule_id as string;
-    const current = lastBySchedule.get(key);
-    if (!current || job.scheduled_date > current) lastBySchedule.set(key, job.scheduled_date);
-  }
+  // Das Maximum je Plan rechnet die Datenbank. Vorher wurde dafuer jeder
+  // kuenftige Einsatz des Betriebs geladen -- unbegrenzt, unsortiert und
+  // damit abschneidbar, was eine falsche "laeuft aus"-Warnung erzeugen konnte.
+  const { data, error } = await supabase.rpc('list_schedule_coverage');
+  if (error) throw new Error('Die Planungsreichweite konnte nicht geladen werden.');
 
   const limit = addDays(today, withinDays);
-  return (schedules ?? [])
-    .map((schedule) => ({ ...schedule, coveredUntil: lastBySchedule.get(schedule.id) ?? null }))
-    // A plan that has already ended is not running out, it is finished.
+  return ((data ?? []) as { schedule_id: string; name: string; valid_until: string | null; covered_until: string | null }[])
+    .map((row) => ({
+      id: row.schedule_id,
+      name: row.name,
+      valid_until: row.valid_until,
+      coveredUntil: row.covered_until,
+    }))
+    // Ein Plan, der bereits beendet ist, laeuft nicht aus -- er ist fertig.
     .filter((schedule) => !schedule.valid_until || schedule.valid_until > today)
     .filter((schedule) => !schedule.coveredUntil || schedule.coveredUntil < limit)
     .sort((a, b) => (a.coveredUntil ?? '').localeCompare(b.coveredUntil ?? ''));
