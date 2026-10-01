@@ -101,3 +101,57 @@ export function hoursAndMinutes(minutes: number | null | undefined): string {
 export function overtimeMinutes(row: { worked_minutes: number; target_minutes: number | null }): number | null {
   return row.target_minutes == null ? null : row.worked_minutes - row.target_minutes;
 }
+
+export type PayrollState = {
+  status: 'OPEN' | 'RELEASED';
+  released_at: string | null;
+  released_by_name: string | null;
+  sequence: number | null;
+  reopened_at: string | null;
+  reopen_reason: string | null;
+};
+
+/** Ob der Monat zur Lohnabrechnung freigegeben ist, und von wem. */
+export async function getPayrollState(month: string): Promise<PayrollState> {
+  const { supabase } = await requireStaffCompany();
+  const { data, error } = await supabase.rpc('payroll_period_state', { p_month: monthKey(month) });
+  if (error) throw new Error('Der Stand des Monatsabschlusses konnte nicht geladen werden.');
+  const row = (Array.isArray(data) ? data[0] : data) as PayrollState | undefined;
+  return row ?? { status: 'OPEN', released_at: null, released_by_name: null, sequence: null, reopened_at: null, reopen_reason: null };
+}
+
+/**
+ * Die Zahlen für den Export.
+ *
+ * Für einen freigegebenen Monat der eingefrorene Abzug, sonst die laufende
+ * Rechnung. Das ist der ganze Punkt der Freigabe: dieselbe CSV ergibt beim
+ * zweiten Herunterladen dieselben Zahlen wie beim ersten -- auch dann, wenn
+ * inzwischen jemand eine Zeit korrigiert und der Monat erneut freigegeben
+ * wurde. `sequence` wählt eine frühere Freigabe aus.
+ */
+export async function getMonthlyFigures(
+  month: string,
+  sequence?: number | null,
+): Promise<{ summary: MonthlySummaryRow[]; days: MonthlyWorkDay[]; frozen: { sequence: number; releasedAt: string } | null }> {
+  const { supabase } = await requireStaffCompany();
+  const { data, error } = await supabase.rpc('payroll_release_figures', {
+    p_month: monthKey(month),
+    p_sequence: sequence ?? null,
+  });
+  if (error) throw new Error('Der Monatsabschluss konnte nicht geladen werden.');
+
+  const release = (Array.isArray(data) ? data[0] : data) as
+    | { sequence: number; released_at: string; summary: MonthlySummaryRow[]; days: MonthlyWorkDay[] }
+    | undefined;
+
+  if (release) {
+    return {
+      summary: release.summary ?? [],
+      days: release.days ?? [],
+      frozen: { sequence: release.sequence, releasedAt: release.released_at },
+    };
+  }
+
+  const [summary, days] = await Promise.all([listMonthlySummary(month), listMonthlyWorkDays(month)]);
+  return { summary, days, frozen: null };
+}

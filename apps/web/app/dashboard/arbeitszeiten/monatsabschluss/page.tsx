@@ -3,12 +3,16 @@ import { BackLink, ButtonLink, EmptyState, PageHeader, StatBand } from '@/compon
 import { DataTable } from '@/components/data-table';
 import { MonthPicker } from '@/components/month-picker';
 import {
+  getMonthlyFigures,
+  getPayrollState,
   hoursAndMinutes,
-  listMonthlySummary,
   monthKey,
   overtimeMinutes,
   type MonthlySummaryRow,
 } from '@/lib/data/monthly-summary';
+import { PayrollReleasePanel } from '@/components/payroll-release-panel';
+import { requireStaffCompany } from '@/lib/auth';
+import { releasePayrollPeriod, reopenPayrollPeriod } from './actions';
 
 const monthLabel = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
@@ -20,7 +24,14 @@ export default async function MonthlySummaryPage({
   const query = await searchParams;
   const key = monthKey(query.monat);
   const month = key.slice(0, 7);
-  const rows = await listMonthlySummary(month);
+  // Ein freigegebener Monat zeigt den eingefrorenen Abzug, kein neu
+  // gerechnetes Ergebnis -- sonst stuende auf der Seite etwas anderes als in
+  // der CSV, die beim Lohnbuero liegt.
+  const [{ summary: rows }, payroll, { membership }] = await Promise.all([
+    getMonthlyFigures(month),
+    getPayrollState(month),
+    requireStaffCompany(),
+  ]);
 
   const worked = rows.reduce((sum, row) => sum + row.worked_minutes, 0);
   const target = rows.reduce((sum, row) => sum + (row.target_minutes ?? 0), 0);
@@ -43,6 +54,14 @@ export default async function MonthlySummaryPage({
       />
 
       <MonthPicker month={month} basePath="/dashboard/arbeitszeiten/monatsabschluss" />
+
+      <PayrollReleasePanel
+        month={month}
+        state={payroll}
+        canReopen={membership?.role === 'OWNER'}
+        releaseAction={releasePayrollPeriod}
+        reopenAction={reopenPayrollPeriod}
+      />
 
       <StatBand
         className="mb-5"

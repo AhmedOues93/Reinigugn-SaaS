@@ -1,10 +1,4 @@
-import {
-  hoursAndMinutes,
-  listMonthlySummary,
-  listMonthlyWorkDays,
-  monthKey,
-  overtimeMinutes,
-} from '@/lib/data/monthly-summary';
+import { getMonthlyFigures, hoursAndMinutes, monthKey, overtimeMinutes } from '@/lib/data/monthly-summary';
 
 /**
  * The month as one CSV, for the Lohnbüro or the Steuerberater.
@@ -30,11 +24,25 @@ const dateOnly = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-di
 const timeOnly = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
 
 export async function GET(request: Request) {
-  const month = monthKey(new URL(request.url).searchParams.get('monat')).slice(0, 7);
-  const [summary, days] = await Promise.all([listMonthlySummary(month), listMonthlyWorkDays(month)]);
+  const params = new URL(request.url).searchParams;
+  const month = monthKey(params.get('monat')).slice(0, 7);
+  const requested = Number(params.get('freigabe'));
+  /*
+    Ein freigegebener Monat liefert den eingefrorenen Abzug, kein neu
+    gerechnetes Ergebnis. Nur so ergibt dieselbe Datei beim zweiten
+    Herunterladen dieselben Zahlen -- auch nach einer Korrektur und einer
+    zweiten Freigabe. `freigabe=1` holt die CSV von damals.
+  */
+  const { summary, days, frozen } = await getMonthlyFigures(
+    month,
+    Number.isInteger(requested) && requested > 0 ? requested : null,
+  );
 
   const rows: unknown[][] = [
     ['Monatsabschluss', month],
+    frozen
+      ? ['Freigegeben', dateOnly.format(new Date(frozen.releasedAt)), `Freigabe Nr. ${frozen.sequence}`]
+      : ['Stand', 'vorläufig – Monat noch nicht freigegeben'],
     [],
     ['Mitarbeiter', 'Personalnr.', 'Lohngruppe', 'Wochenstunden', 'Iststunden', 'Istminuten', 'Sollstunden', 'Sollminuten', 'Differenz', 'Differenz Minuten', 'Arbeitstage', 'Urlaubstage', 'Kranktage'],
     ...summary.map((row) => {
@@ -75,7 +83,7 @@ export async function GET(request: Request) {
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="monatsabschluss-${month}.csv"`,
+      'Content-Disposition': `attachment; filename="monatsabschluss-${month}${frozen ? `-freigabe-${frozen.sequence}` : '-vorlaeufig'}.csv"`,
       'Cache-Control': 'private, no-store',
     },
   });
