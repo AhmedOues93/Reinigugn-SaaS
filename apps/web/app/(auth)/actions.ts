@@ -11,9 +11,10 @@ import { createClient } from '@/lib/supabase/server';
 import {
   LOGIN_THROTTLE,
   PASSWORD_RESET_THROTTLE,
-  type ThrottleConfig,
+  type ThrottleScope,
   clientAddress,
   throttleMessage,
+  throttleProof,
 } from '@/lib/auth-throttle';
 
 type AnonClient = Awaited<ReturnType<typeof createClient>>;
@@ -42,16 +43,16 @@ async function currentAddress(): Promise<string | null> {
  */
 async function throttleGate(
   supabase: AnonClient,
-  config: ThrottleConfig,
+  scope: ThrottleScope,
   bucket: string | null,
 ): Promise<number | null> {
-  if (!bucket) return null;
-
+  // Grenze und Fenster kommen aus der Datenbank. Hier geht nur noch mit, *wen*
+  // es betrifft -- und das unterschrieben, sonst zaehlt die Datenbank auf
+  // einem gemeinsamen Zaehler statt auf einem frei gewaehlten.
   const { data, error } = await supabase.rpc('register_auth_attempt', {
-    p_scope: config.scope,
+    p_scope: scope,
     p_bucket: bucket,
-    p_limit: config.limit,
-    p_window_seconds: config.windowSeconds,
+    p_proof: bucket ? throttleProof(scope, bucket, process.env.THROTTLE_SIGNING_SECRET) : null,
   });
   if (error) {
     console.error('Auth throttle unavailable:', error.message);
@@ -59,13 +60,24 @@ async function throttleGate(
   }
   const row = Array.isArray(data) ? data[0] : data;
   if (!row || row.allowed) return null;
-  return Number(row.retry_after_seconds ?? config.windowSeconds);
+  return Number(row.retry_after_seconds ?? 600);
 }
 
-/** Nach einer gelungenen Anmeldung soll der Zaehler nicht nachwirken. */
-async function clearThrottle(supabase: AnonClient, config: ThrottleConfig, bucket: string | null) {
+/**
+ * Nach einer gelungenen Anmeldung soll der Zaehler nicht nachwirken.
+ *
+ * Erst nach `signInWithPassword`, weil die Datenbank dafuer eine angemeldete
+ * Sitzung verlangt: wer zurueckstellen will, muss drin sein. Genau das war der
+ * Fehler in Migration 35 -- dort durfte `anon` zurueckstellen, also einmal pro
+ * Versuch, und die Bremse bremste nichts.
+ */
+async function clearThrottle(supabase: AnonClient, scope: ThrottleScope, bucket: string | null) {
   if (!bucket) return;
-  const { error } = await supabase.rpc('clear_auth_attempts', { p_scope: config.scope, p_bucket: bucket });
+  const { error } = await supabase.rpc('clear_auth_attempts', {
+    p_scope: scope,
+    p_bucket: bucket,
+    p_proof: throttleProof(scope, bucket, process.env.THROTTLE_SIGNING_SECRET),
+  });
   if (error) console.error('Auth throttle reset failed:', error.message);
 }
 

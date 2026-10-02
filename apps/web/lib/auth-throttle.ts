@@ -1,28 +1,31 @@
+import { createHmac } from 'node:crypto';
+
 /**
- * Die Bremse am Anmeldeformular.
+ * Die Bremse am eigenen Anmeldeformular.
  *
- * Zwei Dinge sind hier bewusst entschieden:
+ * Erst das Wichtigste: das hier ist nicht der Schutz der Anmeldung. Wer
+ * Passwoerter durchprobieren will, ruft `/auth/v1/token` bei Supabase Auth
+ * direkt auf und kommt an diesem Code nie vorbei. Der verbindliche Riegel sind
+ * die Rate Limits und das CAPTCHA von Supabase Auth -- siehe docs/runbook.md.
+ * Diese Bremse sitzt eine Schicht davor und ist kein Ersatz.
  *
- * Erstens der Schluessel. Gezaehlt wird pro IP-Adresse, nicht pro
- * E-Mail-Adresse. Eine Bremse pro Adresse klingt praeziser, laesst sich aber
- * gegen die Betroffene wenden: es genuegt, oft genug ein falsches Passwort
- * fuer ihre Adresse zu schicken, und sie kommt selbst nicht mehr herein. Wer
- * die IP-Bremse ausloest, sperrt nur sich selbst aus.
+ * Was hier entschieden wird: Grenze und Fenster stehen in der Datenbank, nicht
+ * in diesem Aufruf. Bis einschliesslich Migration 35 kamen sie als Parameter
+ * mit, und damit war die Bremse wirkungslos -- `p_limit` gross genug, und jeder
+ * Versuch war erlaubt.
  *
- * Zweitens das Verhalten ohne IP. Next.js gibt einer Server Action keine
- * Gegenstelle, nur Kopfzeilen; hinter Vercel setzt die Plattform sie, lokal
- * ohne Proxy fehlen sie. Fehlt die Adresse, wird nicht gebremst -- eine
- * gemeinsame Zeile fuer alle Namenlosen waere eine Sperre, die der erste
- * Angreifer fuer den gesamten Betrieb ausloest.
+ * Der Schluessel ist die Adresse der Person, die sich anmeldet. Supabase sieht
+ * an dieser Stelle nur unseren Server, also muessen wir sie mitschicken -- und
+ * eine mitgeschickte Adresse ist so viel wert wie ihre Unterschrift. Darum
+ * wird sie mit `THROTTLE_SIGNING_SECRET` unterschrieben. Ohne hinterlegtes
+ * Geheimnis faellt die Datenbank auf einen gemeinsamen Zaehler mit weiter
+ * Grenze zurueck: enger als nichts, aber niemand wird ausgesperrt.
  */
 
-export type ThrottleConfig = { scope: string; limit: number; windowSeconds: number };
+export type ThrottleScope = 'login' | 'password-reset';
 
-/** Zehn Versuche in zehn Minuten. Wer sein Passwort sucht, kommt damit aus. */
-export const LOGIN_THROTTLE: ThrottleConfig = { scope: 'login', limit: 10, windowSeconds: 600 };
-
-/** Passwort-Mails sind teuer und laut: fuenf in einer Viertelstunde genuegen. */
-export const PASSWORD_RESET_THROTTLE: ThrottleConfig = { scope: 'password-reset', limit: 5, windowSeconds: 900 };
+export const LOGIN_THROTTLE: ThrottleScope = 'login';
+export const PASSWORD_RESET_THROTTLE: ThrottleScope = 'password-reset';
 
 /**
  * Die Adresse der Aufrufenden aus den Kopfzeilen, oder null.
@@ -38,6 +41,18 @@ export function clientAddress(read: (name: string) => string | null | undefined)
     if (first) return first.slice(0, 100);
   }
   return null;
+}
+
+/**
+ * Die Unterschrift ueber Vorgang und Schluessel.
+ *
+ * Node-eigene Krypto, kein zusaetzliches Paket, und sie laeuft ausschliesslich
+ * auf dem Server -- das Geheimnis traegt bewusst kein `NEXT_PUBLIC_`, damit es
+ * nicht in ein Browser-Bundle geraten kann.
+ */
+export function throttleProof(scope: string, bucket: string, secret: string | undefined): string | null {
+  if (!secret || secret.length < 32 || !bucket) return null;
+  return createHmac('sha256', secret).update(`${scope}:${bucket}`).digest('hex');
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   PASSWORD_RESET_THROTTLE,
   clientAddress,
   throttleMessage,
+  throttleProof,
 } from '@/lib/auth-throttle';
 import {
   MFA_CHALLENGE_PATH,
@@ -59,14 +60,51 @@ describe('throttleMessage', () => {
   });
 });
 
-describe('die Grenzen', () => {
-  it('lassen jemandem, der sein Passwort sucht, genug Versuche', () => {
-    expect(LOGIN_THROTTLE.limit).toBeGreaterThanOrEqual(5);
-    expect(LOGIN_THROTTLE.windowSeconds).toBeGreaterThanOrEqual(300);
+describe('die Vorgaenge', () => {
+  it('sind getrennt, damit eine Passwort-Mail die Anmeldung nicht sperrt', () => {
+    expect(PASSWORD_RESET_THROTTLE).not.toBe(LOGIN_THROTTLE);
   });
 
-  it('haben getrennte Zaehler, damit eine Passwort-Mail die Anmeldung nicht sperrt', () => {
-    expect(PASSWORD_RESET_THROTTLE.scope).not.toBe(LOGIN_THROTTLE.scope);
+  it('tragen keine Grenze mehr im Code -- die steht in der Datenbank', () => {
+    // Bis Migration 35 kamen Grenze und Fenster als Parameter mit, und damit
+    // war die Bremse wirkungslos. Ein String kann keine Grenze tragen.
+    expect(typeof LOGIN_THROTTLE).toBe('string');
+    expect(typeof PASSWORD_RESET_THROTTLE).toBe('string');
+  });
+});
+
+describe('throttleProof', () => {
+  const secret = 'ein-ausreichend-langes-testgeheimnis-32+';
+
+  it('ist derselbe Wert fuer dieselben Angaben', () => {
+    expect(throttleProof('login', '198.51.100.7', secret))
+      .toBe(throttleProof('login', '198.51.100.7', secret));
+  });
+
+  it('bindet den Vorgang mit ein, damit eine Unterschrift nicht uebertragbar ist', () => {
+    expect(throttleProof('login', '198.51.100.7', secret))
+      .not.toBe(throttleProof('password-reset', '198.51.100.7', secret));
+  });
+
+  it('bindet die Adresse mit ein', () => {
+    expect(throttleProof('login', '198.51.100.7', secret))
+      .not.toBe(throttleProof('login', '203.0.113.9', secret));
+  });
+
+  it('ist ein Hex-SHA-256 und nicht die Adresse selbst', () => {
+    const proof = throttleProof('login', '198.51.100.7', secret)!;
+    expect(proof).toMatch(/^[0-9a-f]{64}$/);
+    expect(proof).not.toContain('198.51.100.7');
+  });
+
+  it('gibt null ohne Geheimnis oder mit einem zu kurzen', () => {
+    expect(throttleProof('login', '198.51.100.7', undefined)).toBeNull();
+    expect(throttleProof('login', '198.51.100.7', '')).toBeNull();
+    expect(throttleProof('login', '198.51.100.7', 'zu-kurz')).toBeNull();
+  });
+
+  it('gibt null ohne Adresse -- dann zaehlt die Datenbank gemeinsam', () => {
+    expect(throttleProof('login', '', secret)).toBeNull();
   });
 });
 

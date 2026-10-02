@@ -1,0 +1,2293 @@
+column     audit_events.action text not null
+column     audit_events.actor_member_id uuid
+column     audit_events.actor_name text
+column     audit_events.company_id uuid not null
+column     audit_events.detail jsonb not null
+column     audit_events.id uuid not null
+column     audit_events.occurred_at timestamp with time zone not null
+column     audit_events.subject_id uuid
+column     audit_events.subject_label text
+column     audit_events.subject_type text not null
+column     auth_throttle.attempts integer not null
+column     auth_throttle.bucket text not null
+column     auth_throttle.scope text not null
+column     auth_throttle.window_start timestamp with time zone not null
+column     auth_throttle_config.id boolean not null
+column     auth_throttle_config.signing_secret text
+column     auth_throttle_config.updated_at timestamp with time zone not null
+column     auth_throttle_policies.max_attempts integer not null
+column     auth_throttle_policies.note text
+column     auth_throttle_policies.scope text not null
+column     auth_throttle_policies.window_seconds integer not null
+column     calculation_lines.area_name text not null
+column     calculation_lines.area_sqm numeric(10,2)
+column     calculation_lines.calculation_id uuid not null
+column     calculation_lines.calculation_unit calculation_unit not null
+column     calculation_lines.catalog_item_id uuid
+column     calculation_lines.company_id uuid not null
+column     calculation_lines.created_at timestamp with time zone not null
+column     calculation_lines.frequency calculation_frequency not null
+column     calculation_lines.frequency_count numeric(6,3) not null
+column     calculation_lines.id uuid not null
+column     calculation_lines.machine_basis cost_basis not null
+column     calculation_lines.machine_cents bigint not null
+column     calculation_lines.machine_cost_cents_month bigint not null
+column     calculation_lines.material_basis cost_basis not null
+column     calculation_lines.material_cents bigint not null
+column     calculation_lines.material_cost_cents_month bigint not null
+column     calculation_lines.minutes_override numeric(12,2)
+column     calculation_lines.minutes_per_service numeric(12,2) not null
+column     calculation_lines.minutes_per_unit numeric(10,2)
+column     calculation_lines.monthly_minutes numeric(14,2) not null
+column     calculation_lines.one_off_cost_cents bigint not null
+column     calculation_lines.one_off_price_cents bigint not null
+column     calculation_lines.other_basis cost_basis not null
+column     calculation_lines.other_cents bigint not null
+column     calculation_lines.other_cost_cents_month bigint not null
+column     calculation_lines.override_reason text
+column     calculation_lines.personnel_cost_cents_month bigint not null
+column     calculation_lines.position smallint not null
+column     calculation_lines.productivity_per_hour numeric(10,2)
+column     calculation_lines.proposed_price_cents_month bigint not null
+column     calculation_lines.quantity numeric(12,3) not null
+column     calculation_lines.scope_note text
+column     calculation_lines.service_name text not null
+column     calculation_lines.service_weekdays smallint[]
+column     calculation_lines.services_per_month numeric(10,3) not null
+column     calculation_lines.total_cost_cents_month bigint not null
+column     calculations.ancillary_rate_bp integer not null
+column     calculations.base_price_cents_month bigint not null
+column     calculations.break_even_rate_cents_per_hour bigint not null
+column     calculations.cleaning_object_id uuid
+column     calculations.company_id uuid not null
+column     calculations.contribution_cents_month bigint not null
+column     calculations.cost_cents_per_productive_hour bigint not null
+column     calculations.created_at timestamp with time zone not null
+column     calculations.created_by uuid not null
+column     calculations.currency text not null
+column     calculations.customer_id uuid
+column     calculations.finalised_at timestamp with time zone
+column     calculations.finalised_by uuid
+column     calculations.id uuid not null
+column     calculations.incomplete_reasons text[] not null
+column     calculations.lead_id uuid
+column     calculations.machine_cost_cents_month bigint not null
+column     calculations.margin_bp integer not null
+column     calculations.markup_bp integer not null
+column     calculations.material_cost_cents_month bigint not null
+column     calculations.min_hourly_rate_cents bigint not null
+column     calculations.min_price_cents_month bigint not null
+column     calculations.minutes_per_visit numeric(12,2) not null
+column     calculations.monthly_minutes numeric(14,2) not null
+column     calculations.notes text
+column     calculations.one_off_cost_cents bigint not null
+column     calculations.one_off_minutes numeric(12,2) not null
+column     calculations.one_off_price_cents bigint not null
+column     calculations.other_cost_cents_month bigint not null
+column     calculations.other_cost_cents_per_month bigint not null
+column     calculations.overhead_rate_bp integer not null
+column     calculations.personnel_cost_cents_month bigint not null
+column     calculations.personnel_cost_cents_per_hour bigint not null
+column     calculations.price_cents_per_productive_hour bigint not null
+column     calculations.price_override_cents_month bigint
+column     calculations.price_override_reason text
+column     calculations.productive_rate_bp integer not null
+column     calculations.productive_rate_is_manual boolean not null
+column     calculations.proposed_price_cents_month bigint not null
+column     calculations.public_holidays integer not null
+column     calculations.selling_price_cents_month bigint not null
+column     calculations.setup_minutes_per_visit numeric(10,2) not null
+column     calculations.sick_days integer not null
+column     calculations.site_survey_id uuid
+column     calculations.status calculation_status not null
+column     calculations.supersedes_calculation_id uuid
+column     calculations.surcharge_cents_month bigint not null
+column     calculations.surcharge_note text
+column     calculations.surcharge_offpeak_bp integer not null
+column     calculations.surcharge_small_order_cents_month bigint not null
+column     calculations.surcharge_travel_cents_month bigint not null
+column     calculations.target_margin_bp integer not null
+column     calculations.title text not null
+column     calculations.total_cost_cents_month bigint not null
+column     calculations.total_cost_cents_visit bigint not null
+column     calculations.training_days integer not null
+column     calculations.travel_cents_per_visit bigint not null
+column     calculations.travel_cost_cents_month bigint not null
+column     calculations.unproductive_minutes_per_day numeric(6,2) not null
+column     calculations.updated_at timestamp with time zone not null
+column     calculations.vacation_days integer not null
+column     calculations.version integer not null
+column     calculations.visits_per_week numeric(6,3) not null
+column     calculations.wage_cents_per_hour bigint not null
+column     calculations.weekly_hours numeric(5,2) not null
+column     calculations.working_days_per_week numeric(3,1) not null
+column     checklist_template_items.id uuid not null
+column     checklist_template_items.instruction text
+column     checklist_template_items.is_required boolean not null
+column     checklist_template_items.position smallint not null
+column     checklist_template_items.template_id uuid not null
+column     checklist_template_items.title text not null
+column     checklist_templates.company_id uuid not null
+column     checklist_templates.created_at timestamp with time zone not null
+column     checklist_templates.description text
+column     checklist_templates.id uuid not null
+column     checklist_templates.is_active boolean not null
+column     checklist_templates.name text not null
+column     cleaning_objects.acceptance_policy acceptance_policy
+column     cleaning_objects.access_instructions text
+column     cleaning_objects.area_sqm numeric(10,2)
+column     cleaning_objects.areas_description text
+column     cleaning_objects.checklist_template_id uuid
+column     cleaning_objects.city text
+column     cleaning_objects.cleaning_instructions text
+column     cleaning_objects.company_id uuid not null
+column     cleaning_objects.contact_email text
+column     cleaning_objects.contact_first_name text
+column     cleaning_objects.contact_last_name text
+column     cleaning_objects.contact_person text
+column     cleaning_objects.contact_phone text
+column     cleaning_objects.country text not null
+column     cleaning_objects.created_at timestamp with time zone not null
+column     cleaning_objects.customer_id uuid not null
+column     cleaning_objects.id uuid not null
+column     cleaning_objects.is_active boolean not null
+column     cleaning_objects.name text not null
+column     cleaning_objects.notes text
+column     cleaning_objects.object_number text
+column     cleaning_objects.postal_code text
+column     cleaning_objects.street text
+column     cleaning_objects.updated_at timestamp with time zone not null
+column     companies.bic text
+column     companies.billing_email text
+column     companies.brand_color text
+column     companies.city text
+column     companies.country text not null
+column     companies.created_at timestamp with time zone not null
+column     companies.datev_beraternummer text
+column     companies.datev_kontenrahmen text
+column     companies.datev_mandantennummer text
+column     companies.datev_revenue_account_0 text
+column     companies.datev_revenue_account_19 text
+column     companies.datev_revenue_account_7 text
+column     companies.default_hourly_rate_cents bigint
+column     companies.default_language text not null
+column     companies.default_payment_terms_days smallint
+column     companies.default_vat_rate_basis_points integer not null
+column     companies.email text
+column     companies.iban text
+column     companies.id uuid not null
+column     companies.legal_form text
+column     companies.logo_storage_path text
+column     companies.logo_updated_at timestamp with time zone
+column     companies.managing_director text
+column     companies.name text not null
+column     companies.onboarding_completed_at timestamp with time zone
+column     companies.onboarding_steps text[] not null
+column     companies.phone text
+column     companies.postal_code text
+column     companies.require_staff_mfa boolean not null
+column     companies.service_focus text[] not null
+column     companies.slug text
+column     companies.street text
+column     companies.tax_number text
+column     companies.timezone text not null
+column     companies.vat_id text
+column     companies.website text
+column     company_calculation_defaults.ancillary_rate_bp integer not null
+column     company_calculation_defaults.company_id uuid not null
+column     company_calculation_defaults.default_machine_cents_per_month bigint not null
+column     company_calculation_defaults.default_material_cents_per_visit bigint not null
+column     company_calculation_defaults.default_setup_minutes_per_visit numeric(6,2) not null
+column     company_calculation_defaults.default_travel_cents_per_visit bigint not null
+column     company_calculation_defaults.min_hourly_rate_cents bigint not null
+column     company_calculation_defaults.overhead_rate_bp integer not null
+column     company_calculation_defaults.productive_rate_bp integer not null
+column     company_calculation_defaults.productive_rate_is_manual boolean not null
+column     company_calculation_defaults.public_holidays integer not null
+column     company_calculation_defaults.sick_days integer not null
+column     company_calculation_defaults.target_margin_bp integer not null
+column     company_calculation_defaults.training_days integer not null
+column     company_calculation_defaults.unproductive_minutes_per_day numeric(6,2) not null
+column     company_calculation_defaults.updated_at timestamp with time zone not null
+column     company_calculation_defaults.vacation_days integer not null
+column     company_calculation_defaults.wage_cents_per_hour bigint not null
+column     company_calculation_defaults.weekly_hours numeric(5,2) not null
+column     company_calculation_defaults.working_days_per_week numeric(3,1) not null
+column     company_invitations.accepted_at timestamp with time zone
+column     company_invitations.company_id uuid not null
+column     company_invitations.created_at timestamp with time zone not null
+column     company_invitations.customer_id uuid
+column     company_invitations.email text not null
+column     company_invitations.employee_number text
+column     company_invitations.employment_end_date date
+column     company_invitations.employment_start_date date
+column     company_invitations.employment_type employment_type
+column     company_invitations.expires_at timestamp with time zone not null
+column     company_invitations.hourly_wage_cents integer
+column     company_invitations.id uuid not null
+column     company_invitations.member_id uuid not null
+column     company_invitations.notes text
+column     company_invitations.preferred_language text not null
+column     company_invitations.revoked_at timestamp with time zone
+column     company_invitations.role company_role not null
+column     company_invitations.token_hash text not null
+column     company_invitations.updated_at timestamp with time zone not null
+column     company_invitations.wage_group text
+column     company_invitations.weekly_hours numeric(5,2)
+column     company_members.company_id uuid not null
+column     company_members.created_at timestamp with time zone not null
+column     company_members.disabled_at timestamp with time zone
+column     company_members.id uuid not null
+column     company_members.invited_at timestamp with time zone
+column     company_members.invited_by uuid
+column     company_members.invited_email text
+column     company_members.invited_first_name text
+column     company_members.invited_last_name text
+column     company_members.invited_phone text
+column     company_members.joined_at timestamp with time zone
+column     company_members.profile_id uuid
+column     company_members.role company_role not null
+column     company_members.status membership_status not null
+column     company_members.updated_at timestamp with time zone not null
+column     company_number_counters.company_id uuid not null
+column     company_number_counters.last_number integer not null
+column     company_number_counters.sequence_key text not null
+column     complaint_updates.author_member_id uuid not null
+column     complaint_updates.company_id uuid not null
+column     complaint_updates.complaint_id uuid not null
+column     complaint_updates.created_at timestamp with time zone not null
+column     complaint_updates.id uuid not null
+column     complaint_updates.note text not null
+column     complaint_updates.status complaint_status
+column     complaints.assigned_member_id uuid
+column     complaints.cleaning_object_id uuid not null
+column     complaints.company_id uuid not null
+column     complaints.created_at timestamp with time zone not null
+column     complaints.created_by uuid not null
+column     complaints.customer_id uuid not null
+column     complaints.description text not null
+column     complaints.due_date date
+column     complaints.follow_up_job_id uuid
+column     complaints.id uuid not null
+column     complaints.internal_note text
+column     complaints.job_id uuid
+column     complaints.priority complaint_priority not null
+column     complaints.status complaint_status not null
+column     complaints.title text not null
+column     complaints.updated_at timestamp with time zone not null
+column     customer_contacts.company_id uuid not null
+column     customer_contacts.created_at timestamp with time zone not null
+column     customer_contacts.created_by uuid
+column     customer_contacts.customer_id uuid not null
+column     customer_contacts.id uuid not null
+column     customer_contacts.member_id uuid not null
+column     customers.billing_address text
+column     customers.billing_country text not null
+column     customers.billing_email text
+column     customers.billing_recipient_address text
+column     customers.billing_recipient_name text
+column     customers.city text
+column     customers.company_id uuid not null
+column     customers.contact_first_name text
+column     customers.contact_last_name text
+column     customers.contact_person text
+column     customers.created_at timestamp with time zone not null
+column     customers.customer_number text
+column     customers.datev_debtor_account text
+column     customers.email text
+column     customers.id uuid not null
+column     customers.is_active boolean not null
+column     customers.name text not null
+column     customers.notes text
+column     customers.payment_terms_days smallint
+column     customers.phone text
+column     customers.postal_code text
+column     customers.updated_at timestamp with time zone not null
+column     customers.vat_id text
+column     employee_absences.absence_type absence_type not null
+column     employee_absences.au_storage_path text
+column     employee_absences.company_id uuid not null
+column     employee_absences.created_at timestamp with time zone not null
+column     employee_absences.decision absence_decision
+column     employee_absences.end_date date not null
+column     employee_absences.id uuid not null
+column     employee_absences.member_id uuid not null
+column     employee_absences.note text
+column     employee_absences.review_note text
+column     employee_absences.reviewed_at timestamp with time zone
+column     employee_absences.reviewed_by uuid
+column     employee_absences.start_date date not null
+column     employee_absences.status absence_status not null
+column     employee_absences.updated_at timestamp with time zone not null
+column     employee_details.company_id uuid not null
+column     employee_details.created_at timestamp with time zone not null
+column     employee_details.employee_number text
+column     employee_details.employment_end_date date
+column     employee_details.employment_start_date date
+column     employee_details.employment_type employment_type
+column     employee_details.hourly_wage_cents integer
+column     employee_details.id uuid not null
+column     employee_details.is_active boolean not null
+column     employee_details.notes text
+column     employee_details.preferred_language text not null
+column     employee_details.profile_id uuid not null
+column     employee_details.updated_at timestamp with time zone not null
+column     employee_details.wage_group text
+column     employee_details.weekly_hours numeric(5,2)
+column     in_app_notifications.absence_id uuid
+column     in_app_notifications.body text
+column     in_app_notifications.company_id uuid not null
+column     in_app_notifications.complaint_id uuid
+column     in_app_notifications.created_at timestamp with time zone not null
+column     in_app_notifications.id uuid not null
+column     in_app_notifications.job_id uuid
+column     in_app_notifications.read_at timestamp with time zone
+column     in_app_notifications.recipient_member_id uuid not null
+column     in_app_notifications.title text not null
+column     in_app_notifications.type notification_type not null
+column     invoice_deliveries.channel text not null
+column     invoice_deliveries.company_id uuid not null
+column     invoice_deliveries.created_at timestamp with time zone not null
+column     invoice_deliveries.created_by uuid not null
+column     invoice_deliveries.detail text
+column     invoice_deliveries.id uuid not null
+column     invoice_deliveries.idempotency_key text
+column     invoice_deliveries.invoice_id uuid not null
+column     invoice_deliveries.kind invoice_delivery_kind not null
+column     invoice_deliveries.provider text
+column     invoice_deliveries.provider_message_id text
+column     invoice_deliveries.recipient text
+column     invoice_deliveries.reminder_fee_cents bigint
+column     invoice_deliveries.reminder_interest_cents bigint
+column     invoice_deliveries.reminder_level smallint
+column     invoice_deliveries.status invoice_delivery_status not null
+column     invoice_lines.cleaning_object_id uuid
+column     invoice_lines.company_id uuid not null
+column     invoice_lines.created_at timestamp with time zone not null
+column     invoice_lines.description text not null
+column     invoice_lines.gross_amount_cents bigint not null
+column     invoice_lines.id uuid not null
+column     invoice_lines.invoice_id uuid not null
+column     invoice_lines.invoice_status invoice_status not null
+column     invoice_lines.job_id uuid
+column     invoice_lines.net_amount_cents bigint not null
+column     invoice_lines.position smallint not null
+column     invoice_lines.quantity numeric(12,3) not null
+column     invoice_lines.service_schedule_id uuid
+column     invoice_lines.unit text not null
+column     invoice_lines.unit_price_cents bigint not null
+column     invoice_lines.vat_amount_cents bigint not null
+column     invoice_lines.vat_rate_basis_points integer not null
+column     invoice_number_counters.company_id uuid not null
+column     invoice_number_counters.last_number integer not null
+column     invoice_number_counters.year smallint not null
+column     invoice_payments.amount_cents bigint not null
+column     invoice_payments.company_id uuid not null
+column     invoice_payments.created_at timestamp with time zone not null
+column     invoice_payments.currency text not null
+column     invoice_payments.external_reference text
+column     invoice_payments.id uuid not null
+column     invoice_payments.idempotency_key text
+column     invoice_payments.invoice_id uuid not null
+column     invoice_payments.method payment_method not null
+column     invoice_payments.note text
+column     invoice_payments.paid_on date not null
+column     invoice_payments.recorded_by uuid not null
+column     invoice_payments.reference text
+column     invoice_payments.source payment_source not null
+column     invoices.buyer_reference text
+column     invoices.cancellation_reason text
+column     invoices.cancelled_at timestamp with time zone
+column     invoices.cancelled_by uuid
+column     invoices.company_id uuid not null
+column     invoices.company_snapshot jsonb
+column     invoices.corrects_invoice_id uuid
+column     invoices.created_at timestamp with time zone not null
+column     invoices.created_by uuid not null
+column     invoices.currency text not null
+column     invoices.customer_id uuid not null
+column     invoices.customer_note text
+column     invoices.customer_snapshot jsonb
+column     invoices.due_date date
+column     invoices.gross_total_cents bigint not null
+column     invoices.id uuid not null
+column     invoices.internal_note text
+column     invoices.invoice_number text
+column     invoices.issue_date date
+column     invoices.last_reminder_at timestamp with time zone
+column     invoices.net_total_cents bigint not null
+column     invoices.paid_at timestamp with time zone
+column     invoices.payment_terms_days smallint not null
+column     invoices.reminder_count smallint not null
+column     invoices.sent_at timestamp with time zone
+column     invoices.service_period_end date not null
+column     invoices.service_period_start date not null
+column     invoices.status invoice_status not null
+column     invoices.updated_at timestamp with time zone not null
+column     invoices.vat_total_cents bigint not null
+column     job_assignment_changes.changed_by uuid not null
+column     job_assignment_changes.company_id uuid not null
+column     job_assignment_changes.created_at timestamp with time zone not null
+column     job_assignment_changes.from_member_id uuid not null
+column     job_assignment_changes.id uuid not null
+column     job_assignment_changes.job_id uuid not null
+column     job_assignment_changes.reason text not null
+column     job_assignment_changes.to_member_id uuid not null
+column     job_assignments.assigned_at timestamp with time zone not null
+column     job_assignments.assigned_by uuid
+column     job_assignments.company_id uuid not null
+column     job_assignments.created_at timestamp with time zone not null
+column     job_assignments.id uuid not null
+column     job_assignments.job_id uuid not null
+column     job_assignments.member_id uuid not null
+column     job_checklist_items.completed_at timestamp with time zone
+column     job_checklist_items.completed_by uuid
+column     job_checklist_items.id uuid not null
+column     job_checklist_items.instruction text
+column     job_checklist_items.is_required boolean not null
+column     job_checklist_items.job_checklist_id uuid not null
+column     job_checklist_items.position smallint not null
+column     job_checklist_items.source_template_item_id uuid
+column     job_checklist_items.title text not null
+column     job_checklists.company_id uuid not null
+column     job_checklists.created_at timestamp with time zone not null
+column     job_checklists.id uuid not null
+column     job_checklists.job_id uuid not null
+column     job_checklists.template_id uuid
+column     job_photos.category job_photo_category not null
+column     job_photos.checklist_item_id uuid
+column     job_photos.client_upload_id text
+column     job_photos.company_id uuid not null
+column     job_photos.created_at timestamp with time zone not null
+column     job_photos.description text
+column     job_photos.id uuid not null
+column     job_photos.job_id uuid not null
+column     job_photos.member_id uuid not null
+column     job_photos.storage_path text not null
+column     job_time_breaks.company_id uuid not null
+column     job_time_breaks.created_at timestamp with time zone not null
+column     job_time_breaks.ended_at timestamp with time zone
+column     job_time_breaks.id uuid not null
+column     job_time_breaks.started_at timestamp with time zone not null
+column     job_time_breaks.time_entry_id uuid not null
+column     job_time_entries.break_minutes integer not null
+column     job_time_entries.company_id uuid not null
+column     job_time_entries.created_at timestamp with time zone not null
+column     job_time_entries.duration_minutes integer
+column     job_time_entries.end_source time_entry_source
+column     job_time_entries.finished_at timestamp with time zone
+column     job_time_entries.id uuid not null
+column     job_time_entries.job_id uuid not null
+column     job_time_entries.member_id uuid not null
+column     job_time_entries.start_source time_entry_source not null
+column     job_time_entries.started_at timestamp with time zone not null
+column     job_time_entries.updated_at timestamp with time zone not null
+column     jobs.acceptance_policy acceptance_policy
+column     jobs.checklist_template_id uuid
+column     jobs.cleaning_object_id uuid not null
+column     jobs.company_id uuid not null
+column     jobs.created_at timestamp with time zone not null
+column     jobs.customer_id uuid not null
+column     jobs.description text
+column     jobs.employee_instructions text
+column     jobs.employee_report text
+column     jobs.id uuid not null
+column     jobs.internal_notes text
+column     jobs.planned_end_at timestamp with time zone not null
+column     jobs.planned_start_at timestamp with time zone not null
+column     jobs.priority job_priority not null
+column     jobs.schedule_rule_id uuid
+column     jobs.scheduled_date date not null
+column     jobs.service_schedule_id uuid
+column     jobs.status job_status not null
+column     jobs.title text not null
+column     jobs.updated_at timestamp with time zone not null
+column     leads.city text
+column     leads.cleaning_object_id uuid
+column     leads.cleaning_type text
+column     leads.company_id uuid not null
+column     leads.contact_person text
+column     leads.converted_customer_id uuid
+column     leads.created_at timestamp with time zone not null
+column     leads.created_by uuid not null
+column     leads.customer_id uuid
+column     leads.desired_start date
+column     leads.email text
+column     leads.frequency text
+column     leads.id uuid not null
+column     leads.lost_reason text
+column     leads.notes text
+column     leads.organisation text not null
+column     leads.phone text
+column     leads.postal_code text
+column     leads.preferred_time text
+column     leads.source text
+column     leads.status lead_status not null
+column     leads.street text
+column     leads.updated_at timestamp with time zone not null
+column     mail_events.created_at timestamp with time zone not null
+column     mail_events.event_type text not null
+column     mail_events.id uuid not null
+column     mail_events.occurred_at timestamp with time zone not null
+column     mail_events.payload jsonb not null
+column     mail_events.provider text not null
+column     mail_events.provider_event_id text not null
+column     mail_events.provider_message_id text
+column     mail_events.recipient text
+column     message_threads.company_id uuid not null
+column     message_threads.created_at timestamp with time zone not null
+column     message_threads.created_by uuid not null
+column     message_threads.employee_member_id uuid not null
+column     message_threads.employee_read_at timestamp with time zone
+column     message_threads.id uuid not null
+column     message_threads.last_message_at timestamp with time zone not null
+column     message_threads.staff_read_at timestamp with time zone
+column     message_threads.subject text not null
+column     messages.body text not null
+column     messages.company_id uuid not null
+column     messages.created_at timestamp with time zone not null
+column     messages.id uuid not null
+column     messages.sender_member_id uuid not null
+column     messages.thread_id uuid not null
+column     operational_photos.category job_photo_category not null
+column     operational_photos.company_id uuid not null
+column     operational_photos.complaint_id uuid
+column     operational_photos.created_at timestamp with time zone not null
+column     operational_photos.description text
+column     operational_photos.id uuid not null
+column     operational_photos.member_id uuid not null
+column     operational_photos.quality_inspection_id uuid
+column     operational_photos.scope operational_photo_scope not null
+column     operational_photos.storage_path text not null
+column     payroll_period_releases.company_id uuid not null
+column     payroll_period_releases.days jsonb not null
+column     payroll_period_releases.id uuid not null
+column     payroll_period_releases.period_id uuid not null
+column     payroll_period_releases.released_at timestamp with time zone not null
+column     payroll_period_releases.released_by uuid not null
+column     payroll_period_releases.reopen_reason text
+column     payroll_period_releases.reopened_at timestamp with time zone
+column     payroll_period_releases.reopened_by uuid
+column     payroll_period_releases.sequence integer not null
+column     payroll_period_releases.summary jsonb not null
+column     payroll_periods.company_id uuid not null
+column     payroll_periods.created_at timestamp with time zone not null
+column     payroll_periods.id uuid not null
+column     payroll_periods.period date not null
+column     payroll_periods.status text not null
+column     profiles.auth_user_id uuid not null
+column     profiles.avatar_storage_path text
+column     profiles.created_at timestamp with time zone not null
+column     profiles.first_name text
+column     profiles.id uuid not null
+column     profiles.last_name text
+column     profiles.phone text
+column     profiles.updated_at timestamp with time zone not null
+column     quality_inspections.cleaning_object_id uuid not null
+column     quality_inspections.company_id uuid not null
+column     quality_inspections.created_at timestamp with time zone not null
+column     quality_inspections.criteria jsonb not null
+column     quality_inspections.follow_up_required boolean not null
+column     quality_inspections.id uuid not null
+column     quality_inspections.inspected_at date not null
+column     quality_inspections.inspector_member_id uuid not null
+column     quality_inspections.job_id uuid
+column     quality_inspections.notes text
+column     quality_inspections.result quality_result not null
+column     quality_inspections.score smallint
+column     quote_lines.company_id uuid not null
+column     quote_lines.created_at timestamp with time zone not null
+column     quote_lines.description text not null
+column     quote_lines.gross_amount_cents bigint not null
+column     quote_lines.id uuid not null
+column     quote_lines.net_amount_cents bigint not null
+column     quote_lines.position smallint not null
+column     quote_lines.quantity numeric(12,3) not null
+column     quote_lines.quote_id uuid not null
+column     quote_lines.quote_status quote_status not null
+column     quote_lines.recurrence quote_line_recurrence not null
+column     quote_lines.survey_area_id uuid
+column     quote_lines.unit text not null
+column     quote_lines.unit_price_cents bigint not null
+column     quote_lines.vat_amount_cents bigint not null
+column     quote_lines.vat_rate_basis_points integer not null
+column     quote_number_counters.company_id uuid not null
+column     quote_number_counters.last_number integer not null
+column     quote_number_counters.year smallint not null
+column     quotes.acceptance_note text
+column     quotes.acceptance_policy acceptance_policy not null
+column     quotes.accepted_at timestamp with time zone
+column     quotes.accepted_by_name text
+column     quotes.accepted_via text
+column     quotes.billing_mode billing_mode not null
+column     quotes.calculation_id uuid
+column     quotes.company_id uuid not null
+column     quotes.company_snapshot jsonb
+column     quotes.created_at timestamp with time zone not null
+column     quotes.created_by uuid not null
+column     quotes.created_customer_id uuid
+column     quotes.created_object_id uuid
+column     quotes.created_schedule_id uuid
+column     quotes.currency text not null
+column     quotes.customer_id uuid
+column     quotes.decline_reason text
+column     quotes.declined_at timestamp with time zone
+column     quotes.gross_total_cents bigint not null
+column     quotes.id uuid not null
+column     quotes.intro text
+column     quotes.lead_id uuid
+column     quotes.net_total_cents bigint not null
+column     quotes.order_type text
+column     quotes.public_access_expires_at timestamp with time zone
+column     quotes.public_token_hash text
+column     quotes.quote_number text
+column     quotes.recipient_snapshot jsonb
+column     quotes.recurring_net_monthly_cents bigint not null
+column     quotes.sent_at timestamp with time zone
+column     quotes.service_end date
+column     quotes.service_start date
+column     quotes.site_survey_id uuid
+column     quotes.status quote_status not null
+column     quotes.termination_notice text
+column     quotes.title text not null
+column     quotes.updated_at timestamp with time zone not null
+column     quotes.valid_until date
+column     quotes.vat_total_cents bigint not null
+column     schedule_rules.created_at timestamp with time zone not null
+column     schedule_rules.id uuid not null
+column     schedule_rules.is_active boolean not null
+column     schedule_rules.planned_end_time time without time zone not null
+column     schedule_rules.planned_start_time time without time zone not null
+column     schedule_rules.service_schedule_id uuid not null
+column     schedule_rules.updated_at timestamp with time zone not null
+column     schedule_rules.weekday smallint not null
+column     service_catalog_items.calculation_unit calculation_unit not null
+column     service_catalog_items.category text
+column     service_catalog_items.company_id uuid not null
+column     service_catalog_items.created_at timestamp with time zone not null
+column     service_catalog_items.default_material_basis cost_basis not null
+column     service_catalog_items.default_material_cents bigint not null
+column     service_catalog_items.default_minutes_per_unit numeric(10,2)
+column     service_catalog_items.default_productivity_per_hour numeric(10,2)
+column     service_catalog_items.description text
+column     service_catalog_items.id uuid not null
+column     service_catalog_items.is_active boolean not null
+column     service_catalog_items.name text not null
+column     service_catalog_items.updated_at timestamp with time zone not null
+column     service_record_events.actor_member_id uuid
+column     service_record_events.actor_name text
+column     service_record_events.company_id uuid not null
+column     service_record_events.created_at timestamp with time zone not null
+column     service_record_events.event service_record_event not null
+column     service_record_events.id uuid not null
+column     service_record_events.note text
+column     service_record_events.service_record_id uuid not null
+column     service_records.acceptance_method acceptance_method
+column     service_records.acceptance_policy acceptance_policy not null
+column     service_records.acceptance_reminder_sent_at timestamp with time zone
+column     service_records.acceptance_request_sent_at timestamp with time zone
+column     service_records.accepted_at timestamp with time zone
+column     service_records.accepted_by_member_id uuid
+column     service_records.accepted_by_name text
+column     service_records.break_minutes integer not null
+column     service_records.checklist_snapshot jsonb not null
+column     service_records.cleaning_object_id uuid not null
+column     service_records.company_id uuid not null
+column     service_records.complaint_id uuid
+column     service_records.created_at timestamp with time zone not null
+column     service_records.customer_id uuid not null
+column     service_records.customer_snapshot jsonb not null
+column     service_records.disputed_at timestamp with time zone
+column     service_records.employee_note text
+column     service_records.finished_at timestamp with time zone
+column     service_records.id uuid not null
+column     service_records.job_id uuid not null
+column     service_records.net_minutes integer not null
+column     service_records.object_snapshot jsonb not null
+column     service_records.performed_by jsonb not null
+column     service_records.photo_snapshot jsonb not null
+column     service_records.service_date date not null
+column     service_records.service_description text
+column     service_records.service_schedule_id uuid
+column     service_records.signature_storage_path text
+column     service_records.started_at timestamp with time zone
+column     service_records.status service_record_status not null
+column     service_records.title text not null
+column     service_records.updated_at timestamp with time zone not null
+column     service_schedule_assignments.company_id uuid not null
+column     service_schedule_assignments.created_at timestamp with time zone not null
+column     service_schedule_assignments.id uuid not null
+column     service_schedule_assignments.member_id uuid not null
+column     service_schedule_assignments.service_schedule_id uuid not null
+column     service_schedules.acceptance_policy acceptance_policy not null
+column     service_schedules.assignment_mode text not null
+column     service_schedules.billing_description text
+column     service_schedules.billing_mode billing_mode not null
+column     service_schedules.billing_unit_price_cents bigint
+column     service_schedules.billing_vat_rate_basis_points integer
+column     service_schedules.checklist_template_id uuid
+column     service_schedules.cleaning_object_id uuid not null
+column     service_schedules.company_id uuid not null
+column     service_schedules.created_at timestamp with time zone not null
+column     service_schedules.customer_id uuid not null
+column     service_schedules.description text
+column     service_schedules.id uuid not null
+column     service_schedules.is_active boolean not null
+column     service_schedules.name text not null
+column     service_schedules.order_type text
+column     service_schedules.recurrence_type schedule_recurrence_type not null
+column     service_schedules.termination_notice text
+column     service_schedules.timezone text not null
+column     service_schedules.updated_at timestamp with time zone not null
+column     service_schedules.valid_from date not null
+column     service_schedules.valid_until date
+column     site_surveys.access_notes text
+column     site_surveys.city text
+column     site_surveys.company_id uuid not null
+column     site_surveys.completed_at timestamp with time zone
+column     site_surveys.conducted_by uuid
+column     site_surveys.created_at timestamp with time zone not null
+column     site_surveys.created_by uuid not null
+column     site_surveys.customer_id uuid
+column     site_surveys.findings text
+column     site_surveys.id uuid not null
+column     site_surveys.lead_id uuid
+column     site_surveys.postal_code text
+column     site_surveys.scheduled_at timestamp with time zone not null
+column     site_surveys.site_name text not null
+column     site_surveys.status survey_status not null
+column     site_surveys.street text
+column     site_surveys.updated_at timestamp with time zone not null
+column     survey_areas.area_sqm numeric(10,2)
+column     survey_areas.company_id uuid not null
+column     survey_areas.created_at timestamp with time zone not null
+column     survey_areas.floor_type text
+column     survey_areas.hourly_rate_cents bigint
+column     survey_areas.id uuid not null
+column     survey_areas.minutes_per_service integer not null
+column     survey_areas.name text not null
+column     survey_areas.notes text
+column     survey_areas.position smallint not null
+column     survey_areas.services_per_week numeric(4,2) not null
+column     survey_areas.site_survey_id uuid not null
+column     time_entry_audit_logs.changed_at timestamp with time zone not null
+column     time_entry_audit_logs.changed_by uuid not null
+column     time_entry_audit_logs.company_id uuid not null
+column     time_entry_audit_logs.id uuid not null
+column     time_entry_audit_logs.new_finished_at timestamp with time zone
+column     time_entry_audit_logs.new_started_at timestamp with time zone not null
+column     time_entry_audit_logs.previous_finished_at timestamp with time zone
+column     time_entry_audit_logs.previous_started_at timestamp with time zone not null
+column     time_entry_audit_logs.reason text not null
+column     time_entry_audit_logs.time_entry_id uuid not null
+constraint audit_events / audit_events_action_check c
+constraint audit_events / audit_events_actor_member_id_fkey f
+constraint audit_events / audit_events_company_id_fkey f
+constraint audit_events / audit_events_pkey p
+constraint audit_events / audit_events_subject_type_check c
+constraint auth_throttle / auth_throttle_bucket_check c
+constraint auth_throttle / auth_throttle_pkey p
+constraint auth_throttle / auth_throttle_scope_check c
+constraint auth_throttle_config / auth_throttle_config_id_check c
+constraint auth_throttle_config / auth_throttle_config_pkey p
+constraint auth_throttle_config / auth_throttle_config_signing_secret_check c
+constraint auth_throttle_policies / auth_throttle_policies_max_attempts_check c
+constraint auth_throttle_policies / auth_throttle_policies_pkey p
+constraint auth_throttle_policies / auth_throttle_policies_scope_check c
+constraint auth_throttle_policies / auth_throttle_policies_window_seconds_check c
+constraint calculation_lines / calculation_lines_area_name_check c
+constraint calculation_lines / calculation_lines_area_sqm_check c
+constraint calculation_lines / calculation_lines_calculation_id_fkey f
+constraint calculation_lines / calculation_lines_catalog_item_id_fkey f
+constraint calculation_lines / calculation_lines_company_id_fkey f
+constraint calculation_lines / calculation_lines_frequency_count_check c
+constraint calculation_lines / calculation_lines_machine_cents_check c
+constraint calculation_lines / calculation_lines_material_cents_check c
+constraint calculation_lines / calculation_lines_minutes_override_check c
+constraint calculation_lines / calculation_lines_minutes_per_unit_check c
+constraint calculation_lines / calculation_lines_other_cents_check c
+constraint calculation_lines / calculation_lines_override_reason c
+constraint calculation_lines / calculation_lines_override_reason_check c
+constraint calculation_lines / calculation_lines_pkey p
+constraint calculation_lines / calculation_lines_productivity_per_hour_check c
+constraint calculation_lines / calculation_lines_quantity_check c
+constraint calculation_lines / calculation_lines_scope_note_check c
+constraint calculation_lines / calculation_lines_service_name_check c
+constraint calculations / calculations_ancillary_rate_bp_check c
+constraint calculations / calculations_cleaning_object_id_fkey f
+constraint calculations / calculations_company_id_fkey f
+constraint calculations / calculations_created_by_fkey f
+constraint calculations / calculations_currency_check c
+constraint calculations / calculations_customer_id_fkey f
+constraint calculations / calculations_final_check c
+constraint calculations / calculations_finalised_by_fkey f
+constraint calculations / calculations_lead_id_fkey f
+constraint calculations / calculations_min_hourly_rate_cents_check c
+constraint calculations / calculations_notes_check c
+constraint calculations / calculations_other_cost_cents_per_month_check c
+constraint calculations / calculations_overhead_rate_bp_check c
+constraint calculations / calculations_override_reason c
+constraint calculations / calculations_owner_check c
+constraint calculations / calculations_pkey p
+constraint calculations / calculations_price_override_cents_month_check c
+constraint calculations / calculations_price_override_reason_check c
+constraint calculations / calculations_productive_rate_bp_check c
+constraint calculations / calculations_public_holidays_check c
+constraint calculations / calculations_setup_minutes_per_visit_check c
+constraint calculations / calculations_sick_days_check c
+constraint calculations / calculations_site_survey_id_fkey f
+constraint calculations / calculations_supersedes_calculation_id_fkey f
+constraint calculations / calculations_surcharge_note_check c
+constraint calculations / calculations_surcharge_offpeak_bp_check c
+constraint calculations / calculations_surcharge_small_order_cents_month_check c
+constraint calculations / calculations_surcharge_travel_cents_month_check c
+constraint calculations / calculations_target_margin_bp_check c
+constraint calculations / calculations_title_check c
+constraint calculations / calculations_training_days_check c
+constraint calculations / calculations_travel_cents_per_visit_check c
+constraint calculations / calculations_unproductive_minutes_per_day_check c
+constraint calculations / calculations_vacation_days_check c
+constraint calculations / calculations_version_check c
+constraint calculations / calculations_visits_per_week_check c
+constraint calculations / calculations_wage_cents_per_hour_check c
+constraint calculations / calculations_weekly_hours_check c
+constraint calculations / calculations_working_days_per_week_check c
+constraint checklist_template_items / checklist_template_items_pkey p
+constraint checklist_template_items / checklist_template_items_position_check c
+constraint checklist_template_items / checklist_template_items_template_id_fkey f
+constraint checklist_template_items / checklist_template_items_template_id_position_key u
+constraint checklist_template_items / checklist_template_items_title_check c
+constraint checklist_templates / checklist_templates_company_id_fkey f
+constraint checklist_templates / checklist_templates_name_check c
+constraint checklist_templates / checklist_templates_pkey p
+constraint cleaning_objects / cleaning_objects_area_check c
+constraint cleaning_objects / cleaning_objects_checklist_template_id_fkey f
+constraint cleaning_objects / cleaning_objects_company_id_fkey f
+constraint cleaning_objects / cleaning_objects_customer_id_fkey f
+constraint cleaning_objects / cleaning_objects_name_check c
+constraint cleaning_objects / cleaning_objects_pkey p
+constraint companies / companies_brand_color_check c
+constraint companies / companies_datev_beraternummer_check c
+constraint companies / companies_datev_kontenrahmen_check c
+constraint companies / companies_datev_mandantennummer_check c
+constraint companies / companies_datev_revenue_account_0_check c
+constraint companies / companies_datev_revenue_account_19_check c
+constraint companies / companies_datev_revenue_account_7_check c
+constraint companies / companies_default_vat_rate_basis_points_check c
+constraint companies / companies_hourly_rate_check c
+constraint companies / companies_language_check c
+constraint companies / companies_managing_director_check c
+constraint companies / companies_name_check c
+constraint companies / companies_payment_terms_check c
+constraint companies / companies_pkey p
+constraint companies / companies_slug_key u
+constraint company_calculation_defaults / company_calculation_defaults_ancillary_rate_bp_check c
+constraint company_calculation_defaults / company_calculation_defaults_company_id_fkey f
+constraint company_calculation_defaults / company_calculation_defaults_default_machine_cents_per_mo_check c
+constraint company_calculation_defaults / company_calculation_defaults_default_material_cents_per_v_check c
+constraint company_calculation_defaults / company_calculation_defaults_default_setup_minutes_per_vi_check c
+constraint company_calculation_defaults / company_calculation_defaults_default_travel_cents_per_vis_check c
+constraint company_calculation_defaults / company_calculation_defaults_min_hourly_rate_cents_check c
+constraint company_calculation_defaults / company_calculation_defaults_overhead_rate_bp_check c
+constraint company_calculation_defaults / company_calculation_defaults_pkey p
+constraint company_calculation_defaults / company_calculation_defaults_productive_rate_bp_check c
+constraint company_calculation_defaults / company_calculation_defaults_public_holidays_check c
+constraint company_calculation_defaults / company_calculation_defaults_sick_days_check c
+constraint company_calculation_defaults / company_calculation_defaults_target_margin_bp_check c
+constraint company_calculation_defaults / company_calculation_defaults_training_days_check c
+constraint company_calculation_defaults / company_calculation_defaults_unproductive_minutes_per_day_check c
+constraint company_calculation_defaults / company_calculation_defaults_vacation_days_check c
+constraint company_calculation_defaults / company_calculation_defaults_wage_cents_per_hour_check c
+constraint company_calculation_defaults / company_calculation_defaults_weekly_hours_check c
+constraint company_calculation_defaults / company_calculation_defaults_working_days_per_week_check c
+constraint company_invitations / company_invitations_company_id_fkey f
+constraint company_invitations / company_invitations_customer_id_fkey f
+constraint company_invitations / company_invitations_customer_role_check c
+constraint company_invitations / company_invitations_language_check c
+constraint company_invitations / company_invitations_member_id_fkey f
+constraint company_invitations / company_invitations_pkey p
+constraint company_invitations / company_invitations_role_check c
+constraint company_invitations / company_invitations_token_hash_key u
+constraint company_invitations / company_invitations_wage_check c
+constraint company_invitations / company_invitations_weekly_hours_check c
+constraint company_members / company_members_active_requires_profile c
+constraint company_members / company_members_company_id_fkey f
+constraint company_members / company_members_company_id_profile_id_key u
+constraint company_members / company_members_invited_by_fkey f
+constraint company_members / company_members_pkey p
+constraint company_members / company_members_profile_id_fkey f
+constraint company_number_counters / company_number_counters_company_id_fkey f
+constraint company_number_counters / company_number_counters_last_number_check c
+constraint company_number_counters / company_number_counters_pkey p
+constraint company_number_counters / company_number_counters_sequence_key_check c
+constraint complaint_updates / complaint_updates_author_member_id_fkey f
+constraint complaint_updates / complaint_updates_company_id_fkey f
+constraint complaint_updates / complaint_updates_complaint_id_fkey f
+constraint complaint_updates / complaint_updates_note_check c
+constraint complaint_updates / complaint_updates_pkey p
+constraint complaints / complaints_assigned_member_id_fkey f
+constraint complaints / complaints_cleaning_object_id_fkey f
+constraint complaints / complaints_company_id_fkey f
+constraint complaints / complaints_created_by_fkey f
+constraint complaints / complaints_customer_id_fkey f
+constraint complaints / complaints_description_check c
+constraint complaints / complaints_follow_up_job_id_fkey f
+constraint complaints / complaints_follow_up_job_id_key u
+constraint complaints / complaints_internal_note_check c
+constraint complaints / complaints_job_id_fkey f
+constraint complaints / complaints_pkey p
+constraint complaints / complaints_title_check c
+constraint customer_contacts / customer_contacts_company_id_fkey f
+constraint customer_contacts / customer_contacts_created_by_fkey f
+constraint customer_contacts / customer_contacts_customer_id_fkey f
+constraint customer_contacts / customer_contacts_member_id_fkey f
+constraint customer_contacts / customer_contacts_member_id_key u
+constraint customer_contacts / customer_contacts_pkey p
+constraint customers / customers_company_id_fkey f
+constraint customers / customers_datev_debtor_account_check c
+constraint customers / customers_name_check c
+constraint customers / customers_payment_terms_check c
+constraint customers / customers_pkey p
+constraint employee_absences / employee_absences_au_storage_path_key u
+constraint employee_absences / employee_absences_check c
+constraint employee_absences / employee_absences_check1 c
+constraint employee_absences / employee_absences_company_id_fkey f
+constraint employee_absences / employee_absences_member_id_fkey f
+constraint employee_absences / employee_absences_note_check c
+constraint employee_absences / employee_absences_pkey p
+constraint employee_absences / employee_absences_review_note_check c
+constraint employee_absences / employee_absences_reviewed_by_fkey f
+constraint employee_details / employee_details_company_id_fkey f
+constraint employee_details / employee_details_company_id_profile_id_key u
+constraint employee_details / employee_details_dates_check c
+constraint employee_details / employee_details_language_check c
+constraint employee_details / employee_details_pkey p
+constraint employee_details / employee_details_profile_id_fkey f
+constraint employee_details / employee_details_wage_check c
+constraint employee_details / employee_details_weekly_hours_check c
+constraint in_app_notifications / in_app_notifications_absence_id_fkey f
+constraint in_app_notifications / in_app_notifications_company_id_fkey f
+constraint in_app_notifications / in_app_notifications_complaint_id_fkey f
+constraint in_app_notifications / in_app_notifications_job_id_fkey f
+constraint in_app_notifications / in_app_notifications_pkey p
+constraint in_app_notifications / in_app_notifications_recipient_member_id_fkey f
+constraint invoice_deliveries / invoice_deliveries_channel_check c
+constraint invoice_deliveries / invoice_deliveries_company_id_fkey f
+constraint invoice_deliveries / invoice_deliveries_created_by_fkey f
+constraint invoice_deliveries / invoice_deliveries_detail_check c
+constraint invoice_deliveries / invoice_deliveries_idempotency_key_check c
+constraint invoice_deliveries / invoice_deliveries_invoice_id_fkey f
+constraint invoice_deliveries / invoice_deliveries_pkey p
+constraint invoice_deliveries / invoice_deliveries_provider_check c
+constraint invoice_deliveries / invoice_deliveries_provider_message_id_check c
+constraint invoice_deliveries / invoice_deliveries_recipient_check c
+constraint invoice_deliveries / invoice_deliveries_reminder_fee_check c
+constraint invoice_deliveries / invoice_deliveries_reminder_interest_check c
+constraint invoice_deliveries / invoice_deliveries_reminder_level_check c
+constraint invoice_lines / invoice_lines_cleaning_object_id_fkey f
+constraint invoice_lines / invoice_lines_company_id_fkey f
+constraint invoice_lines / invoice_lines_description_check c
+constraint invoice_lines / invoice_lines_invoice_id_fkey f
+constraint invoice_lines / invoice_lines_job_id_fkey f
+constraint invoice_lines / invoice_lines_pkey p
+constraint invoice_lines / invoice_lines_quantity_check c
+constraint invoice_lines / invoice_lines_service_schedule_id_fkey f
+constraint invoice_lines / invoice_lines_unit_check c
+constraint invoice_lines / invoice_lines_unit_price_cents_check c
+constraint invoice_lines / invoice_lines_vat_rate_basis_points_check c
+constraint invoice_number_counters / invoice_number_counters_company_id_fkey f
+constraint invoice_number_counters / invoice_number_counters_pkey p
+constraint invoice_payments / invoice_payments_amount_cents_check c
+constraint invoice_payments / invoice_payments_company_id_fkey f
+constraint invoice_payments / invoice_payments_currency_check c
+constraint invoice_payments / invoice_payments_external_reference_check c
+constraint invoice_payments / invoice_payments_idempotency_key_check c
+constraint invoice_payments / invoice_payments_invoice_id_fkey f
+constraint invoice_payments / invoice_payments_note_check c
+constraint invoice_payments / invoice_payments_pkey p
+constraint invoice_payments / invoice_payments_recorded_by_fkey f
+constraint invoice_payments / invoice_payments_reference_check c
+constraint invoices / invoices_buyer_reference_length c
+constraint invoices / invoices_cancel_reason c
+constraint invoices / invoices_cancelled_by_fkey f
+constraint invoices / invoices_company_id_fkey f
+constraint invoices / invoices_corrects_invoice_id_fkey f
+constraint invoices / invoices_created_by_fkey f
+constraint invoices / invoices_currency_check c
+constraint invoices / invoices_customer_id_fkey f
+constraint invoices / invoices_issued_dates c
+constraint invoices / invoices_notes_length c
+constraint invoices / invoices_number_when_issued c
+constraint invoices / invoices_period_check c
+constraint invoices / invoices_pkey p
+constraint invoices / invoices_terms_check c
+constraint job_assignment_changes / job_assignment_changes_changed_by_fkey f
+constraint job_assignment_changes / job_assignment_changes_company_id_fkey f
+constraint job_assignment_changes / job_assignment_changes_from_member_id_fkey f
+constraint job_assignment_changes / job_assignment_changes_job_id_fkey f
+constraint job_assignment_changes / job_assignment_changes_pkey p
+constraint job_assignment_changes / job_assignment_changes_to_member_id_fkey f
+constraint job_assignments / job_assignments_assigned_by_fkey f
+constraint job_assignments / job_assignments_company_id_fkey f
+constraint job_assignments / job_assignments_job_id_fkey f
+constraint job_assignments / job_assignments_job_id_member_id_key u
+constraint job_assignments / job_assignments_member_id_fkey f
+constraint job_assignments / job_assignments_pkey p
+constraint job_checklist_items / job_checklist_items_completed_by_fkey f
+constraint job_checklist_items / job_checklist_items_job_checklist_id_fkey f
+constraint job_checklist_items / job_checklist_items_job_checklist_id_position_key u
+constraint job_checklist_items / job_checklist_items_pkey p
+constraint job_checklists / job_checklists_company_id_fkey f
+constraint job_checklists / job_checklists_job_id_fkey f
+constraint job_checklists / job_checklists_job_id_key u
+constraint job_checklists / job_checklists_pkey p
+constraint job_checklists / job_checklists_template_id_fkey f
+constraint job_photos / job_photos_checklist_item_id_fkey f
+constraint job_photos / job_photos_client_upload_id_length c
+constraint job_photos / job_photos_company_id_fkey f
+constraint job_photos / job_photos_job_id_fkey f
+constraint job_photos / job_photos_member_id_fkey f
+constraint job_photos / job_photos_pkey p
+constraint job_photos / job_photos_storage_path_key u
+constraint job_time_breaks / job_time_breaks_company_id_fkey f
+constraint job_time_breaks / job_time_breaks_order c
+constraint job_time_breaks / job_time_breaks_pkey p
+constraint job_time_breaks / job_time_breaks_time_entry_id_fkey f
+constraint job_time_entries / job_time_entries_break_check c
+constraint job_time_entries / job_time_entries_check c
+constraint job_time_entries / job_time_entries_company_id_fkey f
+constraint job_time_entries / job_time_entries_duration_minutes_check c
+constraint job_time_entries / job_time_entries_job_id_fkey f
+constraint job_time_entries / job_time_entries_member_id_fkey f
+constraint job_time_entries / job_time_entries_pkey p
+constraint jobs / jobs_check c
+constraint jobs / jobs_checklist_template_id_fkey f
+constraint jobs / jobs_cleaning_object_id_fkey f
+constraint jobs / jobs_company_id_fkey f
+constraint jobs / jobs_customer_id_fkey f
+constraint jobs / jobs_employee_report_length c
+constraint jobs / jobs_pkey p
+constraint jobs / jobs_schedule_rule_id_fkey f
+constraint jobs / jobs_service_schedule_id_fkey f
+constraint jobs / jobs_service_schedule_id_schedule_rule_id_scheduled_date_key u
+constraint jobs / jobs_title_check c
+constraint leads / leads_cleaning_object_id_fkey f
+constraint leads / leads_company_id_fkey f
+constraint leads / leads_converted_check c
+constraint leads / leads_converted_customer_id_fkey f
+constraint leads / leads_created_by_fkey f
+constraint leads / leads_customer_id_fkey f
+constraint leads / leads_email_check c
+constraint leads / leads_lost_reason_check c
+constraint leads / leads_notes_check c
+constraint leads / leads_organisation_check c
+constraint leads / leads_pkey p
+constraint mail_events / mail_events_event_type_check c
+constraint mail_events / mail_events_pkey p
+constraint mail_events / mail_events_provider_check c
+constraint mail_events / mail_events_provider_event_id_check c
+constraint mail_events / mail_events_provider_message_id_check c
+constraint mail_events / mail_events_provider_provider_event_id_key u
+constraint mail_events / mail_events_recipient_check c
+constraint message_threads / message_threads_company_id_fkey f
+constraint message_threads / message_threads_created_by_fkey f
+constraint message_threads / message_threads_employee_member_id_fkey f
+constraint message_threads / message_threads_pkey p
+constraint message_threads / message_threads_subject_check c
+constraint messages / messages_body_check c
+constraint messages / messages_company_id_fkey f
+constraint messages / messages_pkey p
+constraint messages / messages_sender_member_id_fkey f
+constraint messages / messages_thread_id_fkey f
+constraint operational_photos / operational_photos_check c
+constraint operational_photos / operational_photos_company_id_fkey f
+constraint operational_photos / operational_photos_complaint_id_fkey f
+constraint operational_photos / operational_photos_description_check c
+constraint operational_photos / operational_photos_member_id_fkey f
+constraint operational_photos / operational_photos_pkey p
+constraint operational_photos / operational_photos_quality_inspection_id_fkey f
+constraint operational_photos / operational_photos_storage_path_key u
+constraint payroll_period_releases / payroll_period_releases_company_id_fkey f
+constraint payroll_period_releases / payroll_period_releases_period_id_fkey f
+constraint payroll_period_releases / payroll_period_releases_period_id_sequence_key u
+constraint payroll_period_releases / payroll_period_releases_pkey p
+constraint payroll_period_releases / payroll_period_releases_released_by_fkey f
+constraint payroll_period_releases / payroll_period_releases_reopen_reason_check c
+constraint payroll_period_releases / payroll_period_releases_reopened_by_fkey f
+constraint payroll_periods / payroll_periods_company_id_fkey f
+constraint payroll_periods / payroll_periods_company_id_period_key u
+constraint payroll_periods / payroll_periods_period_check c
+constraint payroll_periods / payroll_periods_pkey p
+constraint payroll_periods / payroll_periods_status_check c
+constraint profiles / profiles_auth_user_id_fkey f
+constraint profiles / profiles_auth_user_id_key u
+constraint profiles / profiles_pkey p
+constraint quality_inspections / quality_inspections_cleaning_object_id_fkey f
+constraint quality_inspections / quality_inspections_company_id_fkey f
+constraint quality_inspections / quality_inspections_criteria_check c
+constraint quality_inspections / quality_inspections_inspector_member_id_fkey f
+constraint quality_inspections / quality_inspections_job_id_fkey f
+constraint quality_inspections / quality_inspections_notes_check c
+constraint quality_inspections / quality_inspections_pkey p
+constraint quality_inspections / quality_inspections_score_check c
+constraint quote_lines / quote_lines_company_id_fkey f
+constraint quote_lines / quote_lines_description_check c
+constraint quote_lines / quote_lines_pkey p
+constraint quote_lines / quote_lines_quantity_check c
+constraint quote_lines / quote_lines_quote_id_fkey f
+constraint quote_lines / quote_lines_survey_area_id_fkey f
+constraint quote_lines / quote_lines_unit_check c
+constraint quote_lines / quote_lines_unit_price_cents_check c
+constraint quote_lines / quote_lines_vat_rate_basis_points_check c
+constraint quote_number_counters / quote_number_counters_company_id_fkey f
+constraint quote_number_counters / quote_number_counters_pkey p
+constraint quotes / quotes_accept_check c
+constraint quotes / quotes_accepted_via_check c
+constraint quotes / quotes_calculation_id_fkey f
+constraint quotes / quotes_company_id_fkey f
+constraint quotes / quotes_created_by_fkey f
+constraint quotes / quotes_created_customer_id_fkey f
+constraint quotes / quotes_created_object_id_fkey f
+constraint quotes / quotes_created_schedule_id_fkey f
+constraint quotes / quotes_currency_check c
+constraint quotes / quotes_customer_id_fkey f
+constraint quotes / quotes_decline_check c
+constraint quotes / quotes_intro_check c
+constraint quotes / quotes_lead_id_fkey f
+constraint quotes / quotes_number_when_sent c
+constraint quotes / quotes_order_type_check c
+constraint quotes / quotes_owner_check c
+constraint quotes / quotes_pkey p
+constraint quotes / quotes_sent_at_check c
+constraint quotes / quotes_service_dates_check c
+constraint quotes / quotes_site_survey_id_fkey f
+constraint quotes / quotes_title_check c
+constraint schedule_rules / schedule_rules_check c
+constraint schedule_rules / schedule_rules_pkey p
+constraint schedule_rules / schedule_rules_service_schedule_id_fkey f
+constraint schedule_rules / schedule_rules_service_schedule_id_weekday_planned_start_ti_key u
+constraint schedule_rules / schedule_rules_weekday_check c
+constraint service_catalog_items / service_catalog_items_category_check c
+constraint service_catalog_items / service_catalog_items_company_id_fkey f
+constraint service_catalog_items / service_catalog_items_company_id_name_key u
+constraint service_catalog_items / service_catalog_items_default_material_cents_check c
+constraint service_catalog_items / service_catalog_items_default_minutes_per_unit_check c
+constraint service_catalog_items / service_catalog_items_default_productivity_per_hour_check c
+constraint service_catalog_items / service_catalog_items_description_check c
+constraint service_catalog_items / service_catalog_items_name_check c
+constraint service_catalog_items / service_catalog_items_pkey p
+constraint service_record_events / service_record_events_actor_member_id_fkey f
+constraint service_record_events / service_record_events_company_id_fkey f
+constraint service_record_events / service_record_events_note_check c
+constraint service_record_events / service_record_events_pkey p
+constraint service_record_events / service_record_events_service_record_id_fkey f
+constraint service_records / service_records_acceptance_complete c
+constraint service_records / service_records_accepted_by_member_id_fkey f
+constraint service_records / service_records_accepted_by_name_check c
+constraint service_records / service_records_break_minutes_check c
+constraint service_records / service_records_cleaning_object_id_fkey f
+constraint service_records / service_records_company_id_fkey f
+constraint service_records / service_records_complaint_id_fkey f
+constraint service_records / service_records_customer_id_fkey f
+constraint service_records / service_records_job_id_fkey f
+constraint service_records / service_records_job_id_key u
+constraint service_records / service_records_net_minutes_check c
+constraint service_records / service_records_pkey p
+constraint service_records / service_records_service_schedule_id_fkey f
+constraint service_records / service_records_signature_method c
+constraint service_records / service_records_signature_storage_path_key u
+constraint service_schedule_assignments / service_schedule_assignments_company_id_fkey f
+constraint service_schedule_assignments / service_schedule_assignments_member_id_fkey f
+constraint service_schedule_assignments / service_schedule_assignments_pkey p
+constraint service_schedule_assignments / service_schedule_assignments_service_schedule_id_fkey f
+constraint service_schedule_assignments / service_schedule_assignments_service_schedule_id_member_id_key u
+constraint service_schedules / service_schedules_assignment_mode_check c
+constraint service_schedules / service_schedules_billing_check c
+constraint service_schedules / service_schedules_check c
+constraint service_schedules / service_schedules_checklist_template_id_fkey f
+constraint service_schedules / service_schedules_cleaning_object_id_fkey f
+constraint service_schedules / service_schedules_company_id_fkey f
+constraint service_schedules / service_schedules_customer_id_fkey f
+constraint service_schedules / service_schedules_name_check c
+constraint service_schedules / service_schedules_order_type_check c
+constraint service_schedules / service_schedules_pkey p
+constraint site_surveys / site_surveys_access_notes_check c
+constraint site_surveys / site_surveys_company_id_fkey f
+constraint site_surveys / site_surveys_completed_check c
+constraint site_surveys / site_surveys_conducted_by_fkey f
+constraint site_surveys / site_surveys_created_by_fkey f
+constraint site_surveys / site_surveys_customer_id_fkey f
+constraint site_surveys / site_surveys_findings_check c
+constraint site_surveys / site_surveys_lead_id_fkey f
+constraint site_surveys / site_surveys_owner_check c
+constraint site_surveys / site_surveys_pkey p
+constraint site_surveys / site_surveys_site_name_check c
+constraint survey_areas / survey_areas_area_sqm_check c
+constraint survey_areas / survey_areas_company_id_fkey f
+constraint survey_areas / survey_areas_hourly_rate_cents_check c
+constraint survey_areas / survey_areas_minutes_per_service_check c
+constraint survey_areas / survey_areas_name_check c
+constraint survey_areas / survey_areas_notes_check c
+constraint survey_areas / survey_areas_pkey p
+constraint survey_areas / survey_areas_services_per_week_check c
+constraint survey_areas / survey_areas_site_survey_id_fkey f
+constraint time_entry_audit_logs / time_entry_audit_logs_changed_by_fkey f
+constraint time_entry_audit_logs / time_entry_audit_logs_company_id_fkey f
+constraint time_entry_audit_logs / time_entry_audit_logs_pkey p
+constraint time_entry_audit_logs / time_entry_audit_logs_reason_check c
+constraint time_entry_audit_logs / time_entry_audit_logs_time_entry_id_fkey f
+enum       absence_decision = REPORTED,PENDING,APPROVED,REJECTED
+enum       absence_status = PENDING,APPROVED,REJECTED
+enum       absence_type = VACATION,SICKNESS
+enum       acceptance_method = KEINE,VOR_ORT_UNTERSCHRIFT,PORTAL_BESTAETIGUNG,BUERO_FREIGABE
+enum       acceptance_policy = KEINE_ABNAHME_ERFORDERLICH,VOR_ORT_UNTERSCHRIFT,PORTAL_ABNAHME
+enum       billing_mode = PAUSCHALE_PRO_EINSATZ,STUNDENSATZ,MONATSPAUSCHALE
+enum       calculation_frequency = EINMALIG,PRO_WOCHE,PRO_MONAT,VIERZEHNTAEGIG,VIERTELJAEHRLICH,HALBJAEHRLICH,JAEHRLICH
+enum       calculation_status = ENTWURF,FINAL,VERWORFEN
+enum       calculation_unit = QM,STUNDE,STUECK,EINSATZ,PAUSCHAL
+enum       company_role = OWNER,OFFICE,EMPLOYEE,CUSTOMER
+enum       complaint_priority = LOW,NORMAL,HIGH,URGENT
+enum       complaint_status = OPEN,IN_PROGRESS,RESOLVED,CLOSED
+enum       cost_basis = PRO_EINSATZ,PRO_MONAT,PRO_STUNDE,PRO_QM
+enum       employment_type = FULL_TIME,PART_TIME,MINIJOB,OTHER
+enum       invitation_state = GUELTIG,ANGENOMMEN,ABGELAUFEN,ZURUECKGEZOGEN,UNBEKANNT
+enum       invoice_delivery_kind = INVOICE,REMINDER
+enum       invoice_delivery_status = SENT,FAILED,NOT_CONFIGURED,MANUAL
+enum       invoice_status = DRAFT,ISSUED,PAID,CANCELLED
+enum       job_photo_category = BEFORE,AFTER,DOCUMENTATION
+enum       job_priority = LOW,NORMAL,HIGH,URGENT
+enum       job_status = PLANNED,CONFIRMED,IN_PROGRESS,COMPLETED,CANCELLED,MISSED
+enum       lead_status = NEW,CONTACTED,SURVEY_BOOKED,QUOTED,WON,LOST
+enum       membership_status = ACTIVE,INVITED,DISABLED
+enum       notification_type = VACATION_SUBMITTED,VACATION_APPROVED,VACATION_REJECTED,SICKNESS_REPORTED,ASSIGNMENT_CHANGED,REPLACEMENT_ASSIGNED,COMPLAINT_CREATED,MESSAGE_RECEIVED,JOB_START_SOON,JOB_START_OVERDUE,COMPLAINT_UPDATED,JOB_ASSIGNED
+enum       operational_photo_scope = COMPLAINT,QUALITY_INSPECTION
+enum       payment_method = BANK_TRANSFER,CASH,CARD,DIRECT_DEBIT,OTHER
+enum       payment_source = MANUAL,BANK_IMPORT,STRIPE
+enum       quality_result = PASS,FAIL
+enum       quote_line_recurrence = ONE_OFF,WEEKLY,MONTHLY
+enum       quote_status = DRAFT,SENT,ACCEPTED,DECLINED,EXPIRED
+enum       schedule_recurrence_type = WEEKLY
+enum       service_record_event = ERSTELLT,UNTERSCHRIEBEN,BESTAETIGT,PROBLEM_GEMELDET,PROBLEM_GEKLAERT,FREIGABE_WIDERRUFEN
+enum       service_record_status = ERFASST,ABNAHME_AUSSTEHEND,ABGENOMMEN,PROBLEM_GEMELDET
+enum       survey_status = PLANNED,COMPLETED,CANCELLED
+enum       time_entry_source = APP,MANUAL,OFFLINE
+function   accept_portal_quote(p_quote_id uuid, p_name text, p_note text) security definer
+function   accept_public_quote(p_token text, p_name text, p_note text) security definer
+function   accept_public_quote_signed(p_token text, p_name text, p_signature text, p_note text) security definer
+function   accept_quote(p_quote_id uuid, p_weekdays smallint[], p_start_time time without time zone, p_end_time time without time zone, p_acceptance_policy acceptance_policy) security definer
+function   activate_quote_master_data() security definer
+function   add_invoice_line(p_invoice_id uuid, p_description text, p_quantity numeric, p_unit text, p_unit_price_cents bigint, p_vat_rate_basis_points integer, p_job_id uuid, p_service_schedule_id uuid, p_cleaning_object_id uuid) security definer
+function   add_my_complaint_update(p_complaint_id uuid, p_status complaint_status, p_note text) security definer
+function   add_quote_line(p_quote_id uuid, p_description text, p_quantity numeric, p_unit text, p_unit_price_cents bigint, p_vat_rate_basis_points integer, p_recurrence quote_line_recurrence) security definer
+function   add_staff_complaint_reply(p_complaint_id uuid, p_note text) security definer
+function   add_survey_area(p_survey_id uuid, p_name text, p_area_sqm numeric, p_floor_type text, p_services_per_week numeric, p_minutes_per_service integer, p_hourly_rate_cents bigint, p_notes text) security definer
+function   apply_calculation_defaults(p_calculation_id uuid) security definer
+function   assign_customer_number() security definer
+function   assign_employee_number() security definer
+function   assign_object_number() security definer
+function   attach_my_au_document(p_absence_id uuid, p_path text) security definer
+function   audit_company_settings() security definer
+function   audit_invoice_status() security definer
+function   audit_member_change() security definer
+function   audit_payroll_release() security definer
+function   auto_assign_schedule_employee(p_schedule_id uuid) security definer
+function   billing_actor() security definer
+function   build_service_record(p_job_id uuid) security definer
+function   build_service_record_on_completion() security definer
+function   calculate_line_minutes(p_unit calculation_unit, p_quantity numeric, p_productivity_per_hour numeric, p_minutes_per_unit numeric, p_minutes_override numeric)
+function   calculate_services_per_month(p_frequency calculation_frequency, p_count numeric)
+function   can_access_absence_document_path(p_name text) security definer
+function   can_access_operational_photo_path(p_name text) security definer
+function   can_manage_company_member(target_member_id uuid) security definer
+function   can_portal_customer_read_job_photo(p_name text) security definer
+function   can_read_avatar_path(p_name text) security definer
+function   can_read_branding_path(p_name text) security definer
+function   can_read_signature_path(p_name text) security definer
+function   can_upload_own_absence_document_path(p_name text) security definer
+function   can_upload_scoped_complaint_photo_path(p_name text) security definer
+function   can_write_branding_path(p_name text) security definer
+function   can_write_signature_path(p_name text) security definer
+function   cancel_invoice(p_invoice_id uuid, p_reason text) security definer
+function   carry_employee_report_into_record() security definer
+function   cleanup_job_photo_metadata_after_storage_delete() security definer
+function   cleanup_operational_photo_metadata_after_storage_delete() security definer
+function   clear_auth_attempts(p_scope text, p_bucket text, p_proof text) security definer
+function   clear_company_logo() security definer
+function   company_capacity_snapshot(p_month date) security definer
+function   complete_company_invitation(p_token text) security definer
+function   complete_my_checklist_item(p_item_id uuid, p_completed boolean) security definer
+function   complete_onboarding_step(p_step text, p_finished boolean) security definer
+function   complete_site_survey(p_survey_id uuid, p_findings text) security definer
+function   compute_invoice_line_amounts()
+function   compute_quote_line_amounts()
+function   confirm_my_portal_service(p_job_id uuid) security definer
+function   correct_time_entry(p_time_entry_id uuid, p_started_at timestamp with time zone, p_finished_at timestamp with time zone, p_reason text) security definer
+function   cost_to_month(p_cents bigint, p_basis cost_basis, p_services_per_month numeric, p_monthly_hours numeric, p_sqm numeric)
+function   create_calculation(p_title text, p_lead_id uuid, p_customer_id uuid, p_site_survey_id uuid, p_cleaning_object_id uuid, p_catalog_item_id uuid) security definer
+function   create_company_for_current_user(company_name text) security definer
+function   create_complaint_follow_up_job(p_complaint_id uuid, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_member_ids uuid[]) security definer
+function   create_correction_invoice(p_invoice_id uuid) security definer
+function   create_customer_invitation(p_customer_id uuid, p_email text, p_first_name text, p_last_name text, p_phone text, p_token_hash text, p_expires_at timestamp with time zone) security definer
+function   create_draft_invoice(p_customer_id uuid, p_period_start date, p_period_end date, p_payment_terms_days smallint, p_customer_note text, p_buyer_reference text) security definer
+function   create_employee_invitation(p_email text, p_first_name text, p_last_name text, p_phone text, p_role company_role, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_notes text, p_token_hash text, p_expires_at timestamp with time zone) security definer
+function   create_job_checklist_snapshot(p_job_id uuid) security definer
+function   create_lead(p_organisation text, p_contact_person text, p_email text, p_phone text, p_street text, p_postal_code text, p_city text, p_source text, p_notes text) security definer
+function   create_lead_v2(p_organisation text, p_contact_person text, p_email text, p_phone text, p_street text, p_postal_code text, p_city text, p_source text, p_notes text, p_customer_id uuid, p_cleaning_object_id uuid, p_cleaning_type text, p_desired_start date, p_frequency text, p_preferred_time text) security definer
+function   create_my_absence(p_type absence_type, p_start date, p_end date, p_note text) security definer
+function   create_my_job_photo_metadata(p_job_id uuid, p_storage_path text, p_category job_photo_category, p_checklist_item_id uuid, p_description text, p_client_upload_id text) security definer
+function   create_my_portal_complaint(p_object_id uuid, p_title text, p_description text, p_job_id uuid) security definer
+function   create_operational_photo_metadata(p_scope operational_photo_scope, p_record_id uuid, p_storage_path text, p_category job_photo_category, p_description text) security definer
+function   create_quote_from_calculation(p_calculation_id uuid, p_title text, p_valid_days integer, p_billing_mode billing_mode, p_acceptance_policy acceptance_policy, p_order_type text, p_service_start date, p_service_end date, p_termination_notice text) security definer
+function   create_quote_from_survey(p_survey_id uuid, p_title text, p_valid_days integer) security definer
+function   create_single_job(p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) security definer
+function   current_company_member() security definer
+function   current_customer_contact() security definer
+function   current_employee_member() security definer
+function   customer_belongs_to_company(target_customer_id uuid, target_company_id uuid) security definer
+function   de_hours(p_minutes numeric)
+function   decline_portal_quote(p_quote_id uuid, p_reason text) security definer
+function   decline_public_quote(p_token text, p_reason text) security definer
+function   decline_quote(p_quote_id uuid, p_reason text) security definer
+function   delete_draft_invoice(p_invoice_id uuid) security definer
+function   delete_job_photo(p_photo_id uuid) security definer
+function   delete_operational_photo(p_photo_id uuid) security definer
+function   delete_pending_company_member(p_member_id uuid) security definer
+function   derive_productive_rate_bp(p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric)
+function   dispute_my_portal_service(p_job_id uuid, p_title text, p_description text) security definer
+function   easter_sunday(p_year integer)
+function   effective_entry_time(p_at timestamp with time zone)
+function   enqueue_job_start_reminders() security definer
+function   ensure_assignment_company_integrity() security definer
+function   ensure_checklist_template_in_company(p_template_id uuid, p_company_id uuid) security definer
+function   ensure_cleaning_object_company_integrity() security definer
+function   ensure_complaint_company_integrity() security definer
+function   ensure_customer_contact_integrity() security definer
+function   ensure_invoice_line_integrity() security definer
+function   ensure_job_assignment_company_integrity() security definer
+function   ensure_job_company_integrity() security definer
+function   ensure_message_thread_integrity() security definer
+function   ensure_object_customer_company_match() security definer
+function   ensure_quality_inspection_company_integrity() security definer
+function   ensure_quote_line_integrity() security definer
+function   ensure_schedule_assignment_company_integrity() security definer
+function   ensure_schedule_company_integrity() security definer
+function   ensure_time_entry_integrity() security definer
+function   finalise_calculation(p_calculation_id uuid) security definer
+function   find_job_assignment_conflicts(p_company_id uuid, p_start timestamp with time zone, p_end timestamp with time zone, p_member_ids uuid[]) security definer
+function   find_job_capacity_warnings(p_company_id uuid, p_date date, p_start timestamp with time zone, p_end timestamp with time zone, p_member_ids uuid[], p_exclude_job uuid) security definer
+function   forbid_audit_change()
+function   frequency_label(p_frequency calculation_frequency, p_count numeric)
+function   generate_due_jobs(p_horizon_days integer) security definer
+function   generate_jobs_for_schedule(p_schedule_id uuid, p_until date) security definer
+function   generate_schedule_occurrences(p_schedule_id uuid, p_until date) security definer
+function   german_public_holidays(p_year integer)
+function   get_invitation_preview(p_token text) security definer
+function   get_invitation_state(p_token text) security definer
+function   get_leistungsverzeichnis(p_calculation_id uuid) security definer
+function   get_my_job_acceptance(p_job_id uuid) security definer
+function   get_my_portal_acceptance(p_job_id uuid) security definer
+function   get_my_portal_invoice(p_invoice_id uuid) security definer
+function   get_my_portal_overview() security definer
+function   get_my_portal_quote(p_quote_id uuid) security definer
+function   get_my_portal_service_record(p_job_id uuid) security definer
+function   get_onboarding_status() security definer
+function   get_portal_acceptance_mail_target(p_job_id uuid) security definer
+function   get_public_quote(p_token text) security definer
+function   get_service_record(p_job_id uuid) security definer
+function   guard_final_calculation()
+function   guard_final_calculation_lines()
+function   guard_issued_invoice()
+function   guard_issued_invoice_lines()
+function   guard_released_time_break()
+function   guard_released_time_entry()
+function   guard_sent_quote()
+function   guard_sent_quote_lines()
+function   guard_service_record_immutability()
+function   handle_new_auth_user() security definer
+function   is_absence_unavailable(p_member_id uuid, p_date date) security definer
+function   is_active_employee_member(target_member_id uuid, target_company_id uuid) security definer
+function   is_allowed_absence_document_path(p_name text)
+function   is_allowed_avatar_path(p_name text)
+function   is_allowed_branding_path(p_name text)
+function   is_allowed_job_photo_storage_path(p_name text) security definer
+function   is_allowed_operational_photo_storage_path(p_name text) security definer
+function   is_assignable_employee_member(target_member_id uuid, target_company_id uuid) security definer
+function   is_company_member(target_company_id uuid) security definer
+function   is_company_owner(target_company_id uuid) security definer
+function   is_company_staff(target_company_id uuid) security definer
+function   is_current_job_assignee(target_job_id uuid) security definer
+function   is_current_member(target_member_id uuid) security definer
+function   is_payroll_month_released(p_company uuid, p_day date) security definer
+function   is_portal_customer_of(p_company_id uuid, p_customer_id uuid) security definer
+function   is_staff_for_profile(target_profile_id uuid) security definer
+function   is_supported_locale(p_locale text)
+function   issue_invoice(p_invoice_id uuid, p_issue_date date) security definer
+function   list_absence_affected_assignments(p_from date, p_to date) security definer
+function   list_absence_affected_with_candidates(p_from date, p_to date) security definer
+function   list_acceptance_config_warnings() security definer
+function   list_audit_events(p_from timestamp with time zone, p_to timestamp with time zone) security definer
+function   list_billable_jobs(p_customer_id uuid, p_from date, p_to date) security definer
+function   list_billable_retainers(p_customer_id uuid, p_month date) security definer
+function   list_calculations(p_status calculation_status) security definer
+function   list_invoice_payments(p_invoice_id uuid) security definer
+function   list_member_account_states() security definer
+function   list_monthly_work_days(p_month date, p_member uuid) security definer
+function   list_monthly_work_summary(p_month date) security definer
+function   list_my_portal_acceptances() security definer
+function   list_my_portal_complaints() security definer
+function   list_my_portal_invoices() security definer
+function   list_my_portal_job_photos(p_job_id uuid) security definer
+function   list_my_portal_objects() security definer
+function   list_my_portal_quotes() security definer
+function   list_my_portal_service_records(p_limit integer) security definer
+function   list_my_portal_upcoming_jobs(p_from date, p_days integer) security definer
+function   list_my_threads() security definer
+function   list_replacement_candidates(p_job_id uuid) security definer
+function   list_sales_pipeline() security definer
+function   list_schedule_coverage() security definer
+function   list_service_record_events(p_job_id uuid) security definer
+function   list_service_records(p_from date, p_to date, p_queue text) security definer
+function   list_thread_messages(p_thread_id uuid) security definer
+function   margin_bp(p_price_cents bigint, p_cost_cents bigint)
+function   mark_customer_accepted_schedule_pending() security definer
+function   mark_invoice_paid(p_invoice_id uuid, p_paid_at timestamp with time zone) security definer
+function   mark_thread_read(p_thread_id uuid) security definer
+function   markup_bp(p_price_cents bigint, p_cost_cents bigint)
+function   member_month_figures(p_member uuid, p_month date) security definer
+function   messaging_actor() security definer
+function   my_job_photo_for_client_upload(p_job_id uuid, p_client_upload_id text) security definer
+function   my_monthly_work_summary(p_month date) security definer
+function   next_company_number(p_company_id uuid, p_sequence_key text) security definer
+function   object_profitability(p_from date, p_to date) security definer
+function   owns_avatar_path(p_name text) security definer
+function   pause_my_job(p_job_id uuid, p_at timestamp with time zone) security definer
+function   payroll_period_state(p_month date) security definer
+function   payroll_release_figures(p_month date, p_sequence integer) security definer
+function   personnel_cost_per_hour(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer)
+function   phase7_current_member() security definer
+function   plan_window_automatically(p_from date, p_to date) security definer
+function   price_from_margin(p_cost_cents bigint, p_margin_bp integer)
+function   reassign_absence_affected_job(p_job_id uuid, p_from_member_id uuid, p_to_member_id uuid) security definer
+function   recalculate_calculation(p_calculation_id uuid) security definer
+function   record_audit_event(p_company_id uuid, p_action text, p_subject_type text, p_subject_id uuid, p_subject_label text, p_detail jsonb) security definer
+function   record_invoice_delivery(p_invoice_id uuid, p_kind invoice_delivery_kind, p_channel text, p_recipient text, p_status invoice_delivery_status, p_detail text, p_provider text, p_provider_message_id text, p_idempotency_key text) security definer
+function   record_invoice_delivery_v2(p_invoice_id uuid, p_kind invoice_delivery_kind, p_channel text, p_recipient text, p_status invoice_delivery_status, p_detail text, p_provider text, p_provider_message_id text, p_idempotency_key text, p_reminder_level smallint, p_reminder_fee_cents bigint, p_reminder_interest_cents bigint) security definer
+function   record_invoice_payment(p_invoice_id uuid, p_paid_on date, p_method payment_method, p_reference text, p_amount_cents bigint, p_note text, p_idempotency_key text) security definer
+function   record_mail_event(p_provider text, p_provider_event_id text, p_provider_message_id text, p_event_type text, p_recipient text, p_occurred_at timestamp with time zone, p_payload jsonb) security definer
+function   record_portal_acceptance_mail(p_job_id uuid, p_kind text) security definer
+function   refresh_invoice_totals() security definer
+function   refresh_quote_totals() security definer
+function   refresh_service_record_photos() security definer
+function   register_auth_attempt(p_scope text, p_bucket text, p_proof text) security definer
+function   release_payroll_period(p_month date) security definer
+function   remove_calculation_line(p_line_id uuid) security definer
+function   remove_invoice_line(p_line_id uuid) security definer
+function   remove_quote_line(p_line_id uuid) security definer
+function   remove_survey_area(p_area_id uuid) security definer
+function   reopen_payroll_period(p_month date, p_reason text) security definer
+function   request_source_address() security definer
+function   resend_company_invitation(p_member_id uuid, p_token_hash text, p_expires_at timestamp with time zone) security definer
+function   resolve_acceptance_policy(p_job_id uuid) security definer
+function   resolve_auth_throttle_key(p_scope text, p_bucket text, p_proof text) security definer
+function   resolve_job_checklist_template() security definer
+function   resolve_service_dispute(p_job_id uuid, p_outcome text, p_note text) security definer
+function   resume_my_job(p_job_id uuid, p_at timestamp with time zone) security definer
+function   review_absence(p_absence_id uuid, p_approved boolean) security definer
+function   review_absence_with_note(p_absence_id uuid, p_approved boolean, p_note text) security definer
+function   revise_calculation(p_calculation_id uuid) security definer
+function   revoke_service_acceptance(p_job_id uuid, p_reason text) security definer
+function   run_monthly_billing(p_month date, p_dry_run boolean) security definer
+function   sales_actor() security definer
+function   save_calculation_line(p_id uuid, p_calculation_id uuid, p_area_name text, p_service_name text, p_unit calculation_unit, p_quantity numeric, p_frequency calculation_frequency, p_frequency_count numeric, p_area_sqm numeric, p_catalog_item_id uuid, p_productivity numeric, p_minutes_per_unit numeric, p_minutes_override numeric, p_override_reason text, p_material_cents bigint, p_material_basis cost_basis, p_machine_cents bigint, p_machine_basis cost_basis, p_other_cents bigint, p_other_basis cost_basis, p_scope_note text, p_service_weekdays smallint[]) security definer
+function   save_catalog_item(p_id uuid, p_name text, p_category text, p_unit calculation_unit, p_productivity numeric, p_minutes_per_unit numeric, p_material_cents bigint, p_material_basis cost_basis, p_description text, p_is_active boolean) security definer
+function   save_company_profile(p_name text, p_legal_form text, p_managing_director text, p_street text, p_postal_code text, p_city text, p_country text, p_phone text, p_email text, p_website text, p_tax_number text, p_vat_id text, p_billing_email text, p_iban text, p_bic text, p_payment_terms_days smallint, p_vat_rate_bp integer) security definer
+function   save_service_schedule(p_schedule_id uuid, p_customer_id uuid, p_cleaning_object_id uuid, p_checklist_template_id uuid, p_name text, p_description text, p_valid_from date, p_valid_until date, p_acceptance_policy acceptance_policy, p_billing_mode billing_mode, p_assignment_mode text, p_is_active boolean, p_member_ids uuid[], p_rules jsonb, p_generate_until date) security definer
+function   schedule_candidate_diagnostics(p_schedule_id uuid) security definer
+function   schedule_site_survey(p_lead_id uuid, p_customer_id uuid, p_site_name text, p_scheduled_at timestamp with time zone, p_conducted_by uuid, p_street text, p_postal_code text, p_city text, p_access_notes text) security definer
+function   seed_service_catalog(p_focus text[]) security definer
+function   seed_service_catalog_for(p_company_id uuid, p_focus text[]) security definer
+function   send_message(p_thread_id uuid, p_body text) security definer
+function   send_quote(p_quote_id uuid) security definer
+function   set_calculation_defaults(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer, p_target_margin_bp integer) security definer
+function   set_calculation_defaults_v2(p_wage_cents bigint, p_ancillary_bp integer, p_overhead_bp integer, p_target_margin_bp integer, p_productive_bp integer, p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric, p_min_hourly_rate_cents bigint, p_material_cents_per_visit bigint, p_machine_cents_per_month bigint, p_travel_cents_per_visit bigint, p_setup_minutes_per_visit numeric) security definer
+function   set_company_branding(p_storage_path text, p_brand_color text) security definer
+function   set_company_datev_settings(p_beraternummer text, p_mandantennummer text, p_kontenrahmen text, p_revenue_account_19 text, p_revenue_account_7 text, p_revenue_account_0 text) security definer
+function   set_company_default_hourly_rate(p_cents bigint) security definer
+function   set_company_management(p_managing_director text, p_vat_rate_bp integer) security definer
+function   set_company_member_active(p_member_id uuid, p_is_active boolean) security definer
+function   set_employee_master_data(p_member_id uuid, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_employment_end_date date, p_employment_type employment_type, p_preferred_language text, p_notes text, p_wage_group text, p_hourly_wage_cents integer) security definer
+function   set_lead_status(p_lead_id uuid, p_status lead_status, p_lost_reason text) security definer
+function   set_my_avatar(p_storage_path text) security definer
+function   set_my_job_report(p_job_id uuid, p_note text) security definer
+function   set_my_preferred_language(p_locale text) security definer
+function   set_quote_public_access(p_quote_id uuid, p_token_hash text, p_expires_at timestamp with time zone) security definer
+function   set_require_staff_mfa(p_required boolean) security definer
+function   set_service_focus(p_focus text[]) security definer
+function   set_updated_at()
+function   sign_service_record_on_site(p_job_id uuid, p_signer_name text, p_signature_path text) security definer
+function   snapshot_checklist_for_new_job() security definer
+function   start_message_thread(p_employee_member_id uuid, p_subject text, p_body text) security definer
+function   start_my_job(p_job_id uuid, p_at timestamp with time zone) security definer
+function   stop_my_job(p_job_id uuid, p_at timestamp with time zone) security definer
+function   sync_invoice_line_status() security definer
+function   sync_my_checklist_item(p_item_id uuid, p_completed boolean, p_client_time timestamp with time zone) security definer
+function   sync_quote_line_status() security definer
+function   touch_complaint() security definer
+function   update_calculation(p_calculation_id uuid, p_title text, p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer, p_target_margin_bp integer, p_travel_cents_per_visit bigint, p_setup_minutes_per_visit numeric, p_other_cost_cents_per_month bigint, p_visits_per_week numeric, p_price_override_cents_month bigint, p_price_override_reason text, p_notes text, p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric, p_surcharge_travel_cents_month bigint, p_surcharge_small_order_cents_month bigint, p_surcharge_offpeak_bp integer, p_surcharge_note text, p_min_hourly_rate_cents bigint) security definer
+function   update_company_member(p_member_id uuid, p_first_name text, p_last_name text, p_phone text, p_role company_role, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_notes text) security definer
+function   update_job_details(p_job_id uuid, p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) security definer
+function   update_my_company_master_data(p_name text, p_legal_form text, p_street text, p_postal_code text, p_city text, p_country text, p_phone text, p_email text, p_website text, p_tax_number text, p_vat_id text, p_billing_email text, p_iban text, p_bic text, p_payment_terms smallint, p_timezone text, p_language text) security definer
+function   update_my_contact_details(p_first_name text, p_last_name text, p_phone text) security definer
+function   weeks_per_month()
+function   working_days_between(p_from date, p_to date)
+function   working_days_in_month(p_month date)
+grant      accept_portal_quote(p_quote_id uuid, p_name text, p_note text) -> authenticated
+grant      accept_public_quote(p_token text, p_name text, p_note text) -> anon
+grant      accept_public_quote(p_token text, p_name text, p_note text) -> authenticated
+grant      accept_public_quote_signed(p_token text, p_name text, p_signature text, p_note text) -> anon
+grant      accept_public_quote_signed(p_token text, p_name text, p_signature text, p_note text) -> authenticated
+grant      accept_quote(p_quote_id uuid, p_weekdays smallint[], p_start_time time without time zone, p_end_time time without time zone, p_acceptance_policy acceptance_policy) -> authenticated
+grant      add_invoice_line(p_invoice_id uuid, p_description text, p_quantity numeric, p_unit text, p_unit_price_cents bigint, p_vat_rate_basis_points integer, p_job_id uuid, p_service_schedule_id uuid, p_cleaning_object_id uuid) -> authenticated
+grant      add_my_complaint_update(p_complaint_id uuid, p_status complaint_status, p_note text) -> authenticated
+grant      add_quote_line(p_quote_id uuid, p_description text, p_quantity numeric, p_unit text, p_unit_price_cents bigint, p_vat_rate_basis_points integer, p_recurrence quote_line_recurrence) -> authenticated
+grant      add_staff_complaint_reply(p_complaint_id uuid, p_note text) -> authenticated
+grant      add_survey_area(p_survey_id uuid, p_name text, p_area_sqm numeric, p_floor_type text, p_services_per_week numeric, p_minutes_per_service integer, p_hourly_rate_cents bigint, p_notes text) -> authenticated
+grant      assign_customer_number() -> authenticated
+grant      assign_employee_number() -> authenticated
+grant      assign_object_number() -> authenticated
+grant      attach_my_au_document(p_absence_id uuid, p_path text) -> authenticated
+grant      audit_company_settings() -> anon
+grant      audit_company_settings() -> authenticated
+grant      audit_invoice_status() -> anon
+grant      audit_invoice_status() -> authenticated
+grant      audit_member_change() -> anon
+grant      audit_member_change() -> authenticated
+grant      audit_payroll_release() -> anon
+grant      audit_payroll_release() -> authenticated
+grant      auto_assign_schedule_employee(p_schedule_id uuid) -> authenticated
+grant      build_service_record_on_completion() -> anon
+grant      build_service_record_on_completion() -> authenticated
+grant      calculate_line_minutes(p_unit calculation_unit, p_quantity numeric, p_productivity_per_hour numeric, p_minutes_per_unit numeric, p_minutes_override numeric) -> anon
+grant      calculate_line_minutes(p_unit calculation_unit, p_quantity numeric, p_productivity_per_hour numeric, p_minutes_per_unit numeric, p_minutes_override numeric) -> authenticated
+grant      calculate_services_per_month(p_frequency calculation_frequency, p_count numeric) -> anon
+grant      calculate_services_per_month(p_frequency calculation_frequency, p_count numeric) -> authenticated
+grant      can_access_absence_document_path(p_name text) -> authenticated
+grant      can_access_operational_photo_path(p_name text) -> authenticated
+grant      can_manage_company_member(target_member_id uuid) -> authenticated
+grant      can_portal_customer_read_job_photo(p_name text) -> anon
+grant      can_portal_customer_read_job_photo(p_name text) -> authenticated
+grant      can_read_avatar_path(p_name text) -> authenticated
+grant      can_read_branding_path(p_name text) -> authenticated
+grant      can_read_signature_path(p_name text) -> anon
+grant      can_read_signature_path(p_name text) -> authenticated
+grant      can_upload_own_absence_document_path(p_name text) -> authenticated
+grant      can_upload_scoped_complaint_photo_path(p_name text) -> authenticated
+grant      can_write_branding_path(p_name text) -> authenticated
+grant      can_write_signature_path(p_name text) -> anon
+grant      can_write_signature_path(p_name text) -> authenticated
+grant      cancel_invoice(p_invoice_id uuid, p_reason text) -> authenticated
+grant      carry_employee_report_into_record() -> anon
+grant      carry_employee_report_into_record() -> authenticated
+grant      cleanup_job_photo_metadata_after_storage_delete() -> authenticated
+grant      cleanup_operational_photo_metadata_after_storage_delete() -> authenticated
+grant      clear_auth_attempts(p_scope text, p_bucket text, p_proof text) -> authenticated
+grant      clear_company_logo() -> authenticated
+grant      company_capacity_snapshot(p_month date) -> authenticated
+grant      complete_company_invitation(p_token text) -> authenticated
+grant      complete_my_checklist_item(p_item_id uuid, p_completed boolean) -> authenticated
+grant      complete_onboarding_step(p_step text, p_finished boolean) -> authenticated
+grant      complete_site_survey(p_survey_id uuid, p_findings text) -> authenticated
+grant      confirm_my_portal_service(p_job_id uuid) -> authenticated
+grant      correct_time_entry(p_time_entry_id uuid, p_started_at timestamp with time zone, p_finished_at timestamp with time zone, p_reason text) -> authenticated
+grant      cost_to_month(p_cents bigint, p_basis cost_basis, p_services_per_month numeric, p_monthly_hours numeric, p_sqm numeric) -> anon
+grant      cost_to_month(p_cents bigint, p_basis cost_basis, p_services_per_month numeric, p_monthly_hours numeric, p_sqm numeric) -> authenticated
+grant      create_calculation(p_title text, p_lead_id uuid, p_customer_id uuid, p_site_survey_id uuid, p_cleaning_object_id uuid, p_catalog_item_id uuid) -> authenticated
+grant      create_company_for_current_user(company_name text) -> authenticated
+grant      create_complaint_follow_up_job(p_complaint_id uuid, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_member_ids uuid[]) -> authenticated
+grant      create_correction_invoice(p_invoice_id uuid) -> authenticated
+grant      create_customer_invitation(p_customer_id uuid, p_email text, p_first_name text, p_last_name text, p_phone text, p_token_hash text, p_expires_at timestamp with time zone) -> authenticated
+grant      create_draft_invoice(p_customer_id uuid, p_period_start date, p_period_end date, p_payment_terms_days smallint, p_customer_note text, p_buyer_reference text) -> authenticated
+grant      create_employee_invitation(p_email text, p_first_name text, p_last_name text, p_phone text, p_role company_role, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_notes text, p_token_hash text, p_expires_at timestamp with time zone) -> authenticated
+grant      create_job_checklist_snapshot(p_job_id uuid) -> authenticated
+grant      create_lead(p_organisation text, p_contact_person text, p_email text, p_phone text, p_street text, p_postal_code text, p_city text, p_source text, p_notes text) -> authenticated
+grant      create_lead_v2(p_organisation text, p_contact_person text, p_email text, p_phone text, p_street text, p_postal_code text, p_city text, p_source text, p_notes text, p_customer_id uuid, p_cleaning_object_id uuid, p_cleaning_type text, p_desired_start date, p_frequency text, p_preferred_time text) -> authenticated
+grant      create_my_absence(p_type absence_type, p_start date, p_end date, p_note text) -> authenticated
+grant      create_my_job_photo_metadata(p_job_id uuid, p_storage_path text, p_category job_photo_category, p_checklist_item_id uuid, p_description text, p_client_upload_id text) -> authenticated
+grant      create_my_portal_complaint(p_object_id uuid, p_title text, p_description text, p_job_id uuid) -> authenticated
+grant      create_operational_photo_metadata(p_scope operational_photo_scope, p_record_id uuid, p_storage_path text, p_category job_photo_category, p_description text) -> authenticated
+grant      create_quote_from_calculation(p_calculation_id uuid, p_title text, p_valid_days integer, p_billing_mode billing_mode, p_acceptance_policy acceptance_policy, p_order_type text, p_service_start date, p_service_end date, p_termination_notice text) -> authenticated
+grant      create_quote_from_survey(p_survey_id uuid, p_title text, p_valid_days integer) -> authenticated
+grant      create_single_job(p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) -> authenticated
+grant      current_company_member() -> authenticated
+grant      current_customer_contact() -> authenticated
+grant      customer_belongs_to_company(target_customer_id uuid, target_company_id uuid) -> authenticated
+grant      de_hours(p_minutes numeric) -> anon
+grant      de_hours(p_minutes numeric) -> authenticated
+grant      decline_portal_quote(p_quote_id uuid, p_reason text) -> authenticated
+grant      decline_public_quote(p_token text, p_reason text) -> anon
+grant      decline_public_quote(p_token text, p_reason text) -> authenticated
+grant      decline_quote(p_quote_id uuid, p_reason text) -> authenticated
+grant      delete_draft_invoice(p_invoice_id uuid) -> authenticated
+grant      delete_job_photo(p_photo_id uuid) -> authenticated
+grant      delete_operational_photo(p_photo_id uuid) -> authenticated
+grant      delete_pending_company_member(p_member_id uuid) -> authenticated
+grant      derive_productive_rate_bp(p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric) -> anon
+grant      derive_productive_rate_bp(p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric) -> authenticated
+grant      dispute_my_portal_service(p_job_id uuid, p_title text, p_description text) -> authenticated
+grant      easter_sunday(p_year integer) -> anon
+grant      easter_sunday(p_year integer) -> authenticated
+grant      ensure_assignment_company_integrity() -> authenticated
+grant      ensure_checklist_template_in_company(p_template_id uuid, p_company_id uuid) -> authenticated
+grant      ensure_cleaning_object_company_integrity() -> authenticated
+grant      ensure_complaint_company_integrity() -> authenticated
+grant      ensure_job_assignment_company_integrity() -> authenticated
+grant      ensure_job_company_integrity() -> authenticated
+grant      ensure_object_customer_company_match() -> authenticated
+grant      ensure_quality_inspection_company_integrity() -> authenticated
+grant      ensure_schedule_assignment_company_integrity() -> authenticated
+grant      ensure_schedule_company_integrity() -> authenticated
+grant      ensure_time_entry_integrity() -> authenticated
+grant      finalise_calculation(p_calculation_id uuid) -> authenticated
+grant      find_job_assignment_conflicts(p_company_id uuid, p_start timestamp with time zone, p_end timestamp with time zone, p_member_ids uuid[]) -> authenticated
+grant      find_job_capacity_warnings(p_company_id uuid, p_date date, p_start timestamp with time zone, p_end timestamp with time zone, p_member_ids uuid[], p_exclude_job uuid) -> authenticated
+grant      forbid_audit_change() -> anon
+grant      forbid_audit_change() -> authenticated
+grant      frequency_label(p_frequency calculation_frequency, p_count numeric) -> anon
+grant      frequency_label(p_frequency calculation_frequency, p_count numeric) -> authenticated
+grant      generate_jobs_for_schedule(p_schedule_id uuid, p_until date) -> authenticated
+grant      german_public_holidays(p_year integer) -> anon
+grant      german_public_holidays(p_year integer) -> authenticated
+grant      get_invitation_preview(p_token text) -> anon
+grant      get_invitation_preview(p_token text) -> authenticated
+grant      get_invitation_state(p_token text) -> anon
+grant      get_invitation_state(p_token text) -> authenticated
+grant      get_leistungsverzeichnis(p_calculation_id uuid) -> authenticated
+grant      get_my_job_acceptance(p_job_id uuid) -> authenticated
+grant      get_my_portal_acceptance(p_job_id uuid) -> authenticated
+grant      get_my_portal_invoice(p_invoice_id uuid) -> authenticated
+grant      get_my_portal_overview() -> authenticated
+grant      get_my_portal_quote(p_quote_id uuid) -> authenticated
+grant      get_my_portal_service_record(p_job_id uuid) -> authenticated
+grant      get_onboarding_status() -> authenticated
+grant      get_portal_acceptance_mail_target(p_job_id uuid) -> authenticated
+grant      get_public_quote(p_token text) -> anon
+grant      get_public_quote(p_token text) -> authenticated
+grant      get_service_record(p_job_id uuid) -> authenticated
+grant      guard_final_calculation() -> anon
+grant      guard_final_calculation() -> authenticated
+grant      guard_final_calculation_lines() -> anon
+grant      guard_final_calculation_lines() -> authenticated
+grant      guard_released_time_break() -> anon
+grant      guard_released_time_break() -> authenticated
+grant      guard_released_time_entry() -> anon
+grant      guard_released_time_entry() -> authenticated
+grant      guard_service_record_immutability() -> anon
+grant      guard_service_record_immutability() -> authenticated
+grant      handle_new_auth_user() -> authenticated
+grant      is_absence_unavailable(p_member_id uuid, p_date date) -> authenticated
+grant      is_active_employee_member(target_member_id uuid, target_company_id uuid) -> authenticated
+grant      is_allowed_absence_document_path(p_name text) -> anon
+grant      is_allowed_absence_document_path(p_name text) -> authenticated
+grant      is_allowed_avatar_path(p_name text) -> authenticated
+grant      is_allowed_branding_path(p_name text) -> anon
+grant      is_allowed_branding_path(p_name text) -> authenticated
+grant      is_allowed_job_photo_storage_path(p_name text) -> authenticated
+grant      is_allowed_operational_photo_storage_path(p_name text) -> authenticated
+grant      is_assignable_employee_member(target_member_id uuid, target_company_id uuid) -> authenticated
+grant      is_company_member(target_company_id uuid) -> authenticated
+grant      is_company_owner(target_company_id uuid) -> authenticated
+grant      is_company_staff(target_company_id uuid) -> authenticated
+grant      is_current_job_assignee(target_job_id uuid) -> authenticated
+grant      is_current_member(target_member_id uuid) -> authenticated
+grant      is_portal_customer_of(p_company_id uuid, p_customer_id uuid) -> authenticated
+grant      is_staff_for_profile(target_profile_id uuid) -> authenticated
+grant      is_supported_locale(p_locale text) -> anon
+grant      is_supported_locale(p_locale text) -> authenticated
+grant      issue_invoice(p_invoice_id uuid, p_issue_date date) -> authenticated
+grant      list_absence_affected_assignments(p_from date, p_to date) -> authenticated
+grant      list_absence_affected_with_candidates(p_from date, p_to date) -> authenticated
+grant      list_acceptance_config_warnings() -> authenticated
+grant      list_audit_events(p_from timestamp with time zone, p_to timestamp with time zone) -> authenticated
+grant      list_billable_jobs(p_customer_id uuid, p_from date, p_to date) -> authenticated
+grant      list_billable_retainers(p_customer_id uuid, p_month date) -> authenticated
+grant      list_calculations(p_status calculation_status) -> authenticated
+grant      list_invoice_payments(p_invoice_id uuid) -> authenticated
+grant      list_member_account_states() -> authenticated
+grant      list_monthly_work_days(p_month date, p_member uuid) -> authenticated
+grant      list_monthly_work_summary(p_month date) -> authenticated
+grant      list_my_portal_acceptances() -> authenticated
+grant      list_my_portal_complaints() -> authenticated
+grant      list_my_portal_invoices() -> authenticated
+grant      list_my_portal_job_photos(p_job_id uuid) -> authenticated
+grant      list_my_portal_objects() -> authenticated
+grant      list_my_portal_quotes() -> authenticated
+grant      list_my_portal_service_records(p_limit integer) -> authenticated
+grant      list_my_portal_upcoming_jobs(p_from date, p_days integer) -> authenticated
+grant      list_my_threads() -> authenticated
+grant      list_replacement_candidates(p_job_id uuid) -> authenticated
+grant      list_sales_pipeline() -> authenticated
+grant      list_schedule_coverage() -> authenticated
+grant      list_service_record_events(p_job_id uuid) -> authenticated
+grant      list_service_records(p_from date, p_to date, p_queue text) -> authenticated
+grant      list_thread_messages(p_thread_id uuid) -> authenticated
+grant      margin_bp(p_price_cents bigint, p_cost_cents bigint) -> anon
+grant      margin_bp(p_price_cents bigint, p_cost_cents bigint) -> authenticated
+grant      mark_invoice_paid(p_invoice_id uuid, p_paid_at timestamp with time zone) -> authenticated
+grant      mark_thread_read(p_thread_id uuid) -> authenticated
+grant      markup_bp(p_price_cents bigint, p_cost_cents bigint) -> anon
+grant      markup_bp(p_price_cents bigint, p_cost_cents bigint) -> authenticated
+grant      member_month_figures(p_member uuid, p_month date) -> authenticated
+grant      my_job_photo_for_client_upload(p_job_id uuid, p_client_upload_id text) -> authenticated
+grant      my_monthly_work_summary(p_month date) -> authenticated
+grant      object_profitability(p_from date, p_to date) -> authenticated
+grant      owns_avatar_path(p_name text) -> authenticated
+grant      pause_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
+grant      payroll_period_state(p_month date) -> authenticated
+grant      payroll_release_figures(p_month date, p_sequence integer) -> authenticated
+grant      personnel_cost_per_hour(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer) -> anon
+grant      personnel_cost_per_hour(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer) -> authenticated
+grant      phase7_current_member() -> authenticated
+grant      plan_window_automatically(p_from date, p_to date) -> authenticated
+grant      price_from_margin(p_cost_cents bigint, p_margin_bp integer) -> anon
+grant      price_from_margin(p_cost_cents bigint, p_margin_bp integer) -> authenticated
+grant      reassign_absence_affected_job(p_job_id uuid, p_from_member_id uuid, p_to_member_id uuid) -> authenticated
+grant      record_invoice_delivery(p_invoice_id uuid, p_kind invoice_delivery_kind, p_channel text, p_recipient text, p_status invoice_delivery_status, p_detail text, p_provider text, p_provider_message_id text, p_idempotency_key text) -> authenticated
+grant      record_invoice_delivery_v2(p_invoice_id uuid, p_kind invoice_delivery_kind, p_channel text, p_recipient text, p_status invoice_delivery_status, p_detail text, p_provider text, p_provider_message_id text, p_idempotency_key text, p_reminder_level smallint, p_reminder_fee_cents bigint, p_reminder_interest_cents bigint) -> authenticated
+grant      record_invoice_payment(p_invoice_id uuid, p_paid_on date, p_method payment_method, p_reference text, p_amount_cents bigint, p_note text, p_idempotency_key text) -> authenticated
+grant      record_portal_acceptance_mail(p_job_id uuid, p_kind text) -> authenticated
+grant      refresh_service_record_photos() -> anon
+grant      refresh_service_record_photos() -> authenticated
+grant      register_auth_attempt(p_scope text, p_bucket text, p_proof text) -> anon
+grant      register_auth_attempt(p_scope text, p_bucket text, p_proof text) -> authenticated
+grant      release_payroll_period(p_month date) -> authenticated
+grant      remove_calculation_line(p_line_id uuid) -> authenticated
+grant      remove_invoice_line(p_line_id uuid) -> authenticated
+grant      remove_quote_line(p_line_id uuid) -> authenticated
+grant      remove_survey_area(p_area_id uuid) -> authenticated
+grant      reopen_payroll_period(p_month date, p_reason text) -> authenticated
+grant      resend_company_invitation(p_member_id uuid, p_token_hash text, p_expires_at timestamp with time zone) -> authenticated
+grant      resolve_acceptance_policy(p_job_id uuid) -> authenticated
+grant      resolve_job_checklist_template() -> authenticated
+grant      resolve_service_dispute(p_job_id uuid, p_outcome text, p_note text) -> authenticated
+grant      resume_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
+grant      review_absence(p_absence_id uuid, p_approved boolean) -> authenticated
+grant      review_absence_with_note(p_absence_id uuid, p_approved boolean, p_note text) -> authenticated
+grant      revise_calculation(p_calculation_id uuid) -> authenticated
+grant      revoke_service_acceptance(p_job_id uuid, p_reason text) -> authenticated
+grant      run_monthly_billing(p_month date, p_dry_run boolean) -> authenticated
+grant      save_calculation_line(p_id uuid, p_calculation_id uuid, p_area_name text, p_service_name text, p_unit calculation_unit, p_quantity numeric, p_frequency calculation_frequency, p_frequency_count numeric, p_area_sqm numeric, p_catalog_item_id uuid, p_productivity numeric, p_minutes_per_unit numeric, p_minutes_override numeric, p_override_reason text, p_material_cents bigint, p_material_basis cost_basis, p_machine_cents bigint, p_machine_basis cost_basis, p_other_cents bigint, p_other_basis cost_basis, p_scope_note text, p_service_weekdays smallint[]) -> authenticated
+grant      save_catalog_item(p_id uuid, p_name text, p_category text, p_unit calculation_unit, p_productivity numeric, p_minutes_per_unit numeric, p_material_cents bigint, p_material_basis cost_basis, p_description text, p_is_active boolean) -> authenticated
+grant      save_company_profile(p_name text, p_legal_form text, p_managing_director text, p_street text, p_postal_code text, p_city text, p_country text, p_phone text, p_email text, p_website text, p_tax_number text, p_vat_id text, p_billing_email text, p_iban text, p_bic text, p_payment_terms_days smallint, p_vat_rate_bp integer) -> authenticated
+grant      save_service_schedule(p_schedule_id uuid, p_customer_id uuid, p_cleaning_object_id uuid, p_checklist_template_id uuid, p_name text, p_description text, p_valid_from date, p_valid_until date, p_acceptance_policy acceptance_policy, p_billing_mode billing_mode, p_assignment_mode text, p_is_active boolean, p_member_ids uuid[], p_rules jsonb, p_generate_until date) -> authenticated
+grant      schedule_candidate_diagnostics(p_schedule_id uuid) -> authenticated
+grant      schedule_site_survey(p_lead_id uuid, p_customer_id uuid, p_site_name text, p_scheduled_at timestamp with time zone, p_conducted_by uuid, p_street text, p_postal_code text, p_city text, p_access_notes text) -> authenticated
+grant      seed_service_catalog(p_focus text[]) -> authenticated
+grant      send_message(p_thread_id uuid, p_body text) -> authenticated
+grant      send_quote(p_quote_id uuid) -> authenticated
+grant      set_calculation_defaults(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer, p_target_margin_bp integer) -> authenticated
+grant      set_calculation_defaults_v2(p_wage_cents bigint, p_ancillary_bp integer, p_overhead_bp integer, p_target_margin_bp integer, p_productive_bp integer, p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric, p_min_hourly_rate_cents bigint, p_material_cents_per_visit bigint, p_machine_cents_per_month bigint, p_travel_cents_per_visit bigint, p_setup_minutes_per_visit numeric) -> authenticated
+grant      set_company_branding(p_storage_path text, p_brand_color text) -> authenticated
+grant      set_company_datev_settings(p_beraternummer text, p_mandantennummer text, p_kontenrahmen text, p_revenue_account_19 text, p_revenue_account_7 text, p_revenue_account_0 text) -> authenticated
+grant      set_company_default_hourly_rate(p_cents bigint) -> authenticated
+grant      set_company_management(p_managing_director text, p_vat_rate_bp integer) -> authenticated
+grant      set_company_member_active(p_member_id uuid, p_is_active boolean) -> authenticated
+grant      set_employee_master_data(p_member_id uuid, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_employment_end_date date, p_employment_type employment_type, p_preferred_language text, p_notes text, p_wage_group text, p_hourly_wage_cents integer) -> authenticated
+grant      set_lead_status(p_lead_id uuid, p_status lead_status, p_lost_reason text) -> authenticated
+grant      set_my_avatar(p_storage_path text) -> authenticated
+grant      set_my_job_report(p_job_id uuid, p_note text) -> authenticated
+grant      set_my_preferred_language(p_locale text) -> authenticated
+grant      set_quote_public_access(p_quote_id uuid, p_token_hash text, p_expires_at timestamp with time zone) -> authenticated
+grant      set_require_staff_mfa(p_required boolean) -> authenticated
+grant      set_service_focus(p_focus text[]) -> authenticated
+grant      set_updated_at() -> anon
+grant      set_updated_at() -> authenticated
+grant      sign_service_record_on_site(p_job_id uuid, p_signer_name text, p_signature_path text) -> authenticated
+grant      snapshot_checklist_for_new_job() -> authenticated
+grant      start_message_thread(p_employee_member_id uuid, p_subject text, p_body text) -> authenticated
+grant      start_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
+grant      stop_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
+grant      sync_my_checklist_item(p_item_id uuid, p_completed boolean, p_client_time timestamp with time zone) -> authenticated
+grant      touch_complaint() -> authenticated
+grant      update_calculation(p_calculation_id uuid, p_title text, p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer, p_target_margin_bp integer, p_travel_cents_per_visit bigint, p_setup_minutes_per_visit numeric, p_other_cost_cents_per_month bigint, p_visits_per_week numeric, p_price_override_cents_month bigint, p_price_override_reason text, p_notes text, p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric, p_surcharge_travel_cents_month bigint, p_surcharge_small_order_cents_month bigint, p_surcharge_offpeak_bp integer, p_surcharge_note text, p_min_hourly_rate_cents bigint) -> authenticated
+grant      update_company_member(p_member_id uuid, p_first_name text, p_last_name text, p_phone text, p_role company_role, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_notes text) -> authenticated
+grant      update_job_details(p_job_id uuid, p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) -> authenticated
+grant      update_my_company_master_data(p_name text, p_legal_form text, p_street text, p_postal_code text, p_city text, p_country text, p_phone text, p_email text, p_website text, p_tax_number text, p_vat_id text, p_billing_email text, p_iban text, p_bic text, p_payment_terms smallint, p_timezone text, p_language text) -> authenticated
+grant      update_my_contact_details(p_first_name text, p_last_name text, p_phone text) -> authenticated
+grant      weeks_per_month() -> anon
+grant      weeks_per_month() -> authenticated
+grant      working_days_between(p_from date, p_to date) -> authenticated
+grant      working_days_in_month(p_month date) -> anon
+grant      working_days_in_month(p_month date) -> authenticated
+index      audit_events / audit_events_company_time_idx
+index      audit_events / audit_events_pkey
+index      auth_throttle / auth_throttle_pkey
+index      auth_throttle_config / auth_throttle_config_pkey
+index      auth_throttle_policies / auth_throttle_policies_pkey
+index      calculation_lines / calculation_lines_calc_idx
+index      calculation_lines / calculation_lines_pkey
+index      calculations / calculations_company_idx
+index      calculations / calculations_pkey
+index      calculations / calculations_survey_idx
+index      checklist_template_items / checklist_template_items_pkey
+index      checklist_template_items / checklist_template_items_template_id_position_key
+index      checklist_templates / checklist_templates_pkey
+index      cleaning_objects / cleaning_objects_company_active_idx
+index      cleaning_objects / cleaning_objects_company_city_idx
+index      cleaning_objects / cleaning_objects_company_id_idx
+index      cleaning_objects / cleaning_objects_company_name_idx
+index      cleaning_objects / cleaning_objects_company_number_unique_idx
+index      cleaning_objects / cleaning_objects_customer_id_idx
+index      cleaning_objects / cleaning_objects_pkey
+index      companies / companies_pkey
+index      companies / companies_slug_key
+index      company_calculation_defaults / company_calculation_defaults_pkey
+index      company_invitations / company_invitations_member_idx
+index      company_invitations / company_invitations_pkey
+index      company_invitations / company_invitations_token_expiry_idx
+index      company_invitations / company_invitations_token_hash_key
+index      company_members / company_members_active_or_invited_email_idx
+index      company_members / company_members_company_id_idx
+index      company_members / company_members_company_id_profile_id_key
+index      company_members / company_members_company_role_status_idx
+index      company_members / company_members_pkey
+index      company_members / company_members_profile_id_idx
+index      company_number_counters / company_number_counters_pkey
+index      complaint_updates / complaint_updates_complaint_created_idx
+index      complaint_updates / complaint_updates_pkey
+index      complaints / complaints_company_status_due_idx
+index      complaints / complaints_follow_up_job_id_key
+index      complaints / complaints_object_created_idx
+index      complaints / complaints_pkey
+index      customer_contacts / customer_contacts_company_customer_idx
+index      customer_contacts / customer_contacts_member_id_key
+index      customer_contacts / customer_contacts_pkey
+index      customers / customers_company_active_idx
+index      customers / customers_company_city_idx
+index      customers / customers_company_id_idx
+index      customers / customers_company_name_idx
+index      customers / customers_company_number_unique_idx
+index      customers / customers_pkey
+index      employee_absences / employee_absences_au_storage_path_key
+index      employee_absences / employee_absences_company_dates_idx
+index      employee_absences / employee_absences_member_dates_idx
+index      employee_absences / employee_absences_pkey
+index      employee_details / employee_details_company_id_profile_id_key
+index      employee_details / employee_details_company_number_unique_idx
+index      employee_details / employee_details_company_profile_idx
+index      employee_details / employee_details_pkey
+index      in_app_notifications / in_app_notifications_complaint_idx
+index      in_app_notifications / in_app_notifications_pkey
+index      in_app_notifications / in_app_notifications_recipient_idx
+index      invoice_deliveries / invoice_deliveries_idempotency_idx
+index      invoice_deliveries / invoice_deliveries_invoice_idx
+index      invoice_deliveries / invoice_deliveries_pkey
+index      invoice_lines / invoice_lines_invoice_idx
+index      invoice_lines / invoice_lines_job_once_idx
+index      invoice_lines / invoice_lines_pkey
+index      invoice_number_counters / invoice_number_counters_pkey
+index      invoice_payments / invoice_payments_external_idx
+index      invoice_payments / invoice_payments_idempotency_idx
+index      invoice_payments / invoice_payments_invoice_idx
+index      invoice_payments / invoice_payments_pkey
+index      invoices / invoices_company_number_idx
+index      invoices / invoices_company_status_idx
+index      invoices / invoices_customer_idx
+index      invoices / invoices_pkey
+index      job_assignment_changes / job_assignment_changes_job_idx
+index      job_assignment_changes / job_assignment_changes_pkey
+index      job_assignments / job_assignments_job_id_member_id_key
+index      job_assignments / job_assignments_job_idx
+index      job_assignments / job_assignments_member_idx
+index      job_assignments / job_assignments_pkey
+index      job_checklist_items / job_checklist_items_job_checklist_id_position_key
+index      job_checklist_items / job_checklist_items_pkey
+index      job_checklists / job_checklists_job_id_key
+index      job_checklists / job_checklists_pkey
+index      job_photos / job_photos_client_upload_idx
+index      job_photos / job_photos_pkey
+index      job_photos / job_photos_storage_path_key
+index      job_time_breaks / job_time_breaks_entry_idx
+index      job_time_breaks / job_time_breaks_one_open_idx
+index      job_time_breaks / job_time_breaks_pkey
+index      job_time_entries / job_time_entries_company_started_idx
+index      job_time_entries / job_time_entries_job_idx
+index      job_time_entries / job_time_entries_member_idx
+index      job_time_entries / job_time_entries_one_active_member_idx
+index      job_time_entries / job_time_entries_pkey
+index      jobs / jobs_company_date_idx
+index      jobs / jobs_company_status_date_idx
+index      jobs / jobs_customer_idx
+index      jobs / jobs_object_idx
+index      jobs / jobs_pkey
+index      jobs / jobs_schedule_idx
+index      jobs / jobs_service_schedule_id_schedule_rule_id_scheduled_date_key
+index      leads / leads_company_status_idx
+index      leads / leads_customer_idx
+index      leads / leads_object_idx
+index      leads / leads_pkey
+index      mail_events / mail_events_message_idx
+index      mail_events / mail_events_pkey
+index      mail_events / mail_events_provider_provider_event_id_key
+index      message_threads / message_threads_company_idx
+index      message_threads / message_threads_employee_idx
+index      message_threads / message_threads_pkey
+index      messages / messages_pkey
+index      messages / messages_thread_idx
+index      operational_photos / operational_photos_pkey
+index      operational_photos / operational_photos_scope_idx
+index      operational_photos / operational_photos_storage_path_key
+index      payroll_period_releases / payroll_period_releases_period_id_sequence_key
+index      payroll_period_releases / payroll_period_releases_pkey
+index      payroll_period_releases / payroll_releases_period_idx
+index      payroll_periods / payroll_periods_company_id_period_key
+index      payroll_periods / payroll_periods_pkey
+index      profiles / profiles_auth_user_id_key
+index      profiles / profiles_pkey
+index      quality_inspections / quality_inspections_object_created_idx
+index      quality_inspections / quality_inspections_pkey
+index      quote_lines / quote_lines_pkey
+index      quote_lines / quote_lines_quote_idx
+index      quote_number_counters / quote_number_counters_pkey
+index      quotes / quotes_company_number_idx
+index      quotes / quotes_company_status_idx
+index      quotes / quotes_pkey
+index      quotes / quotes_public_token_hash_uidx
+index      schedule_rules / schedule_rules_pkey
+index      schedule_rules / schedule_rules_schedule_idx
+index      schedule_rules / schedule_rules_service_schedule_id_weekday_planned_start_ti_key
+index      service_catalog_items / service_catalog_company_idx
+index      service_catalog_items / service_catalog_items_company_id_name_key
+index      service_catalog_items / service_catalog_items_pkey
+index      service_record_events / service_record_events_pkey
+index      service_record_events / service_record_events_record_idx
+index      service_records / service_records_company_status_idx
+index      service_records / service_records_customer_idx
+index      service_records / service_records_job_id_key
+index      service_records / service_records_pkey
+index      service_records / service_records_signature_storage_path_key
+index      service_schedule_assignments / schedule_assignments_member_idx
+index      service_schedule_assignments / service_schedule_assignments_pkey
+index      service_schedule_assignments / service_schedule_assignments_service_schedule_id_member_id_key
+index      service_schedules / service_schedules_company_active_idx
+index      service_schedules / service_schedules_object_idx
+index      service_schedules / service_schedules_pkey
+index      site_surveys / site_surveys_company_idx
+index      site_surveys / site_surveys_lead_idx
+index      site_surveys / site_surveys_pkey
+index      survey_areas / survey_areas_pkey
+index      survey_areas / survey_areas_survey_idx
+index      time_entry_audit_logs / time_entry_audit_logs_entry_idx
+index      time_entry_audit_logs / time_entry_audit_logs_pkey
+policy     audit_events / audit_events_staff_read r
+policy     calculation_lines / billing staff read calculation lines r
+policy     calculations / billing staff read calculations r
+policy     checklist_template_items / staff checklist template items *
+policy     checklist_templates / staff checklist templates *
+policy     cleaning_objects / employees can view assigned job objects r
+policy     cleaning_objects / staff can manage own cleaning objects *
+policy     companies / members can view their company r
+policy     companies / owners can update their company w
+policy     company_calculation_defaults / billing staff read calculation defaults r
+policy     company_invitations / staff can view invitations r
+policy     company_members / members can view own membership r
+policy     company_members / staff can view company memberships r
+policy     complaint_updates / employees read operational complaint updates r
+policy     complaint_updates / staff manage complaint updates *
+policy     complaints / employees read operational complaints r
+policy     complaints / staff manage company complaints *
+policy     customer_contacts / contacts read their own link r
+policy     customer_contacts / staff manage portal contacts *
+policy     customers / employees can view assigned job customers r
+policy     customers / staff can manage own customers *
+policy     employee_absences / employees submit own absences a
+policy     employee_absences / employees view own absences r
+policy     employee_absences / staff manage company absences *
+policy     employee_details / staff can view employee details r
+policy     in_app_notifications / recipients update notifications w
+policy     in_app_notifications / recipients view notifications r
+policy     invoice_deliveries / staff read company invoice deliveries r
+policy     invoice_lines / staff read company invoice lines r
+policy     invoice_payments / staff read own company payments r
+policy     invoices / staff read company invoices r
+policy     job_assignment_changes / staff view assignment changes r
+policy     job_assignments / employees can view own assignments r
+policy     job_assignments / staff can manage job assignments *
+policy     job_checklist_items / employee job checklist item read r
+policy     job_checklist_items / staff job checklist items *
+policy     job_checklists / employee job checklist read r
+policy     job_checklists / staff job checklists *
+policy     job_photos / employee job photos r
+policy     job_photos / staff job photos *
+policy     job_time_breaks / employees read own time breaks r
+policy     job_time_breaks / staff read company time breaks r
+policy     job_time_entries / employees can view own time entries r
+policy     job_time_entries / staff can manage time entries *
+policy     jobs / employees can view assigned jobs r
+policy     jobs / staff can manage jobs *
+policy     leads / staff read leads r
+policy     mail_events / staff read own company mail events r
+policy     message_threads / participants read threads r
+policy     messages / participants read messages r
+policy     operational_photos / employees read scoped complaint photos r
+policy     operational_photos / staff read company operational photos r
+policy     payroll_period_releases / staff read payroll releases r
+policy     payroll_periods / staff read payroll periods r
+policy     profiles / staff can update managed profiles w
+policy     profiles / staff can view company profiles r
+policy     profiles / users can update their own profile w
+policy     profiles / users can view their own profile r
+policy     quality_inspections / staff manage quality inspections *
+policy     quote_lines / staff read quote lines r
+policy     quotes / staff read quotes r
+policy     schedule_rules / staff can manage schedule rules *
+policy     service_catalog_items / billing staff read catalog r
+policy     service_record_events / staff read service record events r
+policy     service_records / assignee reads own service record r
+policy     service_records / portal customer reads own service records r
+policy     service_records / staff read company service records r
+policy     service_schedule_assignments / staff can manage schedule assignments *
+policy     service_schedules / staff can manage schedules *
+policy     site_surveys / staff read surveys r
+policy     survey_areas / staff read survey areas r
+policy     time_entry_audit_logs / staff can view time entry audit logs r
+rls        audit_events enabled
+rls        auth_throttle enabled
+rls        auth_throttle_config enabled
+rls        auth_throttle_policies enabled
+rls        calculation_lines enabled
+rls        calculations enabled
+rls        checklist_template_items enabled
+rls        checklist_templates enabled
+rls        cleaning_objects enabled
+rls        companies enabled
+rls        company_calculation_defaults enabled
+rls        company_invitations enabled
+rls        company_members enabled
+rls        company_number_counters enabled
+rls        complaint_updates enabled
+rls        complaints enabled
+rls        customer_contacts enabled
+rls        customers enabled
+rls        employee_absences enabled
+rls        employee_details enabled
+rls        in_app_notifications enabled
+rls        invoice_deliveries enabled
+rls        invoice_lines enabled
+rls        invoice_number_counters enabled
+rls        invoice_payments enabled
+rls        invoices enabled
+rls        job_assignment_changes enabled
+rls        job_assignments enabled
+rls        job_checklist_items enabled
+rls        job_checklists enabled
+rls        job_photos enabled
+rls        job_time_breaks enabled
+rls        job_time_entries enabled
+rls        jobs enabled
+rls        leads enabled
+rls        mail_events enabled
+rls        message_threads enabled
+rls        messages enabled
+rls        operational_photos enabled
+rls        payroll_period_releases enabled
+rls        payroll_periods enabled
+rls        profiles enabled
+rls        quality_inspections enabled
+rls        quote_lines enabled
+rls        quote_number_counters enabled
+rls        quotes enabled
+rls        schedule_rules enabled
+rls        service_catalog_items enabled
+rls        service_record_events enabled
+rls        service_records enabled
+rls        service_schedule_assignments enabled
+rls        service_schedules enabled
+rls        site_surveys enabled
+rls        survey_areas enabled
+rls        time_entry_audit_logs enabled
+table      audit_events
+table      auth_throttle
+table      auth_throttle_config
+table      auth_throttle_policies
+table      calculation_lines
+table      calculations
+table      checklist_template_items
+table      checklist_templates
+table      cleaning_objects
+table      companies
+table      company_calculation_defaults
+table      company_invitations
+table      company_members
+table      company_number_counters
+table      complaint_updates
+table      complaints
+table      customer_contacts
+table      customers
+table      employee_absences
+table      employee_details
+table      in_app_notifications
+table      invoice_deliveries
+table      invoice_lines
+table      invoice_number_counters
+table      invoice_payments
+table      invoices
+table      job_assignment_changes
+table      job_assignments
+table      job_checklist_items
+table      job_checklists
+table      job_photos
+table      job_time_breaks
+table      job_time_entries
+table      jobs
+table      leads
+table      mail_events
+table      message_threads
+table      messages
+table      operational_photos
+table      payroll_period_releases
+table      payroll_periods
+table      profiles
+table      quality_inspections
+table      quote_lines
+table      quote_number_counters
+table      quotes
+table      schedule_rules
+table      service_catalog_items
+table      service_record_events
+table      service_records
+table      service_schedule_assignments
+table      service_schedules
+table      site_surveys
+table      survey_areas
+table      time_entry_audit_logs
+tablegrant audit_events -> authenticated select
+tablegrant calculation_lines -> authenticated select
+tablegrant calculations -> authenticated select
+tablegrant cleaning_objects -> authenticated insert
+tablegrant cleaning_objects -> authenticated select
+tablegrant cleaning_objects -> authenticated update
+tablegrant companies -> authenticated select
+tablegrant company_calculation_defaults -> authenticated select
+tablegrant company_invitations -> authenticated select
+tablegrant company_members -> authenticated select
+tablegrant complaint_updates -> authenticated select
+tablegrant complaints -> authenticated delete
+tablegrant complaints -> authenticated insert
+tablegrant complaints -> authenticated select
+tablegrant complaints -> authenticated update
+tablegrant customer_contacts -> authenticated select
+tablegrant customers -> authenticated insert
+tablegrant customers -> authenticated select
+tablegrant customers -> authenticated update
+tablegrant employee_absences -> authenticated insert
+tablegrant employee_absences -> authenticated select
+tablegrant employee_details -> authenticated select
+tablegrant in_app_notifications -> authenticated insert
+tablegrant in_app_notifications -> authenticated select
+tablegrant in_app_notifications -> authenticated update
+tablegrant invoice_deliveries -> authenticated select
+tablegrant invoice_lines -> authenticated select
+tablegrant invoice_payments -> authenticated select
+tablegrant invoices -> authenticated select
+tablegrant job_assignment_changes -> authenticated select
+tablegrant job_assignments -> authenticated insert
+tablegrant job_assignments -> authenticated select
+tablegrant job_assignments -> authenticated update
+tablegrant job_checklist_items -> authenticated select
+tablegrant job_checklists -> authenticated select
+tablegrant job_photos -> authenticated select
+tablegrant job_time_breaks -> authenticated select
+tablegrant job_time_entries -> authenticated select
+tablegrant jobs -> authenticated insert
+tablegrant jobs -> authenticated select
+tablegrant jobs -> authenticated update
+tablegrant leads -> authenticated select
+tablegrant message_threads -> authenticated select
+tablegrant messages -> authenticated select
+tablegrant operational_photos -> authenticated select
+tablegrant payroll_period_releases -> authenticated select
+tablegrant payroll_periods -> authenticated select
+tablegrant profiles -> authenticated select
+tablegrant quality_inspections -> authenticated delete
+tablegrant quality_inspections -> authenticated insert
+tablegrant quality_inspections -> authenticated select
+tablegrant quality_inspections -> authenticated update
+tablegrant quote_lines -> authenticated select
+tablegrant quotes -> authenticated select
+tablegrant schedule_rules -> authenticated insert
+tablegrant schedule_rules -> authenticated select
+tablegrant schedule_rules -> authenticated update
+tablegrant service_catalog_items -> authenticated select
+tablegrant service_record_events -> authenticated select
+tablegrant service_records -> authenticated select
+tablegrant service_schedule_assignments -> authenticated delete
+tablegrant service_schedule_assignments -> authenticated insert
+tablegrant service_schedule_assignments -> authenticated select
+tablegrant service_schedule_assignments -> authenticated update
+tablegrant service_schedules -> authenticated insert
+tablegrant service_schedules -> authenticated select
+tablegrant service_schedules -> authenticated update
+tablegrant site_surveys -> authenticated select
+tablegrant survey_areas -> authenticated select
+tablegrant time_entry_audit_logs -> authenticated select
+trigger    audit_events / audit_events_immutable
+trigger    calculation_lines / calculation_lines_final_immutable
+trigger    calculations / calculations_final_immutable
+trigger    calculations / calculations_set_updated_at
+trigger    cleaning_objects / cleaning_objects_assign_number
+trigger    cleaning_objects / cleaning_objects_set_updated_at
+trigger    cleaning_objects / cleaning_objects_validate_company
+trigger    cleaning_objects / cleaning_objects_validate_customer_company
+trigger    companies / companies_audit_settings
+trigger    company_invitations / company_invitations_set_updated_at
+trigger    company_members / company_members_audit
+trigger    company_members / company_members_set_updated_at
+trigger    complaints / complaints_touch_updated_at
+trigger    complaints / complaints_validate_company
+trigger    customer_contacts / customer_contacts_integrity
+trigger    customers / customers_assign_number
+trigger    customers / customers_set_updated_at
+trigger    employee_details / employee_details_assign_number
+trigger    employee_details / employee_details_set_updated_at
+trigger    invoice_lines / invoice_lines_compute_amounts
+trigger    invoice_lines / invoice_lines_guard_issued
+trigger    invoice_lines / invoice_lines_integrity
+trigger    invoice_lines / invoice_lines_refresh_totals
+trigger    invoices / invoices_audit_status
+trigger    invoices / invoices_guard_issued
+trigger    invoices / invoices_set_updated_at
+trigger    invoices / invoices_sync_line_status
+trigger    job_assignments / job_assignments_validate_company
+trigger    job_photos / job_photos_refresh_record
+trigger    job_time_breaks / job_time_breaks_payroll_lock
+trigger    job_time_entries / job_time_entries_integrity
+trigger    job_time_entries / job_time_entries_payroll_lock
+trigger    job_time_entries / job_time_entries_set_updated_at
+trigger    jobs / jobs_build_service_record
+trigger    jobs / jobs_resolve_checklist_template
+trigger    jobs / jobs_set_updated_at
+trigger    jobs / jobs_snapshot_checklist
+trigger    jobs / jobs_validate_company
+trigger    leads / leads_set_updated_at
+trigger    message_threads / message_threads_integrity
+trigger    payroll_period_releases / payroll_releases_audit
+trigger    profiles / profiles_set_updated_at
+trigger    quality_inspections / quality_inspections_validate_company
+trigger    quote_lines / quote_lines_compute_amounts
+trigger    quote_lines / quote_lines_guard_sent
+trigger    quote_lines / quote_lines_integrity
+trigger    quote_lines / quote_lines_refresh_totals
+trigger    quotes / quote_customer_acceptance_schedule_pending
+trigger    quotes / quotes_activate_master_data
+trigger    quotes / quotes_guard_sent
+trigger    quotes / quotes_set_updated_at
+trigger    quotes / quotes_sync_line_status
+trigger    schedule_rules / schedule_rules_set_updated_at
+trigger    service_catalog_items / service_catalog_set_updated_at
+trigger    service_records / service_records_carry_employee_report
+trigger    service_records / service_records_immutable
+trigger    service_records / service_records_set_updated_at
+trigger    service_schedule_assignments / schedule_assignments_validate_company
+trigger    service_schedules / service_schedules_set_updated_at
+trigger    service_schedules / service_schedules_validate_company
+trigger    site_surveys / site_surveys_set_updated_at

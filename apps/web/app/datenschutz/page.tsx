@@ -29,8 +29,29 @@ export default function DatenschutzPage() {
 
       <LegalSection heading="Auftragsverarbeiter und Hosting">
         <p>
-          Eingesetzte Dienstleister für Hosting, Authentifizierung, Datenspeicherung und E-Mail-Versand sind zu
-          benennen, einschließlich Verarbeitungsort und Grundlage etwaiger Drittlandübermittlungen.
+          Welche Dienste diese Anwendung technisch anspricht, steht fest und ist hier benannt. Was
+          offen bleibt, sind die Angaben, die nur der Betreiber machen kann: der tatsächlich
+          gewählte Anbieter, der Verarbeitungsort, die Vertragsgrundlage und die Grundlage
+          etwaiger Drittlandübermittlungen. Sie dürfen nicht erfunden werden.
+        </p>
+        <ul className="list-disc space-y-1 ps-5">
+          <li>
+            <strong className="text-foreground">Supabase</strong> — Datenbank, Authentifizierung
+            und Dateispeicher (Fotos, Logos, Unterschriften). Verarbeitungsort und Vertrag: —
+          </li>
+          <li>
+            <strong className="text-foreground">Hosting der Anwendung</strong> — Auslieferung der
+            Seiten und serverseitige Verarbeitung. Anbieter, Verarbeitungsort und Vertrag: —
+          </li>
+          <li>
+            <strong className="text-foreground">E-Mail-Versand</strong> — Einladungen,
+            Passwort-Links, Rechnungs- und Abnahme-E-Mails. Anbieter, Verarbeitungsort und
+            Vertrag: —
+          </li>
+        </ul>
+        <p>
+          Ein Auftragsverarbeitungsvertrag nach Art. 28 DSGVO ist mit jedem dieser Anbieter
+          erforderlich.
         </p>
       </LegalSection>
 

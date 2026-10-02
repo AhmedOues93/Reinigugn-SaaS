@@ -82,6 +82,29 @@ jobs:
       - name: Apply every migration and run the SQL assertions
         run: supabase/test/run.sh
 
+      # Die CI prueft gegen eine leere Datenbank. Production ist keine leere
+      # Datenbank -- dort fehlen einzelne Migrationen, und andere wurden mit
+      # abweichenden Zeitstempeln eingespielt. Dieser Schritt beweist, dass
+      # der Nachtrag von einem aelteren Stand aus durchlaeuft; welcher Stand
+      # das ist, sagt supabase/tools/schema-drift.sh gegen das Ziel.
+      - name: Upgrade-Pfad von einem aelteren Stand aus
+        run: supabase/tools/upgrade-path.sh tail 20261006000022
+
+      # Der eingecheckte Soll-Stand ist die Grundlage des Drift-Vergleichs
+      # gegen Production. Veraltet er, vergleicht man gegen eine Vermutung.
+      # Nebeneffekt, der zaehlt: die Rechte stehen darin, also faellt eine
+      # versehentlich an `anon` vergebene Funktion hier auf.
+      - name: Soll-Stand des Schemas passt zu den Migrationen
+        run: supabase/tools/schema-drift.sh verify
+
+      # Eine Sicherung, die nie zurueckgespielt wurde, ist keine Sicherung.
+      # Dieser Schritt sichert, spielt in eine getrennte Datenbank zurueck und
+      # laesst dort alle Zusicherungen laufen. Beim ersten Lauf hat er einen
+      # echten Fehler im Verfahren gefunden: mit `--no-privileges` ist die
+      # Wiederherstellung unbrauchbar.
+      - name: Wiederherstellung aus einer Sicherung beweisen
+        run: supabase/tools/backup-restore.sh drill
+
   # Die E-Rechnung ist in Deutschland kein Komfortthema, sondern Pflicht. Eine
   # selbst geschriebene Pruefung beweist nur, dass wir unsere eigene Vorstellung
   # einhalten; ob ein Empfaenger das Dokument annimmt, entscheidet der
