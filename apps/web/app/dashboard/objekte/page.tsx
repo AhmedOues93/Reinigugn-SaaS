@@ -1,4 +1,4 @@
-import { Building2, Plus, Search, Upload } from 'lucide-react';
+import { Building2, Plus, Search, TrendingUp, Upload } from 'lucide-react';
 import { listCleaningObjects } from '@/lib/data/cleaning-objects';
 import { listCustomerOptions, type StatusFilter } from '@/lib/data/customers';
 import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
@@ -27,6 +27,10 @@ export default async function ObjectsPage({ searchParams }: { searchParams: Prom
         description="Die Orte, an denen gereinigt wird – mit Zugang, Ansprechperson und Leistungsumfang."
         actions={
           <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/objekte/rentabilitaet" variant="outline">
+              <TrendingUp className="size-4" aria-hidden="true" />
+              Rentabilität
+            </ButtonLink>
             <ButtonLink href="/dashboard/objekte/import" variant="outline">
               <Upload className="size-4" aria-hidden="true" />
               CSV importieren

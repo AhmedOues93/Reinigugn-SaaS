@@ -201,10 +201,17 @@ select pg_temp.sign_out();
 -- ---------------------------------------------------------------------------
 -- Die Einrichtung reicht bis zum ersten geplanten Einsatz
 -- ---------------------------------------------------------------------------
+-- Die Kapazitaetszahlen oben brauchen Einsaetze im laufenden Monat; die
+-- Einrichtung fragt nach einem, der noch bevorsteht. Am Monatsersten ist das
+-- dasselbe, am Monatsletzten nicht -- darum wird hier ausdruecklich auf heute
+-- datiert, statt sich auf das Datum des Monatsanfangs zu verlassen.
+select pg_temp.sign_out();
+update public.jobs set scheduled_date = (select today from kctx)
+where title = 'Einsatz B' and company_id = (select company from kctx);
 select pg_temp.sign_in('e3300000-0000-4000-8000-000000000001');
 select pg_temp.assert(
   (select has_planned_job from public.get_onboarding_status()),
-  'ein Einsatz im laufenden Monat zaehlt als geplant');
+  'ein Einsatz von heute zaehlt als geplant');
 select pg_temp.assert(
   (select has_schedule from public.get_onboarding_status()) = false,
   'ein wiederkehrender Plan existiert noch nicht');
