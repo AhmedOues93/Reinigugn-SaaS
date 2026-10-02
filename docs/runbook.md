@@ -163,6 +163,15 @@ auf einem gemeinsamen Zähler mit weiter Grenze (600 Versuche in zehn
 Minuten). Enger als nichts, und niemand wird ausgesperrt — aber es ist der
 Rückfall, nicht der Zielzustand.
 
+**Reihenfolge von Migration und Deployment:** sie ist unkritisch, und das ist
+Absicht. Passen Signatur und Anwendung nicht zusammen — alte App gegen neue
+Datenbank oder umgekehrt —, antwortet PostgREST mit „function not found", die
+Anwendung schreibt das ins Log und lässt die Anmeldung durch. Eine kaputte
+Bremse darf keine geschlossene Tür sein. Im Fenster zwischen `db push` und
+dem App-Deployment bremst also nichts; es sollte kurz sein, und es ist der
+zweite Grund, die Rate Limits bei Supabase Auth einzuschalten (Abschnitt
+2.1), denn die gelten unabhängig davon.
+
 ---
 
 ## 3. E-Mail
@@ -240,7 +249,7 @@ steht dahinter.
 | # | Schritt | Kriterium |
 |---|---|---|
 | 1 | `/admin/login` öffnen, anmelden | Dashboard lädt |
-| 2 | Zehn Fehlversuche mit falschem Passwort | Ab dem elften die Bremsenmeldung, nicht „Passwort falsch" |
+| 2 | Zehn Fehlversuche mit falschem Passwort | Ab dem elften die Bremsenmeldung, nicht „Passwort falsch". Kommt sie nicht: Migration 40 fehlt, oder `THROTTLE_SIGNING_SECRET` fehlt und der gemeinsame Zähler ist noch weit offen |
 | 3 | `/dashboard/sicherheit`, App einrichten | QR-Code erscheint, Code wird angenommen |
 | 4 | Abmelden, anmelden | Fragt nach dem Code; ohne Code kein Dashboard |
 | 5 | `/forgot-password` mit der Testadresse | E-Mail kommt, Link führt zu `/reset-password` |

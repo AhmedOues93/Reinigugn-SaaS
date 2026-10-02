@@ -228,6 +228,76 @@ select pg_temp.assert(
   (select count(*) from public.auth_throttle where scope = 'login') = 1,
   'ohne gueltige Unterschrift bleibt der Zaehler der fremden Adresse stehen');
 
+-- ---------------------------------------------------------------------------
+-- Der Riegel, der diesen Fehler beim naechsten Mal frueher findet
+-- ---------------------------------------------------------------------------
+--
+-- `security definer` umgeht RLS. Zusammen mit einem Recht fuer `anon` ist das
+-- die Kombination, aus der der Fehler in Migration 35 bestand: eine Funktion,
+-- die ohne Anmeldung aufgerufen werden kann und dabei alle Richtlinien
+-- hinter sich laesst. Diese Liste ist darum vollstaendig und abschliessend --
+-- wer eine Funktion hinzufuegt, muss sie hier eintragen und begruenden.
+--
+-- Die Trigger-Funktionen stehen mit drin, weil PostgreSQL neuen Funktionen
+-- `execute` an PUBLIC gibt. Sie sind ungefaehrlich: ein direkter Aufruf
+-- bricht ab, weil es ausserhalb eines Triggers kein NEW gibt, und das Feuern
+-- eines Triggers verlangt gar kein Ausfuehrungsrecht der Aufruferin.
+create temporary table anon_definer_allowlist (signature text primary key);
+insert into anon_definer_allowlist values
+  -- Oeffentliches Angebot: der Token im Link ist der Zugang.
+  ('accept_public_quote(p_token text, p_name text, p_note text)'),
+  ('accept_public_quote_signed(p_token text, p_name text, p_signature text, p_note text)'),
+  ('decline_public_quote(p_token text, p_reason text)'),
+  ('get_public_quote(p_token text)'),
+  -- Einladung: dito, der Token ist der Zugang.
+  ('get_invitation_preview(p_token text)'),
+  ('get_invitation_state(p_token text)'),
+  -- Praedikate fuer Storage-Richtlinien; sie entscheiden nichts, sie pruefen.
+  ('can_portal_customer_read_job_photo(p_name text)'),
+  ('can_read_signature_path(p_name text)'),
+  ('can_write_signature_path(p_name text)'),
+  -- Die Anmeldebremse. Muss vor der Anmeldung erreichbar sein.
+  ('register_auth_attempt(p_scope text, p_bucket text, p_proof text)'),
+  -- Trigger-Funktionen, siehe oben.
+  ('audit_company_settings()'),
+  ('audit_invoice_status()'),
+  ('audit_member_change()'),
+  ('audit_payroll_release()'),
+  ('build_service_record_on_completion()'),
+  ('carry_employee_report_into_record()'),
+  ('refresh_service_record_photos()');
+
+create temporary view anon_definer_actual as
+select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as signature
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute');
+
+select pg_temp.assert(
+  not exists (
+    select 1 from anon_definer_actual a
+    where not exists (select 1 from anon_definer_allowlist l where l.signature = a.signature)
+  ),
+  'keine neue Funktion ist gleichzeitig security definer und fuer anon aufrufbar: '
+  || coalesce((
+    select string_agg(a.signature, ', ')
+    from anon_definer_actual a
+    where not exists (select 1 from anon_definer_allowlist l where l.signature = a.signature)
+  ), ''));
+
+-- Und die Liste darf nicht veralten: ein Eintrag, dessen Funktion es nicht
+-- mehr gibt, verdeckt beim naechsten Mal eine echte Abweichung.
+select pg_temp.assert(
+  not exists (
+    select 1 from anon_definer_allowlist l
+    where not exists (select 1 from anon_definer_actual a where a.signature = l.signature)
+  ),
+  'die Liste enthaelt keinen Eintrag ohne Funktion: '
+  || coalesce((
+    select string_agg(l.signature, ', ')
+    from anon_definer_allowlist l
+    where not exists (select 1 from anon_definer_actual a where a.signature = l.signature)
+  ), ''));
+
 rollback;
 \o
 \echo 'Anmeldebremse (gehaertet): all assertions passed'
