@@ -135,6 +135,7 @@ Production zeigt; keine davon aendert oder loescht bestehende Daten.
 | `20261006000036_capacity_and_onboarding_reach` | Soll/Ist und Auslastung fuer das Dashboard (Soll **bis heute**, nicht fuer den ganzen Monat); die Einrichtung reicht jetzt bis zum ersten geplanten Einsatz |
 | `20261006000037_monthly_billing_run` | Monatslauf (Sammelrechnung): je Kunde ein Rechnungs**entwurf**; stellt nichts aus, faesst keine gestellte Rechnung an und rechnet bei zweitem Lauf nichts erneut ab |
 | `20261006000038_object_profitability` | Objektrentabilitaet: Erloes gegen Lohnkosten je Objekt, datiert nach dem Tag des Einsatzes; ohne hinterlegten Stundenlohn bleibt die Marge **unbekannt** statt geschaetzt |
+| `20261006000039_audit_log` | Audit-Log: unveraenderliches Protokoll zu Rechnungen, Lohnmonaten, Berechtigungen und Steuer-/Bankdaten, von Triggern geschrieben; Werte sensibler Felder werden **nicht** protokolliert, nur deren Namen |
 
 Die beiden `...26`-Migrationen tragen dieselbe Nummer aus zwei parallelen
 Zweigen. Das ist unschoen, aber harmlos: angewendet wird nach Dateiname, und

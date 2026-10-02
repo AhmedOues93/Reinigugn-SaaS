@@ -18,6 +18,7 @@ import {
   MessageSquareWarning,
   Receipt,
   Settings,
+  ScrollText,
   ShieldCheck,
   UserRoundCheck,
   Users,
@@ -67,6 +68,7 @@ export const navGroups: NavGroup[] = [
       { href: '/dashboard/kalkulation/grundlagen', label: 'nav.calculationBasics', icon: 'basics' },
       { href: '/dashboard/settings', label: 'nav.settings', icon: 'settings' },
       { href: '/dashboard/sicherheit', label: 'nav.security', icon: 'security' },
+      { href: '/dashboard/protokoll', label: 'nav.auditLog', icon: 'auditLog' },
     ],
   },
 ];
@@ -95,6 +97,7 @@ export const navIcons = {
   messages: MessageSquare,
   settings: Settings,
   security: ShieldCheck,
+  auditLog: ScrollText,
 } as const;
 
 export function DashboardShell({
