@@ -17,6 +17,11 @@ export type SyncOutcome = { applied: number; conflicted: number; failed: number 
  *
  * Authorisation is unchanged: the RPC delegates to the existing employee-scoped
  * function, so the offline path is not a way around the assignment check.
+ *
+ * Reihenfolge: `listQueue` liefert nach Tippzeitpunkt sortiert, und diese
+ * Schleife bricht beim ersten Fehlschlag nicht ab, sondern laesst die Buchung
+ * in der Warteschlange. Eine Zeitfolge (Start, Pause, Fortsetzen, Feierabend)
+ * kommt damit in der Reihenfolge an, in der sie entstanden ist.
  */
 export async function runSync(
   userId: string,

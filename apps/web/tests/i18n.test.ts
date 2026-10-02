@@ -15,7 +15,7 @@ import {
 const transliterationPattern =
   /(fuer|ueber|koenn|muess|oeffn|waehl|aender|auftraeg|qualitaet|tuerkisch|franzoesisch|rumaenisch|gebaeud|groess|hoech|zurueck|naechst|moegl|duerf|laeng|staerk|strasse|grosse)/i;
 
-const germanUmlautKeys = ['nav.jobs', 'nav.quality', 'common.menu', 'emp.photo.hint'] as const;
+const germanUmlautKeys = ['nav.jobs', 'nav.quality', 'common.menu', 'emp.photo.hint', 'billing.addService'] as const;
 
 describe('i18n', () => {
   it('supports exactly the six product locales', () => {

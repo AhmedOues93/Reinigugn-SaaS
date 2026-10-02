@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { inflateSync } from 'node:zlib';
 import { PDFDocument } from 'pdf-lib';
 import { invoiceFileName, renderInvoicePdf, safe, type InvoicePdfInput } from '@/lib/billing/invoice-pdf';
 
@@ -23,6 +24,31 @@ const base: InvoicePdfInput = {
   ],
 };
 
+
+/** The visible text of a rendered PDF, for asserting on the figures it prints. */
+async function pdfText(bytes: Uint8Array) {
+  // Content streams are deflate-compressed and the renderer writes text as hex
+  // strings (`<52656368…> Tj`), so inflate each stream and decode those.
+  const raw = Buffer.from(bytes);
+  const marker = Buffer.from('stream');
+  const chunks: string[] = [];
+  for (let at = raw.indexOf(marker); at !== -1; at = raw.indexOf(marker, at + 1)) {
+    let from = at + marker.length;
+    if (raw[from] === 0x0d) from += 1;
+    if (raw[from] === 0x0a) from += 1;
+    const to = raw.indexOf(Buffer.from('endstream'), from);
+    if (to === -1) continue;
+    try {
+      chunks.push(inflateSync(raw.subarray(from, to)).toString('latin1'));
+    } catch {
+      /* an embedded font rather than a content stream — nothing to read */
+    }
+  }
+  return [...chunks.join('\n').matchAll(/<([0-9A-Fa-f]+)>\s*Tj/g)]
+    .map(([, hex]) => Buffer.from(hex!, 'hex').toString('latin1'))
+    .join(' ');
+}
+
 describe('invoice PDF', () => {
   it('renders a valid, titled PDF from the snapshot', async () => {
     const bytes = await renderInvoicePdf(base);
@@ -43,6 +69,37 @@ describe('invoice PDF', () => {
     expect(safe('Иванов')).toBe('??????');
     const bytes = await renderInvoicePdf({ ...base, customer: { ...base.customer, name: 'ООО Чистота' } });
     expect(bytes.length).toBeGreaterThan(1000);
+  });
+
+  /*
+   * A printed total that disagrees with the stored one is the worst kind of
+   * billing bug: the customer and the ledger hold different numbers and nobody
+   * notices until a dispute. The document must render the stored figures, never
+   * re-derive them.
+   */
+  it('prints exactly the stored totals, including awkward rounding', async () => {
+    // 3.333 x 41.67 and 7.77 x 13.33 both round unhappily; the stored integers win.
+    const awkward: InvoicePdfInput = {
+      ...base,
+      netTotalCents: 24246,
+      vatTotalCents: 3364,
+      grossTotalCents: 27610,
+      lines: [
+        { position: 1, description: 'Glasreinigung', quantity: 3.333, unit: 'Std', unit_price_cents: 4167, vat_rate_basis_points: 1900, net_amount_cents: 13889 },
+        { position: 2, description: 'Sonderposten', quantity: 7.77, unit: 'm²', unit_price_cents: 1333, vat_rate_basis_points: 700, net_amount_cents: 10357 },
+      ],
+    };
+    const text = await pdfText(await renderInvoicePdf(awkward));
+
+    // The stored minor units, formatted — never recomputed from floats.
+    expect(text).toContain('242,46'); // net total
+    expect(text).toContain('276,10'); // gross total
+    // VAT is broken down per rate, as a German invoice must: 26,39 + 7,25 = 33,64.
+    expect(text).toContain('26,39');
+    expect(text).toContain('7,25');
+    // A float recomputation of line 1 would print 138,90 rather than the stored 138,89.
+    expect(text).toContain('138,89');
+    expect(text).not.toContain('138,90');
   });
 
   it('labels corrections and builds a header-safe file name', async () => {

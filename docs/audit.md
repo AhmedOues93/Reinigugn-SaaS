@@ -165,12 +165,11 @@ Time actions stay online-only; the checklist remains the only offline-queued wri
 
 ## Production gaps (not solved here)
 
-- **E-invoicing (XRechnung / ZUGFeRD, EN 16931).** Not implemented. B2B e-invoice
-  *receipt* has been mandatory in Germany since 1 January 2025 and *issuing* becomes
-  mandatory for most B2B senders in 2027/2028. This needs a structured XML
-  generator (CII/UBL), mandatory-field validation (e.g. Leitweg-ID for public
-  customers, seller/buyer tax data), PDF/A-3 embedding for ZUGFeRD, and validation
-  against the official schematron. The current PDF is not an e-invoice.
+- **E-invoicing (XRechnung / ZUGFeRD, EN 16931).** XRechnung 3 UBL XML generation
+  is implemented with readiness checks and invoice e-mail attachment. The visual
+  PDF remains separate. Production readiness still requires representative exports
+  to pass the current official KoSIT validation rules. ZUGFeRD/PDF-A-3 embedding is
+  not implemented.
 - **Legal review of invoice content.** The PDF carries the § 14 UStG elements the
   data model has, but completeness depends on tenant master data (tax number or
   VAT ID, addresses); nothing enforces that before issuing. Not legally verified.

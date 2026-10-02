@@ -15,11 +15,22 @@ export async function submitAbsence(_: FormState, formData: FormData): Promise<F
   revalidatePath('/dashboard/urlaub-krankheit'); revalidatePath('/dashboard'); revalidatePath('/dashboard', 'layout'); return { status: 'success', message: type === 'VACATION' ? 'Urlaubsantrag wurde eingereicht.' : 'Krankmeldung wurde erfasst.' };
 }
 
-export async function reviewAbsence(id: string, approved: boolean) {
+export async function reviewAbsence(id: string, approved: boolean, formData: FormData) {
+  const note = String(formData.get('review_note') ?? '').trim();
+  if (!approved && note.length < 3) throw new Error('Bitte gib einen kurzen Ablehnungsgrund an.');
+  if (note.length > 1000) throw new Error('Der Hinweis darf maximal 1.000 Zeichen enthalten.');
+
   const { supabase } = await requireStaffCompany();
-  const { error } = await supabase.rpc('review_absence', { p_absence_id: id, p_approved: approved });
+  const { error } = await supabase.rpc('review_absence_with_note', {
+    p_absence_id: id,
+    p_approved: approved,
+    p_note: note || null,
+  });
   if (error) throw new Error('Die Abwesenheit konnte nicht bearbeitet werden.');
-  revalidatePath('/dashboard/urlaub-krankheit'); revalidatePath('/dashboard'); revalidatePath('/dashboard', 'layout');
+  revalidatePath('/dashboard/urlaub-krankheit');
+  revalidatePath('/mitarbeiter/abwesenheit');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard', 'layout');
 }
 
 export async function uploadAuDocument(absenceId: string, _: FormState, formData: FormData): Promise<FormState> {

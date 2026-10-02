@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { Button, Input } from '@/components/ui';
 import { t, type Locale } from '@/lib/i18n';
@@ -67,6 +67,8 @@ export function AuthField({
   locale,
   labelAction,
   defaultValue,
+  placeholder,
+  icon,
 }: {
   name: string;
   label: string;
@@ -76,6 +78,9 @@ export function AuthField({
   locale: Locale;
   labelAction?: React.ReactNode;
   defaultValue?: string;
+  placeholder?: string;
+  /** Leading glyph. Decorative: the label already names the field. */
+  icon?: React.ReactNode;
 }) {
   const id = useId();
   const errorId = `${id}-error`;
@@ -107,17 +112,26 @@ export function AuthField({
         {labelAction}
       </div>
       <div className="relative">
+        {icon && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 start-0 grid w-11 place-items-center text-muted-foreground [&_svg]:size-[18px]"
+          >
+            {icon}
+          </span>
+        )}
         <Input
           id={id}
           name={name}
           type={isPassword && !visible ? 'password' : isPassword ? 'text' : type}
           autoComplete={autoComplete}
           defaultValue={defaultValue}
+          placeholder={placeholder}
           required
           data-rule={rule}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={cn('min-h-12 text-[15px]', isPassword && 'pe-12')}
+          className={cn('min-h-12 text-[15px]', icon && 'ps-11', isPassword && 'pe-12')}
           ref={inputRef}
           onBlur={(event) => {
             if (event.currentTarget.value) {
@@ -159,6 +173,27 @@ export function AuthField({
   );
 }
 
+/**
+ * "Angemeldet bleiben".
+ *
+ * Unchecked — the default — the session lives until the browser closes. That is
+ * the right default for a machine in a shared office, and it is genuinely what
+ * happens: see `lib/supabase/session-scope.ts`.
+ */
+export function AuthRemember({ label }: { label: string }) {
+  return (
+    <label className="flex min-h-touch cursor-pointer select-none items-center gap-2.5 text-sm md:min-h-9">
+      <input
+        type="checkbox"
+        name="remember"
+        value="1"
+        className="size-[18px] rounded border-white/25 bg-white/10 accent-[hsl(var(--highlight))]"
+      />
+      {label}
+    </label>
+  );
+}
+
 /** Submit with a spinner and a verb, disabled while the action runs. */
 export function AuthSubmit({ children, pendingLabel }: { children: React.ReactNode; pendingLabel: string }) {
   const { pending } = useFormStatus();
@@ -170,7 +205,10 @@ export function AuthSubmit({ children, pendingLabel }: { children: React.ReactNo
           {pendingLabel}
         </>
       ) : (
-        children
+        <>
+          {children}
+          <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+        </>
       )}
     </Button>
   );

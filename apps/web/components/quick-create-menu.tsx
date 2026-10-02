@@ -3,20 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, CalendarPlus, ChevronDown, ClipboardPlus, Inbox, MessageSquareWarning, Plus, Receipt, UserPlus, Users } from 'lucide-react';
+import { ChevronDown, Inbox, Plus, UserPlus, Users } from 'lucide-react';
 
 /**
  * The office's most frequent "new" actions in one place, so starting work never
  * means first finding the right list page. Sorted by the order work flows in.
  */
 const actions = [
-  { href: '/dashboard/vertrieb/anfragen/neu', label: 'Anfrage', hint: 'Neuer Interessent', icon: Inbox },
-  { href: '/dashboard/kunden/neu', label: 'Kunde', hint: 'Stammdaten anlegen', icon: Users },
-  { href: '/dashboard/objekte/neu', label: 'Objekt', hint: 'Reinigungsobjekt', icon: Building2 },
-  { href: '/dashboard/auftraege/neu', label: 'Auftrag', hint: 'Einzeltermin planen', icon: ClipboardPlus },
-  { href: '/dashboard/planung/plaene/neu', label: 'Reinigungsplan', hint: 'Wiederkehrend', icon: CalendarPlus },
-  { href: '/dashboard/abrechnung/neu', label: 'Rechnung', hint: 'Entwurf erstellen', icon: Receipt },
-  { href: '/dashboard/reklamationen/neu', label: 'Reklamation', hint: 'Vorgang erfassen', icon: MessageSquareWarning },
+  { href: '/dashboard/vertrieb/anfragen/neu', label: 'Anfrage', hint: 'Interessent oder Bestandskunde', icon: Inbox },
+  { href: '/dashboard/kunden/neu', label: 'Kunde', hint: 'Stammdaten direkt anlegen', icon: Users },
   { href: '/dashboard/mitarbeiter/neu', label: 'Mitarbeiter', hint: 'Einladung senden', icon: UserPlus },
 ];
 

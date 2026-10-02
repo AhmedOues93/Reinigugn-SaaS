@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { CompanyBranding } from '@/lib/data/branding';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
@@ -12,7 +13,28 @@ import { t, type Locale } from '@/lib/i18n';
  * screen in both directions, and closes on outside click and on Escape — which
  * a `<details>` popover does not do.
  */
-export function DashboardUserMenu({ locale, email }: { locale: Locale; email: string }) {
+export function DashboardUserMenu({
+  locale,
+  email,
+  displayName,
+  companyName,
+  branding,
+}: {
+  locale: Locale;
+  email: string;
+  displayName?: string;
+  companyName?: string;
+  branding?: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
+}) {
+  // Initials from the name when there is one, otherwise the address. Two
+  // letters, because one is ambiguous the moment a company has two Sabines.
+  const source = displayName?.trim() || email;
+  const initials = source
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -40,8 +62,36 @@ export function DashboardUserMenu({ locale, email }: { locale: Locale; email: st
         aria-label={email}
         className="flex min-h-touch items-center gap-2 rounded-lg ps-1 pe-1.5 text-sm transition-colors hover:bg-foreground/[0.05] md:min-h-10"
       >
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ink text-[13px] font-semibold text-highlight">
-          {email.slice(0, 1).toUpperCase()}
+        {/*
+          The company's own mark, on the right of the bar with the other
+          controls, rather than beside the menu button on the left where it
+          competed with the product lockup in the drawer. It falls back to the
+          person's initials when no logo has been uploaded, so the control is
+          never an empty circle. The name and company beside it on desktop still
+          say who is signed in.
+        */}
+        {branding?.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- signed, short-lived storage URL
+          <img
+            src={branding.logoUrl}
+            alt={branding.name ?? companyName ?? ''}
+            className="size-9 shrink-0 rounded-full bg-white object-contain p-0.5 ring-1 ring-border"
+          />
+        ) : (
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-ink text-[12px] font-semibold text-highlight">
+            {initials || '?'}
+          </span>
+        )}
+        {/* Who you are and which company you are in, because an office
+            colleague can belong to more than one and acting in the wrong one
+            is an expensive mistake to notice late. */}
+        <span className="hidden min-w-0 text-start leading-tight lg:block">
+          <span className="block max-w-[11rem] truncate text-[13px] font-semibold">
+            {displayName?.trim() || email}
+          </span>
+          {companyName && (
+            <span className="block max-w-[11rem] truncate text-[11.5px] text-muted-foreground">{companyName}</span>
+          )}
         </span>
         <ChevronDown className="size-3.5 shrink-0 text-muted-foreground max-sm:hidden" aria-hidden="true" />
       </button>

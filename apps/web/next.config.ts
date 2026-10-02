@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '12mb',
+    },
+  },
   transpilePackages: ['@reinigung/ui', '@reinigung/types', '@reinigung/validation', '@reinigung/config'],
   async redirects() {
     return [

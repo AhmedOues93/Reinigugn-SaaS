@@ -219,6 +219,40 @@ select pg_temp.assert_rejected(format('select public.set_lead_status(%L, ''WON''
 select pg_temp.assert_rejected(format('select public.set_lead_status(%L, ''LOST'')', (select id from lead1)),
                                'A reason is required');
 
+-- ---------------------------------------------------------------------------
+-- An accepted quote must leave the office with visits, not just a plan.
+-- Before this was enforced, `accept_quote` created the customer, the site and
+-- the recurring plan and generated nothing: the planning board stayed empty
+-- until somebody thought to toggle the plan off and on again.
+-- ---------------------------------------------------------------------------
+select pg_temp.sign_in('a1000000-0000-4000-8000-000000000001');
+
+create temporary table accepted as
+select created_schedule_id as schedule_id from public.quotes where id = (select id from quote1);
+
+select pg_temp.assert((select schedule_id from accepted) is not null,
+                      'accepting a recurring quote creates a plan');
+select pg_temp.assert(
+  (select count(*) from public.jobs where service_schedule_id = (select schedule_id from accepted)) > 0,
+  'accepting a recurring quote also generates its visits');
+
+-- Every generated visit carries the customer and the site, so the field app and
+-- billing both have what they need without a second lookup.
+select pg_temp.assert(
+  (select count(*) from public.jobs
+    where service_schedule_id = (select schedule_id from accepted)
+      and (customer_id is null or cleaning_object_id is null)) = 0,
+  'every generated visit carries its customer and site');
+
+-- Re-generating the same horizon must never duplicate a visit.
+select public.generate_jobs_for_schedule((select schedule_id from accepted), current_date + 56);
+select pg_temp.assert(
+  (select count(*) from (
+     select scheduled_date, count(*) c from public.jobs
+      where service_schedule_id = (select schedule_id from accepted)
+      group by scheduled_date having count(*) > 1) duplicates) = 0,
+  'regenerating the horizon creates no duplicate visit');
+
 select pg_temp.sign_out();
 \o
 rollback;

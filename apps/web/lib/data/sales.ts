@@ -22,7 +22,7 @@ export async function getLead(id: string) {
   const { data, error } = await supabase
     .from('leads')
     .select(
-      'id, status, organisation, contact_person, email, phone, street, postal_code, city, source, notes, created_at, converted_customer_id, lost_reason',
+      'id, status, organisation, contact_person, email, phone, street, postal_code, city, source, notes, created_at, converted_customer_id, lost_reason, customer_id, cleaning_object_id, cleaning_type, desired_start, frequency, preferred_time',
     )
     .eq('company_id', company.id)
     .eq('id', id)
@@ -86,7 +86,7 @@ export async function listQuotes(status?: QuoteStatus | 'all') {
   let query = supabase
     .from('quotes')
     .select(
-      'id, quote_number, status, title, currency, net_total_cents, gross_total_cents, recurring_net_monthly_cents, sent_at, valid_until, created_at, lead_id, customer_id, leads(organisation), customers!quotes_customer_id_fkey(name)',
+      'id, quote_number, status, title, currency, net_total_cents, gross_total_cents, recurring_net_monthly_cents, sent_at, valid_until, created_at, lead_id, customer_id, created_customer_id, leads(organisation), customers!quotes_customer_id_fkey(name)',
     )
     .eq('company_id', company.id)
     .order('created_at', { ascending: false });
@@ -102,7 +102,7 @@ export async function getQuote(id: string) {
     .from('quotes')
     .select(
       `id, quote_number, status, title, intro, currency, net_total_cents, vat_total_cents, gross_total_cents,
-       recurring_net_monthly_cents, sent_at, valid_until, accepted_at, declined_at, decline_reason,
+       recurring_net_monthly_cents, billing_mode, acceptance_policy, order_type, service_start, service_end, termination_notice, sent_at, valid_until, accepted_at, accepted_by_name, accepted_signature_text, acceptance_note, accepted_via, declined_at, decline_reason, created_at,
        recipient_snapshot, company_snapshot, lead_id, customer_id, site_survey_id,
        created_customer_id, created_object_id, created_schedule_id,
        leads(organisation), customers!quotes_customer_id_fkey(name),
