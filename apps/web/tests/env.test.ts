@@ -19,6 +19,8 @@ const keys = [
   'NEXT_PUBLIC_SITE_URL',
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+  'URL',
+  'RENDER_EXTERNAL_URL',
 ];
 const blank = Object.fromEntries(keys.map((key) => [key, undefined]));
 
@@ -70,5 +72,26 @@ describe('environment', () => {
     expect(new URL('/auth/callback', env.siteUrl()).toString()).toBe(
       'https://staging.example.com/auth/callback',
     );
+  });
+
+  it('repairs missing and loopback origins on Render and Netlify', async () => {
+    for (const host of ['URL', 'RENDER_EXTERNAL_URL']) {
+      for (const configured of [undefined, 'http://localhost:3000', 'http://[::1]:3000', 'http://app.localhost:3000']) {
+        const env = await load({ ...blank, [host]: 'https://reinplan.example.com/', NEXT_PUBLIC_SITE_URL: configured });
+        expect(env.siteUrl()).toBe('https://reinplan.example.com');
+      }
+    }
+  });
+
+  it('keeps an explicitly configured custom domain', async () => {
+    const env = await load({ ...blank, RENDER_EXTERNAL_URL: 'https://reinplan.onrender.com', NEXT_PUBLIC_SITE_URL: 'https://app.reinplan.de' });
+    expect(env.siteUrl()).toBe('https://app.reinplan.de');
+  });
+
+  it('rejects unsafe or malformed deployment origins', async () => {
+    for (const value of ['http://localhost:3000', 'http://[::1]:3000', 'http://example.com', 'javascript:alert(1)', 'not-a-url', 'https://user:pass@example.com', 'https://example.com/path', 'https://example.com?token=secret', 'https://example.com#fragment']) {
+      const env = await load({ ...blank, NEXT_PUBLIC_APP_ENV: 'production', NEXT_PUBLIC_SITE_URL: value });
+      expect(() => env.siteUrl()).toThrow(/NEXT_PUBLIC_SITE_URL/);
+    }
   });
 });
