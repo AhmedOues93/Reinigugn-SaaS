@@ -7,6 +7,7 @@ import { initialFormState } from '@/lib/actions';
 import { Field, Input } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { t, type Locale } from '@/lib/i18n';
+import { AuthCaptcha } from '@/components/auth-captcha';
 
 export function InvitationSignUp({ locale = 'de' }: { locale?: Locale }) {
   const [state, action] = useActionState(signUpFromInvitation, initialFormState);
@@ -24,6 +25,7 @@ export function InvitationSignUp({ locale = 'de' }: { locale?: Locale }) {
       <Field label="Passwort wiederholen" htmlFor="invite-password-confirmation">
         <Input id="invite-password-confirmation" name="password_confirmation" type="password" autoComplete="new-password" minLength={12} required />
       </Field>
+      <AuthCaptcha />
       <SubmitButton locale={locale} size="block">
         {t(locale, 'auth.inviteCreateAccount')}
       </SubmitButton>

@@ -88,6 +88,7 @@ grant select on office_member to authenticated;
  * `p_backdate` days ago, so payment dates on either side of the issue date can
  * be exercised.
  */
+\ir fixtures/invoice-master-data.sql
 create or replace function pg_temp.issued_invoice(p_backdate integer, p_cents bigint default 10000) returns uuid
 language plpgsql as $$
 declare invoice_id uuid;

@@ -8,6 +8,7 @@ import { companyNameSchema, loginSchema, passwordSchema, signUpSchema } from '@r
 import { appUrl } from '@/lib/utils';
 import { SESSION_ONLY_COOKIE } from '@/lib/supabase/session-scope';
 import { createClient } from '@/lib/supabase/server';
+import { captchaMessage, captchaOptions, captchaRequired } from '@/lib/auth-captcha';
 import {
   LOGIN_THROTTLE,
   PASSWORD_RESET_THROTTLE,
@@ -82,6 +83,7 @@ async function clearThrottle(supabase: AnonClient, scope: ThrottleScope, bucket:
 }
 
 export async function signUp(formData: FormData) {
+  if (captchaRequired(formData)) withMessage('/signup', 'error', captchaMessage);
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) withMessage('/signup', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
@@ -97,6 +99,7 @@ export async function signUp(formData: FormData) {
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
+      ...captchaOptions(formData),
       emailRedirectTo: appUrl('/auth/callback'),
       data: {
         first_name: firstName,
@@ -111,6 +114,7 @@ export async function signUp(formData: FormData) {
 }
 
 export async function login(formData: FormData) {
+  if (captchaRequired(formData)) withMessage('/login', 'error', captchaMessage);
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) withMessage('/login', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
@@ -131,7 +135,7 @@ export async function login(formData: FormData) {
   const lockedFor = await throttleGate(supabase, LOGIN_THROTTLE, address);
   if (lockedFor !== null) withMessage('/login', 'error', throttleMessage(lockedFor));
 
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({ ...parsed.data, options: captchaOptions(formData) });
   if (error) withMessage('/login', 'error', 'E-Mail-Adresse oder Passwort ist nicht korrekt.');
   await clearThrottle(supabase, LOGIN_THROTTLE, address);
   redirect('/dashboard');
@@ -145,6 +149,7 @@ export async function logout() {
 }
 
 export async function requestPasswordReset(formData: FormData) {
+  if (captchaRequired(formData)) withMessage('/forgot-password', 'error', captchaMessage);
   const email = formData.get('email');
   const parsed = loginSchema.pick({ email: true }).safeParse({ email });
   if (!parsed.success) withMessage('/forgot-password', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
@@ -160,6 +165,7 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    ...captchaOptions(formData),
     redirectTo: appUrl('/auth/callback?next=/reset-password'),
   });
 

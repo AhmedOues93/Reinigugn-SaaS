@@ -1538,6 +1538,7 @@ function   update_company_member(p_member_id uuid, p_first_name text, p_last_nam
 function   update_job_details(p_job_id uuid, p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) security definer
 function   update_my_company_master_data(p_name text, p_legal_form text, p_street text, p_postal_code text, p_city text, p_country text, p_phone text, p_email text, p_website text, p_tax_number text, p_vat_id text, p_billing_email text, p_iban text, p_bic text, p_payment_terms smallint, p_timezone text, p_language text) security definer
 function   update_my_contact_details(p_first_name text, p_last_name text, p_phone text) security definer
+function   validate_invoice_issue_master_data()
 function   weeks_per_month()
 function   working_days_between(p_from date, p_to date)
 function   working_days_in_month(p_month date)
@@ -2257,6 +2258,7 @@ trigger    invoices / invoices_audit_status
 trigger    invoices / invoices_guard_issued
 trigger    invoices / invoices_set_updated_at
 trigger    invoices / invoices_sync_line_status
+trigger    invoices / invoices_validate_issue_master_data
 trigger    job_assignments / job_assignments_validate_company
 trigger    job_photos / job_photos_refresh_record
 trigger    job_time_breaks / job_time_breaks_payroll_lock

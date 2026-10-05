@@ -6,6 +6,7 @@ import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
 import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
 import { renderStaffXRechnung } from '@/lib/billing/invoice-xrechnung-data';
+import { invoiceIssueError } from '@/lib/billing/issue-error';
 import { getBillableJob, getInvoice, listBillableJobs, listInvoicePayments } from '@/lib/data/billing';
 import { sendMail } from '@/lib/mail/transport';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -168,11 +169,7 @@ export async function issueInvoice(
     const { supabase } = await requireStaffCompany();
     const { data, error } = await supabase.rpc('issue_invoice', { p_invoice_id: invoiceId });
     if (error) {
-      return failure(
-        error.message.includes('at least one line')
-          ? 'Eine Rechnung braucht mindestens eine Leistung.'
-          : 'Die Rechnung konnte nicht ausgestellt werden.',
-      );
+      return failure(invoiceIssueError(error));
     }
     revalidateBilling(invoiceId);
     return { status: 'success', message: `Rechnung ${data} wurde ausgestellt.` };

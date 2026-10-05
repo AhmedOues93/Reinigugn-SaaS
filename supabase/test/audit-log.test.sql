@@ -125,6 +125,7 @@ select pg_temp.assert(
    where company_id = (select company from actx) and subject_type = 'invoice') = 0,
   'ein Entwurf samt Positionen ist kein Vorgang fuers Protokoll');
 
+\ir fixtures/invoice-master-data.sql
 select public.issue_invoice((select id from ainv));
 select pg_temp.assert(
   (select actor_name = 'Ayse Yilmaz' and detail->>'previous_status' = 'DRAFT'

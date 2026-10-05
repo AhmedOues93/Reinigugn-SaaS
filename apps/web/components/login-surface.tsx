@@ -6,6 +6,7 @@ import { AuthField, AuthForm, AuthRemember, AuthSubmit } from '@/components/auth
 import { Lock, Mail } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
+import { AuthCaptcha } from '@/components/auth-captcha';
 
 export async function LoginSurface({
   variant,
@@ -62,6 +63,7 @@ export async function LoginSurface({
           }
         />
         <AuthRemember label={t(locale, 'auth.remember')} />
+        <AuthCaptcha />
         <AuthSubmit pendingLabel={t(locale, 'auth.signingIn')}>{t(locale, 'auth.signIn')}</AuthSubmit>
       </AuthForm>
     </AuthShell>

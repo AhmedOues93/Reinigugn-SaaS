@@ -3,17 +3,20 @@
 import { type FormState } from '@/lib/actions';
 import { createClient } from '@/lib/supabase/server';
 import { appUrl } from '@/lib/utils';
+import { captchaMessage, captchaOptions, captchaRequired } from '@/lib/auth-captcha';
 
 function fail(message: string): FormState {
   return { status: 'error', message };
 }
 
-export async function requestOwnPasswordChange(_: FormState, _formData: FormData): Promise<FormState> {
+export async function requestOwnPasswordChange(_: FormState, formData: FormData): Promise<FormState> {
+  if (captchaRequired(formData)) return fail(captchaMessage);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return fail('Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
 
   const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+    ...captchaOptions(formData),
     redirectTo: appUrl('/auth/callback?next=/reset-password'),
   });
   if (error) return fail('Die Bestätigungs-E-Mail konnte nicht versendet werden. Bitte versuche es erneut.');
@@ -26,6 +29,7 @@ export async function requestOwnPasswordChange(_: FormState, _formData: FormData
 
 
 export async function requestOwnEmailChange(_: FormState, formData: FormData): Promise<FormState> {
+  if (captchaRequired(formData)) return fail(captchaMessage);
   const currentPassword = String(formData.get('current_password') ?? '');
   const nextEmail = String(formData.get('new_email') ?? '').trim().toLowerCase();
 
@@ -40,6 +44,7 @@ export async function requestOwnEmailChange(_: FormState, formData: FormData): P
   const { error: reauthError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: currentPassword,
+    options: captchaOptions(formData),
   });
   if (reauthError) return fail('Das aktuelle Passwort ist nicht korrekt.');
 

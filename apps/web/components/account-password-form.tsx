@@ -7,6 +7,7 @@ import { requestOwnEmailChange, requestOwnPasswordChange } from '@/app/account/a
 import { initialFormState } from '@/lib/actions';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button, Field, Input } from '@/components/ui';
+import { AuthCaptcha } from '@/components/auth-captcha';
 
 export function AccountPasswordForm() {
   const [passwordState, passwordAction] = useActionState(requestOwnPasswordChange, initialFormState);
@@ -26,6 +27,7 @@ export function AccountPasswordForm() {
             </div>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            <AuthCaptcha />
             <SubmitButton>Link senden</SubmitButton>
             <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">Passwort vergessen?</Link>
           </div>
@@ -51,6 +53,7 @@ export function AccountPasswordForm() {
                 <Input id="current-account-password" name="current_password" type="password" autoComplete="current-password" required />
               </Field>
               <div className="flex flex-wrap gap-2">
+                <AuthCaptcha />
                 <SubmitButton>Bestätigungslink senden</SubmitButton>
                 <Button type="button" variant="outline" onClick={() => setMode('NONE')}><X className="size-4" />Abbrechen</Button>
               </div>
