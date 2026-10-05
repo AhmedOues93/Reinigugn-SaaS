@@ -5,6 +5,7 @@ import { AuthField, AuthForm, AuthSubmit } from '@/components/auth-form';
 import { Building2, Lock, Mail, UserRound } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
+import { AuthCaptcha } from '@/components/auth-captcha';
 
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const [{ error }, locale] = await Promise.all([searchParams, currentLocale()]);
@@ -38,6 +39,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
           icon={<Lock />}
           labelAction={<span className="text-xs text-muted-foreground">{t(locale, 'auth.passwordHint')}</span>}
         />
+        <AuthCaptcha />
         <AuthSubmit pendingLabel={t(locale, 'auth.working')}>{t(locale, 'auth.signUp')}</AuthSubmit>
       </AuthForm>
     </AuthShell>

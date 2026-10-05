@@ -564,6 +564,7 @@ select pg_temp.assert(
 -- side already knows how to do.
 select public.add_invoice_line((select id from inv), 'Grundreinigung', 1, 'Einsatz', 35000, 1900,
   (select id from onsite), null, (select object from ids));
+\ir fixtures/invoice-master-data.sql
 select public.issue_invoice((select id from inv), current_date);
 
 select pg_temp.sign_in('11111111-1111-1111-1111-111111111111');

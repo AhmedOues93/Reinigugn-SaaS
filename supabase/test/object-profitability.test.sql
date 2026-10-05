@@ -162,6 +162,7 @@ select pg_temp.assert(
   'der Erloes bleibt beim Monat des Einsatzes');
 
 -- Eine stornierte Rechnung bringt keinen Erloes.
+\ir fixtures/invoice-master-data.sql
 select public.issue_invoice((select id from rinv));
 select public.cancel_invoice((select id from rinv), 'Testweise storniert');
 select pg_temp.assert(

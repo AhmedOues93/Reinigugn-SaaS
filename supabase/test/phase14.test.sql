@@ -106,6 +106,7 @@ select public.add_invoice_line((select id from inv), 'Unterhaltsreinigung', 2, '
 select pg_temp.assert_rejected(
   $$select public.record_invoice_delivery((select id from inv), 'INVOICE', 'EMAIL', 'x@y.test', 'SENT', null)$$,
   'Only an issued invoice');
+\ir fixtures/invoice-master-data.sql
 select public.issue_invoice((select id from inv));
 
 select public.record_invoice_delivery((select id from inv), 'INVOICE', 'EMAIL', 'buchhaltung@kunde.test', 'NOT_CONFIGURED', 'no provider');

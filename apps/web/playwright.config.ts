@@ -74,6 +74,7 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: 300_000,
         env: {
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.E2E_CAPTCHA_SITE_KEY ?? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '',
           NEXT_PUBLIC_APP_ENV: 'local',
           NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321',
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:

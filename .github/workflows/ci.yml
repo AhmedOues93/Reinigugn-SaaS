@@ -240,6 +240,15 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-credential
 
+      # Run the optional widget tests with a mocked provider, never real keys.
+      - name: Run CAPTCHA lifecycle tests
+        run: pnpm --filter @reinigung/web exec playwright test e2e/public/auth-captcha.spec.ts
+        env:
+          E2E_CAPTCHA_SITE_KEY: e2e-site-key
+          NEXT_PUBLIC_APP_ENV: local
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-credential
+
       - name: Keep the report when something failed
         if: failure()
         uses: actions/upload-artifact@v4

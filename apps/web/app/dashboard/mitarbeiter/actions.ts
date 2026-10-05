@@ -1,4 +1,5 @@
 'use server';
+import { captchaMessage, captchaOptions, captchaRequired } from '@/lib/auth-captcha';
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -154,6 +155,7 @@ async function invitationTokenFromCookie() {
 }
 
 export async function signUpFromInvitation(_: FormState, formData: FormData): Promise<FormState> {
+  if (captchaRequired(formData)) return failure(captchaMessage);
   const password = passwordSchema.safeParse(formData.get('password'));
   const confirmation = String(formData.get('password_confirmation') ?? '');
   const token = await invitationTokenFromCookie();
@@ -164,7 +166,7 @@ export async function signUpFromInvitation(_: FormState, formData: FormData): Pr
   const { data: previewData } = await supabase.rpc('get_invitation_preview', { p_token: token }).maybeSingle();
   const preview = previewData as InvitationPreview | null;
   if (!preview) return failure('Der Einladungslink ist ungültig oder abgelaufen.');
-  const { data: signUpData, error } = await supabase.auth.signUp({ email: preview.email, password: password.data, options: { emailRedirectTo: appUrl('/auth/callback?next=/einladung') } });
+  const { data: signUpData, error } = await supabase.auth.signUp({ email: preview.email, password: password.data, options: { ...captchaOptions(formData), emailRedirectTo: appUrl('/auth/callback?next=/einladung') } });
   if (error) return failure('Konto konnte nicht erstellt werden. Melde dich an, falls bereits ein Konto besteht.');
   if (signUpData.session) return completeInvitationFromCookie();
   return { status: 'success', message: 'Bitte bestätige deine E-Mail-Adresse. Danach kannst du die Einladung abschliessen.' };

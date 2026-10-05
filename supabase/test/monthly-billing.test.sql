@@ -151,6 +151,7 @@ select pg_temp.assert(
 -- ---------------------------------------------------------------------------
 -- Eine gestellte Rechnung wird nicht angefasst
 -- ---------------------------------------------------------------------------
+\ir fixtures/invoice-master-data.sql
 select public.issue_invoice(
   (select invoice.id from public.invoices invoice
    join public.customers c on c.id = invoice.customer_id

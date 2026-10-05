@@ -234,6 +234,7 @@ select public.add_invoice_line(
   (select id from invoice), 'Unterhaltsreinigung Elbpalais'::text,
   2::numeric, 'Std'::text, 3900::bigint, 1900,
   (select id from visit), null, null);
+\ir fixtures/invoice-master-data.sql
 select public.issue_invoice((select id from invoice), current_date);
 select pg_temp.sign_out();
 

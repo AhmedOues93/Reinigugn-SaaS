@@ -125,8 +125,11 @@ schützen; sie sitzt vor unserem eigenen Formular.
 - Authentication → Rate Limits: Sign-in/Sign-up je Stunde und je IP begrenzen.
 - Authentication → Attack Protection → CAPTCHA (hCaptcha oder Turnstile)
   einschalten. Das ist die einzige Maßnahme, die automatisiertes Raten
-  wirklich stoppt. Der Schlüssel gehört anschließend in die
-  Anmeldeformulare — solange das CAPTCHA an ist und die App ihn nicht
+  wirklich stoppt. Der öffentliche Site-Key gehört als `NEXT_PUBLIC_TURNSTILE_SITE_KEY` ins
+  Hosting (Build neu auslösen); die Formulare reichen den Token an Supabase Auth weiter.
+  Der Secret-Key gehört nur in Supabase Auth, nicht in die Anwendung. Erst die App
+  mit Site-Key ausrollen und prüfen, dann CAPTCHA in Supabase einschalten.
+  Das betrifft auch Einladungen, Passwort-Reset und Kontoänderungen — solange das CAPTCHA an ist und die App ihn nicht
   mitsendet, schlägt jede Anmeldung fehl, also beides zusammen ausrollen.
 - Authentication → Multi-Factor Authentication → TOTP einschalten. Ohne das
   antwortet `mfa.enroll` mit „MFA is not enabled" und `/dashboard/sicherheit`
@@ -278,3 +281,28 @@ ist das die Ursache.
   erfunden werden; der Betreiber trägt seine eigenen Angaben ein. Die Seiten
   sind als „in Arbeit" gekennzeichnet, solange das nicht geschehen ist.
 - **Auftragsverarbeitungsverträge** mit Supabase und dem Mail-Anbieter.
+
+
+## Produktionskorrektur: Rechnungsstammdaten und Provider-Ereignisse
+
+`production_invoice_and_mail_guards` ist eine gezielte, wiederholbare Migration.
+Sie braucht keinen vollständigen `db push` der historischen Migrationen.
+
+- `record_mail_event` ist nur für `service_role` aufrufbar. Der Resend-Webhook
+  verwendet diesen serverseitigen Schlüssel bereits und prüft die Signatur zuerst.
+- Neue Rechnungsausstellungen verlangen vollständige Verkäufer- und
+  Käuferadresse sowie Steuernummer oder USt-IdNr. Geprüft werden die Snapshots
+  des ausgestellten Dokuments. Die Ablehnung lässt den Entwurf bestehen und
+  verbraucht keine Rechnungsnummer. Bestehende ausgestellte Rechnungen bleiben
+  bezahlbar und stornierbar, auch wenn heutige Stammdaten unvollständig sind.
+- Das Formular nennt fehlende Stammdaten und die Stelle, an der sie ergänzt werden.
+
+Die SQL-Suite `production-guards.test.sql` prüft verweigerte Aufrufe als
+`authenticated`, erfolgreichen und wiederholten Webhook als `service_role`,
+fehlende Adressen/Steuerkennung, den direkten SQL-Schreibweg, Nummern ohne
+Lücke und Zahlung nach späterer Stammdatenänderung.
+
+CAPTCHA und `THROTTLE_SIGNING_SECRET` benötigen weiterhin echte
+Hosting-/Supabase-Konfiguration. Ohne Site-Key bleibt CAPTCHA aus; ohne
+Signierschlüssel bleibt der dokumentierte gemeinsame Throttle-Fallback aktiv.
+Die App allein kann den direkten Auth-Endpunkt nicht absichern.

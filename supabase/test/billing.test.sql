@@ -138,6 +138,7 @@ select pg_temp.assert(
   (select invoice_number is null and issue_date is null and due_date is null and status = 'DRAFT' from public.invoices where id = (select id from draft)),
   'a draft consumes no invoice number');
 
+\ir fixtures/invoice-master-data.sql
 create temporary table issued as select public.issue_invoice((select id from draft), date '2027-03-01') as number;
 grant select on issued to authenticated;
 
