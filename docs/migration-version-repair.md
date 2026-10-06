@@ -29,3 +29,11 @@ portal_contact_determinism (20261006175943), internal_trigger_permissions
 deterministic_actor_resolution (20261006180004). Connector-assigned versions differ
 from existing source filenames. Do not reapply solely because an original source
 version is missing; compare names/content and schema first.
+
+Live verification passed: rollback-only portal-isolation and pause suites scoped
+to their synthetic tenants, and the actor-resolution suite. The latter first
+caught four legacy authenticated EXECUTE grants absent in the clean CI schema.
+Migration 20261006180251_internal_actor_rpc_permissions removes these grants;
+no RLS policy/browser client uses these selectors. phase7_current_member retains
+its required policy grant. The actor suite then passed. Fixture user count is zero.
+Security advisors report zero mutable function search-path findings.
