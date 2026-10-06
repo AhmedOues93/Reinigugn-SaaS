@@ -43,7 +43,7 @@ Diese Aktivierung erfolgt erst nach einem vollständigen Pilotworkflow.
 
 Die bereits live angewandte Basismigration ist `20261005091015`; die ältere lokale
 Version `20261005084215` darf nicht erneut angewandt werden. Die Folgemigration
-`20261006065733` ergänzt atomare Webhook-Verarbeitung und Checkout-Reservierungen.
+`20261006070648` ergänzt atomare Webhook-Verarbeitung und Checkout-Reservierungen.
 Wiederholte Checkout-Anfragen desselben Tarifs verwenden eine gemeinsame Stripe
 Idempotency-Key und feste Parameter. Ein anderer Tarif ist während der offenen
 Checkout-Reservierung (60 Minuten) gesperrt. Stripe-Events werden mit Abo-Status
@@ -64,3 +64,7 @@ Eine echte Stripe-Zahlung und ein vollständiger Pilotworkflow sind noch nicht
 verifiziert. Die UI-Tarife sind 69/119/199 EUR netto monatlich (5/25/75 Mitarbeitende).
 Die drei Stripe-Preise müssen dieselben Beträge, EUR, Monat und Steuerbehandlung
 verwenden. Betriebsdaten-Rechnungen bleiben von ReinPlan-Aborechnungen getrennt.
+
+Am 2026-10-06 wurde die Folgemigration in Production angewandt und mit
+rückgerollten SQL-Tests geprüft (keine Testfirmen oder Mitarbeiter gespeichert).
+Nicht nochmals anwenden, wenn die Versionsliste 20261006070648 bereits enthält.
