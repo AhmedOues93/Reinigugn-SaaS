@@ -252,6 +252,23 @@ column     company_members.updated_at timestamp with time zone not null
 column     company_number_counters.company_id uuid not null
 column     company_number_counters.last_number integer not null
 column     company_number_counters.sequence_key text not null
+column     company_subscriptions.cancel_at_period_end boolean not null
+column     company_subscriptions.checkout_expires_at timestamp with time zone
+column     company_subscriptions.checkout_key uuid
+column     company_subscriptions.checkout_plan reinplan_subscription_plan
+column     company_subscriptions.company_id uuid not null
+column     company_subscriptions.created_at timestamp with time zone not null
+column     company_subscriptions.current_period_ends_at timestamp with time zone
+column     company_subscriptions.id uuid not null
+column     company_subscriptions.plan reinplan_subscription_plan
+column     company_subscriptions.status reinplan_subscription_status not null
+column     company_subscriptions.stripe_customer_id text
+column     company_subscriptions.stripe_event_created bigint not null
+column     company_subscriptions.stripe_price_id text
+column     company_subscriptions.stripe_subscription_id text
+column     company_subscriptions.trial_ends_at timestamp with time zone not null
+column     company_subscriptions.trial_started_at timestamp with time zone not null
+column     company_subscriptions.updated_at timestamp with time zone not null
 column     complaint_updates.author_member_id uuid not null
 column     complaint_updates.company_id uuid not null
 column     complaint_updates.complaint_id uuid not null
@@ -758,6 +775,9 @@ column     site_surveys.site_name text not null
 column     site_surveys.status survey_status not null
 column     site_surveys.street text
 column     site_surveys.updated_at timestamp with time zone not null
+column     stripe_webhook_events.event_id text not null
+column     stripe_webhook_events.event_type text not null
+column     stripe_webhook_events.received_at timestamp with time zone not null
 column     survey_areas.area_sqm numeric(10,2)
 column     survey_areas.company_id uuid not null
 column     survey_areas.created_at timestamp with time zone not null
@@ -920,6 +940,12 @@ constraint company_number_counters / company_number_counters_company_id_fkey f
 constraint company_number_counters / company_number_counters_last_number_check c
 constraint company_number_counters / company_number_counters_pkey p
 constraint company_number_counters / company_number_counters_sequence_key_check c
+constraint company_subscriptions / company_subscriptions_check c
+constraint company_subscriptions / company_subscriptions_company_id_fkey f
+constraint company_subscriptions / company_subscriptions_company_id_key u
+constraint company_subscriptions / company_subscriptions_pkey p
+constraint company_subscriptions / company_subscriptions_stripe_customer_id_key u
+constraint company_subscriptions / company_subscriptions_stripe_subscription_id_key u
 constraint complaint_updates / complaint_updates_author_member_id_fkey f
 constraint complaint_updates / complaint_updates_company_id_fkey f
 constraint complaint_updates / complaint_updates_complaint_id_fkey f
@@ -1222,6 +1248,7 @@ constraint site_surveys / site_surveys_lead_id_fkey f
 constraint site_surveys / site_surveys_owner_check c
 constraint site_surveys / site_surveys_pkey p
 constraint site_surveys / site_surveys_site_name_check c
+constraint stripe_webhook_events / stripe_webhook_events_pkey p
 constraint survey_areas / survey_areas_area_sqm_check c
 constraint survey_areas / survey_areas_company_id_fkey f
 constraint survey_areas / survey_areas_hourly_rate_cents_check c
@@ -1266,6 +1293,8 @@ enum       payment_source = MANUAL,BANK_IMPORT,STRIPE
 enum       quality_result = PASS,FAIL
 enum       quote_line_recurrence = ONE_OFF,WEEKLY,MONTHLY
 enum       quote_status = DRAFT,SENT,ACCEPTED,DECLINED,EXPIRED
+enum       reinplan_subscription_plan = START,BETRIEB,UNTERNEHMEN
+enum       reinplan_subscription_status = TRIALING,ACTIVE,PAST_DUE,PAUSED,CANCELED,UNPAID
 enum       schedule_recurrence_type = WEEKLY
 enum       service_record_event = ERSTELLT,UNTERSCHRIEBEN,BESTAETIGT,PROBLEM_GEMELDET,PROBLEM_GEKLAERT,FREIGABE_WIDERRUFEN
 enum       service_record_status = ERFASST,ABNAHME_AUSSTEHEND,ABGENOMMEN,PROBLEM_GEMELDET
@@ -1325,6 +1354,7 @@ function   correct_time_entry(p_time_entry_id uuid, p_started_at timestamp with 
 function   cost_to_month(p_cents bigint, p_basis cost_basis, p_services_per_month numeric, p_monthly_hours numeric, p_sqm numeric)
 function   create_calculation(p_title text, p_lead_id uuid, p_customer_id uuid, p_site_survey_id uuid, p_cleaning_object_id uuid, p_catalog_item_id uuid) security definer
 function   create_company_for_current_user(company_name text) security definer
+function   create_company_subscription_trial() security definer
 function   create_complaint_follow_up_job(p_complaint_id uuid, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_member_ids uuid[]) security definer
 function   create_correction_invoice(p_invoice_id uuid) security definer
 function   create_customer_invitation(p_customer_id uuid, p_email text, p_first_name text, p_last_name text, p_phone text, p_token_hash text, p_expires_at timestamp with time zone) security definer
@@ -1356,6 +1386,7 @@ function   derive_productive_rate_bp(p_weekly_hours numeric, p_working_days_per_
 function   dispute_my_portal_service(p_job_id uuid, p_title text, p_description text) security definer
 function   easter_sunday(p_year integer)
 function   effective_entry_time(p_at timestamp with time zone)
+function   enforce_reinplan_employee_limit() security definer
 function   enqueue_job_start_reminders() security definer
 function   ensure_assignment_company_integrity() security definer
 function   ensure_checklist_template_in_company(p_template_id uuid, p_company_id uuid) security definer
@@ -1475,6 +1506,7 @@ function   record_invoice_delivery_v2(p_invoice_id uuid, p_kind invoice_delivery
 function   record_invoice_payment(p_invoice_id uuid, p_paid_on date, p_method payment_method, p_reference text, p_amount_cents bigint, p_note text, p_idempotency_key text) security definer
 function   record_mail_event(p_provider text, p_provider_event_id text, p_provider_message_id text, p_event_type text, p_recipient text, p_occurred_at timestamp with time zone, p_payload jsonb) security definer
 function   record_portal_acceptance_mail(p_job_id uuid, p_kind text) security definer
+function   record_reinplan_subscription_event(p_event_id text, p_event_type text, p_created bigint, p_company_id uuid, p_subscription_id text, p_customer_id text, p_price_id text, p_plan reinplan_subscription_plan, p_status reinplan_subscription_status, p_cancel boolean, p_period_end timestamp with time zone)
 function   refresh_invoice_totals() security definer
 function   refresh_quote_totals() security definer
 function   refresh_service_record_photos() security definer
@@ -1487,6 +1519,7 @@ function   remove_survey_area(p_area_id uuid) security definer
 function   reopen_payroll_period(p_month date, p_reason text) security definer
 function   request_source_address() security definer
 function   resend_company_invitation(p_member_id uuid, p_token_hash text, p_expires_at timestamp with time zone) security definer
+function   reserve_reinplan_checkout(p_company_id uuid, p_plan reinplan_subscription_plan)
 function   resolve_acceptance_policy(p_job_id uuid) security definer
 function   resolve_auth_throttle_key(p_scope text, p_bucket text, p_proof text) security definer
 function   resolve_job_checklist_template() security definer
@@ -1532,6 +1565,7 @@ function   stop_my_job(p_job_id uuid, p_at timestamp with time zone) security de
 function   sync_invoice_line_status() security definer
 function   sync_my_checklist_item(p_item_id uuid, p_completed boolean, p_client_time timestamp with time zone) security definer
 function   sync_quote_line_status() security definer
+function   touch_company_subscription()
 function   touch_complaint() security definer
 function   update_calculation(p_calculation_id uuid, p_title text, p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer, p_target_margin_bp integer, p_travel_cents_per_visit bigint, p_setup_minutes_per_visit numeric, p_other_cost_cents_per_month bigint, p_visits_per_week numeric, p_price_override_cents_month bigint, p_price_override_reason text, p_notes text, p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric, p_surcharge_travel_cents_month bigint, p_surcharge_small_order_cents_month bigint, p_surcharge_offpeak_bp integer, p_surcharge_note text, p_min_hourly_rate_cents bigint) security definer
 function   update_company_member(p_member_id uuid, p_first_name text, p_last_name text, p_phone text, p_role company_role, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_notes text) security definer
@@ -1853,6 +1887,11 @@ index      company_members / company_members_company_role_status_idx
 index      company_members / company_members_pkey
 index      company_members / company_members_profile_id_idx
 index      company_number_counters / company_number_counters_pkey
+index      company_subscriptions / company_subscriptions_company_id_key
+index      company_subscriptions / company_subscriptions_pkey
+index      company_subscriptions / company_subscriptions_status_idx
+index      company_subscriptions / company_subscriptions_stripe_customer_id_key
+index      company_subscriptions / company_subscriptions_stripe_subscription_id_key
 index      complaint_updates / complaint_updates_complaint_created_idx
 index      complaint_updates / complaint_updates_pkey
 index      complaints / complaints_company_status_due_idx
@@ -1975,6 +2014,7 @@ index      service_schedules / service_schedules_pkey
 index      site_surveys / site_surveys_company_idx
 index      site_surveys / site_surveys_lead_idx
 index      site_surveys / site_surveys_pkey
+index      stripe_webhook_events / stripe_webhook_events_pkey
 index      survey_areas / survey_areas_pkey
 index      survey_areas / survey_areas_survey_idx
 index      time_entry_audit_logs / time_entry_audit_logs_entry_idx
@@ -1992,6 +2032,7 @@ policy     company_calculation_defaults / billing staff read calculation default
 policy     company_invitations / staff can view invitations r
 policy     company_members / members can view own membership r
 policy     company_members / staff can view company memberships r
+policy     company_subscriptions / company members can read subscription r
 policy     complaint_updates / employees read operational complaint updates r
 policy     complaint_updates / staff manage complaint updates *
 policy     complaints / employees read operational complaints r
@@ -2065,6 +2106,7 @@ rls        company_calculation_defaults enabled
 rls        company_invitations enabled
 rls        company_members enabled
 rls        company_number_counters enabled
+rls        company_subscriptions enabled
 rls        complaint_updates enabled
 rls        complaints enabled
 rls        customer_contacts enabled
@@ -2104,6 +2146,7 @@ rls        service_records enabled
 rls        service_schedule_assignments enabled
 rls        service_schedules enabled
 rls        site_surveys enabled
+rls        stripe_webhook_events enabled
 rls        survey_areas enabled
 rls        time_entry_audit_logs enabled
 table      audit_events
@@ -2120,6 +2163,7 @@ table      company_calculation_defaults
 table      company_invitations
 table      company_members
 table      company_number_counters
+table      company_subscriptions
 table      complaint_updates
 table      complaints
 table      customer_contacts
@@ -2159,6 +2203,7 @@ table      service_records
 table      service_schedule_assignments
 table      service_schedules
 table      site_surveys
+table      stripe_webhook_events
 table      survey_areas
 table      time_entry_audit_logs
 tablegrant audit_events -> authenticated select
@@ -2171,6 +2216,7 @@ tablegrant companies -> authenticated select
 tablegrant company_calculation_defaults -> authenticated select
 tablegrant company_invitations -> authenticated select
 tablegrant company_members -> authenticated select
+tablegrant company_subscriptions -> authenticated select
 tablegrant complaint_updates -> authenticated select
 tablegrant complaints -> authenticated delete
 tablegrant complaints -> authenticated insert
@@ -2240,9 +2286,12 @@ trigger    cleaning_objects / cleaning_objects_set_updated_at
 trigger    cleaning_objects / cleaning_objects_validate_company
 trigger    cleaning_objects / cleaning_objects_validate_customer_company
 trigger    companies / companies_audit_settings
+trigger    companies / companies_create_subscription_trial
 trigger    company_invitations / company_invitations_set_updated_at
 trigger    company_members / company_members_audit
+trigger    company_members / company_members_reinplan_employee_limit
 trigger    company_members / company_members_set_updated_at
+trigger    company_subscriptions / company_subscriptions_touch_updated_at
 trigger    complaints / complaints_touch_updated_at
 trigger    complaints / complaints_validate_company
 trigger    customer_contacts / customer_contacts_integrity
