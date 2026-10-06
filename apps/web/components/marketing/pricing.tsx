@@ -12,10 +12,9 @@ import { Section, SectionHeading } from './section';
  * scaling, no shadow tricks — because a price table that shouts is a price
  * table people distrust.
  *
- * `pricing.placeholderWarning` renders an unmistakable notice while the figures
- * are stand-ins, following the same rule the offer PDF already applies to its
- * sample AGB: placeholder commercial content must never be able to pass for the
- * real thing.
+ * The plan definition is shared with the checkout server map. A visible plan
+ * must therefore always have a real payment route; pretending a product has a
+ * price before someone can subscribe is a trust-killer.
  */
 export function Pricing() {
   return (

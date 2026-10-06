@@ -34,6 +34,7 @@ describe('routing surface', () => {
 
   it('exposes the employee application as its own surface', () => {
     expect(routes).toContain('/dashboard');
+    expect(routes).toContain('/dashboard/abo');
     expect(routes).toContain('/mitarbeiter');
     for (const route of ['/mitarbeiter/einsaetze', '/mitarbeiter/nachrichten', '/mitarbeiter/abwesenheit', '/mitarbeiter/profil']) {
       expect(routes, `missing ${route}`).toContain(route);
