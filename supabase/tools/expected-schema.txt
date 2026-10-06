@@ -1636,7 +1636,6 @@ grant      create_operational_photo_metadata(p_scope operational_photo_scope, p_
 grant      create_quote_from_calculation(p_calculation_id uuid, p_title text, p_valid_days integer, p_billing_mode billing_mode, p_acceptance_policy acceptance_policy, p_order_type text, p_service_start date, p_service_end date, p_termination_notice text) -> authenticated
 grant      create_quote_from_survey(p_survey_id uuid, p_title text, p_valid_days integer) -> authenticated
 grant      create_single_job(p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) -> authenticated
-grant      current_company_member() -> authenticated
 grant      current_customer_contact() -> authenticated
 grant      customer_belongs_to_company(target_customer_id uuid, target_company_id uuid) -> authenticated
 grant      de_hours(p_minutes numeric) -> anon

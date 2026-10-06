@@ -133,11 +133,17 @@ where profile.auth_user_id = 'd1000000-0000-4000-8000-000000000013';
 -- assignment raised "function does not exist" and the office only ever saw a
 -- blanket error. Without this function the whole suite below fails.
 -- ---------------------------------------------------------------------------
-select pg_temp.sign_in('d1000000-0000-4000-8000-000000000001');
+-- Seit 20261006150000 ist die Funktion nicht mehr an `authenticated`
+-- vergeben: keine RLS-Richtlinie ruft sie auf, und ihre sieben Aufrufer sind
+-- `security definer` und laufen als Eigentuemer. Gepruefft wird darum mit
+-- gesetztem Token, aber ohne Rollenwechsel -- die Zeilenauswahl ist
+-- dieselbe, nur das Recht der Aufruferin fehlt jetzt absichtlich.
+reset role;
+select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
 select pg_temp.assert(
   (select role from public.current_company_member()) = 'OWNER',
   'the signed-in owner is resolved as the acting staff member');
-select pg_temp.sign_out();
+select set_config('request.jwt.claim.sub', '', true);
 select pg_temp.assert(
   (select id from public.current_company_member()) is null,
   'without a session there is no acting member');
