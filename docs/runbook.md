@@ -272,7 +272,17 @@ ist das die Ursache.
 
 ---
 
-## 6. Offen und ausdrücklich nicht erledigt
+## 6. Bekannte Grenzen im Verhalten
+
+- **Portalkundin bei zwei Betrieben.** `company_members` ist nur je Betrieb
+  eindeutig, eine Hausverwaltung kann also bei zwei ReinPlan-Betrieben Kundin
+  sein. Das Portal zeigt dann die **ältere** Beziehung, und nur die; wechseln
+  lässt sich nicht. Bis `20261006000042` war nicht einmal festgelegt, welche
+  der beiden gezeigt wird — `limit 1` ohne `order by` durfte jede liefern, von
+  Aufruf zu Aufruf verschieden. Jetzt ist die Wahl zugesichert. Eine
+  Betriebsauswahl im Portal wäre eine neue Funktion und ist nicht gebaut.
+
+## 7. Offen und ausdrücklich nicht erledigt
 
 - **Point-in-Time Recovery** im Supabase-Projekt (kostenpflichtiger Tarif).
 - **Fehler-Tracking** (Sentry o. ä.). Siehe `docs/production-readiness.md`.
