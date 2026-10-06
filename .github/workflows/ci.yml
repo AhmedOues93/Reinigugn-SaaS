@@ -79,6 +79,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends postgresql-client
 
+      - name: Reject duplicate migration versions
+        run: supabase/test/migration-versions.test.sh
+
       - name: Apply every migration and run the SQL assertions
         run: supabase/test/run.sh
 

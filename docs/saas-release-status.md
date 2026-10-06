@@ -7,7 +7,7 @@ Red means a capability needed for the stated launch is absent or not activated.
 
 | Stage | Status | Evidence and remaining requirement |
 | --- | --- | --- |
-| Existing hosting | GREEN | Render deployed fd0378f. Health endpoint returns 200. |
+| Existing hosting | GREEN | Render deployed af2fd2e (Claude fixes); deployment of the collision repair is tracked separately. Health endpoint returns 200. |
 | Automated checks | GREEN | CI1420 passed types/lint/unit, build, SQL/upgrade/schema/restore, KoSIT and public/CAPTCHA browser suites. Credential-dependent integrations were skipped. |
 | Tenant isolation and invoice guards | GREEN | RLS and invoice completeness guards were checked live. Invoice rejection preserves numbering. This is the verified scope, not a full penetration test. |
 | Customers, objects and employees | ORANGE | CRUD/import/archive code and tests exist. Full browser verification with three disposable roles remains. |
@@ -30,7 +30,7 @@ Red means a capability needed for the stated launch is absent or not activated.
 | Monitoring and recovery | ORANGE | Health/logs/cron and local restore drill exist. Configure actual alerts and demonstrate hosted recovery including Auth and Storage. |
 | Operator/legal information | RED | Impressum/Datenschutz still have operator placeholders. Actual legal operator, service address, contact and provider/retention agreements are required; do not invent details. |
 | Privacy lifecycle | ORANGE | RLS/private storage exist. Customer export, erasure and retention operations still need implementation/review. |
-| Current DB cleanup | ORANGE | New migration fixes six mutable search paths and revokes browser RPC access to trigger functions. Supabase connector now reports authorization errors, so this new migration is not yet applied/verified live. |
+| Current DB cleanup | GREEN | Supabase recovered. Five fixes applied live; scoped rollback portal/pause and actor tests passed. Zero mutable search-path advisor findings. No fixture users remain. |
 
 ## Current source fixes
 
@@ -47,7 +47,7 @@ Red means a capability needed for the stated launch is absent or not activated.
 
 ## Exact remaining inputs
 
-1. Restore the Supabase connection to apply the new DB migration and rerun advisors.
+1. Supabase recovered; new fixes applied and verified. Legacy source-to-production ledger alignment requires drift reconciliation before blind CLI db push.
 2. Connect Stripe and configure the three agreed monthly prices in test mode.
    Secret keys belong in hosting configuration, never chat or source files.
 3. Supply a disposable staging project/service and OWNER/EMPLOYEE/CUSTOMER accounts
