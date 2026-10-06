@@ -238,10 +238,7 @@ select pg_temp.assert(
 -- hinter sich laesst. Diese Liste ist darum vollstaendig und abschliessend --
 -- wer eine Funktion hinzufuegt, muss sie hier eintragen und begruenden.
 --
--- Die Trigger-Funktionen stehen mit drin, weil PostgreSQL neuen Funktionen
--- `execute` an PUBLIC gibt. Sie sind ungefaehrlich: ein direkter Aufruf
--- bricht ab, weil es ausserhalb eines Triggers kein NEW gibt, und das Feuern
--- eines Triggers verlangt gar kein Ausfuehrungsrecht der Aufruferin.
+-- Interne Trigger-Routinen sind keine oeffentlichen RPC-Endpunkte.
 create temporary table anon_definer_allowlist (signature text primary key);
 insert into anon_definer_allowlist values
   -- Oeffentliches Angebot: der Token im Link ist der Zugang.
@@ -257,15 +254,7 @@ insert into anon_definer_allowlist values
   ('can_read_signature_path(p_name text)'),
   ('can_write_signature_path(p_name text)'),
   -- Die Anmeldebremse. Muss vor der Anmeldung erreichbar sein.
-  ('register_auth_attempt(p_scope text, p_bucket text, p_proof text)'),
-  -- Trigger-Funktionen, siehe oben.
-  ('audit_company_settings()'),
-  ('audit_invoice_status()'),
-  ('audit_member_change()'),
-  ('audit_payroll_release()'),
-  ('build_service_record_on_completion()'),
-  ('carry_employee_report_into_record()'),
-  ('refresh_service_record_photos()');
+  ('register_auth_attempt(p_scope text, p_bucket text, p_proof text)');
 
 create temporary view anon_definer_actual as
 select p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' as signature
