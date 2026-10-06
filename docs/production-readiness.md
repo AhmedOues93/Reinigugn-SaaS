@@ -1,5 +1,10 @@
 # Production readiness
 
+> Historical assessment. For source-verified status as of 2026-10-04, see
+> [launch-review.md](launch-review.md). In particular, legal routes, auth
+> throttling and `/api/health` now exist; server error instrumentation is also
+> included. Hosted setup, alerting and real workflow verification remain separate.
+
 What stands between this and real paying customers. Written as an honest
 assessment, not a checklist to tick: several items below are judgements a
 Steuerberater, a lawyer or a DPO has to make, and this document does not make

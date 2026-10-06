@@ -28,6 +28,7 @@ const publicEnv = {
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
   NETLIFY_URL: process.env.URL,
+  RENDER_EXTERNAL_URL: process.env.RENDER_EXTERNAL_URL,
 } as const;
 
 function required(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', value: string | undefined): string {
@@ -67,7 +68,7 @@ export const supabasePublishableKey = () =>
 function isLocalOrigin(value: string) {
   try {
     const hostname = new URL(value).hostname.toLowerCase();
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '127.0.0.1' || hostname === '[::1]';
   } catch {
     return false;
   }
@@ -75,14 +76,23 @@ function isLocalOrigin(value: string) {
 
 export function siteUrl(): string {
   const configured = publicEnv.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '');
-  const netlify = publicEnv.NETLIFY_URL?.replace(/\/+$/, '');
+  const hosted = (publicEnv.RENDER_EXTERNAL_URL || publicEnv.NETLIFY_URL)?.replace(/\/+$/, '');
 
-  // A deployed Netlify site must never emit localhost links. This also repairs
+  // A deployed Render/Netlify site must never emit localhost links. This repairs
   // an accidentally copied local NEXT_PUBLIC_SITE_URL in the hosting settings:
-  // Netlify's canonical URL wins over a local origin.
-  if (netlify && (!configured || isLocalOrigin(configured))) return netlify;
-  if (configured) return configured;
-  if (netlify) return netlify;
+  // The hosting platform's canonical URL wins over a local origin.
+  const candidate = hosted && (!configured || isLocalOrigin(configured)) ? hosted : configured;
+  if (candidate) {
+    let url: URL;
+    try { url = new URL(candidate); } catch { throw new Error('NEXT_PUBLIC_SITE_URL muss eine gültige HTTP(S)-Adresse sein.'); }
+    const deployed = appEnvironment() !== 'local' || Boolean(hosted);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      url.pathname !== '/' || url.search || url.hash ||
+      (deployed && (url.protocol !== 'https:' || isLocalOrigin(candidate)))) {
+      throw new Error('NEXT_PUBLIC_SITE_URL muss eine öffentliche HTTPS-Origin ohne Pfad oder Zugangsdaten sein.');
+    }
+    return url.origin;
+  }
 
   if (appEnvironment() !== 'local') {
     throw new Error(
