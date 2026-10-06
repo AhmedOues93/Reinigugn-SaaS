@@ -1,4 +1,5 @@
-import { ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, CreditCard, ShieldCheck } from 'lucide-react';
 import { Notice, PageHeader, Section } from '@/components/ui';
 import { getCurrentCompany, requireOwnerCompany } from '@/lib/auth';
 import { CompanySettingsForm } from '@/components/company-settings-form';
@@ -89,6 +90,13 @@ export default async function SettingsPage() {
         <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
           <AccountPasswordForm />
         </div>
+      </Section>
+
+      <Section title="ReinPlan-Abo" description="Tarif, Zahlungsdaten und Rechnungen verwalten.">
+        <Link href="/dashboard/abo" className="flex min-h-touch items-center justify-between gap-4 rounded-xl border border-border/80 bg-card px-5 py-4 text-sm font-semibold shadow-card transition-colors hover:bg-subtle">
+          <span className="flex items-center gap-3"><CreditCard className="size-5 text-primary" />Abo und Zahlung öffnen</span>
+          <ArrowRight className="size-4 text-muted-foreground" aria-hidden="true" />
+        </Link>
       </Section>
 
       <Section

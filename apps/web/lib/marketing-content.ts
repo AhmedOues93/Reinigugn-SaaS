@@ -189,29 +189,23 @@ export const showcase = [
   },
 ] as const;
 
-/**
- * PLACEHOLDER PRICING — confirm before launch.
- *
- * The figures below are stand-ins so the section can be designed and reviewed.
- * They are not an offer. Replace them, and have the net/VAT wording checked,
- * before this page goes live.
- */
+/** The public SaaS plans. They are mirrored by the server-only Stripe price map. */
 export const pricing = {
-  note: 'Alle Preise netto zzgl. MwSt., monatlich kündbar.',
-  placeholderWarning: true,
+  note: '30 Tage kostenlos testen. Danach monatlich kündbar.',
+  placeholderWarning: false,
   plans: [
     {
       name: 'Start',
-      price: '49',
+      price: '69',
       unit: '/ Monat',
-      summary: 'Für kleine Betriebe, die Planung und Abrechnung zusammenführen wollen.',
+      summary: 'Für kleine Betriebe, die ihr Tagesgeschäft ohne Zettel organisieren wollen.',
       features: ['Bis 5 Mitarbeitende', 'Kunden, Objekte, Leistungspläne', 'Einsatzplanung und Zeiterfassung', 'Rechnungen und Zahlungsstatus'],
       cta: 'Kostenlos testen',
       featured: false,
     },
     {
       name: 'Betrieb',
-      price: '129',
+      price: '119',
       unit: '/ Monat',
       summary: 'Für wachsende Reinigungsunternehmen mit festen Objekten und Verträgen.',
       features: ['Bis 25 Mitarbeitende', 'Alles aus Start', 'Kundenportal und Kundenabnahme', 'Reklamationen und Nacharbeit', 'Angebote und Kalkulation'],
@@ -220,11 +214,11 @@ export const pricing = {
     },
     {
       name: 'Unternehmen',
-      price: 'Auf Anfrage',
-      unit: '',
-      summary: 'Für größere Betriebe mit mehreren Standorten und eigenen Anforderungen.',
-      features: ['Unbegrenzt Mitarbeitende', 'Alles aus Betrieb', 'Eigenes Branding auf Dokumenten', 'Einrichtung und Datenübernahme', 'Persönlicher Ansprechpartner'],
-      cta: 'Kontakt aufnehmen',
+      price: '199',
+      unit: '/ Monat',
+      summary: 'Für größere Teams, mehrere Standorte und anspruchsvolle Abläufe.',
+      features: ['Bis 75 Mitarbeitende', 'Alles aus Betrieb', 'Eigenes Branding auf Dokumenten', 'Mehrere Standorte und Exporte', 'Priorisierter E-Mail-Support'],
+      cta: 'Kostenlos testen',
       featured: false,
     },
   ],

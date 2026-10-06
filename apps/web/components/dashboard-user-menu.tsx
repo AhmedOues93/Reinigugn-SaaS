@@ -108,6 +108,13 @@ export function DashboardUserMenu({
           >
             {t(locale, 'common.settings')}
           </Link>
+          <Link
+            href="/dashboard/abo"
+            onClick={() => setOpen(false)}
+            className="flex min-h-touch items-center rounded-lg px-2.5 text-sm transition-colors hover:bg-muted md:min-h-10"
+          >
+            Abo und Zahlung
+          </Link>
           <form action={logout}>
             <button type="submit" className="flex min-h-touch w-full items-center rounded-lg px-2.5 text-start text-sm text-danger transition-colors hover:bg-danger-soft md:min-h-10">
               {t(locale, 'common.logout')}
