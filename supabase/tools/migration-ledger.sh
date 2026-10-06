@@ -25,6 +25,8 @@ target="${1:-}"
 [ -n "$target" ] || { echo "Aufruf: migration-ledger.sh <connection-string>" >&2; exit 2; }
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+"$root/supabase/tools/check-migration-versions.sh"
+
 repo="$(mktemp)"; remote="$(mktemp)"
 trap 'rm -f "$repo" "$remote"' EXIT
 
