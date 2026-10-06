@@ -1587,21 +1587,8 @@ grant      add_my_complaint_update(p_complaint_id uuid, p_status complaint_statu
 grant      add_quote_line(p_quote_id uuid, p_description text, p_quantity numeric, p_unit text, p_unit_price_cents bigint, p_vat_rate_basis_points integer, p_recurrence quote_line_recurrence) -> authenticated
 grant      add_staff_complaint_reply(p_complaint_id uuid, p_note text) -> authenticated
 grant      add_survey_area(p_survey_id uuid, p_name text, p_area_sqm numeric, p_floor_type text, p_services_per_week numeric, p_minutes_per_service integer, p_hourly_rate_cents bigint, p_notes text) -> authenticated
-grant      assign_customer_number() -> authenticated
-grant      assign_employee_number() -> authenticated
-grant      assign_object_number() -> authenticated
 grant      attach_my_au_document(p_absence_id uuid, p_path text) -> authenticated
-grant      audit_company_settings() -> anon
-grant      audit_company_settings() -> authenticated
-grant      audit_invoice_status() -> anon
-grant      audit_invoice_status() -> authenticated
-grant      audit_member_change() -> anon
-grant      audit_member_change() -> authenticated
-grant      audit_payroll_release() -> anon
-grant      audit_payroll_release() -> authenticated
 grant      auto_assign_schedule_employee(p_schedule_id uuid) -> authenticated
-grant      build_service_record_on_completion() -> anon
-grant      build_service_record_on_completion() -> authenticated
 grant      calculate_line_minutes(p_unit calculation_unit, p_quantity numeric, p_productivity_per_hour numeric, p_minutes_per_unit numeric, p_minutes_override numeric) -> anon
 grant      calculate_line_minutes(p_unit calculation_unit, p_quantity numeric, p_productivity_per_hour numeric, p_minutes_per_unit numeric, p_minutes_override numeric) -> authenticated
 grant      calculate_services_per_month(p_frequency calculation_frequency, p_count numeric) -> anon
@@ -1621,10 +1608,6 @@ grant      can_write_branding_path(p_name text) -> authenticated
 grant      can_write_signature_path(p_name text) -> anon
 grant      can_write_signature_path(p_name text) -> authenticated
 grant      cancel_invoice(p_invoice_id uuid, p_reason text) -> authenticated
-grant      carry_employee_report_into_record() -> anon
-grant      carry_employee_report_into_record() -> authenticated
-grant      cleanup_job_photo_metadata_after_storage_delete() -> authenticated
-grant      cleanup_operational_photo_metadata_after_storage_delete() -> authenticated
 grant      clear_auth_attempts(p_scope text, p_bucket text, p_proof text) -> authenticated
 grant      clear_company_logo() -> authenticated
 grant      company_capacity_snapshot(p_month date) -> authenticated
@@ -1671,22 +1654,10 @@ grant      derive_productive_rate_bp(p_weekly_hours numeric, p_working_days_per_
 grant      dispute_my_portal_service(p_job_id uuid, p_title text, p_description text) -> authenticated
 grant      easter_sunday(p_year integer) -> anon
 grant      easter_sunday(p_year integer) -> authenticated
-grant      ensure_assignment_company_integrity() -> authenticated
 grant      ensure_checklist_template_in_company(p_template_id uuid, p_company_id uuid) -> authenticated
-grant      ensure_cleaning_object_company_integrity() -> authenticated
-grant      ensure_complaint_company_integrity() -> authenticated
-grant      ensure_job_assignment_company_integrity() -> authenticated
-grant      ensure_job_company_integrity() -> authenticated
-grant      ensure_object_customer_company_match() -> authenticated
-grant      ensure_quality_inspection_company_integrity() -> authenticated
-grant      ensure_schedule_assignment_company_integrity() -> authenticated
-grant      ensure_schedule_company_integrity() -> authenticated
-grant      ensure_time_entry_integrity() -> authenticated
 grant      finalise_calculation(p_calculation_id uuid) -> authenticated
 grant      find_job_assignment_conflicts(p_company_id uuid, p_start timestamp with time zone, p_end timestamp with time zone, p_member_ids uuid[]) -> authenticated
 grant      find_job_capacity_warnings(p_company_id uuid, p_date date, p_start timestamp with time zone, p_end timestamp with time zone, p_member_ids uuid[], p_exclude_job uuid) -> authenticated
-grant      forbid_audit_change() -> anon
-grant      forbid_audit_change() -> authenticated
 grant      frequency_label(p_frequency calculation_frequency, p_count numeric) -> anon
 grant      frequency_label(p_frequency calculation_frequency, p_count numeric) -> authenticated
 grant      generate_jobs_for_schedule(p_schedule_id uuid, p_until date) -> authenticated
@@ -1708,17 +1679,6 @@ grant      get_portal_acceptance_mail_target(p_job_id uuid) -> authenticated
 grant      get_public_quote(p_token text) -> anon
 grant      get_public_quote(p_token text) -> authenticated
 grant      get_service_record(p_job_id uuid) -> authenticated
-grant      guard_final_calculation() -> anon
-grant      guard_final_calculation() -> authenticated
-grant      guard_final_calculation_lines() -> anon
-grant      guard_final_calculation_lines() -> authenticated
-grant      guard_released_time_break() -> anon
-grant      guard_released_time_break() -> authenticated
-grant      guard_released_time_entry() -> anon
-grant      guard_released_time_entry() -> authenticated
-grant      guard_service_record_immutability() -> anon
-grant      guard_service_record_immutability() -> authenticated
-grant      handle_new_auth_user() -> authenticated
 grant      is_absence_unavailable(p_member_id uuid, p_date date) -> authenticated
 grant      is_active_employee_member(target_member_id uuid, target_company_id uuid) -> authenticated
 grant      is_allowed_absence_document_path(p_name text) -> anon
@@ -1790,8 +1750,6 @@ grant      record_invoice_delivery(p_invoice_id uuid, p_kind invoice_delivery_ki
 grant      record_invoice_delivery_v2(p_invoice_id uuid, p_kind invoice_delivery_kind, p_channel text, p_recipient text, p_status invoice_delivery_status, p_detail text, p_provider text, p_provider_message_id text, p_idempotency_key text, p_reminder_level smallint, p_reminder_fee_cents bigint, p_reminder_interest_cents bigint) -> authenticated
 grant      record_invoice_payment(p_invoice_id uuid, p_paid_on date, p_method payment_method, p_reference text, p_amount_cents bigint, p_note text, p_idempotency_key text) -> authenticated
 grant      record_portal_acceptance_mail(p_job_id uuid, p_kind text) -> authenticated
-grant      refresh_service_record_photos() -> anon
-grant      refresh_service_record_photos() -> authenticated
 grant      register_auth_attempt(p_scope text, p_bucket text, p_proof text) -> anon
 grant      register_auth_attempt(p_scope text, p_bucket text, p_proof text) -> authenticated
 grant      release_payroll_period(p_month date) -> authenticated
@@ -1802,7 +1760,6 @@ grant      remove_survey_area(p_area_id uuid) -> authenticated
 grant      reopen_payroll_period(p_month date, p_reason text) -> authenticated
 grant      resend_company_invitation(p_member_id uuid, p_token_hash text, p_expires_at timestamp with time zone) -> authenticated
 grant      resolve_acceptance_policy(p_job_id uuid) -> authenticated
-grant      resolve_job_checklist_template() -> authenticated
 grant      resolve_service_dispute(p_job_id uuid, p_outcome text, p_note text) -> authenticated
 grant      resume_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
 grant      review_absence(p_absence_id uuid, p_approved boolean) -> authenticated
@@ -1834,15 +1791,11 @@ grant      set_my_preferred_language(p_locale text) -> authenticated
 grant      set_quote_public_access(p_quote_id uuid, p_token_hash text, p_expires_at timestamp with time zone) -> authenticated
 grant      set_require_staff_mfa(p_required boolean) -> authenticated
 grant      set_service_focus(p_focus text[]) -> authenticated
-grant      set_updated_at() -> anon
-grant      set_updated_at() -> authenticated
 grant      sign_service_record_on_site(p_job_id uuid, p_signer_name text, p_signature_path text) -> authenticated
-grant      snapshot_checklist_for_new_job() -> authenticated
 grant      start_message_thread(p_employee_member_id uuid, p_subject text, p_body text) -> authenticated
 grant      start_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
 grant      stop_my_job(p_job_id uuid, p_at timestamp with time zone) -> authenticated
 grant      sync_my_checklist_item(p_item_id uuid, p_completed boolean, p_client_time timestamp with time zone) -> authenticated
-grant      touch_complaint() -> authenticated
 grant      update_calculation(p_calculation_id uuid, p_title text, p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer, p_target_margin_bp integer, p_travel_cents_per_visit bigint, p_setup_minutes_per_visit numeric, p_other_cost_cents_per_month bigint, p_visits_per_week numeric, p_price_override_cents_month bigint, p_price_override_reason text, p_notes text, p_weekly_hours numeric, p_working_days_per_week numeric, p_vacation_days integer, p_public_holidays integer, p_sick_days integer, p_training_days integer, p_unproductive_minutes_per_day numeric, p_surcharge_travel_cents_month bigint, p_surcharge_small_order_cents_month bigint, p_surcharge_offpeak_bp integer, p_surcharge_note text, p_min_hourly_rate_cents bigint) -> authenticated
 grant      update_company_member(p_member_id uuid, p_first_name text, p_last_name text, p_phone text, p_role company_role, p_employee_number text, p_weekly_hours numeric, p_employment_start_date date, p_notes text) -> authenticated
 grant      update_job_details(p_job_id uuid, p_customer_id uuid, p_cleaning_object_id uuid, p_title text, p_description text, p_scheduled_date date, p_start_time time without time zone, p_end_time time without time zone, p_status job_status, p_priority job_priority, p_internal_notes text, p_employee_instructions text, p_member_ids uuid[], p_checklist_template_id uuid) -> authenticated

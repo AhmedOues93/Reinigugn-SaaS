@@ -6,24 +6,14 @@ import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
 import { listAssignableEmployeeOptions } from '@/lib/data/jobs';
 import { createJob } from '../actions';
 
+export const dynamic = 'force-dynamic';
+
 export default async function NewJobPage() {
   const [customers, objects, employees, templates] = await Promise.all([
-    listCustomerOptions().catch((error) => {
-      console.error('NewJobPage customers', error);
-      return [];
-    }),
-    listCleaningObjectOptions().catch((error) => {
-      console.error('NewJobPage objects', error);
-      return [];
-    }),
-    listAssignableEmployeeOptions().catch((error) => {
-      console.error('NewJobPage employees', error);
-      return [];
-    }),
-    listActiveChecklistTemplateOptions().catch((error) => {
-      console.error('NewJobPage templates', error);
-      return [];
-    }),
+    listCustomerOptions(),
+    listCleaningObjectOptions(),
+    listAssignableEmployeeOptions(),
+    listActiveChecklistTemplateOptions(),
   ]);
 
   return (

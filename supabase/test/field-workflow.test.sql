@@ -19,7 +19,7 @@ end; $$;
 create or replace function pg_temp.sign_out() returns void language plpgsql as $$
 begin reset role; perform set_config('request.jwt.claim.sub', '', true); end; $$;
 create or replace function pg_temp.assert(p_condition boolean, p_message text) returns void language plpgsql as $$
-begin if not p_condition then raise exception 'ASSERTION FAILED: %', p_message; end if; end; $$;
+begin if not coalesce(p_condition,false) then raise exception 'ASSERTION FAILED: %', p_message; end if; end; $$;
 
 insert into auth.users (id, email) values
   ('d5000000-0000-4000-8000-000000000001', 'owner@field.test'),
@@ -59,8 +59,8 @@ cross join (values ('Vormittag', time '07:00', time '09:00'),
                    ('Nachmittag', time '14:00', time '16:00')) as t(title, start_time, end_time);
 
 create temporary table ids as select
-  (select id from public.jobs where title = 'Vormittag') as job_a,
-  (select id from public.jobs where title = 'Nachmittag') as job_b,
+  (select id from public.jobs where title = 'Vormittag' and company_id=(select company from ctx)) as job_a,
+  (select id from public.jobs where title = 'Nachmittag' and company_id=(select company from ctx)) as job_b,
   (select member.id from public.company_members member
      join public.profiles profile on profile.id = member.profile_id
     where profile.auth_user_id = 'd5000000-0000-4000-8000-000000000011') as anna,
@@ -78,13 +78,13 @@ select ctx.company, ids.job_b, ids.anna from ctx, ids;
 insert into public.job_checklists (company_id, job_id)
 select ctx.company, ids.job_a from ctx, ids;
 insert into public.job_checklist_items (job_checklist_id, position, title, is_required)
-select list.id, 1, 'Boeden wischen', true from public.job_checklists list;
+select list.id, 1, 'Boeden wischen', true from public.job_checklists list where list.job_id=(select job_a from ids);
 insert into public.job_checklist_items (job_checklist_id, position, title, is_required)
-select list.id, 2, 'Fenstergriffe polieren', false from public.job_checklists list;
+select list.id, 2, 'Fenstergriffe polieren', false from public.job_checklists list where list.job_id=(select job_a from ids);
 
 create temporary table items as select
-  (select id from public.job_checklist_items where title = 'Boeden wischen') as pflicht,
-  (select id from public.job_checklist_items where title = 'Fenstergriffe polieren') as kuer;
+  (select id from public.job_checklist_items where title = 'Boeden wischen' and job_checklist_id in (select id from public.job_checklists where job_id=(select job_a from ids))) as pflicht,
+  (select id from public.job_checklist_items where title = 'Fenstergriffe polieren' and job_checklist_id in (select id from public.job_checklists where job_id=(select job_a from ids))) as kuer;
 grant select on items to authenticated;
 
 -- ---------------------------------------------------------------------------
