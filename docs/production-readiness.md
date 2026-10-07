@@ -132,15 +132,34 @@ it.
 Needed: refuse to issue an invoice until the company's own mandatory details
 are present. Cheap, and prevents an invalid document reaching a customer.
 
-### 10. German E-Rechnung — **XRechnung output implemented; external validation still required**
+### 10. German E-Rechnung — **both EN 16931 syntaxes validated; ZUGFeRD hybrid PDF still open**
 
-ReinPlan now generates a structured XRechnung 3 UBL XML beside the human-readable
-PDF, checks required invoice master data before exposing the XML, and attaches the
-XML when an invoice e-mail is sent. The PDF remains the visual document for humans.
+ReinPlan generates the structured XML beside the human-readable PDF in **both**
+syntaxes the EN 16931 allows, checks required invoice master data before exposing
+either, and attaches the XML when an invoice e-mail is sent. The PDF remains the
+visual document for humans.
 
-Before production claims of full standards compliance, validate representative
-exports against the current official KoSIT/XRechnung validation rules. ZUGFeRD
-(PDF/A-3 with embedded XML) is not implemented yet.
+| Format | Syntax | Status |
+|---|---|---|
+| XRechnung | UBL | Accepted by the KoSIT validator, scenario *EN16931 XRechnung (UBL Invoice)* |
+| ZUGFeRD / Factur-X XML | CII | Accepted by the KoSIT validator, scenario *EN16931 XRechnung (CII)* |
+| ZUGFeRD hybrid PDF | PDF/A-3 + embedded `factur-x.xml` | **Not implemented** |
+
+Both are validated in CI on every push: the unit tests render four documents from
+the real code paths (code sample and the seeded demo invoice, each in UBL and
+CII), and the KoSIT validator runs XSD, the EN 16931 Schematron and the
+XRechnung CIUS Schematron over all four. A rejection fails the job — the
+validator exits 1, and a second check greps the report for `rep:reject`.
+
+**What is deliberately not claimed.** The ZUGFeRD *hybrid PDF* — a PDF/A-3
+document with the CII XML embedded as `factur-x.xml` — is not built. The CII half
+exists and is validated, and `pdf-lib` can embed files, but PDF/A-3 conformance
+is a separate property (output intent with an ICC profile, embedded font
+subsets, the `pdfaid` and `fx` XMP metadata, no transparency). Claiming
+conformance without a PDF/A validator proving it would be exactly the kind of
+unverified compliance claim that costs an operator their audit. The next step is
+a veraPDF gate in CI alongside the KoSIT one; until that passes, ReinPlan sends
+PDF **and** XML as two files, which is permissible and honest.
 
 Receiving e-invoices has been mandatory for German B2B since 1 January 2025.
 For **sending**, paper and PDF remain permissible through 2026; from 2027

@@ -6,6 +6,7 @@ import {
   xrechnungFileName,
   type XRechnungInput,
 } from '@/lib/billing/xrechnung';
+import { ciiFileName, renderInvoiceCii } from '@/lib/billing/cii';
 
 type Invoice = NonNullable<Awaited<ReturnType<typeof getInvoice>>>;
 
@@ -104,5 +105,28 @@ export async function renderStaffXRechnung(id: string) {
     errors: [],
     xml: renderXRechnung(input),
     fileName: xrechnungFileName(input.invoiceNumber),
+  };
+}
+
+/**
+ * Dieselbe Rechnung als CII, der Syntax von ZUGFeRD und Factur-X.
+ *
+ * Gleicher Weg, gleiche Pruefung, nur ein anderes Format: wer die Daten fuer
+ * UBL beisammen hat, hat sie auch fuer CII. Darum liegt hier kein zweiter
+ * Datenpfad, sondern derselbe mit einem anderen Renderer -- sonst laufen die
+ * beiden Fassungen irgendwann auseinander, und das faellt erst beim
+ * Empfaenger auf.
+ */
+export async function renderStaffCii(id: string) {
+  const [invoice, liveCompany] = await Promise.all([getInvoice(id), getCompanyProfile()]);
+  if (!invoice) return null;
+  const input = invoiceToXRechnungInput(invoice, liveCompany as Record<string, unknown> | null);
+  if (!input) return null;
+  const errors = validateXRechnung(input);
+  if (errors.length) return { errors, xml: null, fileName: null };
+  return {
+    errors: [],
+    xml: renderInvoiceCii(input),
+    fileName: ciiFileName(input.invoiceNumber),
   };
 }

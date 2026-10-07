@@ -118,13 +118,29 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               guessing why a download it was promised is not there.
             */}
             {xrechnung.ready ? (
-              <a
-                href={`/dashboard/abrechnung/${invoice.id}/xrechnung`}
-                className={buttonVariants({ variant: 'outline' })}
-              >
-                <FileText className="size-4" aria-hidden="true" />
-                XRechnung XML
-              </a>
+              <>
+                <a
+                  href={`/dashboard/abrechnung/${invoice.id}/xrechnung`}
+                  className={buttonVariants({ variant: 'outline' })}
+                >
+                  <FileText className="size-4" aria-hidden="true" />
+                  XRechnung XML
+                </a>
+                {/*
+                  Dieselbe Rechnung in der zweiten Syntax der EN 16931. Eine
+                  Behoerde erwartet die XRechnung als UBL, ZUGFeRD und
+                  Factur-X verlangen dagegen CII. Beide Dateien tragen
+                  dieselben Zahlen; welche gebraucht wird, entscheidet die
+                  Empfaengerin, nicht wir.
+                */}
+                <a
+                  href={`/dashboard/abrechnung/${invoice.id}/zugferd-xml`}
+                  className={buttonVariants({ variant: 'outline' })}
+                >
+                  <FileText className="size-4" aria-hidden="true" />
+                  ZUGFeRD XML (CII)
+                </a>
+              </>
             ) : (
               <ButtonLink
                 href="/dashboard/settings"

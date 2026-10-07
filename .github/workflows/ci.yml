@@ -142,7 +142,12 @@ jobs:
       # geprueft, was der Code wirklich erzeugt, und kein von Hand gepflegtes
       # Abbild — und auch die Rechnung, mit der getestet wird.
       - name: Rechnungen erzeugen
-        run: pnpm --filter @reinigung/web exec vitest run tests/xrechnung.test.ts
+        run: |
+          set -euo pipefail
+          # Beide Syntaxen der EN 16931: UBL fuer die XRechnung, CII fuer
+          # ZUGFeRD/Factur-X. Dieselben Zahlen, zwei Formate -- und beide
+          # werden unten vom Validator geprueft, nicht nur eines.
+          pnpm --filter @reinigung/web exec vitest run tests/xrechnung.test.ts tests/cii.test.ts
 
       - name: KoSIT-Validator und XRechnung-Szenarien laden
         run: |
@@ -163,23 +168,32 @@ jobs:
             -r .kosit/scenarios \
             -h -o .kosit/report \
             apps/web/.xrechnung/sample.xml \
-            apps/web/.xrechnung/demo-invoice.xml
-          # Der Validator meldet einen Befund im Report, nicht im Exit-Code.
-          # Ohne diese Zeile waere der Job gruen, waehrend die Rechnung beim
-          # Empfaenger durchfaellt.
-          if grep -q "<accepted>false</accepted>" .kosit/report/*.xml; then
-            echo "::error::Eine erzeugte XRechnung wurde vom KoSIT-Validator abgelehnt."
-            cat .kosit/report/*.xml
+            apps/web/.xrechnung/demo-invoice.xml \
+            apps/web/.xrechnung/sample-cii.xml \
+            apps/web/.xrechnung/demo-invoice-cii.xml
+          # Der Validator beendet sich bei einer Ablehnung mit Code 1,
+          # `set -e` faengt das also schon. Nachgemessen mit Version 1.5.0:
+          # abgelehnt -> 1, angenommen -> 0.
+          #
+          # Die folgende Pruefung ist die zweite Leitung, und sie sucht nach
+          # `rep:reject` -- so heisst das Element im Bericht wirklich. Die
+          # frueher hier gesuchte Zeichenkette `<accepted>false</accepted>`
+          # kommt in keinem Bericht vor; sie haette eine Ablehnung nie
+          # gefunden. Nachgemessen an einem Dokument ohne Leitweg-ID:
+          # 1 Rejected, und null Treffer fuer die alte Zeichenkette.
+          if grep -q "rep:reject" .kosit/report/*.xml; then
+            echo "::error::Eine erzeugte E-Rechnung wurde vom KoSIT-Validator abgelehnt."
             exit 1
           fi
-          # Zwei Eingabedateien muessen zwei Reports ergeben. Ohne diese Zeile
-          # waere der Job auch gruen, wenn eine Datei nie geprueft wurde.
+          # Vier Eingabedateien muessen vier Berichte ergeben. Ohne diese
+          # Zeile waere der Job auch gruen, wenn eine Datei nie geprueft
+          # wurde -- etwa weil der Validator kein passendes Szenario fand.
           reports=$(ls .kosit/report/*.xml | wc -l)
-          if [ "$reports" -lt 2 ]; then
-            echo "::error::Es wurden nur $reports Rechnungen geprueft, erwartet sind 2."
+          if [ "$reports" -lt 4 ]; then
+            echo "::error::Es wurden nur $reports Rechnungen geprueft, erwartet sind 4."
             exit 1
           fi
-          echo "XRechnung akzeptiert ($reports Dokumente)."
+          echo "E-Rechnung akzeptiert: $reports Dokumente, UBL und CII."
 
       - name: Report aufbewahren, wenn etwas schiefging
         if: failure()
