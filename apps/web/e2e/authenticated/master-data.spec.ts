@@ -1,4 +1,4 @@
-import { createCustomerViaWizard, expect, label, requireRole, signIn, test, wizardNext } from '../fixtures';
+import { createCustomerViaWizard, expect, label, requireRole, signIn, test, wizardNext, wizardRefusesWithoutName } from '../fixtures';
 
 /**
  * Customers and objects: create, edit, connect, archive, restore.
@@ -19,7 +19,6 @@ test.describe('customers and objects', () => {
     const edited = `${name} bearbeitet`;
 
     await createCustomerViaWizard(page, { name, email: `kunde-${Date.now()}@e2e.invalid` });
-    await page.waitForURL(/\/dashboard\/kunden(?:\?|$)/, { timeout: 30_000 });
 
     await page.goto('/dashboard/kunden');
     const row = page.getByRole('link', { name }).first();
@@ -43,7 +42,6 @@ test.describe('customers and objects', () => {
     const objectName = label('Objekt');
 
     await createCustomerViaWizard(page, { name: customerName });
-    await page.waitForURL(/\/dashboard\/kunden(?:\?|$)/, { timeout: 30_000 });
 
     await page.goto('/dashboard/objekte/neu');
     await page.locator('input[name=name]').fill(objectName);
@@ -86,7 +84,6 @@ test.describe('customers and objects', () => {
     const name = label('Archivkunde');
 
     await createCustomerViaWizard(page, { name });
-    await page.waitForURL(/\/dashboard\/kunden(?:\?|$)/, { timeout: 30_000 });
 
     await page.goto('/dashboard/kunden');
     await page.getByRole('link', { name }).first().click();
@@ -111,12 +108,12 @@ test.describe('customers and objects', () => {
   });
 
   test('a customer cannot be saved without a name', async ({ page }) => {
-    // Bis zum Absender durchlaufen, ohne einen Namen einzutragen: der
-    // Assistent laesst weiterblaettern, abgelehnt wird erst beim Absenden.
-    await createCustomerViaWizard(page);
-    // Still on the form, with something said about it.
+    // Der Assistent laesst den ersten Schritt ohne Namen nicht verlassen --
+    // und ohne vierten Schritt gibt es den Absender nie. Die Zusicherung ist
+    // dieselbe wie vorher, nur greift sie jetzt eine Stufe fruether.
+    expect(await wizardRefusesWithoutName(page), 'der Assistent blaetterte ohne Namen weiter').toBe(true);
     await expect(page).toHaveURL(/neu/);
-    await expect(page.locator('p[role=alert]').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /kunde anlegen/i })).toHaveCount(0);
   });
 });
 
@@ -136,8 +133,15 @@ test.describe('employees', () => {
 
     await page.waitForURL(/\/dashboard\/mitarbeiter/, { timeout: 30_000 });
     await page.goto('/dashboard/mitarbeiter');
-    await expect(page.getByText(first).first()).toBeVisible();
+    /*
+      Nur sichtbare Treffer. `getByText(...).first()` nahm sonst die
+      ausgeblendete Haelfte der doppelten Darstellung (Tabelle am
+      Schreibtisch, Karten auf dem Telefon) -- und bei "eingeladen" sogar
+      die <option value="INVITED"> des Statusfilters, die nie sichtbar ist.
+      Nachgemessen: 23 x aufgeloest, jedes Mal "hidden".
+    */
+    await expect(page.getByText(first).filter({ visible: true }).first()).toBeVisible();
     // The relationship that matters: invited, in this company, not yet active.
-    await expect(page.getByText(/eingeladen/i).first()).toBeVisible();
+    await expect(page.getByText(/eingeladen/i).filter({ visible: true }).first()).toBeVisible();
   });
 });

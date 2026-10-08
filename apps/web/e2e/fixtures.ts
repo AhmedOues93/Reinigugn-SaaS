@@ -249,6 +249,39 @@ export async function createCustomerViaWizard(
   await wizardNext(page);
   // Erst hier gibt es ihn: `SubmitButton` steht nur im vierten Schritt.
   await page.getByRole('button', { name: /kunde anlegen/i }).click();
+
+  /*
+    Und gewartet wird auf die *Detailseite*, nicht auf die Liste. Das
+    Formular schickt nach dem Speichern dorthin:
+
+        router.push(`/dashboard/kunden/${state.id}?success=...`)
+
+    Die Tests warteten auf `/\/dashboard\/kunden/` -- das trifft schon
+    `/dashboard/kunden/neu` und war damit erfuellt, bevor irgendetwas
+    gespeichert war. Eine Zusicherung, die immer zutrifft, haette den
+    Fehlschlag danach nur verschoben.
+  */
+  await page.waitForURL(/\/dashboard\/kunden\/[0-9a-f-]{36}/, { timeout: 30_000 });
+}
+
+/**
+ * Versucht, den Assistenten ohne Namen zu verlassen.
+ *
+ * `nextStep()` prueft den aktuellen Schritt mit `checkValidity()` und
+ * blaettert nicht weiter, wenn ein Feld ungueltig ist -- es ruft
+ * `reportValidity()` auf, und das ist eine Sprechblase des Browsers, kein
+ * `p[role=alert]` im Dokument. Die Zusicherung "ohne Namen wird nicht
+ * gespeichert" haengt hier also nicht mehr am Absenden, sondern daran, dass
+ * man den ersten Schritt nicht verlassen kann.
+ */
+export async function wizardRefusesWithoutName(page: Page): Promise<boolean> {
+  await page.goto('/dashboard/kunden/neu');
+  await wizardNext(page);
+  const nameField = page.locator('[data-step="1"] input[name=name]');
+  // Noch im ersten Schritt, und das Feld selbst meldet sich als ungueltig.
+  const stillOnStepOne = await nameField.isVisible();
+  const invalid = await nameField.evaluate((field: HTMLInputElement) => !field.checkValidity());
+  return stillOnStepOne && invalid;
 }
 
 export { expect };
