@@ -51,30 +51,57 @@ function* walk(suite, file = suite.file) {
   for (const spec of suite.specs ?? []) {
     for (const test of spec.tests ?? []) {
       for (const result of test.results ?? []) {
-        yield { file: spec.file ?? file, title: spec.title, status: result.status };
+        yield {
+          file: spec.file ?? file,
+          title: spec.title,
+          line: spec.line,
+          status: result.status,
+          errors: result.errors ?? [],
+        };
       }
     }
   }
   for (const child of suite.suites ?? []) yield* walk(child, child.file ?? file);
 }
 
+/**
+ * Die erste Zeile, die etwas sagt.
+ *
+ * Playwrights Fehlertext ist lang: Quellausschnitt, Aufrufprotokoll,
+ * Anhaenge. Zum Entscheiden reicht fast immer die Fehlerzeile und, wenn es
+ * ein Warten war, worauf gewartet wurde. Der Rest steht im Protokoll des
+ * Laufs und im Bericht; hier soll ein Mensch (oder ein Agent mit begrenztem
+ * Blick) in zwanzig Zeilen sehen, was los ist.
+ */
+function digest(error) {
+  const lines = (error.message ?? '').replace(/\u001b\[[0-9;]*m/g, '').split('\n');
+  const first = lines.find((line) => line.trim())?.trim() ?? '(ohne Meldung)';
+  const waitedFor = lines.find((line) => /^\s*-\s*waiting for/.test(line))?.trim();
+  const resolved = lines.find((line) => /locator resolved to/.test(line))?.trim();
+  return [first, waitedFor, resolved].filter(Boolean);
+}
+
 const perFile = new Map();
+/** Jeder Testlauf, fuer den Fehlerauszug weiter unten. */
+const collected = [];
 let executed = 0;
 let skipped = 0;
 
 for (const suite of report.suites ?? []) {
-  for (const { file, status } of walk(suite)) {
-    const entry = perFile.get(file) ?? { executed: 0, skipped: 0 };
+  for (const run of walk(suite)) {
+    const { file, status } = run;
+    collected.push(run);
+    const counts = perFile.get(file) ?? { executed: 0, skipped: 0 };
     // `skipped` heisst: der Test hat seinen Koerper nie betreten. Alles
     // andere -- passed, failed, timedOut, interrupted -- ist ein Lauf.
     if (status === 'skipped') {
-      entry.skipped += 1;
+      counts.skipped += 1;
       skipped += 1;
     } else {
-      entry.executed += 1;
+      counts.executed += 1;
       executed += 1;
     }
-    perFile.set(file, entry);
+    perFile.set(file, counts);
   }
 }
 
@@ -100,6 +127,25 @@ if (executed === 0) {
       'Seed oder die Datenbank selbst. Siehe die Meldungen des Testlaufs darueber.',
   );
   process.exit(1);
+}
+
+const failures = collected.filter((entry) => entry.status !== 'skipped' && entry.status !== 'passed');
+
+/*
+  Der Auszug urteilt nicht: ob der Lauf bestanden hat, sagt Playwrights
+  eigener Exit-Code, und der Schritt davor ist daran schon gescheitert. Hier
+  geht es nur darum, die Befunde in wenigen Zeilen lesbar zu machen -- ein
+  Protokoll mit 300 Zeilen Quellausschnitt und Anhaengen beantwortet die
+  Frage "was ist kaputt" schlechter als drei Zeilen je Fall.
+*/
+if (failures.length > 0) {
+  console.log(`\n${failures.length} Testlauf/-laeufe nicht bestanden:\n`);
+  for (const entry of failures) {
+    console.log(`  ${entry.file}:${entry.line ?? '?'}  ${entry.title}  [${entry.status}]`);
+    for (const error of entry.errors.slice(0, 1)) {
+      for (const line of digest(error)) console.log(`      ${line}`);
+    }
+  }
 }
 
 if (empty.length > 0) {
