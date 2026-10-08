@@ -182,9 +182,11 @@ select pg_temp.assert(
 -- laufen, und genau darum geht es hier.
 -- In dieser Suite laeuft alles in einer Transaktion, now() ist also ueberall
 -- derselbe Zeitpunkt. Der Start wird zurueckdatiert, damit ein Feierabend
--- ueberhaupt danach liegen kann.
+-- ueberhaupt danach liegen kann -- aber nur bis 55 Minuten zurueck: die erste
+-- Schicht dieser Kraft lief bis vor einer Stunde, und zwei Arbeitszeiten
+-- derselben Kraft duerfen sich nicht ueberschneiden.
 update public.job_time_entries
-set started_at = now() - interval '2 hours'
+set started_at = now() - interval '55 minutes'
 where job_id = (select job_b from ids);
 
 select pg_temp.sign_in('f7000000-0000-4000-8000-000000000011');

@@ -67,12 +67,17 @@ grant select on pj to authenticated;
 -- ---------------------------------------------------------------------------
 -- Alle Zeitpunkte liegen in der Vergangenheit: `effective_entry_time` weist
 -- Zukunft ab, und in einer einzigen Transaktion geht `now()` nicht weiter.
+-- Die Zeitpunkte liegen bewusst weit zurueck (40 bis 30 Stunden) und nicht
+-- knapp vor jetzt: weiter unten tragt dieselbe Kraft einen zweiten Einsatz
+-- nach, und zwei Arbeitszeiten derselben Kraft duerfen sich nicht
+-- ueberschneiden. Die Abstaende innerhalb der Schicht sind unveraendert, die
+-- Zusicherungen rechnen ohnehin nur mit ihnen.
 select pg_temp.sign_in('f1100000-0000-4000-8000-000000000002');
-select public.start_my_job((select id from pj), now() - interval '10 hours');
-select public.pause_my_job((select id from pj), now() - interval '9 hours');
-select public.resume_my_job((select id from pj), now() - interval '8 hours 30 minutes');
-select public.pause_my_job((select id from pj), now() - interval '7 hours');
-select public.resume_my_job((select id from pj), now() - interval '6 hours 45 minutes');
+select public.start_my_job((select id from pj), now() - interval '40 hours');
+select public.pause_my_job((select id from pj), now() - interval '39 hours');
+select public.resume_my_job((select id from pj), now() - interval '38 hours 30 minutes');
+select public.pause_my_job((select id from pj), now() - interval '37 hours');
+select public.resume_my_job((select id from pj), now() - interval '36 hours 45 minutes');
 
 select pg_temp.assert(
   (select count(*) from public.job_time_breaks) = 2,
@@ -85,7 +90,7 @@ select pg_temp.assert(
 -- Der Defekt: eine Pause mitten in der vorigen
 -- ---------------------------------------------------------------------------
 select pg_temp.assert_rejected(
-  'select public.pause_my_job((select id from pj), now() - interval ''8 hours 45 minutes'')',
+  'select public.pause_my_job((select id from pj), now() - interval ''38 hours 45 minutes'')',
   'beginnt vor dem Ende der vorigen Pause');
 select pg_temp.assert(
   (select count(*) from public.job_time_breaks) = 2
@@ -94,13 +99,13 @@ select pg_temp.assert(
 
 -- Auch nicht mit exakt demselben Beginn wie die vorige Pause.
 select pg_temp.assert_rejected(
-  'select public.pause_my_job((select id from pj), now() - interval ''9 hours'')',
+  'select public.pause_my_job((select id from pj), now() - interval ''39 hours'')',
   'beginnt vor dem Ende der vorigen Pause');
 
 -- Direkt am Ende der vorigen Pause ist dagegen erlaubt: zweimal kurz
 -- hintereinander getippt ist eine Pause von null Minuten und kein Fehler.
-select public.pause_my_job((select id from pj), now() - interval '6 hours 45 minutes');
-select public.resume_my_job((select id from pj), now() - interval '6 hours 45 minutes');
+select public.pause_my_job((select id from pj), now() - interval '36 hours 45 minutes');
+select public.resume_my_job((select id from pj), now() - interval '36 hours 45 minutes');
 select pg_temp.assert(
   (select count(*) from public.job_time_breaks) = 3
   and (select break_minutes from public.job_time_entries) = 45,
@@ -110,7 +115,7 @@ select pg_temp.assert(
 -- Die bestehenden Riegel gelten weiter
 -- ---------------------------------------------------------------------------
 select pg_temp.assert_rejected(
-  'select public.pause_my_job((select id from pj), now() - interval ''11 hours'')',
+  'select public.pause_my_job((select id from pj), now() - interval ''41 hours'')',
   'liegt vor dem Arbeitsbeginn');
 select pg_temp.assert_rejected(
   'select public.pause_my_job((select id from pj), now() + interval ''10 minutes'')',
@@ -118,7 +123,7 @@ select pg_temp.assert_rejected(
 
 -- Eine zweite laufende Pause gibt es nicht -- weder ueber die Funktion noch
 -- ueber den Index.
-select public.pause_my_job((select id from pj), now() - interval '5 hours');
+select public.pause_my_job((select id from pj), now() - interval '35 hours');
 select pg_temp.assert_rejected(
   'select public.pause_my_job((select id from pj), null)',
   'already running');
@@ -128,9 +133,9 @@ select pg_temp.assert(
 
 -- Das Pausenende darf nicht vor ihrem Beginn liegen.
 select pg_temp.assert_rejected(
-  'select public.resume_my_job((select id from pj), now() - interval ''6 hours'')',
+  'select public.resume_my_job((select id from pj), now() - interval ''36 hours'')',
   'Ende der Pause liegt vor ihrem Beginn');
-select public.resume_my_job((select id from pj), now() - interval '4 hours');
+select public.resume_my_job((select id from pj), now() - interval '34 hours');
 
 -- ---------------------------------------------------------------------------
 -- Netto bleibt nachvollziehbar und nie negativ
@@ -139,7 +144,7 @@ select public.resume_my_job((select id from pj), now() - interval '4 hours');
 select pg_temp.assert(
   (select break_minutes from public.job_time_entries) = 105,
   'die Pausensumme stimmt mit den vier Pausen ueberein');
-select public.stop_my_job((select id from pj), now() - interval '1 minute');
+select public.stop_my_job((select id from pj), now() - interval '30 hours');
 select pg_temp.assert(
   (select duration_minutes from public.job_time_entries) between 0 and 600
   and (select duration_minutes from public.job_time_entries)

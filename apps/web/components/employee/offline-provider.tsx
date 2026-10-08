@@ -158,11 +158,13 @@ export function OfflineProvider({
       const outcome = await runSync(userId, async (operation) => {
         if (operation.kind === 'time') {
           /*
-            Die vier Zeitfunktionen nehmen den Tippzeitpunkt entgegen und sind
-            gegen eine zweite Zustellung abgesichert: ein bereits gestarteter
-            Einsatz liefert seine vorhandene Buchung zurueck statt eine zweite
-            anzulegen. Ein Konfliktbegriff wie bei der Checkliste existiert
-            hier nicht -- es gibt nur angewendet oder fehlgeschlagen.
+            Die vier Zeitfunktionen nehmen den Tippzeitpunkt entgegen und
+            erkennen daran eine zweite Zustellung: wurde zu genau diesem
+            Zeitpunkt schon gebucht, kommt die vorhandene Buchung zurueck
+            statt einer zweiten. Ein *anderer* Zeitpunkt ist dagegen eine neue
+            Buchung -- sonst waere eine zweite Schicht am selben Einsatz nicht
+            nachtragbar. Ein Konfliktbegriff wie bei der Checkliste existiert
+            hier nicht: es gibt nur angewendet oder fehlgeschlagen.
           */
           const rpc = {
             start: 'start_my_job',

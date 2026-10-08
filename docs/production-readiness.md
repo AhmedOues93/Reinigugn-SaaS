@@ -237,8 +237,13 @@ matches nothing.
 - **Accessibility**: good foundations, never audited against WCAG.
 - **Browser support**: only Chromium is tested. Safari on iOS matters for the
   employee PWA.
-- **Offline**: the field app has offline support that has never been verified
-  end to end in a browser.
+- **Offline**: the replay semantics of the queue are covered by SQL and unit
+  tests, including two defects that were measured and fixed (a second shift on
+  the same job silently swallowed; a time sequence continuing past a failed
+  operation and inflating a break). Overlapping working times of one person are
+  now rejected on the backdated path and in the office correction. What is still
+  unverified is the device side: no run in a real browser with a real
+  connection drop, and no run on Safari/iOS.
 - **i18n**: five languages ship; only German has been reviewed by anyone.
 
 ## Suggested order

@@ -1485,6 +1485,7 @@ function   mark_invoice_paid(p_invoice_id uuid, p_paid_at timestamp with time zo
 function   mark_thread_read(p_thread_id uuid) security definer
 function   markup_bp(p_price_cents bigint, p_cost_cents bigint)
 function   member_month_figures(p_member uuid, p_month date) security definer
+function   member_time_overlaps(p_member_id uuid, p_from timestamp with time zone, p_to timestamp with time zone, p_exclude uuid) security definer
 function   messaging_actor() security definer
 function   my_job_photo_for_client_upload(p_job_id uuid, p_client_upload_id text) security definer
 function   my_monthly_work_summary(p_month date) security definer
