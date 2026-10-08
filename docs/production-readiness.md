@@ -132,45 +132,62 @@ it.
 Needed: refuse to issue an invoice until the company's own mandatory details
 are present. Cheap, and prevents an invalid document reaching a customer.
 
-### 10. German E-Rechnung — **both EN 16931 syntaxes validated; ZUGFeRD hybrid PDF still open**
+### 10. German E-Rechnung — **both EN 16931 syntaxes and the ZUGFeRD hybrid PDF validated**
 
 ReinPlan generates the structured XML beside the human-readable PDF in **both**
 syntaxes the EN 16931 allows, checks required invoice master data before exposing
-either, and attaches the XML when an invoice e-mail is sent. The PDF remains the
-visual document for humans.
+either, and builds the ZUGFeRD hybrid invoice: the same PDF, with the CII XML
+embedded in it as `factur-x.xml`.
 
 | Format | Syntax | Status |
 |---|---|---|
 | XRechnung | UBL | Accepted by the KoSIT validator, scenario *EN16931 XRechnung (UBL Invoice)* |
 | ZUGFeRD / Factur-X XML | CII | Accepted by the KoSIT validator, scenario *EN16931 XRechnung (CII)* |
-| ZUGFeRD hybrid PDF | PDF/A-3 + embedded `factur-x.xml` | **Not implemented** |
+| ZUGFeRD hybrid PDF | PDF/A-3B + embedded `factur-x.xml` | PDF/A-3B confirmed by veraPDF 1.26.1; the XML *extracted from the finished file* accepted by the KoSIT validator |
 
-Both are validated in CI on every push: the unit tests render four documents from
-the real code paths (code sample and the seeded demo invoice, each in UBL and
-CII), and the KoSIT validator runs XSD, the EN 16931 Schematron and the
-XRechnung CIUS Schematron over all four. A rejection fails the job — the
-validator exits 1, and a second check greps the report for `rep:reject`.
+Everything above is validated in CI on every push, by the two tools the formats
+are actually judged by — not by our own assertions:
 
-**What is deliberately not claimed.** The ZUGFeRD *hybrid PDF* — a PDF/A-3
-document with the CII XML embedded as `factur-x.xml` — is not built. The CII half
-exists and is validated, and `pdf-lib` can embed files, but PDF/A-3 conformance
-is a separate property (output intent with an ICC profile, embedded font
-subsets, the `pdfaid` and `fx` XMP metadata, no transparency). Claiming
-conformance without a PDF/A validator proving it would be exactly the kind of
-unverified compliance claim that costs an operator their audit. The next step is
-a veraPDF gate in CI alongside the KoSIT one; until that passes, ReinPlan sends
-PDF **and** XML as two files, which is permissible and honest.
+- **veraPDF 1.26.1** (`tools/verapdf.sh`) checks the rendered invoice PDF and
+  the hybrid invoice against PDF/A-3B. Before the implementation it reported
+  four violation classes: `6.1.3` (no `/ID` in the trailer), `6.6.2.1` (no XMP
+  metadata stream in the catalog), `6.2.4.3` (DeviceRGB without an output
+  intent) and `6.2.11.4.1` (fonts not embedded). All four are now addressed and
+  the result is `compliant=true, assertions=0`. The gate was checked in the
+  other direction too: with the catalog's `/Metadata` key damaged the script
+  exits 1 and names clause `6.6.2.1`.
+- **The KoSIT validator 1.5.0** with configuration 2024-06-20 runs XSD, the
+  EN 16931 Schematron and the XRechnung CIUS Schematron over five documents:
+  the code sample and the seeded demo invoice in UBL and in CII, and the XML
+  that `tools/extract-factur-x.mjs` pulls back **out of the finished hybrid
+  PDF**. That last one matters: it tests what is actually delivered, including
+  the embedding step, not only what the generator produced.
+
+The hybrid file carries what the specification requires: an output intent with
+an embedded sRGB ICC profile, both fonts embedded as subsets with a `/ToUnicode`
+table (so the text stays selectable), XMP with `pdfaid:part 3` /
+`conformance B`, the Factur-X extension schema and the four `fx:` fields, the
+XML attached with `/AFRelationship /Data` and listed in the catalog's `/AF`
+array. `fx:ConformanceLevel` is `XRECHNUNG`, not `EN 16931`, because the XML
+carries the XRechnung 3.0 CIUS identifier — the narrower German profile.
+
+Two third-party files ship in `apps/web/lib/billing/assets/`, unmodified and
+with their licence texts beside them: Liberation Sans (SIL Open Font License
+1.1) and the sRGB profile from Debian's `icc-profiles-free` (zlib/libpng
+licence). Both licences permit commercial redistribution and embedding; the
+files are not altered, so no renaming obligation arises.
+
+**What is still not claimed.** No invoice has been accepted by a real
+recipient's accounting software, and no tax adviser has reviewed the documents.
+Validator conformance is a necessary condition, not a legal opinion. Invoice
+e-mails attach the hybrid PDF *and* the UBL XML as two files, because which
+syntax a recipient can process is their decision, not the sender's.
 
 Receiving e-invoices has been mandatory for German B2B since 1 January 2025.
 For **sending**, paper and PDF remain permissible through 2026; from 2027
 businesses above €800,000 prior-year turnover must send structured formats, and
 from 2028 the obligation covers all B2B. Invoices under €250 and §19
 Kleinunternehmer are exempt from issuing.
-
-So: not a blocker for launching to small cleaning companies now, and a hard
-deadline that arrives on a known date. ZUGFeRD (a hybrid PDF/A-3 carrying the
-XML) fits this product best, because the human-readable document stays the same
-artefact.
 
 **Confirm the thresholds and dates with a Steuerberater before relying on
 them.**

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
-import { renderStaffInvoicePdf } from '@/lib/billing/invoice-pdf-data';
+import { renderStaffInvoicePdf, renderStaffZugferdPdf } from '@/lib/billing/invoice-pdf-data';
 import { renderStaffXRechnung } from '@/lib/billing/invoice-xrechnung-data';
 import { invoiceIssueError } from '@/lib/billing/issue-error';
 import { getBillableJob, getInvoice, listBillableJobs, listInvoicePayments } from '@/lib/data/billing';
@@ -386,10 +386,21 @@ async function deliverByEmail(invoiceId: string, kind: 'INVOICE' | 'REMINDER', f
     if (requestedLevel !== expectedLevel) return failure('Die Mahnstufe ist nicht mehr aktuell. Bitte lade die Rechnung neu.');
   }
 
-  const [rendered, xrechnung] = await Promise.all([
+  /*
+   * Fuer eine Rechnung wird die Hybridfassung angehaengt: dasselbe PDF, nur
+   * mit dem CII-XML darin. Wer es von Hand liest, sieht denselben Beleg; wer
+   * eine Buchhaltungssoftware benutzt, muss nichts abtippen.
+   *
+   * Die UBL-Fassung bleibt zusaetzlich dabei. Welche der beiden Syntaxen die
+   * Empfaengerin verarbeiten kann, entscheidet nicht der Absender -- eine
+   * Behoerde erwartet UBL, eine Buchhaltung oft das Hybrid-PDF.
+   */
+  const [plain, hybrid, xrechnung] = await Promise.all([
     renderStaffInvoicePdf(invoiceId),
+    kind === 'INVOICE' ? renderStaffZugferdPdf(invoiceId) : Promise.resolve(null),
     kind === 'INVOICE' ? renderStaffXRechnung(invoiceId) : Promise.resolve(null),
   ]);
+  const rendered = hybrid?.rendered ?? plain;
   if (!rendered) return failure('Das PDF konnte nicht erzeugt werden.');
 
   /*

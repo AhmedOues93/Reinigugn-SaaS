@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
+import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
+import { attachFacturX, embedDocumentFonts, finalisePdfA3 } from '@/lib/billing/pdfa';
 
 /**
  * Server-side invoice PDF.
@@ -11,9 +12,16 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFP
  * rate and VAT amount, gross). Whether a given tenant's data is complete is a
  * matter of its master data; the document does not invent anything.
  *
- * Fonts are the PDF standard Helvetica family (WinAnsi). German text including
- * umlauts, ß and € is covered; characters outside that set (e.g. Cyrillic
- * names) are replaced rather than failing the whole document — see `safe()`.
+ * Fonts are Liberation Sans, embedded as a subset. German text including
+ * umlauts, ß and € is covered; characters outside the WinAnsi set (e.g.
+ * Cyrillic names) are replaced rather than failing the whole document — see
+ * `safe()`. Embedding is not cosmetic: PDF/A-3 forbids referencing a font the
+ * reader is expected to already have (ISO 19005-3, 6.2.11.4.1), and without
+ * PDF/A-3 there is no valid ZUGFeRD file.
+ *
+ * Every rendered invoice is a PDF/A-3B document. With `facturX` set, the same
+ * invoice is additionally embedded as CII XML and the file becomes a ZUGFeRD
+ * hybrid invoice — see `lib/billing/pdfa.ts`.
  */
 
 export type InvoicePdfInput = {
@@ -50,6 +58,12 @@ export type InvoicePdfInput = {
     vat_amount_cents?: number;
   }[];
   logo?: { bytes: Uint8Array; type: 'png' | 'jpg' } | null;
+  /**
+   * Das CII-XML derselben Rechnung. Ist es gesetzt, entsteht eine
+   * ZUGFeRD-Hybridrechnung: dieselbe Datei, einmal fuer Menschen und einmal
+   * fuer die Buchhaltungssoftware des Kunden.
+   */
+  facturX?: { xml: string; profile: string } | null;
 };
 
 const A4 = { width: 595.28, height: 841.89 };
@@ -118,19 +132,27 @@ function wrap(value: string, font: PDFFont, size: number, width: number): string
 
 export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
-  const regular = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const { regular, bold } = await embedDocumentFonts(pdf);
   const company = input.company;
   const customer = input.customer;
   const companyName = str(company, 'name') ?? '';
   const title = input.correctsInvoiceNumber ? 'Korrekturrechnung' : 'Rechnung';
 
-  pdf.setTitle(`${title} ${input.invoiceNumber}`);
+  // Die Zeitstempel muessen im Info-Dictionary und im XMP-Paket identisch
+  // sein, sonst beanstandet PDF/A die Abweichung (ISO 19005-3, 6.6.2.3).
+  // Das Ausstellungsdatum ist der Bezugspunkt, nicht die Uhrzeit des
+  // Downloads: dieselbe Rechnung soll zweimal dieselbe Datei ergeben.
+  const stamp = input.issueDate ? new Date(`${input.issueDate}T00:00:00Z`) : new Date(0);
+  const documentTitle = `${title} ${input.invoiceNumber}`;
+
+  pdf.setTitle(documentTitle);
   pdf.setAuthor(safe(companyName));
-  pdf.setSubject(`${title} ${input.invoiceNumber}`);
+  pdf.setSubject(documentTitle);
   pdf.setCreator('ReinPlan');
   pdf.setProducer('ReinPlan');
   pdf.setLanguage('de-DE');
+  pdf.setCreationDate(stamp);
+  pdf.setModificationDate(stamp);
 
   let logo: PDFImage | null = null;
   if (input.logo) {
@@ -347,7 +369,22 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
     current.drawRectangle({ x: 0, y: A4.height - 4, width: A4.width, height: 4, color: petrol });
   });
 
-  return pdf.save();
+  if (input.facturX) await attachFacturX(pdf, input.facturX.xml, stamp);
+
+  finalisePdfA3(pdf, {
+    title: documentTitle,
+    author: safe(companyName),
+    subject: documentTitle,
+    creator: 'ReinPlan',
+    producer: 'ReinPlan',
+    created: stamp,
+    modified: stamp,
+    facturX: input.facturX ? { profile: input.facturX.profile } : null,
+  });
+
+  // Ohne Objekt-Stroeme: der Trailer bleibt ein gewoehnliches Dictionary, in
+  // dem das von PDF/A verlangte /ID auch dort steht, wo ein Pruefer es sucht.
+  return pdf.save({ useObjectStreams: false });
 }
 
 /** File name that is safe in a Content-Disposition header. */

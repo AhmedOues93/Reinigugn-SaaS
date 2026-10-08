@@ -147,7 +147,24 @@ jobs:
           # Beide Syntaxen der EN 16931: UBL fuer die XRechnung, CII fuer
           # ZUGFeRD/Factur-X. Dieselben Zahlen, zwei Formate -- und beide
           # werden unten vom Validator geprueft, nicht nur eines.
-          pnpm --filter @reinigung/web exec vitest run tests/xrechnung.test.ts tests/cii.test.ts
+          pnpm --filter @reinigung/web exec vitest run tests/xrechnung.test.ts tests/cii.test.ts tests/zugferd.test.ts
+
+      # Das XML, das unten geprueft wird, kommt aus der fertigen PDF-Datei und
+      # nicht aus dem Generator. Dazwischen liegt das Einbetten -- genau dort
+      # koennte etwas verloren gehen, ohne dass ein Test am Generator es
+      # bemerkt.
+      - name: CII-XML aus der ZUGFeRD-Rechnung holen
+        run: node tools/extract-factur-x.mjs apps/web/.xrechnung/zugferd-invoice.pdf apps/web/.xrechnung/embedded-cii.xml
+
+      # PDF/A-3B ist keine Formsache: ohne sie ist die Datei kein gueltiges
+      # ZUGFeRD, egal wie gut das XML ist. Geprueft wird mit veraPDF, nicht
+      # mit eigenen Zusicherungen.
+      - name: PDF/A-3B mit veraPDF pruefen
+        run: |
+          set -euo pipefail
+          tools/verapdf.sh \
+            apps/web/.xrechnung/plain-invoice.pdf \
+            apps/web/.xrechnung/zugferd-invoice.pdf
 
       - name: KoSIT-Validator und XRechnung-Szenarien laden
         run: |
@@ -170,7 +187,8 @@ jobs:
             apps/web/.xrechnung/sample.xml \
             apps/web/.xrechnung/demo-invoice.xml \
             apps/web/.xrechnung/sample-cii.xml \
-            apps/web/.xrechnung/demo-invoice-cii.xml
+            apps/web/.xrechnung/demo-invoice-cii.xml \
+            apps/web/.xrechnung/embedded-cii.xml
           # Der Validator beendet sich bei einer Ablehnung mit Code 1,
           # `set -e` faengt das also schon. Nachgemessen mit Version 1.5.0:
           # abgelehnt -> 1, angenommen -> 0.
@@ -185,12 +203,12 @@ jobs:
             echo "::error::Eine erzeugte E-Rechnung wurde vom KoSIT-Validator abgelehnt."
             exit 1
           fi
-          # Vier Eingabedateien muessen vier Berichte ergeben. Ohne diese
+          # Fuenf Eingabedateien muessen fuenf Berichte ergeben. Ohne diese
           # Zeile waere der Job auch gruen, wenn eine Datei nie geprueft
           # wurde -- etwa weil der Validator kein passendes Szenario fand.
           reports=$(ls .kosit/report/*.xml | wc -l)
-          if [ "$reports" -lt 4 ]; then
-            echo "::error::Es wurden nur $reports Rechnungen geprueft, erwartet sind 4."
+          if [ "$reports" -lt 5 ]; then
+            echo "::error::Es wurden nur $reports Rechnungen geprueft, erwartet sind 5."
             exit 1
           fi
           echo "E-Rechnung akzeptiert: $reports Dokumente, UBL und CII."

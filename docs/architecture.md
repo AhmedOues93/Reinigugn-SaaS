@@ -126,9 +126,14 @@ possible for open, overdue invoices. OVERDUE stays derived from the due date.
 configuration nothing is claimed: the attempt is logged as `NOT_CONFIGURED` and
 the UI tells the office to send the PDF itself and record the delivery.
 
-**Not implemented: e-invoicing.** There is no ZUGFeRD or XRechnung (EN 16931)
-output. The PDF is a conventional invoice document, not a structured e-invoice.
-See docs/audit.md for what that requires.
+**E-invoicing.** Beside the PDF, every issued invoice is available as EN 16931
+XML in both syntaxes — UBL for the XRechnung (`lib/billing/xrechnung.ts`) and
+CII for ZUGFeRD/Factur-X (`lib/billing/cii.ts`) — and as a ZUGFeRD hybrid
+invoice: the same PDF, as PDF/A-3B, with the CII XML embedded as `factur-x.xml`
+(`lib/billing/pdfa.ts`). The PDF stays the document a person reads; the XML is
+the same invoice for the recipient's software. The XML is validated with the
+KoSIT validator and the PDF/A-3B conformance with veraPDF, both in CI — see
+docs/production-readiness.md section 10.
 
 ## Design system
 

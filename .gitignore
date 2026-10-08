@@ -19,3 +19,5 @@ supabase/.temp
 # Playwright
 playwright-report/
 test-results/
+tools/verapdf/libs/
+tools/verapdf/classes/

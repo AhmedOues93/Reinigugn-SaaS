@@ -25,28 +25,88 @@ const base: InvoicePdfInput = {
 };
 
 
-/** The visible text of a rendered PDF, for asserting on the figures it prints. */
-async function pdfText(bytes: Uint8Array) {
-  // Content streams are deflate-compressed and the renderer writes text as hex
-  // strings (`<52656368…> Tj`), so inflate each stream and decode those.
+/**
+ * The visible text of a rendered PDF, for asserting on the figures it prints.
+ *
+ * Since the document embeds its fonts as subsets, the content stream no longer
+ * carries characters but glyph ids (`<0001000…> Tj`, Identity-H). Reading them
+ * back means going through the `/ToUnicode` CMap of the font that was selected
+ * at that point — the same table a reader uses when someone selects the text
+ * and copies it. So this helper does not merely decode: an assertion below
+ * fails if copying the invoice out of the PDF would yield the wrong
+ * characters, and it fails too if a font arrives without that table.
+ *
+ * Two fonts means two CMaps with overlapping glyph ids, so the active `/Fn`
+ * has to be tracked; a single merged table decodes the regular text with the
+ * bold font's glyphs and produces plausible-looking nonsense.
+ */
+function pdfText(bytes: Uint8Array) {
   const raw = Buffer.from(bytes);
-  const marker = Buffer.from('stream');
-  const chunks: string[] = [];
-  for (let at = raw.indexOf(marker); at !== -1; at = raw.indexOf(marker, at + 1)) {
-    let from = at + marker.length;
-    if (raw[from] === 0x0d) from += 1;
-    if (raw[from] === 0x0a) from += 1;
-    const to = raw.indexOf(Buffer.from('endstream'), from);
-    if (to === -1) continue;
+  const text = raw.toString('latin1');
+
+  /** The inflated contents of object `number`, if it is a stream. */
+  const streamOf = (number: number) => {
+    const at = raw.indexOf(Buffer.from(`\n${number} 0 obj`));
+    if (at === -1) return null;
+    const from = raw.indexOf(Buffer.from('stream'), at);
+    if (from === -1) return null;
+    let body = from + 'stream'.length;
+    if (raw[body] === 0x0d) body += 1;
+    if (raw[body] === 0x0a) body += 1;
+    const to = raw.indexOf(Buffer.from('endstream'), body);
+    if (to === -1) return null;
     try {
-      chunks.push(inflateSync(raw.subarray(from, to)).toString('latin1'));
+      return inflateSync(raw.subarray(body, to)).toString('latin1');
     } catch {
-      /* an embedded font rather than a content stream — nothing to read */
+      return raw.subarray(body, to).toString('latin1');
+    }
+  };
+
+  const bodyOf = (number: number) => {
+    const at = text.indexOf(`\n${number} 0 obj`);
+    if (at === -1) return '';
+    const to = text.indexOf('endobj', at);
+    return text.slice(at, to === -1 ? undefined : to);
+  };
+
+  const parseCMap = (cmap: string) => {
+    const table = new Map<string, string>();
+    const unicode = (code: string) =>
+      String.fromCodePoint(...(code.match(/.{4}/g) ?? []).map((part) => parseInt(part, 16)));
+    for (const [, glyph, code] of cmap.matchAll(/<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4,})>/g)) {
+      table.set(glyph.toUpperCase(), unicode(code));
+    }
+    return table;
+  };
+
+  // /Font << /F1 12 0 R /F2 18 0 R >> in the page resources.
+  const fonts = new Map<string, Map<string, string>>();
+  for (const [, dict] of text.matchAll(/\/Font\s*<<([^>]*)>>/g)) {
+    for (const [, name, number] of dict.matchAll(/\/([^\s/[\]<>()]+)\s+(\d+)\s+0\s+R/g)) {
+      const toUnicode = bodyOf(Number(number)).match(/\/ToUnicode\s+(\d+)\s+0\s+R/);
+      if (!toUnicode) throw new Error(`Font /${name} hat keine /ToUnicode-Tabelle — der Text waere nicht kopierbar.`);
+      const cmap = streamOf(Number(toUnicode[1]));
+      if (cmap) fonts.set(name, parseCMap(cmap));
     }
   }
-  return [...chunks.join('\n').matchAll(/<([0-9A-Fa-f]+)>\s*Tj/g)]
-    .map(([, hex]) => Buffer.from(hex!, 'hex').toString('latin1'))
-    .join(' ');
+  if (!fonts.size) throw new Error('Die Datei hat keine Schrift mit /ToUnicode-Tabelle.');
+
+  const out: string[] = [];
+  for (const [, number] of text.matchAll(/\/Contents\s*\[?\s*(\d+)\s+0\s+R/g)) {
+    const content = streamOf(Number(number));
+    if (!content) continue;
+    let active: Map<string, string> | undefined;
+    // Only two tokens matter here: the font selection and the shown string.
+    for (const match of content.matchAll(/\/([^\s/[\]<>()]+)\s+[\d.]+\s+Tf|<([0-9A-Fa-f]+)>\s*Tj/g)) {
+      if (match[1]) {
+        active = fonts.get(match[1]);
+        continue;
+      }
+      const glyphs = match[2]!.match(/.{4}/g) ?? [];
+      out.push(glyphs.map((glyph) => active?.get(glyph.toUpperCase()) ?? '\uFFFD').join(''));
+    }
+  }
+  return out.join(' ');
 }
 
 describe('invoice PDF', () => {
@@ -89,7 +149,7 @@ describe('invoice PDF', () => {
         { position: 2, description: 'Sonderposten', quantity: 7.77, unit: 'm²', unit_price_cents: 1333, vat_rate_basis_points: 700, net_amount_cents: 10357 },
       ],
     };
-    const text = await pdfText(await renderInvoicePdf(awkward));
+    const text = pdfText(await renderInvoicePdf(awkward));
 
     // The stored minor units, formatted — never recomputed from floats.
     expect(text).toContain('242,46'); // net total

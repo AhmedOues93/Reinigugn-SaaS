@@ -79,6 +79,16 @@ const unitCode = (unit: string) => {
 export const CII_GUIDELINE_ID =
   'urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0';
 
+/**
+ * Das Profil, das im XMP-Feld `fx:ConformanceLevel` der ZUGFeRD-Datei steht.
+ *
+ * Nicht "EN 16931": die oben gesetzte Kennung ist die CIUS der XRechnung 3.0,
+ * also die engere deutsche Auspraegung der EN 16931. ZUGFeRD 2.x kennt dafuer
+ * genau dieses Profil. Ein zu weit gefasster Wert waere eine Angabe, die das
+ * Dokument nicht einhaelt -- nur umgekehrt ist es unproblematisch.
+ */
+export const CII_PROFILE_LABEL = 'XRECHNUNG';
+
 export function renderInvoiceCii(input: XRechnungInput): string {
   const errors = validateXRechnung(input);
   if (errors.length) throw new Error(errors.join(' '));

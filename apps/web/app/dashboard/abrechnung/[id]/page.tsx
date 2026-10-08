@@ -140,6 +140,19 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                   <FileText className="size-4" aria-hidden="true" />
                   ZUGFeRD XML (CII)
                 </a>
+                {/*
+                  Die Hybridrechnung: dasselbe PDF, nur mit dem CII-XML darin.
+                  Fuer Kunden, deren Buchhaltung die Rechnung einlesen soll,
+                  ist das die Datei, die verschickt wird -- ein Mensch sieht
+                  den Beleg, die Software liest ihn.
+                */}
+                <a
+                  href={`/dashboard/abrechnung/${invoice.id}/zugferd-pdf?download=1`}
+                  className={buttonVariants({ variant: 'outline' })}
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                  ZUGFeRD-PDF (Hybrid)
+                </a>
               </>
             ) : (
               <ButtonLink
