@@ -299,3 +299,153 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report/
           retention-days: 7
+
+  # Die angemeldete Oberflaeche, gegen ein echtes Supabase.
+  #
+  # Warum hier und nicht in staging-e2e.yml: jenes laeuft bewusst nicht auf
+  # push, und die Begruendung dort ist richtig -- ein gehostetes Staging
+  # braucht Secrets, die kein Fork bekommen darf, und zwei gleichzeitige
+  # Laeufe schreiben in denselben Mandanten. Beides faellt weg, wenn das
+  # Supabase-Projekt *pro Lauf* entsteht und danach weggeworfen wird: die
+  # Zugangsdaten stehen im Seed im Repository, sind also keine Geheimnisse,
+  # und jeder Lauf hat seine eigene Datenbank. Damit laeuft die Suite auf
+  # jedem Push, auch aus einem Fork.
+  #
+  # staging-e2e.yml bleibt daneben bestehen und behaelt seinen Zweck: ein
+  # gehostetes Staging prueft, was eine lokale Instanz nicht zeigt -- die
+  # echte Hosting-Umgebung, ihre Umgebungsvariablen und ihr Netz.
+  authenticated-e2e:
+    name: Authenticated end-to-end (disposable Supabase)
+    runs-on: ubuntu-latest
+    # Migrationen anwenden, Stack hochfahren, bauen und 154 Testlaeufe mit
+    # einem Worker: das dauert. Die Grenze soll einen haengenden Lauf beenden,
+    # nicht einen langsamen.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install the PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y postgresql-client
+
+      # Die CLI-Version ist im Repository festgelegt (devDependency `supabase`),
+      # darum `pnpm exec` und nicht `npx`: sonst holt der Lauf irgendeine
+      # neuere und die Umgebung aendert sich, ohne dass jemand etwas commitet.
+      - name: Start a throwaway Supabase stack
+        run: pnpm exec supabase start
+
+      # API-Adresse, Schluessel und Datenbank kommen aus dem gerade
+      # gestarteten Stack. Nichts davon ist eingetragen: die Schluessel eines
+      # lokalen Stacks sind bei jeder CLI-Version andere.
+      - name: Read the stack's addresses
+        id: stack
+        run: |
+          set -euo pipefail
+          status="$(pnpm exec supabase status -o json)"
+          for key in API_URL ANON_KEY DB_URL; do
+            value="$(printf '%s' "$status" | jq -r ".$key // empty")"
+            if [ -z "$value" ]; then
+              echo "::error::supabase status lieferte kein $key."
+              printf '%s\n' "$status"
+              exit 1
+            fi
+            # ANON_KEY ist der Schluessel eines Wegwerf-Stacks und kein
+            # Geheimnis, wird aber trotzdem maskiert: er soll nicht in
+            # Protokollen stehen, die jemand spaeter fuer echte halten koennte.
+            if [ "$key" = "ANON_KEY" ]; then echo "::add-mask::$value"; fi
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done
+
+      # Ohne Daten ueberspringen sich die meisten Specs ("no job assigned to
+      # this employee in this environment") und der Lauf waere gruen, ohne
+      # etwas geprueft zu haben. Der Seed legt einen vollstaendigen Mandanten
+      # an: zugewiesene Einsaetze mit erfasster Zeit, eine Beschwerde, ein
+      # Portalkontakt und drei Rechnungen in drei Zustaenden.
+      #
+      # Er weigert sich, in eine Datenbank zu schreiben, die schon einen
+      # echten Mandanten enthaelt -- hier ist sie Sekunden alt und leer.
+      - name: Seed the demo tenant
+        env:
+          DB_URL: ${{ steps.stack.outputs.DB_URL }}
+        run: |
+          set -euo pipefail
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -c "set sauberwerk.seed_confirmed = 'local-development'" \
+            -f supabase/seed/demo.sql
+
+      - name: Install the Playwright browser
+        run: pnpm --filter @reinigung/web exec playwright install --with-deps chromium
+
+      - name: Run the authenticated suite
+        id: suite
+        env:
+          # Kein E2E_BASE_URL: Playwright baut und bedient die Anwendung
+          # selbst auf 3100, gegen diesen Stack. Ein von aussen gesetztes
+          # Ziel waere hier falsch -- es gehoert nach staging-e2e.yml.
+          NEXT_PUBLIC_APP_ENV: local
+          NEXT_PUBLIC_SUPABASE_URL: ${{ steps.stack.outputs.API_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ steps.stack.outputs.ANON_KEY }}
+          # Die vier Konten aus supabase/seed/demo.sql. Sie stehen offen im
+          # Repository, weil sie nur in dieser Wegwerf-Datenbank existieren.
+          E2E_OWNER_EMAIL: inhaber@demo.test
+          E2E_OWNER_PASSWORD: DemoPasswort2026!
+          E2E_EMPLOYEE_EMAIL: mitarbeiter@demo.test
+          E2E_EMPLOYEE_PASSWORD: DemoPasswort2026!
+          E2E_CUSTOMER_EMAIL: kunde@demo.test
+          E2E_CUSTOMER_PASSWORD: DemoPasswort2026!
+          E2E_RUN_ID: gh-${{ github.run_id }}
+          # THROTTLE_SIGNING_SECRET bleibt absichtlich leer. Mit Schluessel
+          # zaehlt die Anmeldebremse je Adresse: 10 Versuche in 10 Minuten --
+          # und in CI kommt die ganze Suite aus einer Adresse. Ohne ihn gilt
+          # `login:shared` mit 600 in 600 Sekunden, was fuer diesen Lauf
+          # reicht. Was der Schluessel bewirkt, prueft
+          # supabase/test/auth-throttle-hardening.test.sql.
+          #
+          # E2E_ALLOW_PRODUCTION wird nie gesetzt. Die Suite weigert sich
+          # gegen ein Ziel, das wie Produktion aussieht oder sich selbst so
+          # meldet, und diese Weigerung darf aus CI nicht aushebelbar sein.
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ github.workspace }}/apps/web/playwright-report.json
+        run: pnpm --filter @reinigung/web exec playwright test e2e/authenticated --reporter=list,json
+
+      # Playwright beendet sich mit 0, wenn sich jeder Test uebersprungen hat.
+      # Nachgemessen: ohne Zugangsdaten 154 uebersprungen, 0 ausgefuehrt,
+      # Exit 0. Das ist kein gruener Lauf, sondern eine fehlende
+      # Voraussetzung, und genau diese Verwechslung faengt der Schritt hier.
+      #
+      # `always()`: er muss auch dann urteilen, wenn der Lauf schon rot ist --
+      # ein roter Lauf, in dem nebenbei eine ganze Spec-Datei nie zum Zuge
+      # kam, hat zwei Befunde und nicht einen.
+      # `always()`, damit er auch bei rotem Lauf urteilt: ein roter Lauf, in
+      # dem nebenbei eine ganze Spec-Datei nie zum Zuge kam, hat zwei Befunde
+      # und nicht einen. Aber nur, wenn der Lauf ueberhaupt stattgefunden hat
+      # -- sonst waere "kein Bericht lesbar" eine zweite Meldung ueber einen
+      # Fehler, der schon weiter oben steht.
+      - name: Die Suite muss wirklich gelaufen sein
+        if: always() && steps.suite.outcome != 'skipped'
+        run: node tools/check-e2e-coverage.mjs apps/web/playwright-report.json
+
+      - name: Keep the report when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authenticated-e2e-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/playwright-report.json
+          retention-days: 14
+
+      # Auch nach einem Fehlschlag: der Stack haelt Container und Volumes.
+      - name: Stop the stack
+        if: always()
+        run: pnpm exec supabase stop --no-backup
