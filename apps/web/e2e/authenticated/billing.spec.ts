@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, openFirstDetail, requireRole, signIn, test } from '../fixtures';
 
 /**
  * Billing, which is where a bug costs real money.
@@ -82,9 +82,8 @@ test.describe('billing', () => {
 
   test('a job already billed is not offered for billing again', async ({ page }) => {
     await page.goto('/dashboard/abrechnung');
-    const invoice = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await invoice.count()) === 0, 'no invoice in this environment');
-    await invoice.click();
+    const opened = await openFirstDetail(page, '/dashboard/abrechnung/');
+    test.skip(opened === null, 'no invoice in this environment');
     await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
 
     // Whatever this invoice already bills must not appear as available work.
@@ -96,10 +95,8 @@ test.describe('billing', () => {
 
   test('a cancelled invoice stays readable and is marked as cancelled', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=CANCELLED');
-    const cancelled = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await cancelled.count()) === 0, 'no cancelled invoice in this environment');
-
-    await cancelled.click();
+    const opened = await openFirstDetail(page, '/dashboard/abrechnung/');
+    test.skip(opened === null, 'no cancelled invoice in this environment');
     await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
     await expect(page.getByText(/storniert/i).first()).toBeVisible();
     // History is preserved: the number and the figures are still there.
@@ -108,10 +105,8 @@ test.describe('billing', () => {
 
   test('an issued invoice reports its delivery state honestly', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=ISSUED');
-    const issued = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await issued.count()) === 0, 'no issued invoice in this environment');
-
-    await issued.click();
+    const opened = await openFirstDetail(page, '/dashboard/abrechnung/');
+    test.skip(opened === null, 'no issued invoice in this environment');
     await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
     // Either e-mail is configured and offered, or the screen says it is not and
     // offers the manual route. Never a claimed send with nothing behind it.
@@ -128,7 +123,7 @@ test.describe('service documentation', () => {
   test('a completed job has a Leistungsnachweis that names what was done', async ({ page }) => {
     await signIn(page, 'owner');
     await page.goto('/dashboard/leistungsnachweise');
-    const record = page.locator('a[href*="/leistungsnachweis"]').first();
+    const record = (await detailLinks(page, '/leistungsnachweis')).first();
     test.skip((await record.count()) === 0, 'no completed job in this environment');
 
     await record.click();

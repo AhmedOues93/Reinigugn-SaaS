@@ -1,4 +1,4 @@
-import { expect, label, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, label, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The Kalkulation workspace, and the boundary around it.
@@ -105,7 +105,7 @@ test.describe('Kalkulation workspace', () => {
 
   test('every Turnus a cleaning contract uses is selectable', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=ENTWURF');
-    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    const draft = (await detailLinks(page, '/dashboard/kalkulation/')).first();
     test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
     await draft.click();
     await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
@@ -129,7 +129,7 @@ test.describe('Kalkulation workspace', () => {
 
   test('customer surcharges are presented as revenue, not as cost', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=ENTWURF');
-    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    const draft = (await detailLinks(page, '/dashboard/kalkulation/')).first();
     test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
     const href = await draft.getAttribute('href');
     await page.goto(`${href}?tab=kosten`);
@@ -148,7 +148,7 @@ test.describe('Kalkulation workspace', () => {
 
   test('a time that departs from the Richtleistung demands a reason', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=ENTWURF');
-    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    const draft = (await detailLinks(page, '/dashboard/kalkulation/')).first();
     test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
     await draft.click();
     await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
@@ -162,7 +162,7 @@ test.describe('Kalkulation workspace', () => {
 
   test('a finalised calculation offers no way to edit itself', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=FINAL');
-    const final = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    const final = (await detailLinks(page, '/dashboard/kalkulation/')).first();
     test.skip((await final.count()) === 0, 'no finalised calculation in this environment');
     await final.click();
     await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
@@ -176,7 +176,7 @@ test.describe('Kalkulation workspace', () => {
 
   test('the Leistungsverzeichnis carries no internal figures', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=FINAL');
-    const final = page.locator('a[href*="/dashboard/kalkulation/"]').first();
+    const final = (await detailLinks(page, '/dashboard/kalkulation/')).first();
     test.skip((await final.count()) === 0, 'no finalised calculation in this environment');
     const href = await final.getAttribute('href');
     await page.goto(`${href}?tab=dokumente`);

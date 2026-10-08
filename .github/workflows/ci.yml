@@ -320,7 +320,15 @@ jobs:
     # Migrationen anwenden, Stack hochfahren, bauen und 154 Testlaeufe mit
     # einem Worker: das dauert. Die Grenze soll einen haengenden Lauf beenden,
     # nicht einen langsamen.
-    timeout-minutes: 30
+    #
+    # Bewusst nicht je Projekt aufgeteilt, obwohl das die Wartezeit halbieren
+    # wuerde: die Pruefung unten verlangt, dass *jede* Spec-Datei einen Test
+    # ausgefuehrt hat, und das gilt nur ueber alle Breiten zusammen --
+    # field-app laeuft nur auf dem Telefon, office nur am Schreibtisch. Zwei
+    # getrennte Laeufe wuerden jeder fuer sich reihenweise leere Dateien
+    # melden. Die Aussagekraft der Pruefung ist mehr wert als die halbe
+    # Wartezeit.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -416,7 +424,7 @@ jobs:
           # gegen ein Ziel, das wie Produktion aussieht oder sich selbst so
           # meldet, und diese Weigerung darf aus CI nicht aushebelbar sein.
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ github.workspace }}/apps/web/playwright-report.json
-        run: pnpm --filter @reinigung/web exec playwright test e2e/authenticated/billing.spec.ts --project=desktop --retries=0 --reporter=list,json
+        run: pnpm --filter @reinigung/web exec playwright test e2e/authenticated --reporter=list,json
 
       # Playwright beendet sich mit 0, wenn sich jeder Test uebersprungen hat.
       # Nachgemessen: ohne Zugangsdaten 154 uebersprungen, 0 ausgefuehrt,

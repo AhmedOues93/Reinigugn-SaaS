@@ -1,4 +1,4 @@
-import { credentialsFor, expect, label, requireRole, signIn, test } from '../fixtures';
+import { credentialsFor, detailLinks, expect, label, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The two workflows that cross a role boundary, walked end to end in a browser.
@@ -112,7 +112,7 @@ test.describe('manual payment reconciliation', () => {
   /** Opens an issued, unpaid invoice, or skips when this environment has none. */
   async function openPayableInvoice(page: import('@playwright/test').Page) {
     await page.goto('/dashboard/abrechnung');
-    const open = page.locator('a[href*="/dashboard/abrechnung/"]');
+    const open = (await detailLinks(page, '/dashboard/abrechnung/'));
     const count = await open.count();
     for (let index = 0; index < count; index += 1) {
       const href = await open.nth(index).getAttribute('href');
@@ -163,7 +163,7 @@ test.describe('manual payment reconciliation', () => {
     test.skip(!credentialsFor('customer'), 'no customer credentials in this environment');
 
     await page.goto('/dashboard/abrechnung');
-    const paidLink = page.locator('a[href*="/dashboard/abrechnung/"]').filter({ hasText: /bezahlt/i }).first();
+    const paidLink = (await detailLinks(page, '/dashboard/abrechnung/')).filter({ hasText: /bezahlt/i }).first();
     test.skip((await paidLink.count()) === 0, 'no paid invoice in this environment');
     const number = (await paidLink.textContent())?.match(/RE-\d{4}-\d{4}/)?.[0] ?? null;
     test.skip(!number, 'could not identify a paid invoice number');
@@ -187,7 +187,7 @@ test.describe('manual payment reconciliation', () => {
 
   test('a draft invoice offers no way to record a payment', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=DRAFT');
-    const draft = page.locator('a[href*="/dashboard/abrechnung/"]').first();
+    const draft = (await detailLinks(page, '/dashboard/abrechnung/')).first();
     test.skip((await draft.count()) === 0, 'no draft invoice in this environment');
     await draft.click();
     await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);

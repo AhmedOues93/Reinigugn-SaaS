@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The office surface, signed in.
@@ -70,7 +70,7 @@ test.describe('office, signed in', () => {
 
   test('an issued invoice offers no line editor', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=ISSUED');
-    const firstInvoice = page.locator('a[href*="/dashboard/abrechnung/"]').first();
+    const firstInvoice = (await detailLinks(page, '/dashboard/abrechnung/')).first();
     test.skip((await firstInvoice.count()) === 0, 'no issued invoice in this environment');
 
     await firstInvoice.click();

@@ -1,4 +1,4 @@
-import { expect, label, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, label, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The money-making path, end to end:
@@ -114,8 +114,17 @@ test.describe('recurring plans', () => {
     await signIn(page, 'owner');
     await page.goto('/dashboard/planung');
 
+    // Nur Links auf einen Einsatz zaehlen, nicht alles unter dem Pfad: unter
+    // /dashboard/auftraege/ liegen auch Seiten ohne Kennung, und die gehoeren
+    // nicht in einen Vergleich ueber die Zahl der Einsaetze.
     const countVisits = async () =>
-      page.evaluate(() => document.querySelectorAll('a[href*="/dashboard/auftraege/"]').length);
+      page.evaluate(() =>
+        [...document.querySelectorAll('a[href*="/dashboard/auftraege/"]')].filter((link) =>
+          /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:[/?#]|$)/i.test(
+            link.getAttribute('href') ?? '',
+          ),
+        ).length,
+      );
 
     const before = await countVisits();
 
@@ -137,7 +146,7 @@ test.describe('recurring plans', () => {
     await page.goto('/dashboard/planung');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(/planung/i);
     // Either there is work, or the board says plainly that there is none.
-    const hasVisits = (await page.locator('a[href*="/dashboard/auftraege/"]').count()) > 0;
+    const hasVisits = (await (await detailLinks(page, '/dashboard/auftraege/')).count()) > 0;
     if (!hasVisits) await expect(page.getByText(/keine einsätze/i).first()).toBeVisible();
   });
 });

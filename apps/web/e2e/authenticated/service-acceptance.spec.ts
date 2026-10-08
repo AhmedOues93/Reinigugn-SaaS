@@ -1,4 +1,4 @@
-import { credentialsFor, expect, requireRole, signIn, test } from '../fixtures';
+import { credentialsFor, detailLinks, expect, requireRole, signIn, test } from '../fixtures';
 
 /**
  * Kundenabnahme, from the field app through the portal to the billing queue.
@@ -88,7 +88,7 @@ test.describe('the employee is never asked to choose', () => {
 
   test('no acceptance-method picker appears anywhere in the field app', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
+    const job = (await detailLinks(page, '/mitarbeiter/einsaetze/')).first();
     test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
     await job.click();
     await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
@@ -100,7 +100,7 @@ test.describe('the employee is never asked to choose', () => {
 
   test('when a signature is required, the panel asks for a name and a signature', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const links = page.locator('a[href*="/mitarbeiter/einsaetze/"]');
+    const links = (await detailLinks(page, '/mitarbeiter/einsaetze/'));
     const total = await links.count();
     let found = false;
 
@@ -147,7 +147,7 @@ test.describe('customer acceptance in the portal', () => {
 
   test('an outstanding acceptance offers both answers, not just approval', async ({ page }) => {
     await page.goto('/portal/leistungen');
-    const pending = page.locator('a[href*="/portal/leistungen/"]').filter({ hasText: /abnahme offen/i }).first();
+    const pending = (await detailLinks(page, '/portal/leistungen/')).filter({ hasText: /abnahme offen/i }).first();
     test.skip((await pending.count()) === 0, 'nothing is waiting for this customer to accept');
 
     await pending.click();
@@ -194,8 +194,7 @@ test.describe('acceptance gates billing end to end', () => {
 
       // Find something the customer has been asked to accept.
       await customer.goto('/portal/leistungen');
-      const pending = customer
-        .locator('a[href*="/portal/leistungen/"]')
+      const pending = (await detailLinks(customer, '/portal/leistungen/'))
         .filter({ hasText: /abnahme offen/i })
         .first();
       test.skip((await pending.count()) === 0, 'nothing is waiting for this customer to accept');

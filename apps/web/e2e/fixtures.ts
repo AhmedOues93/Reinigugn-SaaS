@@ -1,4 +1,4 @@
-import { expect, test as base, type Page } from '@playwright/test';
+import { expect, test as base, type Locator, type Page } from '@playwright/test';
 
 /**
  * Shared machinery for the authenticated suite.
@@ -136,6 +136,64 @@ export function requireRole(role: Role) {
     !credentialsFor(role),
     `No credentials for "${role}" (set E2E_${role.toUpperCase()}_EMAIL / _PASSWORD) — skipping rather than passing vacuously.`,
   );
+}
+
+/**
+ * Links auf eine Detailseite unter `prefix` -- und nur die.
+ *
+ * `page.locator('a[href*="/dashboard/abrechnung/"]')` sieht richtig aus und
+ * ist es nicht: unter demselben Pfad liegen auch Seiten, die keine Rechnung
+ * sind. Nachgemessen in CI, nachdem der Monatslauf hinzukam:
+ *
+ *     page.waitForURL: Test timeout of 135000ms exceeded.
+ *       navigated to ".../dashboard/abrechnung/monatslauf"
+ *
+ * Der Test klickte den ersten Treffer, landete auf dem Monatslauf und wartete
+ * bis zum Zeitablauf auf eine Kennung in der Adresse. Vier Faelle in
+ * billing.spec.ts hingen daran, und dieselbe Form stand an 26 Stellen --
+ * jede neue Unterseite haette weitere getroffen.
+ *
+ * Darum wird hier nach der *Form* der Adresse gefiltert und nicht nach dem,
+ * was gerade nicht darunter liegt: ein Link zaehlt, wenn sein letztes Segment
+ * eine UUID ist. Eine Ausschlussliste waere beim naechsten Feature wieder
+ * falsch.
+ *
+ * Zurueck kommt ein echter Locator, damit `count()`, `filter()` und `first()`
+ * weiter gehen. Er ist allerdings eine Momentaufnahme: die Adressen werden
+ * einmal gelesen. Darum wird vorher auf den ersten Link gewartet -- ohne das
+ * waere bei spaet gerendertem Inhalt nichts da. Bleibt es leer, ist das keine
+ * Ausnahme, sondern die Antwort "hier gibt es keine Detailseite", und der
+ * Aufrufer ueberspringt wie bisher.
+ */
+const detailSegment = /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:[/?#]|$)/i;
+
+export async function detailLinks(page: Page, prefix: string): Promise<Locator> {
+  const anyLink = page.locator(`a[href*="${prefix}"]`);
+  // Ein leerer Bestand ist ein erwartetes Ergebnis, kein Fehlschlag.
+  await anyLink.first().waitFor({ state: 'attached', timeout: 10_000 }).catch(() => undefined);
+
+  const hrefs = [
+    ...new Set(
+      (await anyLink.evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? '')))
+        .filter((href) => detailSegment.test(href)),
+    ),
+  ];
+
+  // Ein Locator, der nichts trifft, damit `count()` 0 ergibt statt zu werfen.
+  if (hrefs.length === 0) return page.locator('a[data-e2e-detail-link-absent]');
+  return page.locator(hrefs.map((href) => `a[href="${href}"]`).join(', '));
+}
+
+/**
+ * Oeffnet die erste Detailseite unter `prefix` und gibt deren Adresse zurueck,
+ * oder null, wenn es keine gibt.
+ */
+export async function openFirstDetail(page: Page, prefix: string): Promise<string | null> {
+  const links = await detailLinks(page, prefix);
+  if ((await links.count()) === 0) return null;
+  const href = await links.first().getAttribute('href');
+  await links.first().click();
+  return href;
 }
 
 export { expect };

@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The employee app on a phone.
@@ -31,7 +31,7 @@ test.describe('field app', () => {
 
   test('a job shows where to go and how to get in', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
+    const job = (await detailLinks(page, '/mitarbeiter/einsaetze/')).first();
     test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
 
     await job.click();
@@ -43,7 +43,7 @@ test.describe('field app', () => {
 
   test('start, pause, resume and finish produce one entry with net time', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
+    const job = (await detailLinks(page, '/mitarbeiter/einsaetze/')).first();
     test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
     await job.click();
     await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
@@ -70,7 +70,7 @@ test.describe('field app', () => {
 
   test('a double-tapped start does not open a second entry', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
+    const job = (await detailLinks(page, '/mitarbeiter/einsaetze/')).first();
     test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
     await job.click();
     await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
@@ -91,7 +91,7 @@ test.describe('field app', () => {
 
   test('a checklist item can be ticked and stays ticked', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
+    const job = (await detailLinks(page, '/mitarbeiter/einsaetze/')).first();
     test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
     await job.click();
     await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);

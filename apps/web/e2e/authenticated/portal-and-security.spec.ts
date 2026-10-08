@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The customer portal, and the boundaries around it.
@@ -24,7 +24,7 @@ test.describe('customer portal', () => {
 
   test('invoices are listed and downloadable as the same document the office sees', async ({ page }) => {
     await page.goto('/portal/rechnungen');
-    const invoice = page.locator('a[href*="/portal/rechnungen/"]').first();
+    const invoice = (await detailLinks(page, '/portal/rechnungen/')).first();
     test.skip((await invoice.count()) === 0, 'this customer has no invoice in this environment');
 
     await invoice.click();
