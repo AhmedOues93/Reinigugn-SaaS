@@ -284,6 +284,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-credential
 
+      # Die Warteschlange der Mitarbeiter-App gegen die IndexedDB von Chromium
+      # statt gegen fake-indexeddb. Der Unterschied ist nicht theoretisch:
+      # eine offene Verbindung blockiert `deleteDatabase`, und zwei Laschen,
+      # die sich eine Datenbank teilen, gibt es nur in einem echten Browser.
+      # Diese Suite braucht kein Backend und keinen Build.
+      - name: Offline-Warteschlange im echten Browser
+        run: pnpm --filter @reinigung/web test:e2e:offline
+
       - name: Keep the report when something failed
         if: failure()
         uses: actions/upload-artifact@v4

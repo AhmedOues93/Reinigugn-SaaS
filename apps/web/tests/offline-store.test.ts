@@ -132,6 +132,32 @@ describe('lokaler Speicher der Mitarbeiter-App', () => {
     expect(queue[0]!.clientTime).toBe('2026-10-01T07:00:00.000Z');
   });
 
+  it('belebt eine Buchung nicht wieder, die schon zugestellt und entfernt ist', async () => {
+    /*
+      Nachgemessen in einem echten Chromium, zwei Laschen derselben App:
+      Lasche A sendet die Pause, der Server bucht sie, die Antwort geht beim
+      Wechsel von Mobilfunk auf WLAN verloren. Lasche B raeumt dieselbe
+      Warteschlange auf und entfernt die Pause. Erst danach laeuft Lasche A in
+      ihren Zeitablauf und vermerkt den Fehlversuch.
+
+      `markAttempt` war ein `put` und hat die erledigte Buchung damit wieder
+      angelegt. Danach schlug sie bei jedem Versuch fehl, denn eine beendete
+      Buchung wird nie wieder offen -- und weil runSync nach einem Fehlschlag
+      jede weitere Buchung desselben Einsatzes zurueckhaelt, kam auch die
+      naechste Schicht an diesem Einsatz nie mehr durch.
+
+      Der ganze Weg steht in e2e/offline/field-offline.spec.ts; hier steht die
+      Stelle, an der es entschieden wird.
+    */
+    const operation = time('a', 'pause', '2026-10-01T08:00:00.000Z');
+    await enqueue(operation);
+    await dequeue('a');
+
+    await markAttempt(operation, 'Verbindung abgebrochen');
+
+    expect(await listQueue('anna')).toEqual([]);
+  });
+
   it('nimmt eine zugestellte Buchung aus der Warteschlange', async () => {
     await enqueue(time('a', 'start', '2026-10-01T07:00:00.000Z'));
     await enqueue(time('b', 'stop', '2026-10-01T09:00:00.000Z'));

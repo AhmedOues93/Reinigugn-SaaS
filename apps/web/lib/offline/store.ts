@@ -217,8 +217,59 @@ export async function dequeue(id: string) {
   await tx(QUEUE_STORE, 'readwrite', (store) => store.delete(id));
 }
 
+/**
+ * Vermerkt einen Fehlversuch -- aber nur, wenn die Buchung noch in der
+ * Warteschlange liegt.
+ *
+ * Das "nur" ist der Punkt. Vorher war das ein `put`, und ein `put` legt einen
+ * Eintrag auch dann an, wenn er nicht mehr da ist. Nachgemessen in einem
+ * echten Chromium, zwei Laschen derselben App auf einem Telefon:
+ *
+ *   Lasche A sendet die Pause. Der Server bucht sie. Die Antwort geht beim
+ *   Wechsel von Mobilfunk auf WLAN verloren; Lasche A wartet noch auf ihren
+ *   Zeitablauf. Lasche B raeumt dieselbe Warteschlange weiter auf -- die
+ *   Pause wird als zweite Zustellung erkannt, Fortsetzen und Feierabend
+ *   gehen durch, alle drei verlassen die Warteschlange. Erst danach laeuft
+ *   Lasche A in ihren Zeitablauf und vermerkt den Fehlversuch -- und legt die
+ *   laengst zugestellte Pause damit wieder an.
+ *
+ * Danach war die Warteschlange nicht mehr leer zu bekommen, und weil
+ * `runSync` nach einem Fehlschlag jede weitere Buchung desselben Einsatzes
+ * zurueckhaelt, kam auch die naechste Schicht an diesem Einsatz nie mehr
+ * durch. Die Kraft sah dauerhaft wartende Buchungen, die Zeit lag auf dem
+ * Geraet.
+ *
+ * Lesen und Schreiben liegen in einer Transaktion: zwischen einem getrennten
+ * Lesen und Schreiben entstuende genau dieselbe Luecke wieder.
+ *
+ * Gezaehlt wird auf dem *abgelegten* Stand, nicht auf dem hereingereichten --
+ * eine andere Lasche kann den Versuch schon erhoeht haben.
+ */
 export async function markAttempt(operation: QueuedOperation, error: string) {
-  await enqueue({ ...operation, attempts: operation.attempts + 1, lastError: error });
+  const db = await openDb();
+  if (!db) return;
+  await new Promise<void>((resolve) => {
+    const settle = () => {
+      db.close();
+      resolve();
+    };
+    try {
+      const transaction = db.transaction(QUEUE_STORE, 'readwrite');
+      transaction.oncomplete = settle;
+      transaction.onabort = settle;
+      transaction.onerror = settle;
+      const store = transaction.objectStore(QUEUE_STORE);
+      const existing = store.get(operation.id);
+      existing.onsuccess = () => {
+        const stored = existing.result as QueuedOperation | undefined;
+        // Schon zugestellt und entfernt: nichts wiederbeleben.
+        if (!stored) return;
+        store.put({ ...stored, attempts: stored.attempts + 1, lastError: error });
+      };
+    } catch {
+      settle();
+    }
+  });
 }
 
 /**
