@@ -196,4 +196,59 @@ export async function openFirstDetail(page: Page, prefix: string): Promise<strin
   return href;
 }
 
+/**
+ * Ein Schritt weiter im Assistenten der Stammdaten-Formulare.
+ *
+ * `^weiter$` und nicht `/weiter/i`: in der Kopfzeile stehen weitere Knoepfe,
+ * und ein Treffer auf den falschen laeuft in den Zeitablauf statt in eine
+ * Meldung.
+ */
+export async function wizardNext(page: Page) {
+  await page.getByRole('button', { name: /^weiter$/i }).click();
+}
+
+/**
+ * Legt einen Kunden an -- ueber den Assistenten, wie es das Buero tut.
+ *
+ * Nachgemessen in CI: `/dashboard/kunden/neu` hat keinen Knopf "Kunde
+ * anlegen" mehr. Das ist nur noch die Ueberschrift; die Knoepfe sind
+ * "Abbrechen" und "Weiter", und der Absender steht erst im vierten Schritt.
+ * Die Sonde sah dort:
+ *
+ *     h1:      Kunde anlegen
+ *     buttons: ["Mehr","Neu",…,"Abbrechen","Weiter"]
+ *     text:    … 1. Kunde 2. Kontakt 3. Rechnung 4. Notizen …
+ *
+ * Vier Tests in master-data.spec.ts warteten darum 45 Sekunden auf einen
+ * Knopf, den es auf dieser Stufe nicht gibt, und einer davon schon vorher auf
+ * `input[name=email]` -- das Feld liegt im zweiten Schritt und ist im ersten
+ * nicht sichtbar, und `fill` wartet auf Sichtbarkeit.
+ *
+ * Dass das Formular einmal eine Seite war, steht noch in den Tests; dass es
+ * jetzt vier Schritte sind, konnte niemand bemerken, weil diese Suite nie
+ * lief. Fuer das *Objekt*-Formular hat derselbe Test den Assistenten schon
+ * sauber abgelaufen -- der Kunde ist spaeter nachgezogen.
+ *
+ * Die Felder werden je Schritt adressiert (`[data-step="n"]`), damit ein
+ * Feld, das in einem anderen Schritt denselben Namen traegt, nicht
+ * versehentlich gefuellt wird.
+ */
+export async function createCustomerViaWizard(
+  page: Page,
+  fields: { name?: string; email?: string } = {},
+) {
+  await page.goto('/dashboard/kunden/neu');
+  if (fields.name !== undefined) {
+    await page.locator('[data-step="1"] input[name=name]').fill(fields.name);
+  }
+  await wizardNext(page);
+  if (fields.email !== undefined) {
+    await page.locator('[data-step="2"] input[name=email]').fill(fields.email);
+  }
+  await wizardNext(page);
+  await wizardNext(page);
+  // Erst hier gibt es ihn: `SubmitButton` steht nur im vierten Schritt.
+  await page.getByRole('button', { name: /kunde anlegen/i }).click();
+}
+
 export { expect };

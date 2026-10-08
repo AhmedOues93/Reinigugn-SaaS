@@ -1,4 +1,4 @@
-import { expect, label, requireRole, signIn, test } from '../fixtures';
+import { createCustomerViaWizard, expect, label, requireRole, signIn, test, wizardNext } from '../fixtures';
 
 /**
  * Customers and objects: create, edit, connect, archive, restore.
@@ -18,11 +18,8 @@ test.describe('customers and objects', () => {
     const name = label('Kunde');
     const edited = `${name} bearbeitet`;
 
-    await page.goto('/dashboard/kunden/neu');
-    await page.locator('input[name=name]').fill(name);
-    await page.locator('input[name=email]').fill(`kunde-${Date.now()}@e2e.invalid`);
-    await page.getByRole('button', { name: /kunde anlegen/i }).click();
-    await page.waitForURL(/\/dashboard\/kunden/, { timeout: 30_000 });
+    await createCustomerViaWizard(page, { name, email: `kunde-${Date.now()}@e2e.invalid` });
+    await page.waitForURL(/\/dashboard\/kunden(?:\?|$)/, { timeout: 30_000 });
 
     await page.goto('/dashboard/kunden');
     const row = page.getByRole('link', { name }).first();
@@ -45,10 +42,8 @@ test.describe('customers and objects', () => {
     const customerName = label('Objektkunde');
     const objectName = label('Objekt');
 
-    await page.goto('/dashboard/kunden/neu');
-    await page.locator('input[name=name]').fill(customerName);
-    await page.getByRole('button', { name: /kunde anlegen/i }).click();
-    await page.waitForURL(/\/dashboard\/kunden/, { timeout: 30_000 });
+    await createCustomerViaWizard(page, { name: customerName });
+    await page.waitForURL(/\/dashboard\/kunden(?:\?|$)/, { timeout: 30_000 });
 
     await page.goto('/dashboard/objekte/neu');
     await page.locator('input[name=name]').fill(objectName);
@@ -58,9 +53,9 @@ test.describe('customers and objects', () => {
     await page.locator('input[name=city]').fill('Hamburg');
     // The object form is a four-step wizard. Walk it like an office user; a
     // stale test that jumps straight to submit would never exercise the real UI.
-    await page.getByRole('button', { name: /^weiter$/i }).click();
-    await page.getByRole('button', { name: /^weiter$/i }).click();
-    await page.getByRole('button', { name: /^weiter$/i }).click();
+    await wizardNext(page);
+    await wizardNext(page);
+    await wizardNext(page);
     await page.getByRole('button', { name: /objekt anlegen/i }).click();
     await page.waitForURL(/\/dashboard\/objekte/, { timeout: 30_000 });
 
@@ -90,10 +85,8 @@ test.describe('customers and objects', () => {
   test('archiving hides a customer from the active list, and restoring brings it back', async ({ page }) => {
     const name = label('Archivkunde');
 
-    await page.goto('/dashboard/kunden/neu');
-    await page.locator('input[name=name]').fill(name);
-    await page.getByRole('button', { name: /kunde anlegen/i }).click();
-    await page.waitForURL(/\/dashboard\/kunden/, { timeout: 30_000 });
+    await createCustomerViaWizard(page, { name });
+    await page.waitForURL(/\/dashboard\/kunden(?:\?|$)/, { timeout: 30_000 });
 
     await page.goto('/dashboard/kunden');
     await page.getByRole('link', { name }).first().click();
@@ -118,8 +111,9 @@ test.describe('customers and objects', () => {
   });
 
   test('a customer cannot be saved without a name', async ({ page }) => {
-    await page.goto('/dashboard/kunden/neu');
-    await page.getByRole('button', { name: /kunde anlegen/i }).click();
+    // Bis zum Absender durchlaufen, ohne einen Namen einzutragen: der
+    // Assistent laesst weiterblaettern, abgelehnt wird erst beim Absenden.
+    await createCustomerViaWizard(page);
     // Still on the form, with something said about it.
     await expect(page).toHaveURL(/neu/);
     await expect(page.locator('p[role=alert]').first()).toBeVisible();
