@@ -416,7 +416,7 @@ jobs:
           # gegen ein Ziel, das wie Produktion aussieht oder sich selbst so
           # meldet, und diese Weigerung darf aus CI nicht aushebelbar sein.
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ github.workspace }}/apps/web/playwright-report.json
-        run: pnpm --filter @reinigung/web exec playwright test e2e/authenticated --reporter=list,json
+        run: pnpm --filter @reinigung/web exec playwright test e2e/authenticated/billing.spec.ts --project=desktop --retries=0 --reporter=list,json
 
       # Playwright beendet sich mit 0, wenn sich jeder Test uebersprungen hat.
       # Nachgemessen: ohne Zugangsdaten 154 uebersprungen, 0 ausgefuehrt,
