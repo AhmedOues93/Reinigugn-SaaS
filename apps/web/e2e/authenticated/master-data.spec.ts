@@ -141,7 +141,19 @@ test.describe('employees', () => {
       Nachgemessen: 23 x aufgeloest, jedes Mal "hidden".
     */
     await expect(page.getByText(first).filter({ visible: true }).first()).toBeVisible();
-    // The relationship that matters: invited, in this company, not yet active.
-    await expect(page.getByText(/eingeladen/i).filter({ visible: true }).first()).toBeVisible();
+    /*
+      "Einladung offen" steht dort, nicht "eingeladen" -- nachgemessen an der
+      Mitarbeiterseite:
+
+          Zeile:       ...Mitarbeiter--Einladung offenAnsehen
+          Statusworte: ["Einladung offen","Einladung offen","Aktiv",...]
+
+      Die alte Schreibweise bleibt als Alternative stehen: welches Wort die
+      Oberflaeche waehlt, ist nicht die Zusicherung -- die Zusicherung ist,
+      dass die Einladung als offen erkennbar ist und nicht als aktives Konto.
+    */
+    await expect(
+      page.getByText(/einladung offen|eingeladen/i).filter({ visible: true }).first(),
+    ).toBeVisible();
   });
 });
