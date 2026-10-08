@@ -4,11 +4,20 @@ import { getInvoice } from '@/lib/data/billing';
 import { getPortalInvoice } from '@/lib/data/portal-invoices';
 import { portalBranding } from '@/lib/data/portal';
 import { fetchLogo, invoiceFileName, renderInvoicePdf, type InvoicePdfInput } from '@/lib/billing/invoice-pdf';
+import { CII_PROFILE_LABEL } from '@/lib/billing/cii';
+import { renderStaffCii } from '@/lib/billing/invoice-xrechnung-data';
 
 type Rendered = { bytes: Uint8Array; fileName: string; invoiceNumber: string };
 
+/**
+ * Eine ZUGFeRD-Rechnung, die nicht gebaut werden konnte, weil Pflichtangaben
+ * fehlen. Der Aufrufer soll dem Betrieb sagen koennen, *was* fehlt, statt nur
+ * "nicht moeglich" -- die Liste ist dieselbe wie beim XML-Export.
+ */
+export type ZugferdResult = { rendered: Rendered; errors: [] } | { rendered: null; errors: string[] };
+
 /** Staff side: any issued, paid or cancelled invoice of the own company. Drafts have no document. */
-export async function renderStaffInvoicePdf(id: string): Promise<Rendered | null> {
+export async function renderStaffInvoicePdf(id: string, options: { facturX?: string } = {}): Promise<Rendered | null> {
   const { supabase, company } = await requireStaffCompany();
   const invoice = await getInvoice(id);
   if (!invoice || invoice.status === 'DRAFT' || !invoice.invoice_number) return null;
@@ -19,6 +28,34 @@ export async function renderStaffInvoicePdf(id: string): Promise<Rendered | null
     correctsInvoiceNumber = data?.invoice_number ?? null;
   }
   const branding = await getCompanyBranding(company.id);
+
+  // Legacy DEMO invoices were seeded before issue-time snapshots were enforced.
+  // Keep real issued invoices strictly snapshot-only; for explicit RE-DEMO rows
+  // only, reconstruct the missing document parties from the same tenant's
+  // current master data so the mobile PDF remains useful for QA.
+  let customerSnapshot = invoice.customer_snapshot as Record<string, unknown> | null;
+  let companySnapshot = invoice.company_snapshot as Record<string, unknown> | null;
+  if (
+    invoice.invoice_number.startsWith('RE-DEMO-') &&
+    (!customerSnapshot || !companySnapshot)
+  ) {
+    const [customerResult, companyResult] = await Promise.all([
+      supabase
+        .from('customers')
+        .select('name, customer_number, contact_person, email, billing_address, postal_code, city')
+        .eq('company_id', company.id)
+        .eq('id', invoice.customer_id)
+        .maybeSingle(),
+      supabase
+        .from('companies')
+        .select('name, legal_form, street, postal_code, city, country, phone, email, website, tax_number, vat_id, iban, bic')
+        .eq('id', company.id)
+        .maybeSingle(),
+    ]);
+    if (!customerSnapshot && customerResult.data) customerSnapshot = customerResult.data;
+    if (!companySnapshot && companyResult.data) companySnapshot = companyResult.data;
+  }
+
   const input: InvoicePdfInput = {
     invoiceNumber: invoice.invoice_number,
     status: invoice.status,
@@ -31,18 +68,38 @@ export async function renderStaffInvoicePdf(id: string): Promise<Rendered | null
     vatTotalCents: invoice.vat_total_cents,
     grossTotalCents: invoice.gross_total_cents,
     customerNote: invoice.customer_note,
+    buyerReference: invoice.buyer_reference,
     cancelledAt: invoice.cancelled_at,
     correctsInvoiceNumber,
-    customer: invoice.customer_snapshot as Record<string, unknown> | null,
-    company: invoice.company_snapshot as Record<string, unknown> | null,
+    customer: customerSnapshot,
+    company: companySnapshot,
     lines: invoice.lines,
     logo: await fetchLogo(branding?.logoUrl ?? null),
+    facturX: options.facturX ? { xml: options.facturX, profile: CII_PROFILE_LABEL } : null,
   };
   return {
     bytes: await renderInvoicePdf(input),
     fileName: invoiceFileName(invoice.invoice_number, Boolean(correctsInvoiceNumber)),
     invoiceNumber: invoice.invoice_number,
   };
+}
+
+/**
+ * Dieselbe Rechnung als ZUGFeRD-Hybridrechnung: ein PDF/A-3B, in dem das
+ * CII-XML als `factur-x.xml` liegt.
+ *
+ * Das XML entsteht auf demselben Weg wie der reine XML-Export und wird davor
+ * geprueft. Fehlt eine Pflichtangabe, entsteht *keine* Datei -- ein PDF, das
+ * sich als ZUGFeRD ausgibt und ein unvollstaendiges XML enthaelt, waere beim
+ * Empfaenger schlimmer als gar keines.
+ */
+export async function renderStaffZugferdPdf(id: string): Promise<ZugferdResult | null> {
+  const cii = await renderStaffCii(id);
+  if (!cii) return null;
+  if (!cii.xml) return { rendered: null, errors: cii.errors };
+  const rendered = await renderStaffInvoicePdf(id, { facturX: cii.xml });
+  if (!rendered) return null;
+  return { rendered, errors: [] };
 }
 
 /** Portal side: only the signed-in customer's own non-draft invoices, via the RLS-safe RPC. */

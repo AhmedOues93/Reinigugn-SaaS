@@ -1,26 +1,114 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input } from '@/components/ui';
+import { CheckCircle2, Mail, Send, X } from 'lucide-react';
+import { Button, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
+function TemporarySuccess({ message }: { message?: string }) {
+  const [visible, setVisible] = useState(Boolean(message));
+
+  useEffect(() => {
+    if (!message) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
+  if (!message || !visible) return null;
+  return (
+    <p role="status" className="flex items-start gap-2 rounded-lg border border-success/25 bg-success-soft px-3 py-2.5 text-sm text-success">
+      <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <span>{message}</span>
+    </p>
+  );
+}
+
+function CustomerLink({ url }: { url?: string }) {
+  if (!url) return null;
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+      <p className="font-medium">Kundenlink</p>
+      <a href={url} target="_blank" rel="noreferrer" className="mt-1 block break-all text-primary underline underline-offset-4">
+        {url}
+      </a>
+    </div>
+  );
+}
+
 export function SendQuoteForm({ action, locale, disabled }: { action: Action; locale: Locale; disabled: boolean }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const [open, setOpen] = useState(false);
+
+  if (!open && state.status !== 'success') {
+    return (
+      <div>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Erst beim Senden erhält das Angebot seine Nummer und wird unveränderlich.
+        </p>
+        {disabled ? (
+          <p className="mt-3 text-sm text-warning">Ein Angebot braucht mindestens eine Position.</p>
+        ) : (
+          <Button type="button" className="mt-4" onClick={() => setOpen(true)}>
+            <Send className="size-4" />
+            Senden an Kunden
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <form action={formAction} className="space-y-3">
-      <FormMessage status={state.status} message={state.message} />
-      <p className="text-sm text-muted-foreground">
-        Beim Senden erhält das Angebot seine Nummer und ist danach unveränderlich.
-      </p>
-      {disabled ? (
-        <p className="text-sm text-warning">Ein Angebot braucht mindestens eine Position.</p>
+    <form action={formAction} className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Senden an Kunden</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            ReinPlan vergibt die Angebotsnummer, erstellt den sicheren Kundenlink und sendet PDF + Link per E-Mail, wenn eine Kundenadresse vorhanden ist.
+          </p>
+        </div>
+        {state.status !== 'success' && (
+          <Button type="button" variant="ghost" className="size-9 p-0" onClick={() => setOpen(false)} aria-label="Schließen">
+            <X className="size-4" />
+          </Button>
+        )}
+      </div>
+      {state.status === 'error' ? (
+        <FormMessage status={state.status} message={state.message} />
       ) : (
-        <SubmitButton locale={locale}>{t(locale, 'sales.quote.send')}</SubmitButton>
+        <TemporarySuccess message={state.status === 'success' ? (state.message || 'Angebot erfolgreich an den Kunden gesendet.') : undefined} />
       )}
+      <CustomerLink url={state.invitationUrl} />
+      {state.status !== 'success' && <SubmitButton locale={locale} className="w-full justify-center sm:w-auto"><Send className="size-4" />Senden an Kunden</SubmitButton>}
+    </form>
+  );
+}
+
+export function ShareQuoteForm({ action, locale }: { action: Action; locale: Locale }) {
+  const [state, formAction] = useActionState(action, initialFormState);
+  return (
+    <form action={formAction} className="space-y-4">
+      <FormMessage status={state.status} message={state.message} />
+      <CustomerLink url={state.invitationUrl} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Kundenfreigabe</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Sendet einen neuen sicheren Link und das PDF erneut an den Kunden.
+          </p>
+        </div>
+        <SubmitButton locale={locale} variant="outline">
+          <Mail className="size-4" />
+          Erneut senden
+        </SubmitButton>
+      </div>
     </form>
   );
 }
@@ -39,6 +127,10 @@ export function AcceptQuoteForm({ action, locale, showSchedule }: { action: Acti
       <FormMessage status={state.status} message={state.message} />
       <h2 className="font-semibold">{t(locale, 'sales.accept.title')}</h2>
       <p className="text-sm text-muted-foreground">{t(locale, 'sales.accept.body')}</p>
+      <p className="rounded-lg bg-subtle px-3.5 py-3 text-sm leading-6 text-muted-foreground">
+        Preis, Abrechnungsart und Kundenabnahme werden aus dem angenommenen Angebot übernommen.
+        Hier wird nur noch die operative Einsatzzeit eingerichtet.
+      </p>
 
       {showSchedule ? (
         <>

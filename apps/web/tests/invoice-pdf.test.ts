@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { inflateSync } from 'node:zlib';
 import { PDFDocument } from 'pdf-lib';
 import { invoiceFileName, renderInvoicePdf, safe, type InvoicePdfInput } from '@/lib/billing/invoice-pdf';
 
@@ -23,6 +24,91 @@ const base: InvoicePdfInput = {
   ],
 };
 
+
+/**
+ * The visible text of a rendered PDF, for asserting on the figures it prints.
+ *
+ * Since the document embeds its fonts as subsets, the content stream no longer
+ * carries characters but glyph ids (`<0001000…> Tj`, Identity-H). Reading them
+ * back means going through the `/ToUnicode` CMap of the font that was selected
+ * at that point — the same table a reader uses when someone selects the text
+ * and copies it. So this helper does not merely decode: an assertion below
+ * fails if copying the invoice out of the PDF would yield the wrong
+ * characters, and it fails too if a font arrives without that table.
+ *
+ * Two fonts means two CMaps with overlapping glyph ids, so the active `/Fn`
+ * has to be tracked; a single merged table decodes the regular text with the
+ * bold font's glyphs and produces plausible-looking nonsense.
+ */
+function pdfText(bytes: Uint8Array) {
+  const raw = Buffer.from(bytes);
+  const text = raw.toString('latin1');
+
+  /** The inflated contents of object `number`, if it is a stream. */
+  const streamOf = (number: number) => {
+    const at = raw.indexOf(Buffer.from(`\n${number} 0 obj`));
+    if (at === -1) return null;
+    const from = raw.indexOf(Buffer.from('stream'), at);
+    if (from === -1) return null;
+    let body = from + 'stream'.length;
+    if (raw[body] === 0x0d) body += 1;
+    if (raw[body] === 0x0a) body += 1;
+    const to = raw.indexOf(Buffer.from('endstream'), body);
+    if (to === -1) return null;
+    try {
+      return inflateSync(raw.subarray(body, to)).toString('latin1');
+    } catch {
+      return raw.subarray(body, to).toString('latin1');
+    }
+  };
+
+  const bodyOf = (number: number) => {
+    const at = text.indexOf(`\n${number} 0 obj`);
+    if (at === -1) return '';
+    const to = text.indexOf('endobj', at);
+    return text.slice(at, to === -1 ? undefined : to);
+  };
+
+  const parseCMap = (cmap: string) => {
+    const table = new Map<string, string>();
+    const unicode = (code: string) =>
+      String.fromCodePoint(...(code.match(/.{4}/g) ?? []).map((part) => parseInt(part, 16)));
+    for (const [, glyph, code] of cmap.matchAll(/<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4,})>/g)) {
+      table.set(glyph.toUpperCase(), unicode(code));
+    }
+    return table;
+  };
+
+  // /Font << /F1 12 0 R /F2 18 0 R >> in the page resources.
+  const fonts = new Map<string, Map<string, string>>();
+  for (const [, dict] of text.matchAll(/\/Font\s*<<([^>]*)>>/g)) {
+    for (const [, name, number] of dict.matchAll(/\/([^\s/[\]<>()]+)\s+(\d+)\s+0\s+R/g)) {
+      const toUnicode = bodyOf(Number(number)).match(/\/ToUnicode\s+(\d+)\s+0\s+R/);
+      if (!toUnicode) throw new Error(`Font /${name} hat keine /ToUnicode-Tabelle — der Text waere nicht kopierbar.`);
+      const cmap = streamOf(Number(toUnicode[1]));
+      if (cmap) fonts.set(name, parseCMap(cmap));
+    }
+  }
+  if (!fonts.size) throw new Error('Die Datei hat keine Schrift mit /ToUnicode-Tabelle.');
+
+  const out: string[] = [];
+  for (const [, number] of text.matchAll(/\/Contents\s*\[?\s*(\d+)\s+0\s+R/g)) {
+    const content = streamOf(Number(number));
+    if (!content) continue;
+    let active: Map<string, string> | undefined;
+    // Only two tokens matter here: the font selection and the shown string.
+    for (const match of content.matchAll(/\/([^\s/[\]<>()]+)\s+[\d.]+\s+Tf|<([0-9A-Fa-f]+)>\s*Tj/g)) {
+      if (match[1]) {
+        active = fonts.get(match[1]);
+        continue;
+      }
+      const glyphs = match[2]!.match(/.{4}/g) ?? [];
+      out.push(glyphs.map((glyph) => active?.get(glyph.toUpperCase()) ?? '\uFFFD').join(''));
+    }
+  }
+  return out.join(' ');
+}
+
 describe('invoice PDF', () => {
   it('renders a valid, titled PDF from the snapshot', async () => {
     const bytes = await renderInvoicePdf(base);
@@ -43,6 +129,37 @@ describe('invoice PDF', () => {
     expect(safe('Иванов')).toBe('??????');
     const bytes = await renderInvoicePdf({ ...base, customer: { ...base.customer, name: 'ООО Чистота' } });
     expect(bytes.length).toBeGreaterThan(1000);
+  });
+
+  /*
+   * A printed total that disagrees with the stored one is the worst kind of
+   * billing bug: the customer and the ledger hold different numbers and nobody
+   * notices until a dispute. The document must render the stored figures, never
+   * re-derive them.
+   */
+  it('prints exactly the stored totals, including awkward rounding', async () => {
+    // 3.333 x 41.67 and 7.77 x 13.33 both round unhappily; the stored integers win.
+    const awkward: InvoicePdfInput = {
+      ...base,
+      netTotalCents: 24246,
+      vatTotalCents: 3364,
+      grossTotalCents: 27610,
+      lines: [
+        { position: 1, description: 'Glasreinigung', quantity: 3.333, unit: 'Std', unit_price_cents: 4167, vat_rate_basis_points: 1900, net_amount_cents: 13889 },
+        { position: 2, description: 'Sonderposten', quantity: 7.77, unit: 'm²', unit_price_cents: 1333, vat_rate_basis_points: 700, net_amount_cents: 10357 },
+      ],
+    };
+    const text = pdfText(await renderInvoicePdf(awkward));
+
+    // The stored minor units, formatted — never recomputed from floats.
+    expect(text).toContain('242,46'); // net total
+    expect(text).toContain('276,10'); // gross total
+    // VAT is broken down per rate, as a German invoice must: 26,39 + 7,25 = 33,64.
+    expect(text).toContain('26,39');
+    expect(text).toContain('7,25');
+    // A float recomputation of line 1 would print 138,90 rather than the stored 138,89.
+    expect(text).toContain('138,89');
+    expect(text).not.toContain('138,90');
   });
 
   it('labels corrections and builds a header-safe file name', async () => {

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10" width="1600" height="1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="">
+  <!--
+    TEMPORARY. This is not the approved background.
+
+    The brand direction calls for a photograph of an office interior after
+    hours with cleaning work in progress. That asset has not been licensed yet,
+    and this environment cannot reach a stock library to fetch one, so rather
+    than draw a fake building this file is a plain field in the brand's Tiefsee
+    — deliberately empty, so nobody mistakes it for the finished design.
+
+    `docs/brand-assets.md` specifies exactly what to commission. Dropping the
+    real files into this folder and updating `lib/brand-assets.ts` is the only
+    change needed; the overlay, art direction and responsive loading around it
+    are already built and working.
+  -->
+  <defs>
+    <linearGradient id="field" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#14343a"/>
+      <stop offset="0.55" stop-color="#0e2529"/>
+      <stop offset="1" stop-color="#081619"/>
+    </linearGradient>
+  </defs>
+  <rect width="16" height="10" fill="url(#field)"/>
+</svg>

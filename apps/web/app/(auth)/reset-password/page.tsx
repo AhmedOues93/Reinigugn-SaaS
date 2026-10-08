@@ -21,6 +21,14 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
           locale={locale}
           labelAction={<span className="text-xs text-muted-foreground">{t(locale, 'auth.passwordHint')}</span>}
         />
+        <AuthField
+          name="password_confirmation"
+          type="password"
+          rule="newPassword"
+          autoComplete="new-password"
+          label="Neues Passwort wiederholen"
+          locale={locale}
+        />
         <AuthSubmit pendingLabel={t(locale, 'auth.working')}>{t(locale, 'auth.setPassword')}</AuthSubmit>
       </AuthForm>
     </AuthShell>

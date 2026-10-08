@@ -21,6 +21,11 @@ function routeSegments(dir: string, prefix = ''): string[] {
 describe('routing surface', () => {
   const routes = routeSegments(appDir);
 
+  it('exposes a liveness endpoint for production monitoring', () => {
+    const healthRoute = join(appDir, 'api', 'health', 'route.ts');
+    expect(statSync(healthRoute).isFile()).toBe(true);
+  });
+
   it('exposes the public auth routes', () => {
     for (const route of ['/login', '/signup', '/forgot-password', '/reset-password', '/onboarding']) {
       expect(routes, `missing ${route}`).toContain(route);
@@ -29,6 +34,7 @@ describe('routing surface', () => {
 
   it('exposes the employee application as its own surface', () => {
     expect(routes).toContain('/dashboard');
+    expect(routes).toContain('/dashboard/abo');
     expect(routes).toContain('/mitarbeiter');
     for (const route of ['/mitarbeiter/einsaetze', '/mitarbeiter/nachrichten', '/mitarbeiter/abwesenheit', '/mitarbeiter/profil']) {
       expect(routes, `missing ${route}`).toContain(route);

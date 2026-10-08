@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Building2, CalendarDays, Users } from 'lucide-react';
-import { Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
+import { Building2, CalendarDays, Download, Eye, Users } from 'lucide-react';
+import { BackLink, Badge, Card, CardHeader, DataRow, PageHeader } from '@/components/ui';
 import { QuoteLineEditor } from '@/components/sales/quote-line-editor';
-import { AcceptQuoteForm, DeclineQuoteForm, SendQuoteForm } from '@/components/sales/quote-actions';
+import { AcceptQuoteForm, DeclineQuoteForm, SendQuoteForm, ShareQuoteForm } from '@/components/sales/quote-actions';
 import { getQuote, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
-import { acceptQuote, addQuoteLine, declineQuote, removeQuoteLine, sendQuote } from '../../actions';
+import { acceptQuote, addQuoteLine, declineQuote, removeQuoteLine, resendQuoteToCustomer, sendQuote } from '../../actions';
 
 function first<T>(value: T | T[] | null) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -21,22 +21,60 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   const owner = first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—';
   const isDraft = quote.status === 'DRAFT';
-  const hasRecurring = quote.lines.some((line) => line.recurrence !== 'ONE_OFF');
+  const recipient = quote.recipient_snapshot && typeof quote.recipient_snapshot === 'object'
+    ? quote.recipient_snapshot as Record<string, unknown>
+    : {};
+  const recipientEmail = typeof recipient.email === 'string' ? recipient.email.trim() : '';
+  const validUntilExpired = Boolean(quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10));
+  const reviewWarnings = [
+    ...(quote.lines.length === 0 ? ['Keine Leistungsposition vorhanden.'] : []),
+    ...(quote.lines.some((line) => line.unit_price_cents <= 0 || line.net_amount_cents <= 0) ? ['Mindestens eine Position hat keinen plausiblen Preis.'] : []),
+    ...(!recipientEmail ? ['Beim Empfänger ist keine E-Mail-Adresse hinterlegt.'] : []),
+    ...(validUntilExpired ? ['Die Angebotsgültigkeit ist bereits abgelaufen.'] : []),
+  ];
+  const hasRecurringWork = quote.lines.some((line) => line.recurrence !== 'ONE_OFF');
+  const acceptanceLabel: Record<string, string> = {
+    KEINE_ABNAHME_ERFORDERLICH: 'Keine Abnahme erforderlich',
+    VOR_ORT_UNTERSCHRIFT: 'Unterschrift vor Ort',
+    PORTAL_ABNAHME: 'Bestätigung im Kundenportal',
+  };
+  const billingLabel: Record<string, string> = {
+    MONATSPAUSCHALE: 'Monatspauschale',
+    PAUSCHALE_PRO_EINSATZ: 'Pauschale je Einsatz',
+    STUNDENSATZ: 'Nach Stunden',
+  };
+  const orderTypeLabel: Record<string, string> = {
+    EINMALAUFTRAG: 'Einmalauftrag',
+    BEFRISTET: 'Befristeter Auftrag',
+    DAUERAUFTRAG: 'Laufender Auftrag',
+  };
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link
-        href="/dashboard/vertrieb/angebote"
-        className="mb-5 inline-flex min-h-touch items-center gap-2 text-sm font-medium text-muted-foreground"
-      >
-        <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
-        {t(locale, 'sales.quotes.title')}
-      </Link>
+      <BackLink href="/dashboard/vertrieb/angebote">{t(locale, 'sales.quotes.title')}</BackLink>
 
       <PageHeader
         title={quote.quote_number ?? t(locale, 'billing.draft')}
         description={`${owner} · ${quote.title}`}
-        actions={<Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>{t(locale, `sales.quote.status.${quote.status}`)}</Badge>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {quote.status !== 'DRAFT' && (
+              <>
+                <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted">
+                  <Eye className="size-4" aria-hidden="true" />
+                  Vorschau
+                </a>
+                <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf?download=1`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
+                  <Download className="size-4" aria-hidden="true" />
+                  PDF herunterladen
+                </a>
+              </>
+            )}
+            <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>
+              {t(locale, `sales.quote.status.${quote.status}`)}
+            </Badge>
+          </div>
+        }
       />
 
       {quote.decline_reason && (
@@ -45,12 +83,36 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         </p>
       )}
 
+      {reviewWarnings.length > 0 && (
+        <Card className="mb-5 border-warning/30 bg-warning-soft p-4">
+          <p className="text-sm font-semibold text-foreground">Vor dem Versenden prüfen</p>
+          <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+            {reviewWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+          </ul>
+        </Card>
+      )}
+
+      <div className="mb-5 grid grid-cols-3 gap-1 rounded-lg bg-muted/40 p-1 text-center text-[11px] font-semibold sm:text-xs">
+        <span className="rounded-md bg-card px-2 py-2 text-primary shadow-sm">1. Prüfen</span>
+        <span className={quote.status === 'DRAFT' ? 'px-2 py-2 text-muted-foreground' : 'px-2 py-2 text-primary'}>2. Versenden</span>
+        <span className={quote.status === 'ACCEPTED' || quote.status === 'DECLINED' ? 'px-2 py-2 text-primary' : 'px-2 py-2 text-muted-foreground'}>3. Kundenreaktion</span>
+      </div>
+
       {/* Where the accepted quote landed — the provenance the whole workflow is for. */}
       {quote.status === 'ACCEPTED' && (
         <Card className="mb-5 border-success/30 bg-success-soft p-5">
-          <p className="mb-3 text-sm font-semibold text-success">
-            {t(locale, 'sales.accept.created')} · {formatDateTime(locale, quote.accepted_at!)}
+          <p className="text-sm font-semibold text-success">
+            Angebot angenommen · {formatDateTime(locale, quote.accepted_at!)}
           </p>
+          <p className="mb-3 mt-1 text-sm text-success/80">
+            {quote.accepted_by_name ? `Angenommen von ${quote.accepted_by_name}. ` : ''}
+            Kunde und Objekt wurden übernommen. Legen Sie im erzeugten Plan nur Rhythmus und Uhrzeiten fest; ReinPlan plant standardmäßig automatisch eine passende freie Stammbesetzung ein.
+          </p>
+          {quote.acceptance_note && (
+            <p className="mb-3 rounded-lg border border-success/20 bg-card/70 px-3 py-2 text-sm text-foreground">
+              Hinweis: {quote.acceptance_note}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             {quote.created_customer_id && (
               <Link
@@ -76,7 +138,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 className="inline-flex min-h-touch items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium hover:bg-muted"
               >
                 <CalendarDays className="size-4" aria-hidden="true" />
-                {t(locale, 'nav.planning')}
+                Einsatz planen
               </Link>
             )}
           </div>
@@ -85,13 +147,53 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       <Card className="p-5">
         <dl className="divide-y divide-border">
-          {quote.sent_at && <DataRow label={t(locale, 'sales.quote.status.SENT')} value={formatDateTime(locale, quote.sent_at)} />}
-          {quote.valid_until && <DataRow label={t(locale, 'sales.quote.validUntil')} value={formatDate(locale, quote.valid_until)} />}
-          <DataRow label={t(locale, 'billing.net')} value={formatMoney(locale, quote.net_total_cents, quote.currency)} />
-          <DataRow label={t(locale, 'billing.vat')} value={formatMoney(locale, quote.vat_total_cents, quote.currency)} />
+          {quote.sent_at && (
+            <DataRow
+              label={t(locale, 'sales.quote.status.SENT')}
+              value={formatDateTime(locale, quote.sent_at)}
+            />
+          )}
+          {quote.valid_until && (
+            <DataRow
+              label={t(locale, 'sales.quote.validUntil')}
+              value={formatDate(locale, quote.valid_until)}
+            />
+          )}
+          {quote.order_type && (
+            <DataRow label="Auftragsart" value={orderTypeLabel[quote.order_type] ?? quote.order_type} />
+          )}
+          {quote.service_start && (
+            <DataRow label="Leistungsbeginn" value={formatDate(locale, quote.service_start)} />
+          )}
+          {quote.service_end && (
+            <DataRow label="Vertragsende" value={formatDate(locale, quote.service_end)} />
+          )}
+          {quote.termination_notice && (
+            <DataRow label="Kündigungsfrist" value={quote.termination_notice} />
+          )}
+          <DataRow
+            label="Abrechnungsart"
+            value={billingLabel[String(quote.billing_mode ?? '')] ?? '—'}
+          />
+          <DataRow
+            label="Kundenabnahme"
+            value={acceptanceLabel[String(quote.acceptance_policy ?? 'KEINE_ABNAHME_ERFORDERLICH')]}
+          />
+          <DataRow
+            label={t(locale, 'billing.net')}
+            value={formatMoney(locale, quote.net_total_cents, quote.currency)}
+          />
+          <DataRow
+            label={t(locale, 'billing.vat')}
+            value={formatMoney(locale, quote.vat_total_cents, quote.currency)}
+          />
           <DataRow
             label={t(locale, 'billing.gross')}
-            value={<span className="text-base">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</span>}
+            value={
+              <span className="text-base">
+                {formatMoney(locale, quote.gross_total_cents, quote.currency)}
+              </span>
+            }
           />
           {quote.recurring_net_monthly_cents > 0 && (
             <DataRow
@@ -103,8 +205,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </Card>
 
       <Card className="mt-5 overflow-hidden">
-        <CardHeader title={t(locale, 'billing.lines')} />
+        <CardHeader title="Leistungspositionen" />
         <div className="p-5">
+          <p className="mb-4 text-sm leading-6 text-muted-foreground">
+            Die Leistungen aus der Kalkulation sind bereits übernommen. Prüfen Sie hier nur Inhalt, Preis und Steuer. Zusätzliche Positionen bleiben optional.
+          </p>
           <QuoteLineEditor
             locale={locale}
             currency={quote.currency}
@@ -117,10 +222,26 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </Card>
 
       <Card className="mt-5 p-5">
-        {isDraft && <SendQuoteForm action={sendQuote.bind(null, quote.id)} locale={locale} disabled={quote.lines.length === 0} />}
+        {isDraft && (
+          <SendQuoteForm
+            action={sendQuote.bind(null, quote.id)}
+            locale={locale}
+            disabled={quote.lines.length === 0}
+          />
+        )}
         {quote.status === 'SENT' && (
           <div className="space-y-8">
-            <AcceptQuoteForm action={acceptQuote.bind(null, quote.id)} locale={locale} showSchedule={hasRecurring} />
+            <ShareQuoteForm
+              action={resendQuoteToCustomer.bind(null, quote.id)}
+              locale={locale}
+            />
+            <div className="border-t border-border pt-6">
+              <AcceptQuoteForm
+                action={acceptQuote.bind(null, quote.id)}
+                locale={locale}
+                showSchedule={hasRecurringWork}
+              />
+            </div>
             <div className="border-t border-border pt-6">
               <DeclineQuoteForm action={declineQuote.bind(null, quote.id)} locale={locale} />
             </div>

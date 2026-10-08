@@ -1,6 +1,7 @@
-import { FileSignature, Plus } from 'lucide-react';
+import { FileDown, FileSignature, Plus } from 'lucide-react';
 import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
+import { SalesSectionNav } from '@/components/sales/sales-section-nav';
 import { listQuotes, quoteStatusTone, type QuoteStatus } from '@/lib/data/sales';
 import { formatDate, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -24,20 +25,21 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader
         title={t(locale, 'sales.quotes.title')}
-        description="Angebote entstehen aus einer Besichtigung. Ein angenommenes Angebot legt Kunde, Objekt und Reinigungsplan an."
+        description={t(locale, 'sales.quote.newSubtitle')}
         actions={
-          <ButtonLink href="/dashboard/vertrieb/besichtigungen" variant="outline">
+          <ButtonLink href="/dashboard/kalkulation/neu">
             <Plus className="size-4" aria-hidden="true" />
-            Aus Besichtigung erstellen
+            {t(locale, 'sales.quote.new')}
           </ButtonLink>
         }
       />
+      <SalesSectionNav active="angebote" locale={locale} />
       <FilterTabs
         className="mb-4"
         label={t(locale, 'common.status')}
         items={filters.map((filter) => ({
           href: filter === 'all' ? '/dashboard/vertrieb/angebote' : `/dashboard/vertrieb/angebote?status=${filter}`,
-          label: filter === 'all' ? 'Alle' : t(locale, `sales.quote.status.${filter}`),
+          label: filter === 'all' ? t(locale, 'common.all') : t(locale, `sales.quote.status.${filter}`),
           active: active === filter,
           count: filter === 'all' ? all.length : all.filter((quote) => quote.status === filter).length,
         }))}
@@ -47,21 +49,32 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
         rows={quotes}
         rowKey={(quote) => quote.id}
         rowHref={(quote) => `/dashboard/vertrieb/angebote/${quote.id}`}
+        rowActions={(quote) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <ButtonLink href={`/dashboard/vertrieb/angebote/${quote.id}`} variant="outline">{t(locale, 'common.open')}</ButtonLink>
+            {quote.status !== 'DRAFT' && (
+              <a href={`/dashboard/vertrieb/angebote/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted max-md:min-h-11">
+                <FileDown className="size-4" aria-hidden="true" />
+                PDF
+              </a>
+            )}
+          </div>
+        )}
         columns={[
           {
             key: 'owner',
-            header: 'Kunde / Interessent',
+            header: t(locale, 'sales.quote.organisation'),
             mobile: 'title',
             cell: (quote) => first(quote.customers)?.name ?? first(quote.leads)?.organisation ?? '—',
           },
           {
             key: 'title',
-            header: 'Angebot',
+            header: t(locale, 'sales.quote.title'),
             mobile: 'subtitle',
             cell: (quote) => (
               <span className="block min-w-0">
                 <span className="block truncate">{quote.title}</span>
-                <span className="block text-xs tabular-nums">{quote.quote_number ?? 'Entwurf'}</span>
+                <span className="block text-xs tabular-nums">{quote.quote_number ?? t(locale, 'billing.draft')}</span>
               </span>
             ),
           },
@@ -73,19 +86,19 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
           },
           {
             key: 'monthly',
-            header: 'Monatlich netto',
+            header: t(locale, 'sales.quote.monthly'),
             align: 'end',
             cell: (quote) => (quote.recurring_net_monthly_cents > 0 ? formatMoney(locale, quote.recurring_net_monthly_cents, quote.currency) : '—'),
           },
           {
             key: 'gross',
-            header: 'Brutto',
+            header: t(locale, 'billing.gross'),
             align: 'end',
             cell: (quote) => <span className="font-semibold text-foreground">{formatMoney(locale, quote.gross_total_cents, quote.currency)}</span>,
           },
           {
             key: 'status',
-            header: 'Status',
+            header: t(locale, 'common.status'),
             mobile: 'status',
             cell: (quote) => <Badge tone={quoteStatusTone[quote.status as QuoteStatus]}>{t(locale, `sales.quote.status.${quote.status}`)}</Badge>,
           },

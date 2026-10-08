@@ -9,6 +9,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+"$root/supabase/tools/check-migration-versions.sh"
 db="sauberwerk_migration_check_$$"
 
 psql -v ON_ERROR_STOP=1 -q -d postgres -c "create database \"$db\""

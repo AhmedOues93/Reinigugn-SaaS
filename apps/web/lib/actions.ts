@@ -10,6 +10,11 @@ export type FormState = {
    * so it cannot be turned into an open redirect.
    */
   redirectTo?: string;
+  /**
+   * Eine begonnene Zwei-Faktor-Einrichtung. Das Geheimnis steht nur in dieser
+   * einen Antwort an die Person, die es einrichtet, und wird nicht gespeichert.
+   */
+  mfaEnrolment?: { factorId: string; qrCode: string; secret: string };
 };
 
 export const initialFormState: FormState = { status: 'idle' };

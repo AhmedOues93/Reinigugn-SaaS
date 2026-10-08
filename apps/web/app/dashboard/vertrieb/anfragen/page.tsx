@@ -1,6 +1,7 @@
 import { Inbox, Plus } from 'lucide-react';
 import { Badge, ButtonLink, EmptyState, FilterTabs, PageHeader } from '@/components/ui';
 import { DataTable } from '@/components/data-table';
+import { SalesSectionNav } from '@/components/sales/sales-section-nav';
 import { leadStatusTone, listLeads, type LeadStatus } from '@/lib/data/sales';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -19,7 +20,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader
-        title={t(locale, 'sales.leads.title')}
+        title={t(locale, 'nav.sales')}
         description={t(locale, 'sales.leads.subtitle')}
         actions={
           <ButtonLink href="/dashboard/vertrieb/anfragen/neu">
@@ -28,12 +29,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           </ButtonLink>
         }
       />
+      <SalesSectionNav active="anfragen" locale={locale} />
       <FilterTabs
         className="mb-4"
         label={t(locale, 'common.status')}
         items={filters.map((filter) => ({
           href: filter === 'all' ? '/dashboard/vertrieb/anfragen' : `/dashboard/vertrieb/anfragen?status=${filter}`,
-          label: filter === 'all' ? 'Alle' : t(locale, `sales.status.${filter}`),
+          label: filter === 'all' ? t(locale, 'common.all') : t(locale, `sales.status.${filter}`),
           active: active === filter,
           count: filter === 'all' ? all.length : all.filter((lead) => lead.status === filter).length,
         }))}
@@ -43,15 +45,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         rows={leads}
         rowKey={(lead) => lead.id}
         rowHref={(lead) => `/dashboard/vertrieb/anfragen/${lead.id}`}
+        rowActions={(lead) => <ButtonLink href={`/dashboard/vertrieb/anfragen/${lead.id}`} variant="outline">{t(locale, 'common.open')}</ButtonLink>}
         columns={[
-          { key: 'org', header: 'Organisation', mobile: 'title', cell: (lead) => lead.organisation },
-          { key: 'contact', header: 'Ansprechperson', mobile: 'subtitle', cell: (lead) => lead.contact_person || '—' },
-          { key: 'city', header: 'Ort', cell: (lead) => lead.city || '—' },
-          { key: 'source', header: 'Quelle', hideBelow: 'lg', cell: (lead) => lead.source || '—' },
-          { key: 'created', header: 'Eingang', cell: (lead) => <span className="tabular-nums">{formatDate(locale, lead.created_at)}</span> },
+          { key: 'org', header: t(locale, 'sales.lead.organisation'), mobile: 'title', cell: (lead) => lead.organisation },
+          { key: 'contact', header: t(locale, 'sales.lead.contact'), mobile: 'subtitle', cell: (lead) => lead.contact_person || '—' },
+          { key: 'city', header: t(locale, 'common.city'), cell: (lead) => lead.city || '—' },
+          { key: 'source', header: t(locale, 'sales.lead.source'), hideBelow: 'lg', cell: (lead) => lead.source || '—' },
+          { key: 'created', header: t(locale, 'sales.lead.received'), cell: (lead) => <span className="tabular-nums">{formatDate(locale, lead.created_at)}</span> },
           {
             key: 'status',
-            header: 'Status',
+            header: t(locale, 'common.status'),
             mobile: 'status',
             cell: (lead) => <Badge tone={leadStatusTone[lead.status as LeadStatus]}>{t(locale, `sales.status.${lead.status}`)}</Badge>,
           },

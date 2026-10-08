@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, CalendarCheck2, CheckCircle2, ChevronRight, MapPin, Navigation } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { EmptyState } from '@/components/ui';
-import { employeeLocale, listMyTodayAndUpcoming, requireEmployee } from '@/lib/data/employee';
+import { employeeLocale, getMyMonthlyWorkSummary, listMyTodayAndUpcoming, requireEmployee } from '@/lib/data/employee';
 import { formatDate, formatTime, formatTimeRange } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
@@ -19,10 +19,11 @@ function stateOf(job: Job) {
 }
 
 export default async function EmployeeTodayPage() {
-  const [{ profile }, locale, { today, upcoming, todayKey }] = await Promise.all([
+  const [{ profile }, locale, { today, upcoming, stillOpen, todayKey }, workMonth] = await Promise.all([
     requireEmployee(),
     employeeLocale(),
     listMyTodayAndUpcoming(),
+    getMyMonthlyWorkSummary(),
   ]);
   const done = today.filter((job) => stateOf(job) === 'done').length;
   const current = today.find((job) => ['running', 'paused'].includes(stateOf(job))) ?? today.find((job) => stateOf(job) === 'open') ?? null;
@@ -30,6 +31,11 @@ export default async function EmployeeTodayPage() {
   const object = first(current?.cleaning_objects);
   const address = [object?.street, [object?.postal_code, object?.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   const items = first(current?.job_checklists)?.job_checklist_items ?? [];
+  const startDeltaMinutes =
+    current?.planned_start_at && currentState === 'open'
+      ? Math.round((new Date(current.planned_start_at).getTime() - Date.now()) / 60000)
+      : null;
+  const showStartReminder = startDeltaMinutes != null && startDeltaMinutes <= 30 && startDeltaMinutes >= -60;
 
   const upcomingByDay = upcoming.slice(0, 8).reduce<Record<string, Job[]>>((groups, job) => {
     (groups[job.scheduled_date] ??= []).push(job);
@@ -40,10 +46,78 @@ export default async function EmployeeTodayPage() {
     <div className="space-y-7">
       <header>
         <p className="text-sm font-medium text-muted-foreground">{formatDate(locale, todayKey, 'long')}</p>
-        <h1 className="mt-0.5 text-[1.6rem] font-semibold leading-tight">
+        <h1 className="hyphenate mt-0.5 text-[1.6rem] font-semibold leading-tight">
           {profile?.first_name ? t(locale, 'emp.today.greeting', { name: profile.first_name }) : t(locale, 'emp.tab.today')}
         </h1>
       </header>
+
+      <section className="grid grid-cols-3 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card">
+        <div className="p-3.5 text-center"><p className="text-xl font-semibold tabular-nums">{Math.floor(workMonth.workedMinutes / 60)}:{String(workMonth.workedMinutes % 60).padStart(2, '0')}</p><p className="mt-1 text-xs text-muted-foreground">Stunden im Monat</p></div>
+        <div className="border-x border-border/70 p-3.5 text-center"><p className="text-xl font-semibold tabular-nums">{workMonth.daysWorked}</p><p className="mt-1 text-xs text-muted-foreground">Arbeitstage</p></div>
+        <div className="p-3.5 text-center"><p className="text-xl font-semibold tabular-nums">{workMonth.entries.length}</p><p className="mt-1 text-xs text-muted-foreground">Zeiteinträge</p></div>
+      </section>
+
+      {showStartReminder && current && (
+        <Link
+          href={`/mitarbeiter/einsaetze/${current.id}`}
+          className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary-soft p-4 shadow-card"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <CalendarCheck2 className="size-5" aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">
+              {startDeltaMinutes! > 0
+                ? `Einsatz in ${startDeltaMinutes} Min.`
+                : startDeltaMinutes === 0
+                  ? 'Einsatz beginnt jetzt'
+                  : `Einsatz seit ${Math.abs(startDeltaMinutes!)} Min. geplant`}
+            </span>
+            <span className="block truncate text-sm text-muted-foreground">
+              {first(current.cleaning_objects)?.name || current.title}
+            </span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 text-primary rtl:rotate-180" aria-hidden="true" />
+        </Link>
+      )}
+
+      {/*
+        Eine Uhr, die seit gestern laeuft. Sie steht ganz oben, weil nichts
+        anderes geht, solange sie laeuft: start_my_job verweigert jeden neuen
+        Einsatz. Vorher war dieser Einsatz nirgends erreichbar, weil die
+        Listen bei heute beginnen -- die Mitarbeiterin konnte weder ihn
+        beenden noch den naechsten beginnen.
+      */}
+      {stillOpen.length > 0 && (
+        <section aria-labelledby="open-title" className="rounded-3xl border border-warning/30 bg-warning-soft p-4 sm:p-5">
+          <h2 id="open-title" className="text-[15px] font-semibold text-warning">
+            {stillOpen.length === 1 ? 'Ein Einsatz läuft noch' : `${stillOpen.length} Einsätze laufen noch`}
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-foreground">
+            Hier wurde kein Feierabend erfasst. Solange die Uhr läuft, lässt sich kein neuer Einsatz starten.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {stillOpen.map((job) => (
+              <li key={job.id}>
+                <Link
+                  href={`/mitarbeiter/einsaetze/${job.id}`}
+                  className="flex min-h-touch items-center gap-3 rounded-2xl bg-card px-3.5 py-3 shadow-card transition-colors hover:bg-subtle"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="break-anywhere block text-[15px] font-medium text-foreground">
+                      {first(job.cleaning_objects)?.name || job.title}
+                    </span>
+                    <span className="block text-sm tabular-nums text-muted-foreground">
+                      {formatDate(locale, job.scheduled_date, 'long')}
+                    </span>
+                  </span>
+                  <ChevronRight className="size-5 shrink-0 text-warning rtl:rotate-180" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {today.length === 0 ? (
         <EmptyState icon={<CalendarCheck2 />} title={t(locale, 'emp.today.noJobs')} body={t(locale, 'emp.today.noJobsBody')} className="rounded-3xl" />
@@ -85,7 +159,7 @@ export default async function EmployeeTodayPage() {
             </Link>
             {address && (
               <a
-                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={t(locale, 'emp.job.navigate')}

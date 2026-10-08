@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, FileText, LayoutDashboard, MessageSquareWarning, Receipt } from 'lucide-react';
+import { Building2, FileSignature, FileText, LayoutDashboard, MessageSquareWarning, Receipt } from 'lucide-react';
 import { cn } from '@reinigung/ui';
 import { t, type Locale, type TranslationKey } from '@/lib/i18n';
 
@@ -10,6 +10,7 @@ const tabs: { href: string; label: TranslationKey; icon: typeof LayoutDashboard 
   { href: '/portal', label: 'portal.tab.overview', icon: LayoutDashboard },
   { href: '/portal/objekte', label: 'portal.tab.objects', icon: Building2 },
   { href: '/portal/leistungen', label: 'portal.tab.services', icon: FileText },
+  { href: '/portal/angebote', label: 'portal.tab.quotes', icon: FileSignature },
   { href: '/portal/rechnungen', label: 'portal.tab.invoices', icon: Receipt },
   { href: '/portal/reklamationen', label: 'portal.tab.complaints', icon: MessageSquareWarning },
 ];
