@@ -7,36 +7,6 @@ rebuilt, or rolled forward, and will silently diverge from the repository.
 
 Everything below is done once, by you, and takes about twenty minutes.
 
-## Which Supabase does the authenticated suite use?
-
-Two, for two different questions. Neither replaces the other.
-
-**Per CI run, thrown away afterwards.** The `authenticated-e2e` job in
-`ci.yml` starts a local Supabase stack with the CLI, applies the migration
-history, seeds `supabase/seed/demo.sql` and runs `e2e/authenticated` against
-it. It needs no secrets -- the four demo logins are in the seed and exist
-only in that database -- so it runs on every push, including from a fork, and
-two concurrent runs cannot write into each other's tenant. This is what
-proves that the signed-in surface still works at all.
-
-That job also runs `tools/check-e2e-coverage.mjs` over the Playwright report.
-The reason: these specs skip themselves when their preconditions are missing,
-and a run in which *everything* skipped exits 0. Measured without
-credentials: 154 skipped, 0 executed, exit 0. The check requires every spec
-file to have executed at least one test, so an empty seed or an unreachable
-database fails instead of looking green.
-
-`THROTTLE_SIGNING_SECRET` is deliberately left unset there. With a key, the
-sign-in brake counts per address -- ten attempts in ten minutes -- and the
-whole suite comes from one runner address. Without it, `login:shared` applies
-with 600 in 600 seconds. What the key itself does is covered by
-`supabase/test/auth-throttle-hardening.test.sql`.
-
-**A hosted staging project, on request and nightly.** That is
-`staging-e2e.yml`, and the procedure below. A local stack cannot show what
-only a real deployment has: the hosting environment, its environment
-variables, its network, its cron. Keep both.
-
 ## 1. Create the project
 
 Supabase dashboard → New project.
