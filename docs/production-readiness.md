@@ -237,13 +237,18 @@ matches nothing.
 - **Accessibility**: good foundations, never audited against WCAG.
 - **Browser support**: only Chromium is tested. Safari on iOS matters for the
   employee PWA.
-- **Offline**: the replay semantics of the queue are covered by SQL and unit
-  tests, including two defects that were measured and fixed (a second shift on
-  the same job silently swallowed; a time sequence continuing past a failed
-  operation and inflating a break). Overlapping working times of one person are
-  now rejected on the backdated path and in the office correction. What is still
-  unverified is the device side: no run in a real browser with a real
-  connection drop, and no run on Safari/iOS.
+- **Offline**: the local store and the replay semantics of the queue are now
+  covered by tests against a real IndexedDB and against the database. Three
+  defects were measured and fixed along the way: a second shift on the same job
+  was silently swallowed; a time sequence continued past a failed operation and
+  inflated a break; and `clearOfflineData()` on sign-out deleted nothing, so on
+  a shared phone the previous cleaner's cached shift plan — addresses, access
+  instructions, contact persons — stayed on the device. Overlapping working
+  times of one person are rejected on the backdated path and in the office
+  correction. What is still unverified is the device itself: no run in a real
+  browser with a real connection drop, and no run on Safari/iOS. That needs a
+  running Supabase stack, which this environment cannot provide (no Docker
+  daemon).
 - **i18n**: five languages ship; only German has been reviewed by anyone.
 
 ## Suggested order

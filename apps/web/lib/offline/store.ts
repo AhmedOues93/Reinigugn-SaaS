@@ -130,17 +130,47 @@ function openDb(): Promise<IDBDatabase | null> {
   });
 }
 
+/**
+ * Eine Operation auf einem Speicher -- und danach wird die Verbindung
+ * geschlossen.
+ *
+ * Das Schliessen ist nicht Hygiene, sondern der Grund, warum das Abmelden
+ * funktioniert. Eine offene Verbindung blockiert `deleteDatabase`: der Browser
+ * meldet dann `blocked` und loescht erst, wenn die letzte Verbindung weg ist.
+ * Vorher blieb jede Verbindung offen, und `clearOfflineData()` loeschte
+ * nachweislich nichts -- nachgemessen: Einsatzplan abgelegt, abgemeldet,
+ * gelesen, Einsatzplan noch da. Auf einem geteilten Telefon sah die naechste
+ * Kraft damit die Einsaetze, Adressen, Zugangshinweise und Ansprechpartner
+ * der vorigen.
+ *
+ * Aufgeloest wird erst beim Abschluss der Transaktion, nicht schon bei der
+ * erfolgreichen Anfrage: sonst koennte der Aufrufer loeschen wollen, waehrend
+ * diese Verbindung noch offen ist, und genau das war der Fehler.
+ */
 function tx<T>(store: string, mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest): Promise<T | null> {
   return openDb().then(
     (db) =>
       new Promise<T | null>((resolve) => {
         if (!db) return resolve(null);
+        let result: T | null = null;
+        const settle = (value: T | null) => {
+          db.close();
+          resolve(value);
+        };
         try {
-          const request = run(db.transaction(store, mode).objectStore(store));
-          request.onsuccess = () => resolve(request.result as T);
-          request.onerror = () => resolve(null);
+          const transaction = db.transaction(store, mode);
+          transaction.oncomplete = () => settle(result);
+          transaction.onabort = () => settle(null);
+          transaction.onerror = () => settle(null);
+          const request = run(transaction.objectStore(store));
+          request.onsuccess = () => {
+            result = request.result as T;
+          };
+          request.onerror = () => {
+            result = null;
+          };
         } catch {
-          resolve(null);
+          settle(null);
         }
       }),
   );
@@ -243,13 +273,28 @@ export async function remainingStorageBytes(): Promise<number | null> {
   }
 }
 
-/** Called on sign-out and on a detected user change. */
+/**
+ * Called on sign-out and on a detected user change.
+ *
+ * Zuerst leeren, dann loeschen -- in dieser Reihenfolge, weil das Loeschen
+ * nicht in unserer Hand liegt: haelt eine andere Lasche derselben App die
+ * Datenbank noch offen, meldet der Browser `blocked` und loescht erst spaeter.
+ * Das Leeren gelingt dagegen ueber jede Verbindung. Nach diesem Aufruf sind
+ * die Daten weg, auch wenn die Datei noch eine Weile existiert.
+ */
 export async function clearOfflineData() {
+  if (typeof indexedDB !== 'undefined') {
+    for (const store of [JOBS_STORE, QUEUE_STORE, PHOTOS_STORE, BLOBS_STORE]) {
+      await tx(store, 'readwrite', (target) => target.clear());
+    }
+  }
   await new Promise<void>((resolve) => {
     if (typeof indexedDB === 'undefined') return resolve();
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve();
     request.onerror = () => resolve();
+    // Blockiert heisst nur: eine andere Lasche haelt sie noch offen. Die
+    // Daten sind oben schon geleert, das Abmelden darf nicht daran haengen.
     request.onblocked = () => resolve();
   });
   if (typeof navigator !== 'undefined' && navigator.serviceWorker?.controller) {
