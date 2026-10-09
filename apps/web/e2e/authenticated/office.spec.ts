@@ -1,4 +1,4 @@
-import { detailLinks, expect, requireRole, signIn, test } from '../fixtures';
+import { createCustomerViaWizard, detailLinks, expect, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The office surface, signed in.
@@ -59,13 +59,9 @@ test.describe('office, signed in', () => {
 
   test('a customer can be created and is listed afterwards', async ({ page }) => {
     const name = `E2E Hausverwaltung ${Date.now()}`;
-    await page.goto('/dashboard/kunden/neu');
-    await page.locator('input[name=name]').fill(name);
-    await page.getByRole('button', { name: /kunde anlegen/i }).click();
-
-    await page.waitForURL(/\/dashboard\/kunden/, { timeout: 30_000 });
+    await createCustomerViaWizard(page, { name });
     await page.goto('/dashboard/kunden');
-    await expect(page.getByText(name).first()).toBeVisible();
+    await expect(page.getByText(name).filter({ visible: true }).first()).toBeVisible();
   });
 
   test('an issued invoice offers no line editor', async ({ page }) => {
