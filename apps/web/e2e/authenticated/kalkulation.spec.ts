@@ -1,4 +1,4 @@
-import { detailLinks, expect, label, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, label, requireRole, signIn, test, wizardNext } from '../fixtures';
 
 /**
  * The Kalkulation workspace, and the boundary around it.
@@ -22,23 +22,33 @@ test.describe('Kalkulation workspace', () => {
     await page.goto('/dashboard/kalkulation/grundlagen');
     await expect(page.getByRole('heading', { level: 1, name: /kalkulationsgrundlagen/i })).toBeVisible();
 
-    for (const name of ['wage', 'ancillary', 'overhead', 'margin', 'min_hourly_rate']) {
-      await expect(page.locator(`input[name=${name}]`)).toBeVisible();
-    }
+    // The defaults screen is a four-step assistant. Each Weiter persists the
+    // complete form and only then advances, so this checks both the copy and
+    // the actual office workflow rather than assuming every field is visible
+    // at once.
+    await expect(page.locator('body')).toContainText(/bruttostundenlohn/i);
+    await expect(page.locator('body')).toContainText(/arbeitgebernebenkosten/i);
 
-    // The productive-share field is the one people do not expect, so the page
-    // has to say what it is for rather than just label it.
-    await expect(page.locator('body')).toContainText(/produktiv/i);
-    await expect(page.locator('body')).toContainText(/marge/i);
+    await wizardNext(page);
+    await expect(page.locator('input[name=weekly_hours]')).toBeVisible();
+    await expect(page.locator('body')).toContainText(/anwesenheitstage/i);
+
+    await wizardNext(page);
+    await expect(page.locator('input[name=min_hourly_rate]')).toBeVisible();
+
+    await wizardNext(page);
+    await expect(page.locator('body')).toContainText(/zielmarge/i);
+    await expect(page.locator('body')).toContainText(/gemeinkostenzuschlag/i);
   });
 
   test('the productive share can be derived from days or typed directly', async ({ page }) => {
     await page.goto('/dashboard/kalkulation/grundlagen');
 
+    await wizardNext(page);
     // Whichever mode the company is in, the other one is one click away — and
     // the derived mode has to show its working, not just a result.
     const toDerived = page.getByRole('button', { name: /aus urlaub, feiertagen/i });
-    if (await toDerived.count()) await toDerived.click();
+    if (await toDerived.isVisible().catch(() => false)) await toDerived.click();
 
     for (const name of ['weekly_hours', 'working_days', 'vacation_days', 'public_holidays', 'sick_days', 'training_days', 'unproductive_minutes']) {
       await expect(page.locator(`input[name=${name}]`)).toBeVisible();
@@ -62,22 +72,33 @@ test.describe('Kalkulation workspace', () => {
     // A calculation for an existing customer.
     await page.goto('/dashboard/kalkulation/neu');
     const title = label('Kalkulation');
+    await page.getByRole('radio', { name: /bestehenden kunden/i }).check();
     await page.locator('input[name=title]').fill(title);
-
-    const blank = page.getByRole('radio', { name: /ohne besichtigung/i });
-    if (await blank.count()) await blank.check();
 
     const customer = page.locator('select[name=customer_id]');
     test.skip((await customer.locator('option').count()) < 2, 'no customer in this environment');
     await customer.selectOption({ index: 1 });
-    await page.getByRole('button', { name: /kalkulation anlegen/i }).click();
+    const existingObject = page.locator('select[name=cleaning_object_id]');
+    if ((await existingObject.count()) > 0 && (await existingObject.locator('option').count()) > 1) {
+      await existingObject.selectOption({ index: 1 });
+    } else {
+      await page.locator('input[name=object_name]').fill(label('Kalkulationsobjekt'));
+      await page.locator('input[name=object_street]').fill('Teststraße 1');
+      await page.locator('input[name=object_postal_code]').fill('20095');
+      await page.locator('input[name=object_city]').fill('Hamburg');
+    }
+    await wizardNext(page);
+    await page.locator('input[name=initial_area_name]').fill('Bürogeschoss 1');
+    await page.locator('input[name=initial_quantity]').fill('500');
+    await wizardNext(page);
+    await page.getByRole('button', { name: /zur kalkulation/i }).click();
     await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/, { timeout: 30_000 });
     const workspaceUrl = page.url();
 
     // The KPI band is present from the start, even at zero.
     await expect(page.getByRole('region', { name: /wirtschaftlichkeit/i })).toBeVisible();
 
-    // One position: 500 m² at 250 m²/h, five times a week.
+    // A second position: 500 m² at 250 m²/h, five times a week.
     await page.locator('input[name=area_name]').fill('Bürogeschoss 1');
     await page.locator('input[name=service_name]').fill(serviceName);
     await page.locator('input[name=quantity]').fill('500');
