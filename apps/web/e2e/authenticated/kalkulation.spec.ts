@@ -268,11 +268,14 @@ test.describe('employee onboarding states', () => {
   test('the office sees account state, and offers no resend to an active employee', async ({ page }) => {
     await signIn(page, 'owner');
     await page.goto('/dashboard/mitarbeiter?status=ACTIVE');
-    const rows = page.locator('tbody tr');
-    test.skip((await rows.count()) === 0, 'no active employee in this environment');
+    // A table row is deliberately not an interactive control. The employee
+    // name is the detail link; clicking the row used to wait for navigation
+    // that could never happen.
+    const employee = page.locator('tbody tr').filter({ hasText: /aktiv/i }).getByRole('link').first();
+    test.skip((await employee.count()) === 0, 'no active employee in this environment');
 
-    await expect(page.locator('body')).toContainText(/aktiv/i);
-    await rows.first().click();
+    await expect(employee).toBeVisible();
+    await employee.click();
     await page.waitForURL(/\/dashboard\/mitarbeiter\/[0-9a-f-]{36}/);
     // Inviting somebody who already has an account is nonsense, and the
     // database refuses it — the screen must not offer it either.
