@@ -33,8 +33,8 @@ test.describe('customers and objects', () => {
     await page.locator('input[name=name]').fill(edited);
     await page.getByRole('button', { name: /änderungen speichern/i }).click();
 
-    await page.waitForURL(/\/dashboard\/kunden/, { timeout: 30_000 });
-    await expect(page.getByText(edited).first()).toBeVisible();
+    await page.waitForURL(/\/dashboard\/kunden\/[0-9a-f-]{36}/, { timeout: 30_000 });
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(edited);
   });
 
   test('an object belongs to a customer and shows on that customer', async ({ page }) => {
@@ -55,7 +55,7 @@ test.describe('customers and objects', () => {
     await wizardNext(page);
     await wizardNext(page);
     await page.getByRole('button', { name: /objekt anlegen/i }).click();
-    await page.waitForURL(/\/dashboard\/objekte/, { timeout: 30_000 });
+    await page.waitForURL(/\/dashboard\/objekte\/[0-9a-f-]{36}/, { timeout: 30_000 });
 
     // The link is the assertion: the object must appear under its customer.
     await page.goto('/dashboard/kunden');
