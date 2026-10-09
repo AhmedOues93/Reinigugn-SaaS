@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { cleaningObjectSchema } from '@reinigung/validation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
@@ -27,14 +28,16 @@ async function customerExistsInCompany(
 export async function createCleaningObject(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = cleaningObjectSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
+  let objectId: string;
   try {
     const { supabase, company } = await requireStaffCompany();
     if (!await customerExistsInCompany(supabase, parsed.data.customer_id, company.id)) return validationError('Der ausgewählte Kunde ist nicht verfügbar.');
     const { data, error } = await supabase.from('cleaning_objects').insert({ ...parsed.data, company_id: company.id }).select('id').single();
     if (error || !data) return objectWriteError(error, 'Das Objekt konnte nicht angelegt werden.');
     revalidatePath('/dashboard/objekte'); revalidatePath(`/dashboard/kunden/${parsed.data.customer_id}`);
-    return { status: 'success', id: data.id };
+    objectId = data.id;
   } catch { return validationError('Das Objekt konnte nicht angelegt werden.'); }
+  redirect(`/dashboard/objekte/${objectId}?success=${encodeURIComponent('Objekt wurde gespeichert.')}`);
 }
 
 export async function updateCleaningObject(id: string, _: FormState, formData: FormData): Promise<FormState> {
@@ -47,8 +50,8 @@ export async function updateCleaningObject(id: string, _: FormState, formData: F
     if (error) return objectWriteError(error, 'Das Objekt konnte nicht aktualisiert werden.');
     if (!data) return validationError('Das Objekt wurde nicht gefunden oder ist nicht mehr verfügbar.');
     revalidatePath('/dashboard/objekte'); revalidatePath(`/dashboard/objekte/${id}`); revalidatePath(`/dashboard/kunden/${parsed.data.customer_id}`);
-    return { status: 'success', id };
   } catch { return validationError('Das Objekt konnte nicht aktualisiert werden.'); }
+  redirect(`/dashboard/objekte/${id}?success=${encodeURIComponent('Objekt wurde gespeichert.')}`);
 }
 
 export async function setCleaningObjectActive(id: string, isActive: boolean) {
