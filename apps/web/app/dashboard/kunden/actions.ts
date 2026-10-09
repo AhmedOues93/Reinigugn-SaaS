@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { customerPortalInvitationSchema, customerSchema } from '@reinigung/validation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
@@ -13,13 +14,15 @@ function validationError(message: string): FormState { return { status: 'error',
 export async function createCustomer(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = customerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
+  let customerId: string;
   try {
     const { supabase, company } = await requireStaffCompany();
     const { data, error } = await supabase.from('customers').insert({ ...parsed.data, company_id: company.id }).select('id').single();
     if (error || !data) return validationError('Der Kunde konnte nicht angelegt werden.');
     revalidatePath('/dashboard/kunden');
-    return { status: 'success', id: data.id };
+    customerId = data.id;
   } catch { return validationError('Der Kunde konnte nicht angelegt werden.'); }
+  redirect(`/dashboard/kunden/${customerId}?success=${encodeURIComponent('Kunde wurde gespeichert.')}`);
 }
 
 export async function updateCustomer(id: string, _: FormState, formData: FormData): Promise<FormState> {
@@ -30,8 +33,8 @@ export async function updateCustomer(id: string, _: FormState, formData: FormDat
     const { error } = await supabase.from('customers').update(parsed.data).eq('id', id).eq('company_id', company.id);
     if (error) return validationError('Der Kunde konnte nicht aktualisiert werden.');
     revalidatePath('/dashboard/kunden'); revalidatePath(`/dashboard/kunden/${id}`);
-    return { status: 'success', id };
   } catch { return validationError('Der Kunde konnte nicht aktualisiert werden.'); }
+  redirect(`/dashboard/kunden/${id}?success=${encodeURIComponent('Kunde wurde gespeichert.')}`);
 }
 
 export async function setCustomerActive(id: string, isActive: boolean) {
