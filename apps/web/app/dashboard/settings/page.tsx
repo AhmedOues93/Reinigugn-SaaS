@@ -47,7 +47,11 @@ export default async function SettingsPage() {
     getCompanyBranding(company.id),
     listQuotes('all'),
   ]);
-  const previewSource = recentQuotes[0] ? await getQuote(recentQuotes[0].id) : null;
+  // A document preview is helpful, but it must never make the whole settings
+  // page unavailable. Historic imports or a quote that was removed between
+  // listing and reading can leave one record unreadable; the owner can still
+  // manage company data, security and branding without that optional sample.
+  const previewSource = recentQuotes[0] ? await getQuote(recentQuotes[0].id).catch(() => null) : null;
   const recipient = previewSource?.recipient_snapshot && typeof previewSource.recipient_snapshot === 'object'
     ? previewSource.recipient_snapshot as Record<string, unknown>
     : null;
