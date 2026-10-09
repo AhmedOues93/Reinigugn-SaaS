@@ -1,4 +1,4 @@
-import { detailLinks, expect, label, requireRole, signIn, test } from '../fixtures';
+import { detailLinks, expect, label, requireRole, signIn, test, wizardNext } from '../fixtures';
 
 /**
  * The money-making path, end to end:
@@ -63,7 +63,11 @@ test.describe('sales pipeline', () => {
     await page.getByRole('link', { name: /zur kalkulation/i }).click();
     await page.waitForURL(/\/dashboard\/kalkulation\/neu\?survey=/, { timeout: 30_000 });
     await page.locator('input[name=title]').fill(`${organisation} Unterhaltsreinigung`);
-    await page.getByRole('button', { name: /weiter|kalkulation|erstellen/i }).last().click();
+    await wizardNext(page);
+    await page.locator('input[name=initial_area_name]').fill('Büro- und Besprechungsräume');
+    await page.locator('input[name=initial_quantity]').fill('320');
+    await wizardNext(page);
+    await page.getByRole('button', { name: /zur kalkulation/i }).click();
     await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/, { timeout: 30_000 });
 
     const finalise = page.getByRole('button', { name: /festschreiben|angebot/i }).first();
