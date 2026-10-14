@@ -1343,6 +1343,7 @@ function   cleanup_operational_photo_metadata_after_storage_delete() security de
 function   clear_auth_attempts(p_scope text, p_bucket text, p_proof text) security definer
 function   clear_company_logo() security definer
 function   company_capacity_snapshot(p_month date) security definer
+function   company_may_write(target_company_id uuid) security definer
 function   complete_company_invitation(p_token text) security definer
 function   complete_my_checklist_item(p_item_id uuid, p_completed boolean) security definer
 function   complete_onboarding_step(p_step text, p_finished boolean) security definer
@@ -1612,6 +1613,7 @@ grant      cancel_invoice(p_invoice_id uuid, p_reason text) -> authenticated
 grant      clear_auth_attempts(p_scope text, p_bucket text, p_proof text) -> authenticated
 grant      clear_company_logo() -> authenticated
 grant      company_capacity_snapshot(p_month date) -> authenticated
+grant      company_may_write(target_company_id uuid) -> authenticated
 grant      complete_company_invitation(p_token text) -> authenticated
 grant      complete_my_checklist_item(p_item_id uuid, p_completed boolean) -> authenticated
 grant      complete_onboarding_step(p_step text, p_finished boolean) -> authenticated
