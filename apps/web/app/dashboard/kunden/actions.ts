@@ -8,10 +8,19 @@ import { requireStaffCompany } from '@/lib/auth';
 import { createInvitationToken, hashInvitationToken, invitationExpiresAt } from '@/lib/invitations';
 import { mailService } from '@/lib/mail/invitations';
 import { appUrl } from '@/lib/utils';
+import { subscriptionWriteBlockMessage } from '@/lib/data/subscription';
 
 function validationError(message: string): FormState { return { status: 'error', message }; }
 
 export async function createCustomer(_: FormState, formData: FormData): Promise<FormState> {
+  /*
+    Die Richtlinie in der Datenbank lehnt das nach Ablauf des Testzeitraums
+    ohnehin ab. Hier steht nur der Grund: ohne ihn meldet die Seite
+    "konnte nicht angelegt werden" und die Inhaberin sucht den Fehler bei
+    sich.
+  */
+  const blocked = await subscriptionWriteBlockMessage();
+  if (blocked) return validationError(blocked);
   const parsed = customerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   let customerId: string;

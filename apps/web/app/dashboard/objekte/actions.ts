@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { cleaningObjectSchema } from '@reinigung/validation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { subscriptionWriteBlockMessage } from '@/lib/data/subscription';
 
 function validationError(message: string): FormState { return { status: 'error', message }; }
 
@@ -26,6 +27,14 @@ async function customerExistsInCompany(
 }
 
 export async function createCleaningObject(_: FormState, formData: FormData): Promise<FormState> {
+  /*
+    Die Richtlinie in der Datenbank lehnt das nach Ablauf des Testzeitraums
+    ohnehin ab. Hier steht nur der Grund: ohne ihn meldet die Seite
+    "konnte nicht angelegt werden" und die Inhaberin sucht den Fehler bei
+    sich.
+  */
+  const blocked = await subscriptionWriteBlockMessage();
+  if (blocked) return validationError(blocked);
   const parsed = cleaningObjectSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return validationError(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   let objectId: string;

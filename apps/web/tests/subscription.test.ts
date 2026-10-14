@@ -7,6 +7,7 @@ import {
   stripeStatusToReinPlan,
   trialDaysLeft,
 } from '@/lib/subscription';
+import { subscriptionCanUseProduct } from '@/lib/data/subscription';
 import { verifyStripeSignature } from '@/lib/stripe';
 
 describe('SaaS subscription lifecycle', () => {
@@ -59,5 +60,40 @@ describe('Stripe webhook signature', () => {
     expect(verifyStripeSignature(`${body} `, header())).toBe(false);
     expect(verifyStripeSignature(body, header(undefined, body, 'other-secret'))).toBe(false);
     expect(verifyStripeSignature(body, header(String(Math.floor(now / 1000) - 301)))).toBe(false);
+  });
+});
+
+describe('Schreibsperre und Oberflaeche', () => {
+  /*
+    Die Datenbank entscheidet (public.company_may_write), die Oberflaeche
+    biegt nur frueher ab. Beide muessen dasselbe sagen, sonst zeigt die Seite
+    etwas anderes an als das Produkt tut. Diese Faelle stehen in
+    supabase/test/subscription-write-lock.test.sql spiegelbildlich.
+  */
+  const expired = { status: 'TRIALING' as const, trial_ends_at: '2026-10-01T00:00:00.000Z' };
+  const running = { status: 'TRIALING' as const, trial_ends_at: '2026-11-01T00:00:00.000Z' };
+  const now = new Date('2026-10-14T12:00:00.000Z');
+
+  it('behandelt einen fehlenden Abo-Datensatz als erlaubt, wie die Datenbank', () => {
+    // Mandanten aus der Zeit vor der Abo-Tabelle haben keine Zeile. Vorher
+    // gab diese Stelle `false` zurueck, waehrend die Datenbank schreiben
+    // liess -- die Oberflaeche haette "kein Zugang" behauptet.
+    expect(subscriptionCanUseProduct(null)).toBe(true);
+  });
+
+  it('sperrt den abgelaufenen Testzeitraum und laesst den laufenden zu', () => {
+    expect(isSubscriptionUsable(expired, now)).toBe(false);
+    expect(isSubscriptionUsable(running, now)).toBe(true);
+  });
+
+  it('haelt jeden anderen Abo-Zustand fuer nicht nutzbar', () => {
+    // Dieselbe Liste prueft die SQL-Suite gegen company_may_write.
+    for (const status of ['PAST_DUE', 'PAUSED', 'CANCELED', 'UNPAID'] as const) {
+      expect(isSubscriptionUsable({ status, trial_ends_at: running.trial_ends_at }, now)).toBe(false);
+    }
+  });
+
+  it('laesst ein aktives Abo schreiben, auch wenn der Testzeitraum vorbei ist', () => {
+    expect(isSubscriptionUsable({ status: 'ACTIVE', trial_ends_at: expired.trial_ends_at }, now)).toBe(true);
   });
 });

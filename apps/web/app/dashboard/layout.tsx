@@ -7,6 +7,8 @@ import { getCompanyBranding } from '@/lib/data/branding';
 import { type Locale } from '@/lib/i18n';
 import { landingPathForRole } from '@/lib/landing';
 import { cookieLocale } from '@/lib/i18n-server';
+import { subscriptionWriteBlockMessage } from '@/lib/data/subscription';
+import { Notice } from '@/components/ui';
 
 /**
  * The office app is installable in its own right, with its own manifest, its
@@ -56,7 +58,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const storedLocale = await cookieLocale();
   const locale: Locale = storedLocale ?? 'de';
-  const [branding, { count: unreadNotifications }, { count: unreadComplaints }] = await Promise.all([
+  const [writeBlocked, branding, { count: unreadNotifications }, { count: unreadComplaints }] = await Promise.all([
+    subscriptionWriteBlockMessage(),
     getCompanyBranding(membership.company_id),
     supabase
       .from('in_app_notifications')
@@ -84,6 +87,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
         unreadNotifications={unreadNotifications ?? 0}
         unreadComplaints={unreadComplaints ?? 0}
       >
+        {/*
+          Der Riegel sitzt in der Datenbank; dies ist die Erklaerung dazu.
+          Im Layout und nicht je Seite, weil jede Buero-Seite davon betroffen
+          ist und eine Inhaberin den Grund genau einmal lesen soll -- nicht
+          erst, wenn ein Formular mit "konnte nicht angelegt werden"
+          antwortet. Sie wird bewusst nicht weggeleitet: lesen und
+          exportieren darf sie weiterhin alles.
+        */}
+        {writeBlocked && (
+          <Notice tone="warning" title="Testzeitraum abgelaufen" className="mb-6">
+            {writeBlocked}
+          </Notice>
+        )}
         {children}
       </DashboardShell>
     </>
