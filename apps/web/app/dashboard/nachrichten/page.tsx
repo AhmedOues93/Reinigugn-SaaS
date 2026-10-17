@@ -4,7 +4,7 @@ import { Badge, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui
 import { SubmitButton } from '@/components/form-controls';
 import { getCurrentCompany } from '@/lib/auth';
 import { listMyThreads } from '@/lib/data/employee';
-import { markNotificationRead } from './actions';
+import { markNotificationRead, openComplaintNotification } from './actions';
 
 /**
  * The office side of the same messaging system the employee app uses. Threads
@@ -19,7 +19,7 @@ export default async function StaffMessagesPage() {
     listMyThreads(),
     supabase
       .from('in_app_notifications')
-      .select('id,title,body,type,read_at,created_at')
+      .select('id,title,body,type,read_at,created_at,complaint_id')
       .eq('recipient_member_id', membership.id)
       .neq('type', 'MESSAGE_RECEIVED')
       .order('created_at', { ascending: false })
@@ -76,13 +76,22 @@ export default async function StaffMessagesPage() {
                 <p className="break-anywhere font-medium">{item.title}</p>
                 {item.body && <p className="break-anywhere mt-1 text-sm text-muted-foreground">{item.body}</p>}
                 <p className="mt-2 text-xs text-muted-foreground">{formatTime(item.created_at)}</p>
-                {!item.read_at && (
-                  <form className="mt-3" action={markNotificationRead.bind(null, item.id)}>
-                    <SubmitButton variant="ghost" size="sm">
-                      Als gelesen markieren
-                    </SubmitButton>
-                  </form>
-                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {item.complaint_id && item.type === 'COMPLAINT_CREATED' ? (
+                    <form action={openComplaintNotification.bind(null, item.id, item.complaint_id)}>
+                      <SubmitButton variant="outline" size="sm">
+                        Reklamation öffnen
+                      </SubmitButton>
+                    </form>
+                  ) : null}
+                  {!item.read_at && (
+                    <form action={markNotificationRead.bind(null, item.id)}>
+                      <SubmitButton variant="ghost" size="sm">
+                        Als gelesen markieren
+                      </SubmitButton>
+                    </form>
+                  )}
+                </div>
               </article>
             ))}
           </div>

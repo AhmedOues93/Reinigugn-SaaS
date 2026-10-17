@@ -9,6 +9,8 @@ import { employeeLocale } from '@/lib/data/employee';
 import { isLocale, localeCookie, t } from '@/lib/i18n';
 import { cookies } from 'next/headers';
 import { jobPhotoExtension, validateJobPhotoFile } from '@/lib/photo-validation';
+import { sendMail } from '@/lib/mail/transport';
+import { appUrl } from '@/lib/utils';
 
 /**
  * Every employee action resolves the membership from the session and refuses any
@@ -38,6 +40,60 @@ async function employeeLocaleSafe() {
   }
 }
 
+type PortalAcceptanceMailTarget = {
+  service_record_id: string;
+  customer_id: string;
+  customer_name: string;
+  job_title: string;
+  scheduled_date: string;
+  recipient_email: string;
+  recipient_name: string | null;
+  request_sent_at: string | null;
+  reminder_sent_at: string | null;
+};
+
+async function sendPortalAcceptanceRequest(
+  context: NonNullable<Awaited<ReturnType<typeof employeeContext>>>,
+  jobId: string,
+) {
+  const { data, error } = await context.supabase.rpc('get_portal_acceptance_mail_target', { p_job_id: jobId });
+  if (error) {
+    console.error('portal acceptance mail target failed', error.message);
+    return;
+  }
+  const target = (Array.isArray(data) ? data[0] : data) as PortalAcceptanceMailTarget | null;
+  if (!target?.recipient_email || target.request_sent_at) return;
+
+  const { data: company } = await context.supabase
+    .from('companies')
+    .select('name')
+    .eq('id', context.membership.company_id)
+    .maybeSingle();
+
+  const companyName = company?.name ?? 'ReinPlan';
+  const result = await sendMail({
+    to: target.recipient_email,
+    subject: `Abnahme erforderlich: ${target.job_title}`,
+    text:
+      `Guten Tag${target.recipient_name ? ` ${target.recipient_name}` : ''},\n\n` +
+      `${companyName} hat die Leistung „${target.job_title}“ abgeschlossen. ` +
+      `Bitte prüfen und bestätigen Sie den Leistungsnachweis im Kundenportal.\n\n` +
+      `${appUrl(`/portal/leistungen/${jobId}`)}\n\n` +
+      `Mit freundlichen Grüßen\n${companyName}`,
+    idempotencyKey: `acceptance-request-${target.service_record_id}`,
+  });
+
+  if (result.status !== 'SENT') {
+    console.error('portal acceptance request not sent', result.detail);
+    return;
+  }
+
+  const { error: recordError } = await context.supabase.rpc('record_portal_acceptance_mail', {
+    p_job_id: jobId,
+    p_kind: 'REQUEST',
+  });
+  if (recordError) console.error('portal acceptance request audit failed', recordError.message);
+}
 type TimeOperation = 'start_my_job' | 'stop_my_job' | 'pause_my_job' | 'resume_my_job';
 const timeMessages = { start_my_job: 'emp.job.started', stop_my_job: 'emp.job.stopped', pause_my_job: 'emp.job.pauseStarted', resume_my_job: 'emp.job.resumed' } as const;
 
@@ -46,10 +102,42 @@ async function runTimeAction(jobId: string, operation: TimeOperation): Promise<F
   if (!context) return denied();
   const locale = await employeeLocaleSafe();
   const { error } = await context.supabase.rpc(operation, { p_job_id: jobId });
-  if (error) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (error) {
+    if (operation === 'stop_my_job' && error.message.includes('Required checklist items are incomplete')) {
+      return { status: 'error', message: t(locale, 'emp.job.requiredBeforeFinish') };
+    }
+    /*
+      Die haeufigste Sackgasse: gestern den Feierabend vergessen. Die Rohmeldung
+      der Datenbank ist englisch und sagt nicht, wo der offene Einsatz steht --
+      die Startseite zeigt ihn jetzt ganz oben, und darauf verweist dieser Satz.
+    */
+    if (error.message.includes('Another active job must be ended first')) {
+      return {
+        status: 'error',
+        message: 'Es läuft noch ein anderer Einsatz. Beende ihn zuerst – er steht oben auf deiner Startseite.',
+      };
+    }
+    if (error.message.includes('On-site customer acceptance is pending')) {
+      return {
+        status: 'error',
+        message: 'Für diesen Einsatz fehlt noch die Unterschrift der Kundin.',
+      };
+    }
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+  if (operation === 'stop_my_job') {
+    try {
+      await sendPortalAcceptanceRequest(context, jobId);
+    } catch (mailError) {
+      console.error('portal acceptance request failed', mailError);
+    }
+  }
+
   revalidateEmployee(jobId);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/arbeitszeiten');
+  revalidatePath('/dashboard/leistungsnachweise');
+  revalidatePath('/portal/leistungen');
   return { status: 'success', message: t(locale, timeMessages[operation]) };
 }
 
@@ -79,6 +167,27 @@ export async function completeMyChecklistItem(itemId: string, completed: boolean
   return { status: 'success', message: t(locale, 'common.save') };
 }
 
+/**
+ * Die Notiz der Mitarbeiterin zu ihrem Einsatz.
+ *
+ * Die Datenbank entscheidet, ob sie darf: nur der eigene Einsatz, und nur
+ * solange der Leistungsnachweis nicht abgenommen ist. Ihre Begruendung wird
+ * durchgereicht, weil "gespeichert" oder "nicht gespeichert" hier zu wenig ist.
+ */
+export async function saveMyJobReport(jobId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+  const note = String(formData.get('note') ?? '');
+  if (note.length > 2000) {
+    return { status: 'error', message: 'Die Notiz ist zu lang (höchstens 2000 Zeichen).' };
+  }
+  const { error } = await context.supabase.rpc('set_my_job_report', { p_job_id: jobId, p_note: note });
+  if (error) return { status: 'error', message: error.message || t(locale, 'common.errorBody') };
+  revalidateEmployee();
+  return { status: 'success', message: 'Notiz gespeichert.' };
+}
+
 export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: FormData): Promise<FormState> {
   const context = await employeeContext();
   if (!context) return denied();
@@ -93,22 +202,59 @@ export async function uploadMyJobPhoto(jobId: string, _: FormState, formData: Fo
   const description = String(formData.get('description') ?? '').trim();
   if (description.length > 500) return { status: 'error', message: t(locale, 'common.errorBody') };
 
+  /*
+    Die Kennung des Geraets, falls die Aufnahme aus der Warteschlange kommt.
+    Vorher nachsehen, ob sie schon da ist: ohne diese Frage wuerde ein zweiter
+    Versuch erst eine Datei in den Speicher legen und dann am eindeutigen Index
+    scheitern -- die Datei bliebe als Waise liegen.
+  */
+  const clientUploadId = String(formData.get('client_upload_id') ?? '').trim() || null;
+  if (clientUploadId) {
+    if (clientUploadId.length < 8 || clientUploadId.length > 64) {
+      return { status: 'error', message: t(locale, 'common.errorBody') };
+    }
+    const { data: existing } = await context.supabase.rpc('my_job_photo_for_client_upload', {
+      p_job_id: jobId,
+      p_client_upload_id: clientUploadId,
+    });
+    if (existing) {
+      revalidateEmployee(jobId);
+      return { status: 'success', message: t(locale, 'emp.photo.upload') };
+    }
+  }
+
   // The tenant segment comes from the server-resolved membership, never the form.
   const path = `${context.membership.company_id}/${jobId}/${randomUUID()}.${jobPhotoExtension(file.type)}`;
   const { error: uploadError } = await context.supabase.storage
     .from('job-photos')
     .upload(path, file, { contentType: file.type, upsert: false });
-  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+  if (uploadError) {
+    console.error('job photo storage upload failed', uploadError);
+    return {
+      status: 'error',
+      message: 'Foto konnte nicht hochgeladen werden. Bitte JPG, PNG oder WebP bis 10 MB verwenden und erneut versuchen.',
+    };
+  }
   const { error: metadataError } = await context.supabase.rpc('create_my_job_photo_metadata', {
     p_job_id: jobId,
     p_storage_path: path,
     p_category: category,
     p_checklist_item_id: checklistItemId,
     p_description: description || null,
+    p_client_upload_id: clientUploadId,
   });
   if (metadataError) {
+    console.error('job photo metadata failed', metadataError);
+    // Die eben hochgeladene Datei wieder entfernen, damit kein Bild ohne
+    // Eintrag im Speicher zurueckbleibt.
     await context.supabase.storage.from('job-photos').remove([path]);
-    return { status: 'error', message: t(locale, 'common.errorBody') };
+    if (metadataError.message.includes('abgenommen')) {
+      return {
+        status: 'error',
+        message: 'Der Leistungsnachweis ist bereits abgenommen – Fotos lassen sich nicht mehr ergänzen.',
+      };
+    }
+    return { status: 'error', message: 'Foto wurde nicht gespeichert. Bitte Seite neu laden und erneut versuchen.' };
   }
   revalidateEmployee(jobId);
   revalidatePath(`/dashboard/auftraege/${jobId}`);
@@ -176,6 +322,69 @@ export async function uploadMyAuDocument(absenceId: string, _: FormState, formDa
   revalidatePath('/mitarbeiter/abwesenheit');
   revalidatePath('/dashboard/urlaub-krankheit');
   return { status: 'success', message: t(locale, 'emp.absence.auUploaded') };
+}
+
+/**
+ * The Kundenabnahme on site.
+ *
+ * Only reached when the contract asks for a signature — the employee is never
+ * offered a choice of acceptance method, because that is a commercial
+ * arrangement, not a decision for the doorway.
+ *
+ * The signature image goes to a private bucket first and the record is only
+ * marked accepted afterwards, so a failed upload cannot leave an acceptance
+ * claiming evidence that was never stored. A failed acceptance takes the
+ * orphaned file back out.
+ *
+ * This is business evidence and audit documentation. It is not a claim about
+ * legal signature equivalence.
+ */
+export async function confirmOnSiteAcceptance(
+  jobId: string,
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const context = await employeeContext();
+  if (!context) return denied();
+  const locale = await employeeLocaleSafe();
+
+  const signerName = String(formData.get('signer_name') ?? '').trim();
+  if (signerName.length < 2 || signerName.length > 160) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.nameRequired') };
+  }
+
+  const signature = String(formData.get('signature') ?? '');
+  if (!signature) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  }
+
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(signature);
+  if (!match) return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  const bytes = Buffer.from(match[1], 'base64');
+  // A handwritten scribble is a few kilobytes; anything larger is not one.
+  if (bytes.byteLength === 0 || bytes.byteLength > 512 * 1024) {
+    return { status: 'error', message: t(locale, 'emp.acceptance.signatureInvalid') };
+  }
+
+  const path = `${context.membership.company_id}/service/${jobId}/${randomUUID()}.png`;
+  const { error: uploadError } = await context.supabase.storage
+    .from('service-signatures')
+    .upload(path, bytes, { contentType: 'image/png', upsert: false });
+  if (uploadError) return { status: 'error', message: t(locale, 'common.errorBody') };
+
+  const { error } = await context.supabase.rpc('sign_service_record_on_site', {
+    p_job_id: jobId,
+    p_signer_name: signerName,
+    p_signature_path: path,
+  });
+  if (error) {
+    if (path) await context.supabase.storage.from('service-signatures').remove([path]);
+    return { status: 'error', message: t(locale, 'common.errorBody') };
+  }
+
+  revalidateEmployee(jobId);
+  revalidatePath('/dashboard/leistungsnachweise');
+  return { status: 'success', message: t(locale, 'emp.acceptance.confirmed') };
 }
 
 export async function markMyNotificationRead(notificationId: string): Promise<void> {

@@ -1,0 +1,1 @@
+-- Historical migration kept as a no-op because its original timestamp sorts before\n-- the sales schema it depends on. The implementation is moved to 20261005000003_customer_accepted_plan_setup.sql.\nselect 1;\n

@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { type FormState } from '@/lib/actions';
 import { requireStaffCompany } from '@/lib/auth';
+import { createInvitationToken, hashInvitationToken } from '@/lib/invitations';
+import { quotePublicUrl, sendQuoteMail } from '@/lib/mail/quotes';
+import { renderStaffQuotePdf } from '@/lib/sales/quote-pdf-data';
 
 /**
  * Sales actions. Each confirms an OWNER/OFFICE session and then calls a
@@ -30,30 +33,130 @@ function toCents(value: FormDataEntryValue | null): number | null {
   return Math.round(parsed * 100);
 }
 
-export async function createLead(_: FormState, formData: FormData): Promise<FormState> {
-  const organisation = String(formData.get('organisation') ?? '').trim();
-  if (organisation.length < 2 || organisation.length > 160) return failure('Bitte geben Sie einen Firmen- oder Objektnamen an.');
-  let id: string;
+type StaffContext = Awaited<ReturnType<typeof requireStaffCompany>>;
+
+async function deliverQuoteToCustomer(context: StaffContext, quoteId: string) {
+  const { supabase, company } = context;
+  const { data: quote, error: quoteError } = await supabase
+    .from('quotes')
+    .select('id, quote_number, status, title, recipient_snapshot, valid_until')
+    .eq('id', quoteId)
+    .eq('company_id', company.id)
+    .maybeSingle();
+
+  if (quoteError || !quote || quote.status !== 'SENT' || !quote.quote_number) {
+    throw new Error('Quote is not ready for customer delivery');
+  }
+
+  const token = createInvitationToken();
+  const accessExpires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { error: accessError } = await supabase.rpc('set_quote_public_access', {
+    p_quote_id: quoteId,
+    p_token_hash: hashInvitationToken(token),
+    p_expires_at: accessExpires,
+  });
+  if (accessError) throw new Error('Customer access could not be created');
+
+  const snapshot = quote.recipient_snapshot as unknown as Record<string, unknown> | null;
+  const email = typeof snapshot?.email === 'string' ? snapshot.email.trim() : '';
+  const url = quotePublicUrl(token);
+  if (!email) {
+    return { url, delivered: false, detail: 'Keine Kunden-E-Mail im Angebot hinterlegt.' };
+  }
+
+  let pdf: Awaited<ReturnType<typeof renderStaffQuotePdf>> = null;
   try {
-    const { supabase } = await requireStaffCompany();
-    const { data, error } = await supabase.rpc('create_lead', {
+    pdf = await renderStaffQuotePdf(quoteId);
+  } catch {
+    pdf = null;
+  }
+
+  const delivery = await sendQuoteMail({
+    to: email,
+    companyName: company.name,
+    quoteNumber: quote.quote_number,
+    title: quote.title,
+    token,
+    pdf: pdf ? { filename: pdf.fileName, bytes: pdf.bytes } : null,
+  });
+
+  return {
+    url,
+    delivered: delivery.status === 'SENT',
+    detail: delivery.detail,
+  };
+}
+
+export async function createLead(_: FormState, formData: FormData): Promise<FormState> {
+  const customerMode = String(formData.get('customer_mode') ?? 'NEW');
+  const customerId = String(formData.get('customer_id') ?? '').trim();
+  const cleaningType = String(formData.get('cleaning_type') ?? '').trim();
+  const frequency = String(formData.get('frequency') ?? '').trim();
+  const preferredTime = String(formData.get('preferred_time') ?? '').trim();
+  const desiredStart = String(formData.get('desired_start') ?? '').trim();
+
+  let organisation = String(formData.get('organisation') ?? '').trim();
+  let contactPerson = String(formData.get('contact_person') ?? '').trim();
+  let email = String(formData.get('email') ?? '').trim();
+  let phone = String(formData.get('phone') ?? '').trim();
+  let street = String(formData.get('street') ?? '').trim();
+  let postalCode = String(formData.get('postal_code') ?? '').trim();
+  let city = String(formData.get('city') ?? '').trim();
+
+  try {
+    const { supabase, company } = await requireStaffCompany();
+
+    if (customerMode === 'EXISTING') {
+      if (!customerId) return failure('Bitte wählen Sie einen bestehenden Kunden aus.');
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id, name, contact_person, email, phone, billing_address, postal_code, city, is_active')
+        .eq('company_id', company.id)
+        .eq('id', customerId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (customerError || !customer) return failure('Der ausgewählte Kunde ist nicht verfügbar.');
+      organisation = customer.name;
+      contactPerson = customer.contact_person ?? '';
+      email = customer.email ?? '';
+      phone = customer.phone ?? '';
+      street = customer.billing_address ?? '';
+      postalCode = customer.postal_code ?? '';
+      city = customer.city ?? '';
+    } else if (customerMode !== 'NEW') {
+      return failure('Bitte wählen Sie einen gültigen Kundentyp.');
+    }
+
+    if (organisation.length < 2 || organisation.length > 160) {
+      return failure('Bitte geben Sie einen Firmen- oder Objektnamen an.');
+    }
+
+    const { data, error } = await supabase.rpc('create_lead_v2', {
       p_organisation: organisation,
-      p_contact_person: String(formData.get('contact_person') ?? ''),
-      p_email: String(formData.get('email') ?? ''),
-      p_phone: String(formData.get('phone') ?? ''),
-      p_street: String(formData.get('street') ?? ''),
-      p_postal_code: String(formData.get('postal_code') ?? ''),
-      p_city: String(formData.get('city') ?? ''),
-      p_source: String(formData.get('source') ?? ''),
-      p_notes: String(formData.get('notes') ?? ''),
+      p_contact_person: contactPerson,
+      p_email: email,
+      p_phone: phone,
+      p_street: street,
+      p_postal_code: postalCode,
+      p_city: city,
+      p_source: String(formData.get('source') ?? '').trim() || null,
+      p_notes: String(formData.get('notes') ?? '').trim() || null,
+      p_customer_id: customerMode === 'EXISTING' ? customerId : null,
+      p_cleaning_object_id: null,
+      p_cleaning_type: cleaningType || null,
+      p_desired_start: desiredStart || null,
+      p_frequency: frequency || null,
+      p_preferred_time: preferredTime || null,
     });
     if (error || !data) return failure('Die Anfrage konnte nicht angelegt werden.');
-    id = data as string;
-  } catch {
+
+    revalidateSales();
+    redirect(`/dashboard/vertrieb/anfragen/${data as string}`);
+  } catch (error) {
+    if (error && typeof error === 'object' && 'digest' in error) throw error;
     return failure('Die Anfrage konnte nicht angelegt werden.');
   }
-  revalidateSales();
-  redirect(`/dashboard/vertrieb/anfragen/${id}`);
 }
 
 export async function setLeadStatus(leadId: string, _: FormState, formData: FormData): Promise<FormState> {
@@ -227,19 +330,48 @@ export async function removeQuoteLine(quoteId: string, lineId: string): Promise<
 
 export async function sendQuote(quoteId: string, _: FormState, __: FormData): Promise<FormState> {
   try {
-    const { supabase } = await requireStaffCompany();
-    const { data, error } = await supabase.rpc('send_quote', { p_quote_id: quoteId });
+    const context = await requireStaffCompany();
+    const { data, error } = await context.supabase.rpc('send_quote', { p_quote_id: quoteId });
     if (error) {
       return failure(
         error.message.includes('at least one line')
           ? 'Ein Angebot braucht mindestens eine Position.'
-          : 'Das Angebot konnte nicht gesendet werden.',
+          : 'Das Angebot konnte nicht freigegeben werden.',
       );
     }
+
+    const delivery = await deliverQuoteToCustomer(context, quoteId);
     revalidateSales([`/dashboard/vertrieb/angebote/${quoteId}`]);
-    return { status: 'success', message: `Angebot ${data} wurde gesendet.` };
+    return {
+      status: 'success',
+      message: delivery.delivered
+        ? `Angebot ${data} wurde per E-Mail gesendet.`
+        : `Angebot ${data} wurde freigegeben. Der Kundenlink kann manuell geteilt werden.`,
+      invitationUrl: delivery.url,
+    };
   } catch {
-    return failure('Das Angebot konnte nicht gesendet werden.');
+    return failure('Das Angebot konnte nicht freigegeben werden.');
+  }
+}
+
+export async function resendQuoteToCustomer(
+  quoteId: string,
+  _: FormState,
+  __: FormData,
+): Promise<FormState> {
+  try {
+    const context = await requireStaffCompany();
+    const delivery = await deliverQuoteToCustomer(context, quoteId);
+    revalidateSales([`/dashboard/vertrieb/angebote/${quoteId}`]);
+    return {
+      status: 'success',
+      message: delivery.delivered
+        ? 'Kundenlink und PDF wurden erneut per E-Mail gesendet.'
+        : 'Ein neuer Kundenlink wurde erstellt und kann manuell geteilt werden.',
+      invitationUrl: delivery.url,
+    };
+  } catch {
+    return failure('Der Kundenlink konnte nicht erstellt werden.');
   }
 }
 
@@ -275,6 +407,17 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
 
   try {
     const { supabase } = await requireStaffCompany();
+    const { data: quote, error: quoteError } = await supabase
+      .from('quotes')
+      .select('status, valid_until')
+      .eq('id', quoteId)
+      .maybeSingle();
+    if (quoteError || !quote) return failure('Das Angebot konnte nicht geprüft werden.');
+    if (quote.status !== 'SENT') return failure('Nur ein versendetes Angebot kann angenommen werden.');
+    if (quote.valid_until && quote.valid_until < new Date().toISOString().slice(0, 10)) {
+      return failure('Das Angebot ist abgelaufen und kann nicht mehr angenommen werden.');
+    }
+
     const { error } = await supabase.rpc('accept_quote', {
       p_quote_id: quoteId,
       p_weekdays: weekdays,
@@ -288,5 +431,5 @@ export async function acceptQuote(quoteId: string, _: FormState, formData: FormD
   revalidateSales([`/dashboard/vertrieb/angebote/${quoteId}`]);
   revalidatePath('/dashboard/kunden');
   revalidatePath('/dashboard/planung');
-  return { status: 'success', message: 'Angebot angenommen. Kunde, Objekt und Plan wurden angelegt.' };
+  return { status: 'success', message: 'Angebot angenommen. Kunde, Objekt und Einsatzplanung wurden vorbereitet.' };
 }

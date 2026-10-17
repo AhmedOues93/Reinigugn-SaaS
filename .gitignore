@@ -15,3 +15,9 @@ supabase/.temp
 
 # Claude Code local worktrees
 .claude/worktrees/
+
+# Playwright
+playwright-report/
+test-results/
+tools/verapdf/libs/
+tools/verapdf/classes/

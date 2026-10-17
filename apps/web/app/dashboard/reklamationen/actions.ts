@@ -31,12 +31,60 @@ export async function updateComplaint(id: string, _: FormState, formData: FormDa
   const parsed = complaintSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure(parsed.error.issues[0]?.message ?? 'Bitte prüfe deine Eingaben.');
   try {
-    const { supabase, company } = await requireStaffCompany();
+    const { supabase, company, membership } = await requireStaffCompany();
+    const { data: previous, error: readError } = await supabase
+      .from('complaints')
+      .select('status')
+      .eq('company_id', company.id)
+      .eq('id', id)
+      .maybeSingle();
+    if (readError || !previous) return failure('Die Reklamation konnte nicht geladen werden.');
+
     const { error } = await supabase.from('complaints').update(clean(parsed.data)).eq('company_id', company.id).eq('id', id);
     if (error) return failure('Die Reklamation konnte nicht aktualisiert werden.');
+
+    if (previous.status !== parsed.data.status && membership) {
+      const labels: Record<string, string> = {
+        OPEN: 'Offen',
+        IN_PROGRESS: 'In Bearbeitung',
+        RESOLVED: 'Gelöst',
+        CLOSED: 'Geschlossen',
+      };
+      await supabase.from('complaint_updates').insert({
+        company_id: company.id,
+        complaint_id: id,
+        author_member_id: membership.id,
+        status: parsed.data.status,
+        note: `Status geändert: ${labels[previous.status] ?? previous.status} → ${labels[parsed.data.status] ?? parsed.data.status}`,
+      });
+    }
+
     revalidateOperations(parsed.data.cleaning_object_id); revalidatePath(`/dashboard/reklamationen/${id}`);
     return { status: 'success', id };
   } catch { return failure('Die Reklamation konnte nicht aktualisiert werden.'); }
+}
+
+export async function replyToComplaintCustomer(complaintId: string, _: FormState, formData: FormData): Promise<FormState> {
+  const note = String(formData.get('note') ?? '').trim();
+  if (!note) return failure('Bitte gib eine Antwort ein.');
+  if (note.length > 4000) return failure('Die Antwort darf maximal 4000 Zeichen lang sein.');
+
+  try {
+    const { supabase } = await requireStaffCompany();
+    const { error } = await supabase.rpc('add_staff_complaint_reply', {
+      p_complaint_id: complaintId,
+      p_note: note,
+    });
+    if (error) return failure('Die Antwort konnte nicht gesendet werden.');
+
+    revalidatePath(`/dashboard/reklamationen/${complaintId}`);
+    revalidatePath('/dashboard/reklamationen');
+    revalidatePath('/portal/reklamationen');
+    revalidatePath('/portal', 'layout');
+    return { status: 'success', message: 'Antwort wurde im Kundenportal veröffentlicht.' };
+  } catch {
+    return failure('Die Antwort konnte nicht gesendet werden.');
+  }
 }
 
 export async function createFollowUpJob(complaintId: string, _: FormState, formData: FormData): Promise<FormState> {

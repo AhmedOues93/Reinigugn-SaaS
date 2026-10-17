@@ -138,6 +138,7 @@ select pg_temp.assert(
   (select invoice_number is null and issue_date is null and due_date is null and status = 'DRAFT' from public.invoices where id = (select id from draft)),
   'a draft consumes no invoice number');
 
+\ir fixtures/invoice-master-data.sql
 create temporary table issued as select public.issue_invoice((select id from draft), date '2027-03-01') as number;
 grant select on issued to authenticated;
 
@@ -194,7 +195,7 @@ select pg_temp.assert(
 
 select public.mark_invoice_paid((select id from second_invoice));
 select pg_temp.assert((select status = 'PAID' and paid_at is not null from public.invoices where id = (select id from second_invoice)), 'an open invoice can be marked paid');
-select pg_temp.assert_rejected(format('select public.mark_invoice_paid(%L)', (select id from second_invoice)), 'Only an open invoice');
+select pg_temp.assert_rejected(format('select public.mark_invoice_paid(%L)', (select id from second_invoice)), 'already settled');
 
 select pg_temp.assert_rejected(format('select public.cancel_invoice(%L, ''x'')', (select id from draft)), 'cancellation reason is required');
 select public.cancel_invoice((select id from draft), 'Falscher Leistungszeitraum');

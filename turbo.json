@@ -1,7 +1,27 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV", "CI"],
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": [".next/**", "!.next/cache/**", "dist/**"] },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      // Turborepo runs tasks with a filtered environment and infers the
+      // framework's own prefix, so `NEXT_PUBLIC_*` already reaches the build.
+      // Naming it anyway makes the deployment contract explicit — these are
+      // exactly the variables a hosting platform must set — and keeps the build
+      // cache honest: change the Supabase URL and the cache correctly misses,
+      // because these values are compiled into the client bundle.
+      "env": [
+        "NEXT_PUBLIC_APP_ENV",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_SITE_URL"
+      ],
+      // Not part of the cache key: these vary by machine and never change the
+      // output. NODE_EXTRA_CA_CERTS matters where a proxy terminates TLS and
+      // `next/font` has to fetch from Google Fonts at build time.
+      "passThroughEnv": ["NODE_EXTRA_CA_CERTS", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "VERCEL", "VERCEL_ENV"]
+    },
     "lint": { "dependsOn": ["^lint"] },
     "typecheck": { "dependsOn": ["^typecheck"] },
     "test": { "dependsOn": ["^test"], "outputs": ["coverage/**"] },

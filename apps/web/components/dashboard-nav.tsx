@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Settings, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@reinigung/ui';
-import { CompanyBrand } from '@/components/company-brand';
+import { ProductLockup } from '@/components/company-brand';
 import { navGroups, navIcons } from '@/components/dashboard-shell';
-import type { CompanyBranding } from '@/lib/data/branding';
 import { t, type Locale } from '@/lib/i18n';
 
 /**
@@ -19,18 +18,19 @@ import { t, type Locale } from '@/lib/i18n';
 export function DashboardNav({
   locale,
   unread = 0,
+  unreadComplaints = 0,
   mobile = false,
-  branding,
   companyName,
 }: {
   locale: Locale;
   unread?: number;
+  unreadComplaints?: number;
   mobile?: boolean;
-  branding?: Pick<CompanyBranding, 'name' | 'logoUrl'> | null;
   companyName?: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const closeButton = useRef<HTMLButtonElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
 
@@ -81,7 +81,12 @@ export function DashboardNav({
         />
         <span className="truncate">{label}</span>
         {badge ? (
-          <span className="ms-auto rounded-full bg-highlight/15 px-1.5 text-[11px] font-semibold tabular-nums text-highlight">
+          <span className={cn(
+            'ms-auto rounded-full px-1.5 text-[11px] font-semibold tabular-nums',
+            href === '/dashboard/reklamationen'
+              ? 'bg-danger text-white'
+              : 'bg-highlight/15 text-highlight',
+          )}>
             {badge > 9 ? '9+' : badge}
           </span>
         ) : null}
@@ -89,26 +94,66 @@ export function DashboardNav({
     );
   };
 
+  const primary = navGroups[0];
+  const secondary = navGroups[1];
+  const secondaryActive = secondary.items.some((entry) => isActive(entry.href));
+
   const list = (
-    <div className="space-y-6">
-      {navGroups.map((group) => (
-        <div key={group.label}>
-          <p className="px-3 pb-1.5 text-[11.5px] font-medium text-ink-muted/70">{t(locale, group.label)}</p>
-          <ul className="space-y-0.5">
-            {group.items.map((entry) => (
+    <div className="space-y-3">
+      <div>
+        <p className="px-3 pb-1.5 text-[11.5px] font-medium text-ink-muted/70">{t(locale, primary.label)}</p>
+        <ul className="space-y-0.5">
+          {primary.items.map((entry) => (
+            <li key={entry.href}>
+              {item(
+                entry.href,
+                t(locale, entry.label),
+                navIcons[entry.icon as keyof typeof navIcons],
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="border-t border-ink-line pt-3">
+        {secondary.items.some((entry) => entry.icon === 'messages') && (
+          <div className="mb-2">
+            {(() => {
+              const entry = secondary.items.find((itemEntry) => itemEntry.icon === 'messages')!;
+              return item(entry.href, t(locale, entry.label), navIcons[entry.icon as keyof typeof navIcons], unread);
+            })()}
+          </div>
+        )}
+        <div className="border-t border-ink-line pt-2">
+        <button
+          type="button"
+          onClick={() => setMoreOpen((value) => !value)}
+          aria-expanded={moreOpen || secondaryActive}
+          className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-ink-muted transition-colors hover:bg-white/[0.05] hover:text-white max-lg:min-h-touch"
+        >
+          <span className="truncate">{locale === 'de' ? 'Mehr' : locale === 'en' ? 'More' : locale === 'ar' ? 'المزيد' : locale === 'tr' ? 'Daha fazla' : locale === 'uk' ? 'Більше' : 'Ещё'}</span>
+          {unreadComplaints > 0 && !moreOpen && !secondaryActive ? (
+            <span className="ms-auto rounded-full bg-danger px-1.5 text-[11px] font-semibold tabular-nums text-white">
+              {unreadComplaints > 9 ? '9+' : unreadComplaints}
+            </span>
+          ) : null}
+          <ChevronDown className={cn('ms-auto size-4 transition-transform', (moreOpen || secondaryActive) && 'rotate-180')} aria-hidden="true" />
+        </button>
+        {(moreOpen || secondaryActive) && (
+          <ul className="mt-1 space-y-0.5">
+            {secondary.items.filter((entry) => entry.icon !== 'messages').map((entry) => (
               <li key={entry.href}>
                 {item(
                   entry.href,
                   t(locale, entry.label),
                   navIcons[entry.icon as keyof typeof navIcons],
-                  entry.icon === 'messages' ? unread : undefined,
+                  entry.icon === 'complaints' ? unreadComplaints : entry.icon === 'messages' ? unread : undefined,
                 )}
               </li>
             ))}
           </ul>
+        )}
         </div>
-      ))}
-      <div className="border-t border-ink-line pt-4">{item('/dashboard/settings', t(locale, 'nav.settings'), Settings)}</div>
+      </div>
     </div>
   );
 
@@ -140,8 +185,10 @@ export function DashboardNav({
             aria-label={t(locale, 'common.mainNav')}
             className="surface-ink absolute inset-y-0 start-0 flex w-[288px] max-w-[86vw] animate-slide-in flex-col shadow-popover rtl:[animation-name:none]"
           >
-            <div className="flex h-16 shrink-0 items-center justify-between gap-2 ps-5 pe-2 [&_img]:brightness-0 [&_img]:invert">
-              <CompanyBrand branding={branding ?? null} className="text-white [&_span_span]:text-highlight" />
+            <div className="flex h-16 shrink-0 items-center justify-between gap-2 ps-5 pe-2">
+              {/* The product at the head of the drawer; the tenant's own name
+                  is already at its foot. */}
+              <ProductLockup />
               <button
                 ref={closeButton}
                 type="button"
@@ -155,7 +202,7 @@ export function DashboardNav({
             <div className="flex-1 overflow-y-auto px-3 pb-4 pt-2">{list}</div>
             {companyName && (
               <div className="shrink-0 border-t border-ink-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                <p className="truncate text-sm font-medium text-white">{companyName}</p>
+                <p className="truncate text-sm font-medium text-white" title={companyName}>{companyName}</p>
               </div>
             )}
           </nav>
