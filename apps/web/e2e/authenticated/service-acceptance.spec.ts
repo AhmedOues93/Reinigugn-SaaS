@@ -1,4 +1,4 @@
-import { credentialsFor, expect, requireRole, signIn, test } from '../fixtures';
+import { credentialsFor, expect, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * Kundenabnahme, from the field app through the portal to the billing queue.
@@ -88,10 +88,8 @@ test.describe('the employee is never asked to choose', () => {
 
   test('no acceptance-method picker appears anywhere in the field app', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
-    test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
-    await job.click();
-    await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
+    const job = await openFirstRecord(page, '/mitarbeiter/einsaetze');
+    test.skip(!job, 'no job assigned to this employee in this environment');
 
     // The contract decided this. The cleaner at the door does not.
     await expect(page.locator('select[name=acceptance_policy]')).toHaveCount(0);

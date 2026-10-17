@@ -79,14 +79,32 @@ function pdfText(bytes: Uint8Array) {
     return table;
   };
 
-  // /Font << /F1 12 0 R /F2 18 0 R >> in the page resources.
+  /*
+    /Font << /LiberationSans-1848524175 4 0 R … >> in den Seitenressourcen.
+
+    Gemerkt wird je Objektnummer, nicht je Ressourcenname: pdf-lib legt fuer
+    jeden Textaufruf einen eigenen Ressourcennamen an, der aber auf dasselbe
+    Schriftobjekt zeigt. Eine mehrseitige Rechnung hat so Dutzende Namen fuer
+    zwei Schriften, und ohne diesen Zwischenspeicher wurde dieselbe
+    /ToUnicode-Tabelle Dutzende Male aus der ganzen Datei gesucht und neu
+    gelesen. Nachgemessen: der Paginierungstest brauchte dadurch 8,5 Sekunden
+    und lief in die Zeitgrenze von vitest.
+  */
+  const tables = new Map<number, Map<string, string>>();
   const fonts = new Map<string, Map<string, string>>();
   for (const [, dict] of text.matchAll(/\/Font\s*<<([^>]*)>>/g)) {
     for (const [, name, number] of dict.matchAll(/\/([^\s/[\]<>()]+)\s+(\d+)\s+0\s+R/g)) {
-      const toUnicode = bodyOf(Number(number)).match(/\/ToUnicode\s+(\d+)\s+0\s+R/);
-      if (!toUnicode) throw new Error(`Font /${name} hat keine /ToUnicode-Tabelle — der Text waere nicht kopierbar.`);
-      const cmap = streamOf(Number(toUnicode[1]));
-      if (cmap) fonts.set(name, parseCMap(cmap));
+      const object = Number(number);
+      let table = tables.get(object);
+      if (!table) {
+        const toUnicode = bodyOf(object).match(/\/ToUnicode\s+(\d+)\s+0\s+R/);
+        if (!toUnicode) throw new Error(`Font /${name} hat keine /ToUnicode-Tabelle — der Text waere nicht kopierbar.`);
+        const cmap = streamOf(Number(toUnicode[1]));
+        if (!cmap) continue;
+        table = parseCMap(cmap);
+        tables.set(object, table);
+      }
+      fonts.set(name, table);
     }
   }
   if (!fonts.size) throw new Error('Die Datei hat keine Schrift mit /ToUnicode-Tabelle.');

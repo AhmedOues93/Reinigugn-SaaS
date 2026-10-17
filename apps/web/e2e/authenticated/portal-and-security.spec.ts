@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { expect, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The customer portal, and the boundaries around it.
@@ -24,10 +24,8 @@ test.describe('customer portal', () => {
 
   test('invoices are listed and downloadable as the same document the office sees', async ({ page }) => {
     await page.goto('/portal/rechnungen');
-    const invoice = page.locator('a[href*="/portal/rechnungen/"]').first();
-    test.skip((await invoice.count()) === 0, 'this customer has no invoice in this environment');
-
-    await invoice.click();
+    const invoice = await openFirstRecord(page, '/portal/rechnungen');
+    test.skip(!invoice, 'this customer has no invoice in this environment');
     await page.waitForURL(/\/portal\/rechnungen\/[0-9a-f-]{36}/);
     await expect(page.getByText(/RE-\d{4}-\d{4}/).first()).toBeVisible();
 

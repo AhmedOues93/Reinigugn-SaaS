@@ -153,14 +153,29 @@ export function InvoiceLineEditor({
           <Input id="line-description" name="description" placeholder="z. B. Unterhaltsreinigung Bürofläche" autoComplete="off" maxLength={500} required />
         </Field>
 
+        {/*
+          Kein type="number" bei Menge, Preis und Steuersatz.
+
+          Der Platzhalter sagt "z. B. 45,00", und genau das nahm das Feld nicht
+          an: ein `type=number`-Feld kennt nur den Punkt als Dezimaltrennzeichen,
+          das Komma wird vom Browser verworfen. Wer "45,00" eintippt, hat am Ende
+          4500 im Feld oder gar nichts -- auf dem einen Bildschirm, auf dem
+          Rechnungsbetraege entstehen. Die Serverseite rechnet das Komma seit
+          immer um (`replace(',', '.')` in actions.ts), nur das Eingabefeld
+          liess es nicht zu.
+
+          `inputMode="decimal"` bleibt: das bringt auf dem Telefon die
+          Zifferntastatur mit Komma. Die Grenzen (min/max) wandern in die
+          Pruefung der Serveraktion, wo sie ohnehin gelten muessen -- ein
+          HTML-Attribut ist keine Zusicherung.
+        */}
         <div className="grid gap-4 sm:grid-cols-4">
           <Field label={t(locale, 'billing.quantity')} htmlFor="line-quantity">
             <Input
               id="line-quantity"
               name="quantity"
-              type="number"
-              step="0.001"
-              min="0.001"
+              inputMode="decimal"
+              placeholder="z. B. 1,5"
               defaultValue="1"
               required
             />
@@ -171,16 +186,14 @@ export function InvoiceLineEditor({
             </Select>
           </Field>
           <Field label={t(locale, 'billing.unitPrice')} htmlFor="line-price">
-            <Input id="line-price" name="unit_price" type="number" inputMode="decimal" step="0.01" min="0" placeholder="z. B. 45,00" required />
+            <Input id="line-price" name="unit_price" inputMode="decimal" placeholder="z. B. 45,00" required />
           </Field>
           <Field label={`${t(locale, 'billing.vatRate')} %`} htmlFor="line-vat" info="Regelsatz 19 %. Für steuerfreie oder abweichende Leistungen den Satz anpassen; die Beträge berechnet die Datenbank.">
             <Input
               id="line-vat"
               name="vat_rate"
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
+              inputMode="decimal"
+              placeholder="19"
               defaultValue="19"
               required
             />

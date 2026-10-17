@@ -1,4 +1,4 @@
-import { credentialsFor, expect, label, requireRole, signIn, test } from '../fixtures';
+import { credentialsFor, expect, label, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The two workflows that cross a role boundary, walked end to end in a browser.
@@ -187,13 +187,13 @@ test.describe('manual payment reconciliation', () => {
 
   test('a draft invoice offers no way to record a payment', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=DRAFT');
-    const draft = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await draft.count()) === 0, 'no draft invoice in this environment');
-    await draft.click();
-    await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
+    const draft = await openFirstRecord(page, '/dashboard/abrechnung');
+    test.skip(!draft, 'no draft invoice in this environment');
 
     // A draft has not been sent to anyone, so nobody can have paid it.
-    const editable = await page.getByRole('button', { name: /position hinzufügen/i }).count();
+    // Der Positionseditor heisst in der Abrechnung "Leistung", nicht
+    // "Position" -- die alte Suche fand nichts und uebersprang den Fall.
+    const editable = await page.getByText(/weitere leistung manuell hinzufügen/i).count();
     test.skip(editable === 0, 'this invoice is not a draft');
     await expect(page.locator('input[name=paid_on]')).toHaveCount(0);
   });

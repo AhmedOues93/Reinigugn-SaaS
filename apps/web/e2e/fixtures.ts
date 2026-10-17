@@ -96,6 +96,50 @@ export async function assertTargetIsNotProduction(baseURL: string | undefined) {
   }
 }
 
+
+/** Ein Datensatz-Pfad: `<base>/<uuid>`, mit optionaler Abfrage dahinter. */
+const recordPattern = (base: string) =>
+  new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:[?#/]|$)`, 'i');
+
+/**
+ * Der Pfad des ersten *Datensatzes* unter `base`, oder null.
+ *
+ * `a[href*="/dashboard/abrechnung/"]` sieht richtig aus und ist es nicht. In
+ * der Navigation und in den Kopfzeilen stehen Pfade wie
+ * `/dashboard/abrechnung/neu` oder `/dashboard/kalkulation/grundlagen`, und
+ * `.first()` greift zuerst darauf. Der Test landete dann auf einer
+ * Anlegemaske, wartete auf eine Kennung in der Adresse und lief in seine
+ * Zeitgrenze.
+ *
+ * Nachgemessen: zwei Faelle brauchten dafuer je 2,3 Minuten und fielen dann
+ * mit "Test timeout of 135000ms exceeded" durch. Dasselbe Muster stand in
+ * acht der elf Dateien dieser Suite -- es ist der Grund, warum sie nie lief,
+ * und nicht nur eine Unsauberkeit.
+ *
+ * Darum wird hier auf eine UUID als letztes Segment geprueft. Kein Treffer
+ * heisst: in dieser Umgebung gibt es diesen Datensatz nicht, und das ist eine
+ * Aussage, die der Aufrufer weiterverwenden kann.
+ */
+export async function recordHref(page: Page, base: string): Promise<string | null> {
+  const hrefs = await page
+    .locator(`a[href*="${base}/"]`)
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href') ?? ''));
+  const pattern = recordPattern(base);
+  return hrefs.find((href) => pattern.test(href)) ?? null;
+}
+
+/**
+ * Oeffnet den ersten Datensatz unter `base` und gibt seinen Pfad zurueck.
+ * Ohne Datensatz null -- der Aufrufer entscheidet dann, ob das ein
+ * Ueberspringen wert ist oder ein Befund.
+ */
+export async function openFirstRecord(page: Page, base: string, suffix = ''): Promise<string | null> {
+  const href = await recordHref(page, base);
+  if (!href) return null;
+  await page.goto(`${href}${suffix}`);
+  return href;
+}
+
 /** Signs in and lands on whichever surface the role belongs to. */
 export async function signIn(page: Page, role: Role) {
   const pair = credentialsFor(role);

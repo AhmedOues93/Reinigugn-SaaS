@@ -72,12 +72,30 @@ export function CalculationDefaultsForm({
         </p>
       )}
 
+      {/*
+        Die Schrittleiste.
+
+        `aria-label` steht hier, obwohl der Text daneben schon sichtbar ist:
+        unterhalb von 640px wird er ausgeblendet, damit vier Namen nicht ueber
+        die Breite eines Telefons laufen. Ohne das Attribut hiesse der Knopf
+        dort gar nichts -- weder fuer eine Vorleseanwendung noch fuer eine
+        Tastatur, die die Leiste durchgeht. Genau an dieser Stelle ist das
+        Weglassen am verlockendsten und am falschesten, weil es am Bildschirm
+        nicht auffaellt.
+      */}
       <div className="border-b border-border/80 pb-4">
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Schritte">
           {steps.map((label, index) => (
-            <button key={label} type="button" onClick={() => { setStep(index); setVisitedStep((value) => Math.max(value, index)); }} className="min-w-0 text-start">
+            <button
+              key={label}
+              type="button"
+              aria-label={label}
+              aria-current={index === step ? 'step' : undefined}
+              onClick={() => { setStep(index); setVisitedStep((value) => Math.max(value, index)); }}
+              className="min-w-0 text-start"
+            >
               <span className={`block h-1.5 rounded-full ${index <= step ? 'bg-primary' : 'bg-muted'}`} />
-              <span className={`mt-2 hidden truncate text-xs sm:block ${index === step ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{label}</span>
+              <span aria-hidden="true" className={`mt-2 hidden truncate text-xs sm:block ${index === step ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{label}</span>
             </button>
           ))}
         </div>

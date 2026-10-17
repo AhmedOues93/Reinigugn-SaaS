@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { expect, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The office surface, signed in.
@@ -70,10 +70,8 @@ test.describe('office, signed in', () => {
 
   test('an issued invoice offers no line editor', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=ISSUED');
-    const firstInvoice = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await firstInvoice.count()) === 0, 'no issued invoice in this environment');
-
-    await firstInvoice.click();
+    const firstInvoice = await openFirstRecord(page, '/dashboard/abrechnung');
+    test.skip(!firstInvoice, 'no issued invoice in this environment');
     await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
     await expect(page.getByRole('button', { name: /position hinzufügen/i })).toHaveCount(0);
   });

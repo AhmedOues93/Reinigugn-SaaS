@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { expect, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The employee app on a phone.
@@ -31,11 +31,8 @@ test.describe('field app', () => {
 
   test('a job shows where to go and how to get in', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
-    test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
-
-    await job.click();
-    await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
+    const job = await openFirstRecord(page, '/mitarbeiter/einsaetze');
+    test.skip(!job, 'no job assigned to this employee in this environment');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // Address and access notes are the reason to open this screen at all.
     await expect(page.locator('body')).toContainText(/adresse|anfahrt|zugang|objekt/i);
@@ -43,10 +40,8 @@ test.describe('field app', () => {
 
   test('start, pause, resume and finish produce one entry with net time', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
-    test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
-    await job.click();
-    await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
+    const job = await openFirstRecord(page, '/mitarbeiter/einsaetze');
+    test.skip(!job, 'no job assigned to this employee in this environment');
 
     const start = page.getByRole('button', { name: /starten|beginnen/i }).first();
     test.skip((await start.count()) === 0, 'this job is not in a startable state');
@@ -70,10 +65,8 @@ test.describe('field app', () => {
 
   test('a double-tapped start does not open a second entry', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
-    test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
-    await job.click();
-    await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
+    const job = await openFirstRecord(page, '/mitarbeiter/einsaetze');
+    test.skip(!job, 'no job assigned to this employee in this environment');
 
     const start = page.getByRole('button', { name: /starten|beginnen/i }).first();
     test.skip((await start.count()) === 0, 'this job is not in a startable state');
@@ -91,10 +84,8 @@ test.describe('field app', () => {
 
   test('a checklist item can be ticked and stays ticked', async ({ page }) => {
     await page.goto('/mitarbeiter/einsaetze');
-    const job = page.locator('a[href*="/mitarbeiter/einsaetze/"]').first();
-    test.skip((await job.count()) === 0, 'no job assigned to this employee in this environment');
-    await job.click();
-    await page.waitForURL(/\/mitarbeiter\/einsaetze\/[0-9a-f-]{36}/);
+    const job = await openFirstRecord(page, '/mitarbeiter/einsaetze');
+    test.skip(!job, 'no job assigned to this employee in this environment');
 
     const item = page.getByRole('checkbox').first();
     test.skip((await item.count()) === 0, 'this job has no checklist');

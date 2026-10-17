@@ -1,4 +1,4 @@
-import { expect, requireRole, signIn, test } from '../fixtures';
+import { expect, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * Billing, which is where a bug costs real money.
@@ -17,6 +17,19 @@ test.describe('billing', () => {
     await signIn(page, 'owner');
   });
 
+  /*
+   * Die Beschriftungen stehen hier als Konstanten, weil diese Suite sie
+   * jahrelang geraten hat: sie suchte "Position hinzufügen" und
+   * "festschreiben". Beides gibt es in der Abrechnung nicht -- die Kalkulation
+   * sagt "Position", die Abrechnung sagt "Leistung", und ausgestellt wird mit
+   * "Rechnung ausstellen". Die Suche lief damit ins Leere, und weil der Test
+   * danach `test.skip` aufrief, sah der halbe Ablauf wie uebersprungen aus
+   * statt wie falsch. Eine Abweichung soll hier auffallen, nicht stillschweigend
+   * zum Ueberspringen fuehren.
+   */
+  const addLine = /leistung hinzufügen/i;
+  const issueInvoice = /rechnung ausstellen/i;
+
   test('completed unbilled work can be turned into a draft and issued', async ({ page }) => {
     await page.goto('/dashboard/abrechnung/neu');
 
@@ -27,19 +40,27 @@ test.describe('billing', () => {
     await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/, { timeout: 30_000 });
     const invoiceUrl = page.url();
 
-    // A draft must offer the line editor; that is what makes it a draft.
-    await expect(page.getByRole('button', { name: /position hinzufügen/i }).first()).toBeVisible();
+    // Der Positionseditor liegt in einem zugeklappten <details>: auf einem
+    // Telefon soll der Entwurf nicht mit einem Formular aufgehen, das man
+    // meistens nicht braucht. Erst aufklappen, dann pruefen.
+    const editor = page.getByText(/weitere leistung manuell hinzufügen/i).first();
+    await expect(editor, 'der Entwurf bietet keinen Positionseditor').toBeVisible();
+    await editor.click();
+    await expect(page.getByRole('button', { name: addLine }).first()).toBeVisible();
 
-    // Take the completed work if any is offered, otherwise write one line.
-    const takeAll = page.getByRole('button', { name: /übernehmen|alle/i }).first();
-    if (await takeAll.count()) {
-      await takeAll.click();
+    // Einen abgeschlossenen Einsatz uebernehmen, wenn einer angeboten wird --
+    // das ist ein Auswahlfeld, kein Knopf. Sonst eine Zeile von Hand.
+    const takeJob = page.locator('select[name=job_id]');
+    if ((await takeJob.count()) && (await takeJob.locator('option').count()) > 1) {
+      await takeJob.selectOption({ index: 1 });
     } else {
       await page.locator('input[name=description]').first().fill('E2E Unterhaltsreinigung');
       await page.locator('input[name=quantity]').first().fill('1');
       await page.locator('input[name=unit_price]').first().fill('100,00');
-      await page.getByRole('button', { name: /position hinzufügen/i }).first().click();
     }
+    const add = page.getByRole('button', { name: addLine }).first();
+    await add.click();
+    await expect(add).toBeEnabled({ timeout: 60_000 });
 
     // Net, VAT and gross must all be shown and must agree.
     await expect(page.getByText(/netto/i).first()).toBeVisible();
@@ -47,20 +68,18 @@ test.describe('billing', () => {
     await expect(page.getByText(/gesamtbetrag|brutto/i).first()).toBeVisible();
 
     // --- Finalise ---------------------------------------------------------
-    const issue = page.getByRole('button', { name: /festschreiben|rechnung erstellen/i }).first();
+    const issue = page.getByRole('button', { name: issueInvoice }).first();
     test.skip((await issue.count()) === 0, 'this draft cannot be issued in this environment');
     await issue.click();
-    const confirm = page.getByRole('button', { name: /festschreiben/i }).last();
-    if (await confirm.count()) await confirm.click();
 
     // A number appears, and the editor disappears. Both, or it is not issued.
-    await expect(page.getByText(/RE-\d{4}-\d{4}/).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /position hinzufügen/i })).toHaveCount(0);
+    await expect(page.getByText(/RE-\d{4}-\d{4}/).first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole('button', { name: addLine })).toHaveCount(0);
 
     // --- Immutability -----------------------------------------------------
     await page.goto(invoiceUrl);
-    await expect(page.getByRole('button', { name: /position hinzufügen/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /festschreiben/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: addLine })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: issueInvoice })).toHaveCount(0);
 
     // --- The PDF is real ---------------------------------------------------
     const pdf = await page.request.get(`${invoiceUrl}/pdf`);
@@ -82,10 +101,8 @@ test.describe('billing', () => {
 
   test('a job already billed is not offered for billing again', async ({ page }) => {
     await page.goto('/dashboard/abrechnung');
-    const invoice = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await invoice.count()) === 0, 'no invoice in this environment');
-    await invoice.click();
-    await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
+    const invoice = await openFirstRecord(page, '/dashboard/abrechnung');
+    test.skip(!invoice, 'no invoice in this environment');
 
     // Whatever this invoice already bills must not appear as available work.
     const billedLines = await page.locator('li').filter({ hasText: /Leistungsnachweis/ }).count();
@@ -96,11 +113,8 @@ test.describe('billing', () => {
 
   test('a cancelled invoice stays readable and is marked as cancelled', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=CANCELLED');
-    const cancelled = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await cancelled.count()) === 0, 'no cancelled invoice in this environment');
-
-    await cancelled.click();
-    await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
+    const cancelled = await openFirstRecord(page, '/dashboard/abrechnung');
+    test.skip(!cancelled, 'no cancelled invoice in this environment');
     await expect(page.getByText(/storniert/i).first()).toBeVisible();
     // History is preserved: the number and the figures are still there.
     await expect(page.getByText(/RE-\d{4}-\d{4}/).first()).toBeVisible();
@@ -108,11 +122,8 @@ test.describe('billing', () => {
 
   test('an issued invoice reports its delivery state honestly', async ({ page }) => {
     await page.goto('/dashboard/abrechnung?status=ISSUED');
-    const issued = page.locator('a[href*="/dashboard/abrechnung/"]').first();
-    test.skip((await issued.count()) === 0, 'no issued invoice in this environment');
-
-    await issued.click();
-    await page.waitForURL(/\/dashboard\/abrechnung\/[0-9a-f-]{36}/);
+    const issued = await openFirstRecord(page, '/dashboard/abrechnung');
+    test.skip(!issued, 'no issued invoice in this environment');
     // Either e-mail is configured and offered, or the screen says it is not and
     // offers the manual route. Never a claimed send with nothing behind it.
     const body = page.locator('body');

@@ -1,4 +1,6 @@
-import { expect, label, requireRole, signIn, test } from '../fixtures';
+import type { Page } from '@playwright/test';
+
+import { expect, label, openFirstRecord, requireRole, signIn, test } from '../fixtures';
 
 /**
  * The Kalkulation workspace, and the boundary around it.
@@ -9,6 +11,27 @@ import { expect, label, requireRole, signIn, test } from '../fixtures';
  * to edit itself, and — most importantly — that nobody outside the office ever
  * sees a cost or a margin at all.
  */
+
+/**
+ * Oeffnet einen Schritt der Kalkulationsgrundlagen.
+ *
+ * Der Bildschirm ist ein Assistent mit vier Schritten, und nur der aktive ist
+ * sichtbar. Diese Suite hat das lange nicht gewusst und erwartet, alle Felder
+ * auf einmal zu sehen -- sie lief nie, also fiel es nicht auf. Die Felder
+ * liegen so verteilt:
+ *
+ *   Personalkosten    wage, ancillary
+ *   Produktive Zeit   weekly_hours, working_days, vacation_days,
+ *                     public_holidays, sick_days, training_days,
+ *                     unproductive_minutes -- oder productive
+ *   Auftragskosten    min_hourly_rate, material, machine, travel,
+ *                     setup_minutes
+ *   Preis & Marge     overhead, margin
+ */
+async function openStep(page: Page, name: string) {
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
 
 test.describe('Kalkulation workspace', () => {
   requireRole('owner');
@@ -22,18 +45,32 @@ test.describe('Kalkulation workspace', () => {
     await page.goto('/dashboard/kalkulation/grundlagen');
     await expect(page.getByRole('heading', { level: 1, name: /kalkulationsgrundlagen/i })).toBeVisible();
 
-    for (const name of ['wage', 'ancillary', 'overhead', 'margin', 'min_hourly_rate']) {
-      await expect(page.locator(`input[name=${name}]`)).toBeVisible();
+    // Jedes Feld in dem Schritt, in dem es steht. Alle auf einmal gibt es
+    // nicht, und das ist Absicht: vier Zahlenbloecke auf einem Telefon
+    // uebereinander liest niemand.
+    const byStep: [string, string[]][] = [
+      ['Personalkosten', ['wage', 'ancillary']],
+      ['Auftragskosten', ['min_hourly_rate']],
+      ['Preis & Marge', ['overhead', 'margin']],
+    ];
+    for (const [step, names] of byStep) {
+      await openStep(page, step);
+      for (const name of names) {
+        await expect(page.locator(`input[name=${name}]`), `${name} fehlt im Schritt ${step}`).toBeVisible();
+      }
     }
 
     // The productive-share field is the one people do not expect, so the page
     // has to say what it is for rather than just label it.
+    await openStep(page, 'Produktive Zeit');
     await expect(page.locator('body')).toContainText(/produktiv/i);
+    await openStep(page, 'Preis & Marge');
     await expect(page.locator('body')).toContainText(/marge/i);
   });
 
   test('the productive share can be derived from days or typed directly', async ({ page }) => {
     await page.goto('/dashboard/kalkulation/grundlagen');
+    await openStep(page, 'Produktive Zeit');
 
     // Whichever mode the company is in, the other one is one click away — and
     // the derived mode has to show its working, not just a result.
@@ -56,21 +93,34 @@ test.describe('Kalkulation workspace', () => {
     await page.locator('input[name=name]').fill(serviceName);
     await page.locator('select[name=calculation_unit]').selectOption('QM');
     await page.locator('input[name=productivity]').fill('250');
-    await page.getByRole('button', { name: /leistung speichern/i }).click();
-    await expect(page.locator('body')).toContainText(serviceName);
+    const save = page.getByRole('button', { name: /leistung speichern/i });
+    await save.click();
+    // Auf das Ende des Speichervorgangs warten, nicht darauf hoffen. Vorher
+    // pruefte der Test den Katalog, waehrend der Knopf noch "Wird gespeichert"
+    // zeigte -- auf einer langsamen Maschine schlug er damit fehl, obwohl die
+    // Leistung Sekunden spaeter in der Datenbank stand. Nachgemessen: der
+    // Eintrag war da, der Test war zu frueh.
+    await expect(save).toBeEnabled({ timeout: 60_000 });
+    await expect(page.locator('body')).toContainText(serviceName, { timeout: 30_000 });
 
     // A calculation for an existing customer.
+    //
+    // Die Kundenauswahl erscheint erst, wenn "Bestehender Kunde" gewaehlt ist
+    // -- die Maske steht standardmaessig auf "Neuer Interessent". Vorher
+    // suchte dieser Test das Auswahlfeld sofort, fand keines und uebersprang
+    // sich mit "no customer in this environment". Der Mandant hatte Kunden;
+    // der Test hat nur nie den Schalter umgelegt, und weil ein uebersprungener
+    // Test gruen aussieht, fiel das nicht auf.
     await page.goto('/dashboard/kalkulation/neu');
     const title = label('Kalkulation');
     await page.locator('input[name=title]').fill(title);
 
-    const blank = page.getByRole('radio', { name: /ohne besichtigung/i });
-    if (await blank.count()) await blank.check();
-
+    await page.getByRole('radio', { name: /bestehender kunde/i }).check();
     const customer = page.locator('select[name=customer_id]');
+    await expect(customer, 'die Kundenauswahl erscheint nicht').toBeVisible();
     test.skip((await customer.locator('option').count()) < 2, 'no customer in this environment');
     await customer.selectOption({ index: 1 });
-    await page.getByRole('button', { name: /kalkulation anlegen/i }).click();
+    await page.getByRole('button', { name: /zur kalkulation/i }).click();
     await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/, { timeout: 30_000 });
     const workspaceUrl = page.url();
 
@@ -105,10 +155,8 @@ test.describe('Kalkulation workspace', () => {
 
   test('every Turnus a cleaning contract uses is selectable', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=ENTWURF');
-    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
-    test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
-    await draft.click();
-    await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
+    const draft = await openFirstRecord(page, '/dashboard/kalkulation');
+    test.skip(!draft, 'no draft calculation in this environment');
 
     const frequency = page.locator('select[name=frequency]');
     test.skip((await frequency.count()) === 0, 'this calculation is not editable');
@@ -129,10 +177,8 @@ test.describe('Kalkulation workspace', () => {
 
   test('customer surcharges are presented as revenue, not as cost', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=ENTWURF');
-    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
-    test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
-    const href = await draft.getAttribute('href');
-    await page.goto(`${href}?tab=kosten`);
+    const draft = await openFirstRecord(page, '/dashboard/kalkulation', '?tab=kosten');
+    test.skip(!draft, 'no draft calculation in this environment');
 
     const surcharge = page.locator('input[name=surcharge_travel]');
     test.skip((await surcharge.count()) === 0, 'this calculation is not editable');
@@ -148,10 +194,8 @@ test.describe('Kalkulation workspace', () => {
 
   test('a time that departs from the Richtleistung demands a reason', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=ENTWURF');
-    const draft = page.locator('a[href*="/dashboard/kalkulation/"]').first();
-    test.skip((await draft.count()) === 0, 'no draft calculation in this environment');
-    await draft.click();
-    await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
+    const draft = await openFirstRecord(page, '/dashboard/kalkulation');
+    test.skip(!draft, 'no draft calculation in this environment');
 
     const toggle = page.getByRole('button', { name: /zeit abweichend/i });
     test.skip((await toggle.count()) === 0, 'this calculation is not editable');
@@ -162,10 +206,8 @@ test.describe('Kalkulation workspace', () => {
 
   test('a finalised calculation offers no way to edit itself', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=FINAL');
-    const final = page.locator('a[href*="/dashboard/kalkulation/"]').first();
-    test.skip((await final.count()) === 0, 'no finalised calculation in this environment');
-    await final.click();
-    await page.waitForURL(/\/dashboard\/kalkulation\/[0-9a-f-]{36}/);
+    const final = await openFirstRecord(page, '/dashboard/kalkulation');
+    test.skip(!final, 'no finalised calculation in this environment');
 
     await expect(page.getByText(/festgeschrieben/i).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /position hinzufügen/i })).toHaveCount(0);
@@ -176,10 +218,8 @@ test.describe('Kalkulation workspace', () => {
 
   test('the Leistungsverzeichnis carries no internal figures', async ({ page }) => {
     await page.goto('/dashboard/kalkulation?status=FINAL');
-    const final = page.locator('a[href*="/dashboard/kalkulation/"]').first();
-    test.skip((await final.count()) === 0, 'no finalised calculation in this environment');
-    const href = await final.getAttribute('href');
-    await page.goto(`${href}?tab=dokumente`);
+    const final = await openFirstRecord(page, '/dashboard/kalkulation', '?tab=dokumente');
+    test.skip(!final, 'no finalised calculation in this environment');
 
     await expect(page.getByRole('heading', { name: /leistungsverzeichnis/i })).toBeVisible();
     // The customer-facing block describes work, not money.
