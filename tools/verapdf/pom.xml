@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Nur dazu da, die veraPDF-Bibliothek samt ihrer Abhaengigkeiten zu holen.
+
+  Der Weg ueber Maven Central statt ueber das Installationsprogramm von
+  verapdf.org ist Absicht: das Installationsprogramm ist interaktiv und laedt
+  von einem Host, der in abgeschotteten Umgebungen nicht erreichbar ist. Die
+  Bibliothek selbst liegt versioniert in Maven Central und bringt dieselben
+  Pruefregeln mit.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>de.reinplan</groupId>
+  <artifactId>verapdf-gate</artifactId>
+  <version>1</version>
+  <packaging>jar</packaging>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.verapdf</groupId>
+      <artifactId>validation-model</artifactId>
+      <version>1.26.1</version>
+    </dependency>
+  </dependencies>
+</project>

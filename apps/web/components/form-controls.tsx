@@ -38,14 +38,14 @@ export function FormMessage({ message, status }: { message?: string; status: 'id
   return (
     <p
       role={isError ? 'alert' : 'status'}
-      className={`flex animate-fade-in items-start gap-2.5 rounded-lg border p-3 text-sm leading-6 ${
-        isError ? 'border-danger/20 bg-danger-soft text-danger' : 'border-success/20 bg-success-soft text-success'
+      className={`flex animate-fade-in items-start gap-2.5 border-s-2 px-3 py-2 text-sm leading-5 ${
+        isError ? 'border-danger bg-danger/[0.035] text-foreground' : 'border-success bg-success/[0.035] text-foreground'
       }`}
     >
       {isError ? (
-        <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <AlertCircle className={`mt-0.5 size-4 shrink-0 ${isError ? 'text-danger' : 'text-success'}`} aria-hidden="true" />
       ) : (
-        <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <CheckCircle2 className={`mt-0.5 size-4 shrink-0 ${isError ? 'text-danger' : 'text-success'}`} aria-hidden="true" />
       )}
       <span className="break-anywhere">{message}</span>
     </p>

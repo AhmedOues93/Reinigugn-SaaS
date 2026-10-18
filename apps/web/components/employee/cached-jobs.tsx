@@ -1,5 +1,6 @@
 'use client';
 
+import { stripDemoPrefix } from '@/lib/demo-label';
 import { useEffect, useState } from 'react';
 import { CloudOff, KeyRound, MapPin, Phone, User } from 'lucide-react';
 import { Badge, Card, EmptyState } from '@/components/ui';
@@ -82,7 +83,7 @@ function CachedJobCard({ job, locale }: { job: CachedJob; locale: Locale }) {
       )}
       {job.employee_instructions && (
         <p className="break-anywhere mt-3 whitespace-pre-wrap rounded-md bg-warning-soft p-3 text-sm text-warning">
-          {job.employee_instructions}
+          {stripDemoPrefix(job.employee_instructions)}
         </p>
       )}
       {job.checklist.length > 0 && (

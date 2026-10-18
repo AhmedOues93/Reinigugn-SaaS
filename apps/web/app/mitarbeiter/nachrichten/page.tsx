@@ -75,7 +75,15 @@ export default async function EmployeeMessagesPage() {
                 <Card className={`p-4 ${item.read_at ? '' : 'border-primary/30 bg-primary-soft/40'}`}>
                   <p className="break-anywhere font-medium">{item.title}</p>
                   {item.body && <p className="break-anywhere mt-1 text-sm text-muted-foreground">{item.body}</p>}
-                  <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(locale, item.created_at)}</p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">{formatDateTime(locale, item.created_at)}</p>
+                    {item.job_id && (
+                      <Link href={`/mitarbeiter/einsaetze/${item.job_id}`} className="inline-flex min-h-9 items-center text-sm font-semibold text-primary">
+                        Einsatz öffnen
+                        <ChevronRight className="ms-1 size-4 rtl:rotate-180" aria-hidden="true" />
+                      </Link>
+                    )}
+                  </div>
                   {!item.read_at && (
                     <form
                       action={async () => {

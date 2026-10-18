@@ -1,25 +1,54 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type FormState, initialFormState } from '@/lib/actions';
-import { Button, Field, FormActions, FormSection, Input, Textarea } from '@/components/ui';
+import { Button, Field, FormSection, Input, Textarea } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 
-type CustomerRecord = { id?: string; name?: string | null; customer_number?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; email?: string | null; phone?: string | null; billing_address?: string | null; city?: string | null; postal_code?: string | null; billing_country?: string | null; billing_email?: string | null; payment_terms_days?: number | null; vat_id?: string | null; notes?: string | null };
+type CustomerRecord = { id?: string; name?: string | null; customer_number?: string | null; contact_first_name?: string | null; contact_last_name?: string | null; email?: string | null; phone?: string | null; billing_address?: string | null; city?: string | null; postal_code?: string | null; billing_country?: string | null; billing_email?: string | null; payment_terms_days?: number | null; vat_id?: string | null; datev_debtor_account?: string | null; notes?: string | null };
 type CustomerAction = (state: FormState, formData: FormData) => Promise<FormState>;
 
 export function CustomerForm({ customer, action, submitLabel }: { customer?: CustomerRecord; action: CustomerAction; submitLabel: string }) {
   const [state, formAction] = useActionState(action, initialFormState);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   useEffect(() => {
     if (state.status === 'success' && state.id) router.push(`/dashboard/kunden/${state.id}?success=${encodeURIComponent('Kunde wurde gespeichert.')}`);
   }, [router, state]);
 
+  function nextStep() {
+    const container = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
+    const fields = Array.from(container?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea') ?? []);
+    const invalid = fields.find((field) => !field.checkValidity());
+    if (invalid) {
+      invalid.reportValidity();
+      return;
+    }
+    setStep((Math.min(4, step + 1)) as 1 | 2 | 3 | 4);
+  }
+
   return (
-    <form action={formAction}>
+    <form ref={formRef} action={formAction} className="space-y-5">
       <FormMessage status={state.status} message={state.message} />
-      <FormSection title="Allgemein">
+
+      <div className="rounded-xl border border-border bg-muted/25 p-3">
+        <div className="grid grid-cols-4 gap-1 text-center text-[11px] font-medium sm:text-xs">
+          {['Kunde', 'Kontakt', 'Rechnung', 'Notizen'].map((label, index) => (
+            <span key={label} className={step === index + 1 ? 'text-primary' : 'text-muted-foreground'}>
+              {index + 1}. <span className="max-sm:hidden">{label}</span>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
+          <div className="h-full bg-primary transition-all" style={{ width: `${step * 25}%` }} />
+        </div>
+      </div>
+
+      <div data-step="1" className={step === 1 ? 'block' : 'hidden'} aria-hidden={step !== 1}>
+      <FormSection title="Kunde">
         <Field label="Kundenname" htmlFor="name" className="sm:col-span-2">
           <Input id="name" name="name" defaultValue={customer?.name ?? ''} maxLength={160} required />
         </Field>
@@ -27,7 +56,9 @@ export function CustomerForm({ customer, action, submitLabel }: { customer?: Cus
           <Input id="customer_number" name="customer_number" defaultValue={customer?.customer_number ?? ''} placeholder="Automatisch" maxLength={64} />
         </Field>
       </FormSection>
+      </div>
 
+      <div data-step="2" className={step === 2 ? 'block' : 'hidden'} aria-hidden={step !== 2}>
       <FormSection title="Ansprechperson">
         <Field label="Vorname" htmlFor="contact_first_name">
           <Input id="contact_first_name" name="contact_first_name" defaultValue={customer?.contact_first_name ?? ''} maxLength={120} autoComplete="off" />
@@ -42,7 +73,9 @@ export function CustomerForm({ customer, action, submitLabel }: { customer?: Cus
           <Input id="phone" name="phone" type="tel" defaultValue={customer?.phone ?? ''} maxLength={64} autoComplete="off" />
         </Field>
       </FormSection>
+      </div>
 
+      <div data-step="3" className={step === 3 ? 'block' : 'hidden'} aria-hidden={step !== 3}>
       <FormSection title="Rechnungsdaten" description="Erscheinen auf jeder Rechnung an diesen Kunden.">
         <Field
           label="Rechnungs-E-Mail"
@@ -71,20 +104,47 @@ export function CustomerForm({ customer, action, submitLabel }: { customer?: Cus
         <Field label="USt-IdNr. des Kunden" htmlFor="vat_id" optional info="Nur bei Geschäftskunden, z. B. für innergemeinschaftliche Leistungen.">
           <Input id="vat_id" name="vat_id" defaultValue={customer?.vat_id ?? ''} maxLength={64} />
         </Field>
+        <Field
+          label="DATEV-Debitorenkonto"
+          htmlFor="datev_debtor_account"
+          optional
+          info="Nur nötig für den DATEV-Buchungsexport. Das Konto mit der Steuerberatung abstimmen."
+        >
+          <Input
+            id="datev_debtor_account"
+            name="datev_debtor_account"
+            inputMode="numeric"
+            maxLength={11}
+            defaultValue={customer?.datev_debtor_account ?? ''}
+          />
+        </Field>
       </FormSection>
+      </div>
 
+      <div data-step="4" className={step === 4 ? 'block' : 'hidden'} aria-hidden={step !== 4}>
       <FormSection title="Interne Notizen" description="Nur für Ihr Büro sichtbar.">
         <Field label="Notizen" htmlFor="notes" className="sm:col-span-2" optional>
           <Textarea id="notes" name="notes" defaultValue={customer?.notes ?? ''} maxLength={4000} />
         </Field>
       </FormSection>
+      </div>
 
-      <FormActions>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
-          Abbrechen
+      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-popover backdrop-blur">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => step === 1 ? router.back() : setStep((step - 1) as 1 | 2 | 3 | 4)}
+        >
+          {step === 1 ? 'Abbrechen' : <><ChevronLeft className="size-4" />Zurück</>}
         </Button>
-        <SubmitButton>{submitLabel}</SubmitButton>
-      </FormActions>
+        {step < 4 ? (
+          <Button type="button" onClick={nextStep}>
+            Weiter<ChevronRight className="size-4" />
+          </Button>
+        ) : (
+          <SubmitButton>{submitLabel}</SubmitButton>
+        )}
+      </div>
     </form>
   );
 }

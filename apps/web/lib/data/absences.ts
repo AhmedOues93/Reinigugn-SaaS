@@ -15,19 +15,27 @@ type ReplacementCandidateRow = { member_id: string; first_name: string | null; l
 
 export async function listAffectedAssignments(from?: string, to?: string): Promise<AffectedAssignment[]> {
   const { supabase } = await requireStaffCompany();
-  const { data, error } = await supabase.rpc('list_absence_affected_assignments', { p_from: from ?? new Date().toISOString().slice(0, 10), p_to: to ?? null });
+
+  // Ein Aufruf statt einer pro betroffenem Einsatz: vorher wartete die
+  // Planungsseite in einer Grippewoche auf dutzende Rundreisen.
+  const { data, error } = await supabase.rpc('list_absence_affected_with_candidates', {
+    p_from: from ?? new Date().toISOString().slice(0, 10),
+    p_to: to ?? null,
+  });
   if (error) throw new Error('Betroffene Aufträge konnten nicht geladen werden.');
-  return Promise.all(((data ?? []) as AffectedAssignmentRow[]).map(async (item) => {
-    const { data: candidates, error: candidatesError } = await supabase.rpc('list_replacement_candidates', { p_job_id: item.job_id });
-    if (candidatesError) throw new Error('Vertretungsvorschläge konnten nicht geladen werden.');
-    return {
-      jobId: item.job_id,
-      jobTitle: item.job_title,
-      scheduledDate: item.scheduled_date,
-      memberId: item.member_id,
-      employeeName: [item.first_name, item.last_name].filter(Boolean).join(' '),
-      absenceType: item.absence_type,
-      candidates: ((candidates ?? []) as ReplacementCandidateRow[]).map((candidate) => ({ memberId: candidate.member_id, firstName: candidate.first_name ?? '', lastName: candidate.last_name ?? '' })),
-    };
+
+  type Row = AffectedAssignmentRow & { candidates: ReplacementCandidateRow[] | null };
+  return ((data ?? []) as Row[]).map((item) => ({
+    jobId: item.job_id,
+    jobTitle: item.job_title,
+    scheduledDate: item.scheduled_date,
+    memberId: item.member_id,
+    employeeName: [item.first_name, item.last_name].filter(Boolean).join(' '),
+    absenceType: item.absence_type,
+    candidates: (item.candidates ?? []).map((candidate) => ({
+      memberId: candidate.member_id,
+      firstName: candidate.first_name ?? '',
+      lastName: candidate.last_name ?? '',
+    })),
   }));
 }

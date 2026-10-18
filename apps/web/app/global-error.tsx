@@ -7,7 +7,7 @@
  * depend on globals.css, i18n or any other app module that could itself be
  * the thing failing.
  */
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ reset: _reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="de">
       <body
@@ -29,7 +29,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
         </p>
         <button
           type="button"
-          onClick={reset}
+          onClick={() => window.location.reload()}
           style={{
             minHeight: '2.75rem',
             padding: '0 1.5rem',
@@ -41,7 +41,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
             border: 'none',
           }}
         >
-          Erneut versuchen
+          Seite neu laden
         </button>
       </body>
     </html>

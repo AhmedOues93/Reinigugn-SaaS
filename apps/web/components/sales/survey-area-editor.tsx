@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input } from '@/components/ui';
+import { Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { calculateArea } from '@/lib/sales-calc';
 import { formatMoney } from '@/lib/format';
@@ -117,17 +117,45 @@ export function SurveyAreaEditor({
         <form action={formAction} className="space-y-4 rounded-md border border-border bg-muted/50 p-4">
           <FormMessage status={state.status} message={state.message} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t(locale, 'sales.area.name')} htmlFor="area-name">
-              <Input id="area-name" name="name" required maxLength={160} />
+            <Field label="Bereich / Raumart" htmlFor="area-name">
+              <Select id="area-name" name="name" required defaultValue="">
+                <option value="">Bereich auswählen...</option>
+                <option>Büro- und Besprechungsräume</option>
+                <option>Sanitärbereiche</option>
+                <option>Küche / Teeküche</option>
+                <option>Flur / Verkehrsfläche</option>
+                <option>Treppenhaus</option>
+                <option>Empfang / Foyer</option>
+                <option>Umkleide</option>
+                <option>Lager / Nebenraum</option>
+                <option>Glasflächen</option>
+                <option>Sonstiger Bereich</option>
+              </Select>
             </Field>
             <Field label={t(locale, 'sales.area.sqm')} htmlFor="area-sqm">
               <Input id="area-sqm" name="area_sqm" type="number" step="0.01" min="0" />
             </Field>
-            <Field label={t(locale, 'sales.area.floor')} htmlFor="area-floor">
-              <Input id="area-floor" name="floor_type" maxLength={120} />
+            <Field label="Bodenart" htmlFor="area-floor">
+              <Select id="area-floor" name="floor_type" defaultValue="">
+                <option value="">Nicht festgelegt</option>
+                <option>Hartboden</option>
+                <option>Teppich</option>
+                <option>Fliesen</option>
+                <option>Stein</option>
+                <option>Vinyl / PVC</option>
+                <option>Parkett / Laminat</option>
+                <option>Gemischt</option>
+              </Select>
             </Field>
-            <Field label={t(locale, 'sales.area.perWeek')} htmlFor="area-week">
-              <Input id="area-week" name="services_per_week" type="number" step="0.25" min="0.25" max="21" defaultValue="1" required />
+            <Field label="Reinigungshäufigkeit" htmlFor="area-week">
+              <Select id="area-week" name="services_per_week" defaultValue="1" required>
+                <option value="5">5x wöchentlich</option>
+                <option value="3">3x wöchentlich</option>
+                <option value="2">2x wöchentlich</option>
+                <option value="1">1x wöchentlich</option>
+                <option value="0.5">14-täglich</option>
+                <option value="0.25">Monatlich (ca.)</option>
+              </Select>
             </Field>
             <Field label={t(locale, 'sales.area.minutes')} htmlFor="area-minutes">
               <Input id="area-minutes" name="minutes_per_service" type="number" step="1" min="1" max="10000" required />

@@ -1,3 +1,159 @@
-import { notFound } from 'next/navigation'; import { BackLink, Card } from '@/components/ui'; import { getTimeEntry } from '@/lib/data/time-entries'; import { TimeCorrectionForm } from '@/components/time-correction-form'; import { correctTimeEntry } from '../actions';
-const f = (v: string | null) => v ? new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(v)) : 'Läuft';
-export default async function TimeEntryDetail({ params }: { params: Promise<{ id: string }> }) { const entry = await getTimeEntry((await params).id); if (!entry) notFound(); const job = Array.isArray(entry.jobs) ? entry.jobs[0] : entry.jobs; const member = Array.isArray(entry.company_members) ? entry.company_members[0] : entry.company_members; const profile = Array.isArray(member?.profiles) ? member.profiles[0] : member?.profiles; const audits = entry.time_entry_audit_logs ?? []; return <div className="mx-auto max-w-4xl"><BackLink href="/dashboard/arbeitszeiten">Arbeitszeiten</BackLink><h1 className="text-[1.75rem] font-semibold">Arbeitszeit</h1><Card className="mt-6 p-6"><dl className="grid gap-5 sm:grid-cols-2 text-sm"><div><dt className="text-muted-foreground">Mitarbeiter</dt><dd>{profile?.first_name} {profile?.last_name}</dd></div><div><dt className="text-muted-foreground">Auftrag</dt><dd>{job?.title}</dd></div><div><dt className="text-muted-foreground">Kunde / Objekt</dt><dd>{job?.customers?.[0]?.name} / {job?.cleaning_objects?.[0]?.name}</dd></div><div><dt className="text-muted-foreground">Geplanter Zeitraum</dt><dd>{f(job?.planned_start_at ?? null)} bis {f(job?.planned_end_at ?? null)}</dd></div><div><dt className="text-muted-foreground">Tatsächlich</dt><dd>{f(entry.started_at)} bis {f(entry.finished_at)}</dd></div><div><dt className="text-muted-foreground">Dauer netto / Status</dt><dd>{entry.duration_minutes == null ? 'Läuft' : `${Math.floor(entry.duration_minutes / 60)} h ${entry.duration_minutes % 60} min`} · {entry.finished_at ? 'Beendet' : 'Läuft'}</dd></div><div><dt className="text-muted-foreground">Pausen</dt><dd>{entry.break_minutes ? `${entry.break_minutes} min (von der Dauer abgezogen)` : 'Keine'}</dd></div><div><dt className="text-muted-foreground">Quelle</dt><dd>{entry.start_source === 'MANUAL' ? 'Manuell' : 'App'}</dd></div><div><dt className="text-muted-foreground">Korrekturstatus</dt><dd>{audits.length ? 'Korrigiert' : 'Original'}</dd></div></dl><TimeCorrectionForm action={correctTimeEntry.bind(null, entry.id)} startedAt={entry.started_at} finishedAt={entry.finished_at} /></Card><Card className="mt-5 p-6"><h2 className="font-semibold">Korrekturhistorie</h2>{audits.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">Keine Korrekturen vorhanden.</p> : <div className="mt-4 space-y-4">{audits.map((audit) => { const actor = Array.isArray(audit.profiles) ? audit.profiles[0] : audit.profiles; return <div key={audit.id} className="border-t pt-4 text-sm"><p className="font-medium">Geändert von: {actor?.first_name} {actor?.last_name} · {f(audit.changed_at)}</p><p className="mt-1">Vorheriger Start/Ende: {f(audit.previous_started_at)} bis {f(audit.previous_finished_at)}</p><p>Neuer Start/Ende: {f(audit.new_started_at)} bis {f(audit.new_finished_at)}</p><p className="mt-1 text-muted-foreground">Korrekturgrund: {audit.reason}</p></div>; })}</div>}</Card></div>; }
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { BackLink, Badge, DataRow, PageHeader, Section } from '@/components/ui';
+import { getTimeEntry } from '@/lib/data/time-entries';
+import { TimeCorrectionForm } from '@/components/time-correction-form';
+import { formatDateTime } from '@/lib/format';
+import { correctTimeEntry } from '../actions';
+
+function one<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
+
+function moment(value: string | null) {
+  return value ? formatDateTime('de', value) : 'Läuft';
+}
+
+function duration(minutes: number | null) {
+  if (minutes == null) return 'Läuft';
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`;
+}
+
+export default async function TimeEntryDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const entry = await getTimeEntry(id);
+  if (!entry) notFound();
+
+  const job = one(entry.jobs);
+  const member = one(entry.company_members);
+  const profile = one(member?.profiles);
+  const audits = entry.time_entry_audit_logs ?? [];
+  const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Mitarbeiter';
+  const running = !entry.finished_at;
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <BackLink href="/dashboard/arbeitszeiten">Arbeitszeiten</BackLink>
+      <PageHeader
+        title={name}
+        description={job?.title ?? undefined}
+        meta={
+          <>
+            <Badge tone={running ? 'primary' : 'success'}>{running ? 'Läuft' : 'Beendet'}</Badge>
+            {audits.length > 0 && <Badge tone="warning">Korrigiert</Badge>}
+            <span className="text-sm font-medium tabular-nums text-foreground">
+              {duration(entry.duration_minutes)}
+            </span>
+          </>
+        }
+      />
+
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-8">
+          <Section title="Erfassung">
+            <div className="rounded-xl border border-border/80 bg-card px-5 shadow-card">
+              <dl className="divide-y divide-border/70">
+                <DataRow label="Beginn" value={moment(entry.started_at)} />
+                <DataRow label="Ende" value={moment(entry.finished_at)} />
+                <DataRow label="Dauer netto" value={duration(entry.duration_minutes)} />
+                <DataRow
+                  label="Pausen"
+                  value={
+                    entry.break_minutes
+                      ? `${entry.break_minutes} min, von der Dauer abgezogen`
+                      : 'Keine'
+                  }
+                />
+                <DataRow
+                  label="Quelle"
+                  value={entry.start_source === 'MANUAL' ? 'Manuell erfasst' : 'Mitarbeiter-App'}
+                />
+              </dl>
+            </div>
+          </Section>
+
+          <Section title="Zeit korrigieren">
+            <div className="rounded-xl border border-border/80 bg-card p-5 shadow-card sm:p-6">
+              <TimeCorrectionForm
+                action={correctTimeEntry.bind(null, entry.id)}
+                startedAt={entry.started_at}
+                finishedAt={entry.finished_at}
+              />
+            </div>
+          </Section>
+
+          <Section title="Korrekturhistorie">
+            {audits.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-foreground/15 px-4 py-5 text-sm text-muted-foreground">
+                Die Erfassung ist unverändert.
+              </p>
+            ) : (
+              /* Every correction is auditable, so each one states who, when and
+                 from what to what — never just "geändert". */
+              <ol className="space-y-4">
+                {audits.map((audit) => {
+                  const actor = one(audit.profiles);
+                  return (
+                    <li
+                      key={audit.id}
+                      className="rounded-xl border border-border/80 bg-card p-4 shadow-card"
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        {[actor?.first_name, actor?.last_name].filter(Boolean).join(' ') || 'Büro'}
+                        <span className="ms-2 text-xs font-normal tabular-nums text-muted-foreground">
+                          {formatDateTime('de', audit.changed_at)}
+                        </span>
+                      </p>
+                      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Vorher</dt>
+                          <dd className="tabular-nums line-through decoration-muted-foreground/40">
+                            {moment(audit.previous_started_at)} –{' '}
+                            {moment(audit.previous_finished_at)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">Nachher</dt>
+                          <dd className="font-medium tabular-nums">
+                            {moment(audit.new_started_at)} – {moment(audit.new_finished_at)}
+                          </dd>
+                        </div>
+                      </dl>
+                      <p className="break-anywhere mt-3 border-t border-border/70 pt-3 text-sm text-muted-foreground">
+                        {audit.reason}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </Section>
+        </div>
+
+        <aside className="space-y-6">
+          <section className="rounded-xl border border-border/80 bg-card p-5 shadow-card">
+            <h2 className="mb-1 text-[15px] font-semibold">Auftrag</h2>
+            {job ? (
+              <>
+                <Link
+                  href={`/dashboard/auftraege/${entry.job_id}`}
+                  className="break-anywhere mt-2 block text-sm font-medium text-primary hover:underline"
+                >
+                  {job.title}
+                </Link>
+                <dl className="mt-4 divide-y divide-border/70 border-t border-border/70">
+                  <DataRow label="Kunde" value={one(job.customers)?.name ?? '—'} />
+                  <DataRow label="Objekt" value={one(job.cleaning_objects)?.name ?? '—'} />
+                  <DataRow label="Geplanter Beginn" value={moment(job.planned_start_at ?? null)} />
+                  <DataRow label="Geplantes Ende" value={moment(job.planned_end_at ?? null)} />
+                </dl>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Kein Auftrag verknüpft.</p>
+            )}
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}

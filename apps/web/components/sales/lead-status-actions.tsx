@@ -1,15 +1,12 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { Pencil, X } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
-import { Field, Input, Select } from '@/components/ui';
+import { Button, Field, Input, Select } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
 import { t, type Locale } from '@/lib/i18n';
 
-/**
- * A lead is never marked WON here — only accepting its quote can do that, and
- * the database refuses the shortcut. The reason field appears only for LOST.
- */
 export function LeadStatusActions({
   action,
   locale,
@@ -19,6 +16,16 @@ export function LeadStatusActions({
 }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const [status, setStatus] = useState('CONTACTED');
+  const [editing, setEditing] = useState(false);
+
+  if (!editing) {
+    return (
+      <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+        <Pencil className="size-4" aria-hidden="true" />
+        Bearbeiten
+      </Button>
+    );
+  }
 
   return (
     <form action={formAction} className="space-y-4">
@@ -34,9 +41,15 @@ export function LeadStatusActions({
           <Input id="lost-reason" name="lost_reason" required minLength={3} maxLength={500} />
         </Field>
       )}
-      <SubmitButton locale={locale} variant={status === 'LOST' ? 'danger' : 'default'}>
-        {status === 'LOST' ? t(locale, 'sales.lead.markLost') : t(locale, 'common.save')}
-      </SubmitButton>
+      <div className="flex flex-wrap gap-2">
+        <SubmitButton locale={locale} variant={status === 'LOST' ? 'danger' : 'default'}>
+          {status === 'LOST' ? t(locale, 'sales.lead.markLost') : t(locale, 'common.save')}
+        </SubmitButton>
+        <Button type="button" variant="outline" onClick={() => setEditing(false)}>
+          <X className="size-4" aria-hidden="true" />
+          Abbrechen
+        </Button>
+      </div>
     </form>
   );
 }

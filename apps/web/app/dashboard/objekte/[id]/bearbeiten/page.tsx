@@ -1,12 +1,33 @@
 import { notFound } from 'next/navigation';
 import { CleaningObjectForm } from '@/components/cleaning-object-form';
-import { Card } from '@/components/ui';
+import { FormPage } from '@/components/ui';
 import { getCleaningObject } from '@/lib/data/cleaning-objects';
 import { listCustomerOptions } from '@/lib/data/customers';
 import { listActiveChecklistTemplateOptions } from '@/lib/data/checklists';
 import { updateCleaningObject } from '../../actions';
 
 export default async function EditObjectPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params; const [object, customers, templates] = await Promise.all([getCleaningObject(id), listCustomerOptions(), listActiveChecklistTemplateOptions()]); if (!object) notFound();
-  return <div className="mx-auto max-w-5xl"><div className="mb-7"><h1 className="text-[1.75rem] font-semibold leading-tight">Objekt bearbeiten</h1><p className="mt-2 text-muted-foreground">{object.name}</p></div><Card className="px-5 pb-0 pt-6 sm:px-6"><CleaningObjectForm object={object} customers={customers} templates={templates} action={updateCleaningObject.bind(null, object.id)} submitLabel="Änderungen speichern" /></Card></div>;
+  const { id } = await params;
+  const [object, customers, templates] = await Promise.all([
+    getCleaningObject(id),
+    listCustomerOptions(),
+    listActiveChecklistTemplateOptions(),
+  ]);
+  if (!object) notFound();
+
+  return (
+    <FormPage
+      back={{ href: `/dashboard/objekte/${object.id}`, label: object.name }}
+      title="Objekt bearbeiten"
+      stickyActions
+    >
+      <CleaningObjectForm
+        object={object}
+        customers={customers}
+        templates={templates}
+        action={updateCleaningObject.bind(null, object.id)}
+        submitLabel="Änderungen speichern"
+      />
+    </FormPage>
+  );
 }
