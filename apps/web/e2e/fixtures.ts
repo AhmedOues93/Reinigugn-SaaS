@@ -1,4 +1,4 @@
-import { expect, test as base, type Page } from '@playwright/test';
+import { expect, test as base, type Locator, type Page } from '@playwright/test';
 
 /**
  * Shared machinery for the authenticated suite.
@@ -156,6 +156,29 @@ export async function openFirstRecord(page: Page, base: string, suffix = ''): Pr
   if (!href) return null;
   await page.goto(`${href}${suffix}`);
   return href;
+}
+
+
+/**
+ * Ist dieses Bedienelement da? Wartet kurz, statt sofort zu urteilen.
+ *
+ * `locator.count()` wartet nicht. Auf einer langsamen Maschine fragt ein Test
+ * damit, bevor die Insel fertig gerendert ist, bekommt 0 und uebersprang sich
+ * mit "not in a startable state" -- auf einem Einsatz, der sehr wohl startbar
+ * war. Nachgemessen am Einsatz "Buerohaus Alster": der Knopf "Einsatz
+ * starten" war im naechsten Lauf da, ohne dass sich an den Daten etwas
+ * geaendert hatte.
+ *
+ * Darum eine kurze Wartezeit auf das Erscheinen. Fehlt das Element wirklich,
+ * kostet das diese Sekunden -- ein Ueberspringen aus Versehen kostet mehr.
+ */
+export async function present(locator: Locator, timeout = 5_000): Promise<boolean> {
+  try {
+    await locator.first().waitFor({ state: 'visible', timeout });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Signs in and lands on whichever surface the role belongs to. */

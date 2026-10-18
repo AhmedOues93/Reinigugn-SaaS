@@ -98,12 +98,30 @@ Gegen den Wegwerf-Stack, nicht gegen `harness.sql`:
 | **`get_public_quote_v2`** | `lib/data/public-quote.ts` ruft diese Funktion auf; im Repository gibt es sie in **keiner** Migration. `getPublicQuote()` gibt bei Fehler `null` zurück — die öffentliche Angebotsseite sah für **jeden** gültigen Link aus wie ein abgelaufener. | App-Fehler. In derselben Migration angelegt: wortgleich zu `get_public_quote`, plus `accepted_signature_text`. |
 | `supabase/test/public-quote-signature.test.sql` | Beide Namen standen bis dahin nur in der Erlaubnisliste von `auth-throttle-hardening.test.sql` — geprüft wurde, *wer* sie aufrufen darf, nie *ob sie tun, was sie sollen*. | Neue Suite, die den Weg der Kundin fährt: Link öffnen, lesen, mit getipptem Namen annehmen; dazu die Gegenrichtung (kein zweites Mal, keine Unterschrift ohne Annahme, falscher und zu kurzer Token). Fällt ohne die Migration durch — nachgeprüft. |
 
+### Abgearbeitet, dritter Durchgang: `field-app.spec.ts`
+
+Alle sechs Fälle laufen jetzt wirklich — drei liefen vorher nie.
+
+| Befund | Entscheidung |
+|---|---|
+| „a checklist item can be ticked" suchte `getByRole('checkbox')` und fand **nie** etwas. Die App rendert jeden Punkt als `<button aria-pressed>` mit einem Tippziel über die ganze Zeile. Nachgemessen auf einem Einsatz mit sechs Checklistenpunkten: 0 Treffer, der Fall übersprang sich. | Die App hat recht — für eine Hand im Handschuh ist der große Schalter richtig, ein 20-px-Kästchen wäre falsch. Geprüft wird jetzt über `aria-pressed`, also genau den Zustand, den auch eine Vorleseanwendung liest. |
+| Start, Pause und Feierabend sind **zweistufig**: „Einsatz starten" öffnet „Einsatz jetzt starten? … Abbrechen \| Jetzt starten". Die Suite kannte das nicht, tippte den ersten Knopf und erwartete den laufenden Zustand. | Absicht der App (ein Streifer in der Hosentasche darf die Uhr nicht starten). Neuer Helfer `timeAction` bestätigt, wenn nachgefragt wird, und wartet auf das Ende der Buchung statt darauf zu hoffen. |
+| Der Doppeltipp-Test tippte zweimal auf **„Einsatz starten"** — den Knopf, der nur die Rückfrage öffnet. Zweimal darauf kann nichts doppelt starten; die Stelle, an der es weh tut, ist „Jetzt starten". | Umgestellt. Nachgemessen: nach dem Doppeltipp auf die Bestätigung steht genau **eine** Zeitbuchung in der Datenbank. |
+| `locator.count()` wartet nicht. Auf einer langsamen Maschine fragte der Test vor der Hydration, bekam 0 und übersprang sich mit „not in a startable state" — auf einem Einsatz, der sehr wohl startbar war. | Neuer Helfer `present()` in `fixtures.ts` wartet kurz auf das Erscheinen, bevor er Abwesenheit feststellt. Ein Überspringen aus Versehen kostet mehr als die Sekunden. |
+
+Was dabei **kein** Befund war, und warum das hier steht: ein Lauf blieb 90
+Sekunden auf „Wird gestartet …" stehen. Das sah nach einer hängenden
+Serveraktion aus. Es war meine eigene Hinterlassenschaft — eine offene
+Zeitbuchung aus einem vorherigen Versuch, wegen der `start_my_job` zu Recht
+ablehnte. Aus sauberem Zustand läuft der Ablauf in 16 Sekunden durch, und die
+Einsatzseite rendert in rund einer Sekunde.
+
 ### Offen
 
 Diese Dateien sind noch nicht Fall für Fall gegen die heutige Anwendung
 gehalten worden:
 
-`field-app.spec.ts`, `master-data.spec.ts`, `onboarding.spec.ts`,
+`master-data.spec.ts`, `onboarding.spec.ts`,
 `portal-and-security.spec.ts`, `roles.spec.ts`, `sales-to-operations.spec.ts`,
 `service-acceptance.spec.ts`, `workflows.spec.ts`.
 
