@@ -121,11 +121,29 @@ const recordPattern = (base: string) =>
  * Aussage, die der Aufrufer weiterverwenden kann.
  */
 export async function recordHref(page: Page, base: string): Promise<string | null> {
+  return (await recordHrefs(page, base))[0] ?? null;
+}
+
+/**
+ * Alle Datensatz-Pfade unter `base`, ohne Dubletten und in der Reihenfolge der
+ * Seite.
+ *
+ * Gebraucht, wo ein Test zwei verschiedene Datensaetze braucht. Die Liste
+ * verlinkt denselben Datensatz mehrfach (oeffnen, PDF, Dokument), darum die
+ * Entdoppelung -- sonst waeren "der erste" und "der zweite" dieselbe Rechnung.
+ */
+export async function recordHrefs(page: Page, base: string): Promise<string[]> {
   const hrefs = await page
     .locator(`a[href*="${base}/"]`)
     .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href') ?? ''));
   const pattern = recordPattern(base);
-  return hrefs.find((href) => pattern.test(href)) ?? null;
+  const seen = new Set<string>();
+  for (const href of hrefs) {
+    if (!pattern.test(href)) continue;
+    const match = pattern.exec(href);
+    seen.add(match ? href.slice(0, match[0].replace(/[?#/]$/, '').length) : href);
+  }
+  return [...seen];
 }
 
 /**

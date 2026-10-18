@@ -635,6 +635,7 @@ column     quotes.acceptance_note text
 column     quotes.acceptance_policy acceptance_policy not null
 column     quotes.accepted_at timestamp with time zone
 column     quotes.accepted_by_name text
+column     quotes.accepted_signature_text text
 column     quotes.accepted_via text
 column     quotes.billing_mode billing_mode not null
 column     quotes.calculation_id uuid
@@ -1168,6 +1169,7 @@ constraint quote_lines / quote_lines_vat_rate_basis_points_check c
 constraint quote_number_counters / quote_number_counters_company_id_fkey f
 constraint quote_number_counters / quote_number_counters_pkey p
 constraint quotes / quotes_accept_check c
+constraint quotes / quotes_accepted_signature_check c
 constraint quotes / quotes_accepted_via_check c
 constraint quotes / quotes_calculation_id_fkey f
 constraint quotes / quotes_company_id_fkey f
@@ -1424,6 +1426,7 @@ function   get_my_portal_service_record(p_job_id uuid) security definer
 function   get_onboarding_status() security definer
 function   get_portal_acceptance_mail_target(p_job_id uuid) security definer
 function   get_public_quote(p_token text) security definer
+function   get_public_quote_v2(p_token text) security definer
 function   get_service_record(p_job_id uuid) security definer
 function   guard_final_calculation()
 function   guard_final_calculation_lines()
@@ -1678,6 +1681,8 @@ grant      get_onboarding_status() -> authenticated
 grant      get_portal_acceptance_mail_target(p_job_id uuid) -> authenticated
 grant      get_public_quote(p_token text) -> anon
 grant      get_public_quote(p_token text) -> authenticated
+grant      get_public_quote_v2(p_token text) -> anon
+grant      get_public_quote_v2(p_token text) -> authenticated
 grant      get_service_record(p_job_id uuid) -> authenticated
 grant      is_absence_unavailable(p_member_id uuid, p_date date) -> authenticated
 grant      is_active_employee_member(target_member_id uuid, target_company_id uuid) -> authenticated

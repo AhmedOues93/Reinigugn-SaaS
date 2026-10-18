@@ -87,16 +87,36 @@ Gegen den Wegwerf-Stack, nicht gegen `harness.sql`:
 | `billing.spec.ts` | Gesucht wurde „Position hinzufügen“ und „festschreiben“. Beides gibt es in der Abrechnung nicht: die Kalkulation sagt „Position“, die Abrechnung „Leistung“, und ausgestellt wird mit „Rechnung ausstellen“. Danach rief der Test `test.skip` auf, der halbe Ablauf sah also übersprungen aus statt falsch. | Test-Fehler. Echte Beschriftungen als Konstanten am Anfang der Datei, und der Positionseditor wird aufgeklappt, bevor darin gesucht wird. |
 | `invoice-line-editor.tsx` | Menge, Einzelpreis und Steuersatz waren `type="number"`, der Platzhalter sagt „z. B. 45,00“. Ein `type=number`-Feld kennt nur den Punkt; wer „45,00“ eintippt, hat 4500 im Feld oder nichts — auf dem einen Bildschirm, auf dem Rechnungsbeträge entstehen. Die Serveraktion rechnet das Komma seit immer um. | App-Fehler. `type="number"` entfernt, `inputMode="decimal"` bleibt (Zifferntastatur mit Komma). Die Grenzen prüft die Serveraktion, wo sie ohnehin gelten müssen. |
 
+### Abgearbeitet, zweiter Durchgang
+
+| Spec / App | Befund | Entscheidung |
+|---|---|---|
+| `playwright.config.ts` | Vier Fälle in `office` und `master-data` fielen **ausschließlich** mit „Test timeout of 45000ms exceeded" durch, nicht an einer Zusicherung. Derselbe Fall braucht 37,5 s und besteht — die Grenze lag nur knapp darüber. | Grenze auf 120 s, `expect` auf 15 s. Ein angemeldeter Fall führt einen ganzen Arbeitsablauf aus; die Grenze soll einen hängenden Test beenden, nicht einen langsamen. |
+| `office.spec.ts` | Der Test „an issued invoice offers no line editor" suchte „Position hinzufügen". Den Knopf gibt es in der Abrechnung **nicht** — so heißt er in der Kalkulation. Die Zusicherung war auf jeder Seite erfüllt, auch auf einem Entwurf: **der Test konnte nicht fehlschlagen.** | Umgeschrieben auf beide Richtungen: der Entwurf **muss** den Editor haben, die ausgestellte Rechnung **darf** ihn nicht haben. Erst dadurch weiß die zweite Zusicherung, wonach sie sucht. |
+| `office.spec.ts` | Der Rundgang über 18 Seiten suchte nach „Application error" und „Unhandled Runtime Error" — den **englischen** Zeichenketten von Next.js. Die Anwendung hat eine eigene Fehlergrenze, und die sagt „Etwas ist schiefgelaufen". Eine kaputte Seite lief durch. | Die eigene Fehlerseite steht jetzt in der Liste. Zusätzlich nennt die Überschriftsprüfung den Pfad — ein Rundgang, der nur „element(s) not found" sagt, kostet den nächsten Leser einen Trace-Download. |
+| **`quotes.accepted_signature_text`** | Die Spalte gab es in keiner Migration, obwohl `accept_public_quote_signed()` sie liest und schreibt und `getQuote()` sie auswählt. Nachgewiesen: `record "t" has no field "accepted_signature_text"`. **Drei Oberflächen waren kaputt:** `/dashboard/vertrieb/angebote/[id]`, das Angebots-PDF und `/dashboard/settings` (lädt das letzte Angebot für die Vorschau) — dort waren Passwort, Mailversand und Firmendaten unerreichbar. Online unterschreiben konnte niemand. | App-Fehler. Migration `20261018000000` legt die Spalte an, mit Prüfbedingung: eine Unterschrift ohne Annahme gibt es nicht. |
+| **`get_public_quote_v2`** | `lib/data/public-quote.ts` ruft diese Funktion auf; im Repository gibt es sie in **keiner** Migration. `getPublicQuote()` gibt bei Fehler `null` zurück — die öffentliche Angebotsseite sah für **jeden** gültigen Link aus wie ein abgelaufener. | App-Fehler. In derselben Migration angelegt: wortgleich zu `get_public_quote`, plus `accepted_signature_text`. |
+| `supabase/test/public-quote-signature.test.sql` | Beide Namen standen bis dahin nur in der Erlaubnisliste von `auth-throttle-hardening.test.sql` — geprüft wurde, *wer* sie aufrufen darf, nie *ob sie tun, was sie sollen*. | Neue Suite, die den Weg der Kundin fährt: Link öffnen, lesen, mit getipptem Namen annehmen; dazu die Gegenrichtung (kein zweites Mal, keine Unterschrift ohne Annahme, falscher und zu kurzer Token). Fällt ohne die Migration durch — nachgeprüft. |
+
 ### Offen
 
-Diese Dateien sind noch nicht gegen die heutige Anwendung gehalten worden.
-Sie laufen, aber es ist nicht geprüft, ob jeder Fall das misst, was sein Name
-behauptet:
+Diese Dateien sind noch nicht Fall für Fall gegen die heutige Anwendung
+gehalten worden:
 
-`field-app.spec.ts`, `master-data.spec.ts`, `office.spec.ts`,
-`onboarding.spec.ts`, `portal-and-security.spec.ts`, `roles.spec.ts`,
-`sales-to-operations.spec.ts`, `service-acceptance.spec.ts`,
-`workflows.spec.ts`.
+`field-app.spec.ts`, `master-data.spec.ts`, `onboarding.spec.ts`,
+`portal-and-security.spec.ts`, `roles.spec.ts`, `sales-to-operations.spec.ts`,
+`service-acceptance.spec.ts`, `workflows.spec.ts`.
+
+Statisch geprüft sind sie: jedes Formularfeld und fast jede Beschriftung, die
+sie ansprechen, existiert in der Anwendung. Was das nicht findet, ist genau
+die Klasse von Fehlern, die dieser Durchgang gefunden hat — eine Zusicherung,
+die immer zutrifft, und ein Überspringen, das wie ein Erfolg aussieht.
+
+Ein bekanntes Muster dafür ist der Statusfilter: `?status=ISSUED` liefert
+nichts, wenn die Liste auf den *angezeigten* Status filtert und eine
+ausgestellte Rechnung nach Fälligkeit dort OVERDUE heißt. Zwei Tests
+übersprangen sich deshalb stillschweigend auf einem Mandanten, der genau die
+gesuchte Rechnung hatte.
 
 Dazu zwei Dinge, die zur Suite gehören und erst mit ihr zurückkommen:
 

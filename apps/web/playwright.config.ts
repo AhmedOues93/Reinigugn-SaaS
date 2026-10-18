@@ -29,8 +29,31 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
-  timeout: 45_000,
-  expect: { timeout: 10_000 },
+  /*
+   * Die Zeitgrenze je Test.
+   *
+   * 45 Sekunden reichten fuer die oeffentlichen Seiten und nicht fuer die
+   * angemeldeten: dort fuehrt ein Test einen ganzen Arbeitsablauf aus --
+   * anmelden, mehrere servergerenderte Seiten, je eine Serveraktion mit
+   * Datenbankrunde.
+   *
+   * Nachgemessen auf einer langsamen Maschine fielen vier Faelle in `office`
+   * und `master-data` ausschliesslich mit "Test timeout of 45000ms exceeded"
+   * durch -- nicht an einer Zusicherung. Derselbe Fall, der vorher durchfiel,
+   * braucht 37,5 Sekunden und besteht: die alte Grenze lag also nur knapp
+   * darueber, und so knapp darf sie nicht liegen.
+   *
+   * Die Grenze soll einen haengenden Test beenden, nicht einen langsamen.
+   * Darum 120 Sekunden -- das Dreifache des langsamsten gemessenen Ablaufs,
+   * also weiterhin ein Riegel.
+   *
+   * Einzelne Dateien verdreifachen das mit `test.slow()`. Ob jene Faelle
+   * wirklich so lange brauchen oder haengen, ist noch nicht untersucht: der
+   * erste CI-Lauf dieser Suite nannte Faelle mit 2,3 Minuten, und das ist
+   * genau die alte `test.slow()`-Grenze.
+   */
+  timeout: 120_000,
+  expect: { timeout: 15_000 },
 
   use: {
     baseURL: externalTarget ?? `http://127.0.0.1:${port}`,

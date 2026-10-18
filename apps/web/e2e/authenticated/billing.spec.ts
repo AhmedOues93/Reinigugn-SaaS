@@ -121,15 +121,32 @@ test.describe('billing', () => {
   });
 
   test('an issued invoice reports its delivery state honestly', async ({ page }) => {
-    await page.goto('/dashboard/abrechnung?status=ISSUED');
-    const issued = await openFirstRecord(page, '/dashboard/abrechnung');
-    test.skip(!issued, 'no issued invoice in this environment');
+    /*
+     * Zwei Filter, nicht einer.
+     *
+     * `?status=ISSUED` war das Naheliegende und liefert oft nichts: die Liste
+     * filtert auf den *angezeigten* Status, und eine ausgestellte Rechnung
+     * nach Faelligkeit heisst dort OVERDUE. Der Test uebersprang sich
+     * stillschweigend, obwohl der Mandant genau so eine Rechnung hatte.
+     *
+     * Beide Filter zusammen treffen genau das Gesuchte: ausgestellt und noch
+     * nicht bezahlt. Die bezahlte Rechnung waere der falsche Beleg -- dort
+     * steht statt der Versandwege die Zahlung.
+     */
+    let invoice: string | null = null;
+    for (const status of ['ISSUED', 'OVERDUE']) {
+      await page.goto(`/dashboard/abrechnung?status=${status}`);
+      invoice = await openFirstRecord(page, '/dashboard/abrechnung');
+      if (invoice) break;
+    }
+    test.skip(!invoice, 'no issued, unpaid invoice in this environment');
+    await expect(page.getByText(/RE-\d{4}-\d{4}/).first(), 'keine Rechnungsnummer auf der Seite').toBeVisible();
+
     // Either e-mail is configured and offered, or the screen says it is not and
     // offers the manual route. Never a claimed send with nothing behind it.
-    const body = page.locator('body');
-    await expect(
-      body.filter({ hasText: /per e-mail senden|nicht eingerichtet|manuell/i }).first(),
-    ).toBeVisible();
+    await expect(page.locator('body')).toContainText(
+      /per e-mail senden|nicht eingerichtet|per post|persönlich übergeben/i,
+    );
   });
 });
 

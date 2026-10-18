@@ -246,6 +246,10 @@ insert into anon_definer_allowlist values
   ('accept_public_quote_signed(p_token text, p_name text, p_signature text, p_note text)'),
   ('decline_public_quote(p_token text, p_reason text)'),
   ('get_public_quote(p_token text)'),
+  -- Dieselbe Angebotsseite, nur mit der Unterschrift in der Antwort. Gleiche
+  -- Haltung wie oben: Zugang allein ueber den Token, und nur versendete oder
+  -- entschiedene Angebote; ein Entwurf ist darueber nicht erreichbar.
+  ('get_public_quote_v2(p_token text)'),
   -- Einladung: dito, der Token ist der Zugang.
   ('get_invitation_preview(p_token text)'),
   ('get_invitation_state(p_token text)'),
