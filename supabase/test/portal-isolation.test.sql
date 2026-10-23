@@ -129,6 +129,7 @@ select public.add_invoice_line((select inv1 from pinv), 'Reinigung Eins', 1, 'Ei
 select public.add_invoice_line((select inv2 from pinv), 'Reinigung Zwei', 1, 'Einsatz', 20000, 1900);
 select public.issue_invoice((select inv1 from pinv));
 select public.issue_invoice((select inv2 from pinv));
+select public.record_invoice_payment((select inv1 from pinv), current_date, 'BANK_TRANSFER', null, 4000, null, 'portal-partial-test');
 select pg_temp.sign_out();
 
 -- ---------------------------------------------------------------------------
@@ -151,6 +152,11 @@ select pg_temp.assert(
   (select count(*) from public.list_my_portal_invoices()) = 1
   and (select gross_total_cents from public.list_my_portal_invoices()) = 11900,
   'nur die eigene Rechnung, mit dem eigenen Betrag');
+select pg_temp.assert(
+  (select count(*) from public.list_my_portal_invoices_with_balance()) = 1
+  and (select gross_total_cents from public.list_my_portal_invoices_with_balance()) = 11900
+  and (select outstanding_cents from public.list_my_portal_invoices_with_balance()) = 7900,
+  'Teilzahlung wird vom offenen Betrag der eigenen Rechnung abgezogen');
 select pg_temp.assert(
   (select count(*) from public.list_my_portal_service_records()) = 1,
   'nur den eigenen Leistungsnachweis');
@@ -206,6 +212,10 @@ select pg_temp.assert(
 select pg_temp.assert(
   (select gross_total_cents from public.list_my_portal_invoices()) = 23800,
   'und seine eigene Rechnung');
+select pg_temp.assert(
+  (select count(*) from public.list_my_portal_invoices_with_balance()) = 1
+  and (select outstanding_cents from public.list_my_portal_invoices_with_balance()) = 23800,
+  'der andere Kunde sieht nur seinen eigenen offenen Betrag');
 -- `add_my_complaint_update` heisst "my", ist aber trotz des Namens keine
 -- Portalfunktion: sie verlangt die Rolle EMPLOYEE und den Einsatzbezug. Ein
 -- Portalkunde kommt also gar nicht daran -- festgehalten, weil der Name das
@@ -234,6 +244,7 @@ select pg_temp.assert(
   'und kein Objekt aus dem fremden Betrieb');
 select pg_temp.assert(
   (select count(*) from public.list_my_portal_invoices()) = 0
+  and (select count(*) from public.list_my_portal_invoices_with_balance()) = 0
   and (select count(*) from public.list_my_portal_service_records()) = 0
   and (select count(*) from public.list_my_portal_upcoming_jobs(current_date - 10, 30)) = 0,
   'und keine Rechnung, keinen Nachweis und keinen Einsatz des fremden Betriebs');
