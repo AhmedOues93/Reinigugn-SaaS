@@ -10,7 +10,7 @@ import { t } from '@/lib/i18n';
 
 export default async function PortalInvoicesPage() {
   const [locale, invoices] = await Promise.all([portalLocale(), listPortalInvoices()]);
-  const openCents = invoices.filter((invoice) => invoice.status === 'ISSUED').reduce((total, invoice) => total + invoice.gross_total_cents, 0);
+  const openCents = invoices.filter((invoice) => invoice.status === 'ISSUED').reduce((total, invoice) => total + Number(invoice.outstanding_cents), 0);
 
   return (
     <>

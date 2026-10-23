@@ -22,7 +22,7 @@ export default async function PortalOverviewPage() {
   ]);
 
   const open = invoices.filter((invoice) => invoice.status === 'ISSUED');
-  const openCents = open.reduce((total, invoice) => total + invoice.gross_total_cents, 0);
+  const openCents = open.reduce((total, invoice) => total + Number(invoice.outstanding_cents), 0);
   const overdue = open.filter((invoice) => invoice.is_overdue);
   const nextDue = [...open].sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
   const next = upcoming[0];

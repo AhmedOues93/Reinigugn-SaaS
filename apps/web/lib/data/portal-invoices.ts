@@ -10,13 +10,14 @@ export type PortalInvoice = {
   service_period_end: string;
   currency: string;
   gross_total_cents: number;
+  outstanding_cents: number;
   is_overdue: boolean;
   paid_at: string | null;
 };
 
 export async function listPortalInvoices(): Promise<PortalInvoice[]> {
   const { supabase } = await requirePortalCustomer();
-  const { data, error } = await supabase.rpc('list_my_portal_invoices');
+  const { data, error } = await supabase.rpc('list_my_portal_invoices_with_balance');
   if (error) throw new Error('Rechnungen konnten nicht geladen werden.');
   return data ?? [];
 }

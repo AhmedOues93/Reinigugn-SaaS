@@ -168,7 +168,8 @@ select pg_temp.assert(
 -- Genehmigter Urlaub senkt das Soll, nicht das Ist.
 select pg_temp.sign_out();
 insert into public.employee_absences (company_id, member_id, absence_type, status, start_date, end_date)
-select company, (select staff from kmem), 'VACATION', 'APPROVED', first_day, first_day + 20 from kctx;
+select company, (select staff from kmem), 'VACATION', 'APPROVED', first_day,
+       (first_day + interval '1 month - 1 day')::date from kctx;
 select pg_temp.sign_in('e3300000-0000-4000-8000-000000000001');
 select pg_temp.assert(
   (select target_minutes_to_date from public.company_capacity_snapshot()) = 0,

@@ -1470,6 +1470,7 @@ function   list_monthly_work_summary(p_month date) security definer
 function   list_my_portal_acceptances() security definer
 function   list_my_portal_complaints() security definer
 function   list_my_portal_invoices() security definer
+function   list_my_portal_invoices_with_balance() security definer
 function   list_my_portal_job_photos(p_job_id uuid) security definer
 function   list_my_portal_objects() security definer
 function   list_my_portal_quotes() security definer
@@ -1718,6 +1719,7 @@ grant      list_monthly_work_summary(p_month date) -> authenticated
 grant      list_my_portal_acceptances() -> authenticated
 grant      list_my_portal_complaints() -> authenticated
 grant      list_my_portal_invoices() -> authenticated
+grant      list_my_portal_invoices_with_balance() -> authenticated
 grant      list_my_portal_job_photos(p_job_id uuid) -> authenticated
 grant      list_my_portal_objects() -> authenticated
 grant      list_my_portal_quotes() -> authenticated
