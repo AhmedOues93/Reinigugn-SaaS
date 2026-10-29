@@ -36,10 +36,10 @@ idempotent: ein mehrfach zugestelltes Event aendert den Abo-Status nur einmal.
 
 Der aktuelle Rollout bleibt im Pilotmodus: `REINPLAN_BILLING_ENABLED=false`
 (Standard). Checkout und Portal melden 503, die Abo-Seite erklärt den Pilotzugang.
-Es gibt noch keine produktweite Sperre nach Testende. Layouts sind keine
-Autorisierungsgrenze: eine spätere Sperre muss auch Server Actions, API und direkte
-Datenbankzugriffe abdecken und den Zugriff auf Zahlung/Konto/Exports erhalten.
-Diese Aktivierung erfolgt erst nach einem vollständigen Pilotworkflow.
+Die Sperre nach Testende ist implementiert, aber ausgeschaltet. Sie deckt Seiten,
+Server Actions und direkte Schreibzugriffe ab und erhält Abo, Zwei-Faktor und Exporte.
+Eingeschaltet wird sie in der Plattform-Konsole (`/platform`), siehe
+`docs/platform-console.md`.
 
 Die bereits live angewandte Basismigration ist `20261005091015`; die ältere lokale
 Version `20261005084215` darf nicht erneut angewandt werden. Die Folgemigration

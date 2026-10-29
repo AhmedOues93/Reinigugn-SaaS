@@ -25,6 +25,7 @@ The public root `/` is the marketing landing page and must not redirect authenti
 | Office | `/dashboard` | `OWNER`, `OFFICE` |
 | Employee app | `/mitarbeiter` | `EMPLOYEE` |
 | Customer portal | `/portal` | `CUSTOMER` |
+| Platform console | `/platform` | ReinPlan operators (`platform_admins`, see `docs/platform-console.md`) |
 
 The interface supports German, English, Arabic, Turkish and Ukrainian. Product configuration is tenant-aware, including company identity and document branding.
 
@@ -75,6 +76,7 @@ Operational documentation:
 - `docs/database.md` - database design
 - `docs/security.md` - security model
 - `docs/hosting.md` - hosting requirements
+- `docs/platform-console.md` - operator console and access enforcement
 
 ## Repository policy
 

@@ -1,7 +1,8 @@
 import { CheckCircle2, Clock3, CreditCard, TriangleAlert } from 'lucide-react';
 import { Badge, Card, CardHeader, DataRow, Notice, PageHeader, Section } from '@/components/ui';
 import { SubscriptionActions } from '@/components/subscription-actions';
-import { getMyCompanySubscription, subscriptionCanUseProduct } from '@/lib/data/subscription';
+import { getMyCompanySubscription, hasCompAccess, subscriptionCanUseProduct } from '@/lib/data/subscription';
+import { isUnlimitedComp } from '@/lib/platform-metrics';
 import { reinPlanPlans, trialDaysLeft } from '@/lib/subscription';
 
 function formatDate(value: string | null | undefined) {
@@ -21,6 +22,8 @@ export default async function SubscriptionPage({
   const days = trialDaysLeft(subscription?.trial_ends_at);
   const currentPlan = subscription?.plan ? reinPlanPlans[subscription.plan] : null;
   const hasStripeCustomer = Boolean(subscription?.stripe_customer_id);
+  const comp = hasCompAccess(subscription) && subscription?.status !== 'ACTIVE';
+  const suspended = Boolean(subscription?.suspended_at);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -46,13 +49,14 @@ export default async function SubscriptionPage({
           description={subscription?.status === 'ACTIVE' ? 'Ihr ReinPlan-Zugang ist aktiv.' : 'Sie entscheiden erst nach dem Testzeitraum.'}
           action={
             <Badge tone={usable ? 'success' : 'danger'}>
-              {subscription?.status === 'ACTIVE' ? 'Aktiv' : usable ? 'Kostenloser Test' : 'Zugang abgelaufen'}
+              {suspended ? 'Gesperrt' : subscription?.status === 'ACTIVE' ? 'Aktiv' : comp ? 'Freier Zugang' : usable ? 'Kostenloser Test' : 'Zugang abgelaufen'}
             </Badge>
           }
         />
         <dl className="divide-y divide-border/80 px-5 sm:px-6">
           <DataRow label="Tarif" value={currentPlan ? `${currentPlan.name} · bis ${currentPlan.employeeLimit} Mitarbeitende` : 'Noch nicht gewählt'} />
           <DataRow label="Testzeitraum endet" value={formatDate(subscription?.trial_ends_at)} />
+          {comp && <DataRow label="Freier Zugang bis" value={isUnlimitedComp(subscription?.comp_access_until ?? null) ? 'unbefristet' : formatDate(subscription?.comp_access_until)} />}
           {subscription?.current_period_ends_at && <DataRow label="Nächste Verlängerung" value={formatDate(subscription.current_period_ends_at)} />}
           {subscription?.cancel_at_period_end && <DataRow label="Kündigung" value="Zum Ende des aktuellen Abrechnungszeitraums vorgemerkt" />}
         </dl>
@@ -63,7 +67,12 @@ export default async function SubscriptionPage({
           Wählen Sie schon jetzt Ihren Tarif. Die Zahlungsdaten werden sicher bei Stripe gespeichert; die erste Belastung beginnt erst nach dem kostenlosen Testzeitraum.
         </Notice>
       )}
-      {billingEnabled && !usable && (
+      {suspended && (
+        <Notice tone="danger" icon={<TriangleAlert />} title="Zugang gesperrt">
+          Der Zugang Ihres Betriebs wurde vorübergehend gesperrt. Ihre Daten bleiben erhalten. Bitte nehmen Sie Kontakt mit uns auf.
+        </Notice>
+      )}
+      {billingEnabled && !usable && !suspended && (
         <Notice tone="warning" icon={<TriangleAlert />} title="Testzeitraum beendet">
           Wählen Sie einen Tarif, damit Ihr Team ohne Unterbrechung weiterarbeiten kann.
         </Notice>

@@ -1,5 +1,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
+import { ACCESS_PAUSED_PATH, isAccessReason, isPathAllowedWithoutAccess, type AccessReason } from '@/lib/access';
 import { createClient } from '@/lib/supabase/server';
 import { landingPathForRole } from '@/lib/landing';
 import { type AssuranceLevel, mfaDecision, mfaRedirect } from '@/lib/mfa';
@@ -60,7 +62,56 @@ export async function getCurrentCompany() {
     .limit(1)
     .maybeSingle();
 
+  if (membership) await enforceCompanyAccess(membership.company_id, membership.role);
+
   return { supabase, user, profile, membership };
+}
+
+/**
+ * Einmal pro Anfrage: hat der Betrieb Zugang? Die Regel steht in der
+ * Datenbank (`company_has_access`), damit App und Schreibsperre nicht
+ * auseinanderlaufen.
+ *
+ * Schlaegt die Abfrage fehl -- etwa weil die Migration auf einer Umgebung noch
+ * nicht eingespielt ist --, bleibt der Zugang offen. Ein Fehler hier darf nicht
+ * jeden Betrieb aussperren; die Datenbank schuetzt die Daten ohnehin selbst.
+ */
+const companyHasAccess = cache(async (companyId: string): Promise<boolean> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('company_has_access', { target_company_id: companyId });
+  if (error) {
+    console.error(JSON.stringify({ event: 'reinplan.access_check_failed', code: error.code ?? null }));
+    return true;
+  }
+  return data !== false;
+});
+
+/**
+ * Ohne Zugang auf die Hinweisseite -- ausser fuer die Seiten, die ein Betrieb
+ * braucht, um das zu aendern (Abo, Zwei-Faktor) oder seine Daten mitzunehmen.
+ * Steht hier, weil jede Seite, jede Server Action und jede Route mit
+ * Mitgliedschaft durch diese Funktion laeuft.
+ */
+async function enforceCompanyAccess(companyId: string, role: string) {
+  if (await companyHasAccess(companyId)) return;
+  if (isPathAllowedWithoutAccess(await currentPathname(), role)) return;
+  redirect(ACCESS_PAUSED_PATH);
+}
+
+/**
+ * Zugang und Grund fuer die Hinweisseite. Ob umgeleitet wird, entscheidet
+ * dieselbe Pruefung wie in `enforceCompanyAccess` -- sonst koennte die Seite
+ * bei einem Fehler der Grund-Abfrage zurueck ins Dashboard schicken, das
+ * wieder hierher schickt. Der Grund waehlt nur den Satz.
+ */
+export async function getCompanyAccessReason(companyId: string): Promise<{ hasAccess: boolean; reason: AccessReason }> {
+  const hasAccess = await companyHasAccess(companyId);
+  if (hasAccess) return { hasAccess, reason: 'OK' };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('get_my_company_access', { target_company_id: companyId });
+  const row = (Array.isArray(data) ? data[0] : data) as { reason?: unknown } | null;
+  const reason = !error && isAccessReason(row?.reason) && row.reason !== 'OK' ? row.reason : 'TRIAL_ENDED';
+  return { hasAccess, reason };
 }
 
 /**
