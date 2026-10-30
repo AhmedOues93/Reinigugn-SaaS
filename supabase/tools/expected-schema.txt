@@ -256,6 +256,8 @@ column     company_subscriptions.cancel_at_period_end boolean not null
 column     company_subscriptions.checkout_expires_at timestamp with time zone
 column     company_subscriptions.checkout_key uuid
 column     company_subscriptions.checkout_plan reinplan_subscription_plan
+column     company_subscriptions.comp_access_note text
+column     company_subscriptions.comp_access_until timestamp with time zone
 column     company_subscriptions.company_id uuid not null
 column     company_subscriptions.created_at timestamp with time zone not null
 column     company_subscriptions.current_period_ends_at timestamp with time zone
@@ -266,6 +268,8 @@ column     company_subscriptions.stripe_customer_id text
 column     company_subscriptions.stripe_event_created bigint not null
 column     company_subscriptions.stripe_price_id text
 column     company_subscriptions.stripe_subscription_id text
+column     company_subscriptions.suspended_at timestamp with time zone
+column     company_subscriptions.suspended_reason text
 column     company_subscriptions.trial_ends_at timestamp with time zone not null
 column     company_subscriptions.trial_started_at timestamp with time zone not null
 column     company_subscriptions.updated_at timestamp with time zone not null
@@ -592,6 +596,20 @@ column     payroll_periods.created_at timestamp with time zone not null
 column     payroll_periods.id uuid not null
 column     payroll_periods.period date not null
 column     payroll_periods.status text not null
+column     platform_admin_actions.action text not null
+column     platform_admin_actions.actor_auth_user_id uuid
+column     platform_admin_actions.actor_email text
+column     platform_admin_actions.company_id uuid
+column     platform_admin_actions.company_name text
+column     platform_admin_actions.detail jsonb not null
+column     platform_admin_actions.id uuid not null
+column     platform_admin_actions.occurred_at timestamp with time zone not null
+column     platform_admins.auth_user_id uuid not null
+column     platform_admins.created_at timestamp with time zone not null
+column     platform_admins.note text
+column     platform_settings.enforce_access boolean not null
+column     platform_settings.id boolean not null
+column     platform_settings.updated_at timestamp with time zone not null
 column     profiles.auth_user_id uuid not null
 column     profiles.avatar_storage_path text
 column     profiles.created_at timestamp with time zone not null
@@ -1146,6 +1164,12 @@ constraint payroll_periods / payroll_periods_company_id_period_key u
 constraint payroll_periods / payroll_periods_period_check c
 constraint payroll_periods / payroll_periods_pkey p
 constraint payroll_periods / payroll_periods_status_check c
+constraint platform_admin_actions / platform_admin_actions_company_id_fkey f
+constraint platform_admin_actions / platform_admin_actions_pkey p
+constraint platform_admins / platform_admins_auth_user_id_fkey f
+constraint platform_admins / platform_admins_pkey p
+constraint platform_settings / platform_settings_id_check c
+constraint platform_settings / platform_settings_pkey p
 constraint profiles / profiles_auth_user_id_fkey f
 constraint profiles / profiles_auth_user_id_key u
 constraint profiles / profiles_pkey p
@@ -1345,6 +1369,7 @@ function   cleanup_operational_photo_metadata_after_storage_delete() security de
 function   clear_auth_attempts(p_scope text, p_bucket text, p_proof text) security definer
 function   clear_company_logo() security definer
 function   company_capacity_snapshot(p_month date) security definer
+function   company_has_access(target_company_id uuid) security definer
 function   complete_company_invitation(p_token text) security definer
 function   complete_my_checklist_item(p_item_id uuid, p_completed boolean) security definer
 function   complete_onboarding_step(p_step text, p_finished boolean) security definer
@@ -1417,6 +1442,7 @@ function   german_public_holidays(p_year integer)
 function   get_invitation_preview(p_token text) security definer
 function   get_invitation_state(p_token text) security definer
 function   get_leistungsverzeichnis(p_calculation_id uuid) security definer
+function   get_my_company_access(target_company_id uuid) security definer
 function   get_my_job_acceptance(p_job_id uuid) security definer
 function   get_my_portal_acceptance(p_job_id uuid) security definer
 function   get_my_portal_invoice(p_invoice_id uuid) security definer
@@ -1452,6 +1478,7 @@ function   is_company_staff(target_company_id uuid) security definer
 function   is_current_job_assignee(target_job_id uuid) security definer
 function   is_current_member(target_member_id uuid) security definer
 function   is_payroll_month_released(p_company uuid, p_day date) security definer
+function   is_platform_admin() security definer
 function   is_portal_customer_of(p_company_id uuid, p_customer_id uuid) security definer
 function   is_staff_for_profile(target_profile_id uuid) security definer
 function   is_supported_locale(p_locale text)
@@ -1501,6 +1528,16 @@ function   payroll_release_figures(p_month date, p_sequence integer) security de
 function   personnel_cost_per_hour(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer)
 function   phase7_current_member() security definer
 function   plan_window_automatically(p_from date, p_to date) security definer
+function   platform_admin_actions_immutable()
+function   platform_get_settings() security definer
+function   platform_list_actions(p_limit integer) security definer
+function   platform_list_companies() security definer
+function   platform_log(p_company_id uuid, p_action text, p_detail jsonb) security definer
+function   platform_require_admin() security definer
+function   platform_set_comp_access(p_company_id uuid, p_until timestamp with time zone, p_note text) security definer
+function   platform_set_enforce_access(p_enforce boolean) security definer
+function   platform_set_suspended(p_company_id uuid, p_suspended boolean, p_reason text) security definer
+function   platform_set_trial_end(p_company_id uuid, p_trial_ends_at timestamp with time zone) security definer
 function   price_from_margin(p_cost_cents bigint, p_margin_bp integer)
 function   reassign_absence_affected_job(p_job_id uuid, p_from_member_id uuid, p_to_member_id uuid) security definer
 function   recalculate_calculation(p_calculation_id uuid) security definer
@@ -1615,6 +1652,7 @@ grant      cancel_invoice(p_invoice_id uuid, p_reason text) -> authenticated
 grant      clear_auth_attempts(p_scope text, p_bucket text, p_proof text) -> authenticated
 grant      clear_company_logo() -> authenticated
 grant      company_capacity_snapshot(p_month date) -> authenticated
+grant      company_has_access(target_company_id uuid) -> authenticated
 grant      complete_company_invitation(p_token text) -> authenticated
 grant      complete_my_checklist_item(p_item_id uuid, p_completed boolean) -> authenticated
 grant      complete_onboarding_step(p_step text, p_finished boolean) -> authenticated
@@ -1671,6 +1709,7 @@ grant      get_invitation_preview(p_token text) -> authenticated
 grant      get_invitation_state(p_token text) -> anon
 grant      get_invitation_state(p_token text) -> authenticated
 grant      get_leistungsverzeichnis(p_calculation_id uuid) -> authenticated
+grant      get_my_company_access(target_company_id uuid) -> authenticated
 grant      get_my_job_acceptance(p_job_id uuid) -> authenticated
 grant      get_my_portal_acceptance(p_job_id uuid) -> authenticated
 grant      get_my_portal_invoice(p_invoice_id uuid) -> authenticated
@@ -1699,6 +1738,7 @@ grant      is_company_owner(target_company_id uuid) -> authenticated
 grant      is_company_staff(target_company_id uuid) -> authenticated
 grant      is_current_job_assignee(target_job_id uuid) -> authenticated
 grant      is_current_member(target_member_id uuid) -> authenticated
+grant      is_platform_admin() -> authenticated
 grant      is_portal_customer_of(p_company_id uuid, p_customer_id uuid) -> authenticated
 grant      is_staff_for_profile(target_profile_id uuid) -> authenticated
 grant      is_supported_locale(p_locale text) -> anon
@@ -1748,6 +1788,13 @@ grant      personnel_cost_per_hour(p_wage_cents bigint, p_ancillary_bp integer, 
 grant      personnel_cost_per_hour(p_wage_cents bigint, p_ancillary_bp integer, p_productive_bp integer, p_overhead_bp integer) -> authenticated
 grant      phase7_current_member() -> authenticated
 grant      plan_window_automatically(p_from date, p_to date) -> authenticated
+grant      platform_get_settings() -> authenticated
+grant      platform_list_actions(p_limit integer) -> authenticated
+grant      platform_list_companies() -> authenticated
+grant      platform_set_comp_access(p_company_id uuid, p_until timestamp with time zone, p_note text) -> authenticated
+grant      platform_set_enforce_access(p_enforce boolean) -> authenticated
+grant      platform_set_suspended(p_company_id uuid, p_suspended boolean, p_reason text) -> authenticated
+grant      platform_set_trial_end(p_company_id uuid, p_trial_ends_at timestamp with time zone) -> authenticated
 grant      price_from_margin(p_cost_cents bigint, p_margin_bp integer) -> anon
 grant      price_from_margin(p_cost_cents bigint, p_margin_bp integer) -> authenticated
 grant      reassign_absence_affected_job(p_job_id uuid, p_from_member_id uuid, p_to_member_id uuid) -> authenticated
@@ -1939,6 +1986,10 @@ index      payroll_period_releases / payroll_period_releases_pkey
 index      payroll_period_releases / payroll_releases_period_idx
 index      payroll_periods / payroll_periods_company_id_period_key
 index      payroll_periods / payroll_periods_pkey
+index      platform_admin_actions / platform_admin_actions_pkey
+index      platform_admin_actions / platform_admin_actions_time_idx
+index      platform_admins / platform_admins_pkey
+index      platform_settings / platform_settings_pkey
 index      profiles / profiles_auth_user_id_key
 index      profiles / profiles_pkey
 index      quality_inspections / quality_inspections_object_created_idx
@@ -1978,76 +2029,184 @@ index      survey_areas / survey_areas_survey_idx
 index      time_entry_audit_logs / time_entry_audit_logs_entry_idx
 index      time_entry_audit_logs / time_entry_audit_logs_pkey
 policy     audit_events / audit_events_staff_read r
+policy     calculation_lines / access_required_delete d
+policy     calculation_lines / access_required_insert a
+policy     calculation_lines / access_required_update w
 policy     calculation_lines / billing staff read calculation lines r
+policy     calculations / access_required_delete d
+policy     calculations / access_required_insert a
+policy     calculations / access_required_update w
 policy     calculations / billing staff read calculations r
 policy     checklist_template_items / staff checklist template items *
+policy     checklist_templates / access_required_delete d
+policy     checklist_templates / access_required_insert a
+policy     checklist_templates / access_required_update w
 policy     checklist_templates / staff checklist templates *
+policy     cleaning_objects / access_required_delete d
+policy     cleaning_objects / access_required_insert a
+policy     cleaning_objects / access_required_update w
 policy     cleaning_objects / employees can view assigned job objects r
 policy     cleaning_objects / staff can manage own cleaning objects *
 policy     companies / members can view their company r
 policy     companies / owners can update their company w
+policy     company_calculation_defaults / access_required_delete d
+policy     company_calculation_defaults / access_required_insert a
+policy     company_calculation_defaults / access_required_update w
 policy     company_calculation_defaults / billing staff read calculation defaults r
 policy     company_invitations / staff can view invitations r
 policy     company_members / members can view own membership r
 policy     company_members / staff can view company memberships r
 policy     company_subscriptions / company members can read subscription r
+policy     complaint_updates / access_required_delete d
+policy     complaint_updates / access_required_insert a
+policy     complaint_updates / access_required_update w
 policy     complaint_updates / employees read operational complaint updates r
 policy     complaint_updates / staff manage complaint updates *
+policy     complaints / access_required_delete d
+policy     complaints / access_required_insert a
+policy     complaints / access_required_update w
 policy     complaints / employees read operational complaints r
 policy     complaints / staff manage company complaints *
+policy     customer_contacts / access_required_delete d
+policy     customer_contacts / access_required_insert a
+policy     customer_contacts / access_required_update w
 policy     customer_contacts / contacts read their own link r
 policy     customer_contacts / staff manage portal contacts *
+policy     customers / access_required_delete d
+policy     customers / access_required_insert a
+policy     customers / access_required_update w
 policy     customers / employees can view assigned job customers r
 policy     customers / staff can manage own customers *
+policy     employee_absences / access_required_delete d
+policy     employee_absences / access_required_insert a
+policy     employee_absences / access_required_update w
 policy     employee_absences / employees submit own absences a
 policy     employee_absences / employees view own absences r
 policy     employee_absences / staff manage company absences *
+policy     employee_details / access_required_delete d
+policy     employee_details / access_required_insert a
+policy     employee_details / access_required_update w
 policy     employee_details / staff can view employee details r
 policy     in_app_notifications / recipients update notifications w
 policy     in_app_notifications / recipients view notifications r
+policy     invoice_deliveries / access_required_delete d
+policy     invoice_deliveries / access_required_insert a
+policy     invoice_deliveries / access_required_update w
 policy     invoice_deliveries / staff read company invoice deliveries r
+policy     invoice_lines / access_required_delete d
+policy     invoice_lines / access_required_insert a
+policy     invoice_lines / access_required_update w
 policy     invoice_lines / staff read company invoice lines r
+policy     invoice_payments / access_required_delete d
+policy     invoice_payments / access_required_insert a
+policy     invoice_payments / access_required_update w
 policy     invoice_payments / staff read own company payments r
+policy     invoices / access_required_delete d
+policy     invoices / access_required_insert a
+policy     invoices / access_required_update w
 policy     invoices / staff read company invoices r
 policy     job_assignment_changes / staff view assignment changes r
+policy     job_assignments / access_required_delete d
+policy     job_assignments / access_required_insert a
+policy     job_assignments / access_required_update w
 policy     job_assignments / employees can view own assignments r
 policy     job_assignments / staff can manage job assignments *
 policy     job_checklist_items / employee job checklist item read r
 policy     job_checklist_items / staff job checklist items *
+policy     job_checklists / access_required_delete d
+policy     job_checklists / access_required_insert a
+policy     job_checklists / access_required_update w
 policy     job_checklists / employee job checklist read r
 policy     job_checklists / staff job checklists *
+policy     job_photos / access_required_delete d
+policy     job_photos / access_required_insert a
+policy     job_photos / access_required_update w
 policy     job_photos / employee job photos r
 policy     job_photos / staff job photos *
+policy     job_time_breaks / access_required_delete d
+policy     job_time_breaks / access_required_insert a
+policy     job_time_breaks / access_required_update w
 policy     job_time_breaks / employees read own time breaks r
 policy     job_time_breaks / staff read company time breaks r
+policy     job_time_entries / access_required_delete d
+policy     job_time_entries / access_required_insert a
+policy     job_time_entries / access_required_update w
 policy     job_time_entries / employees can view own time entries r
 policy     job_time_entries / staff can manage time entries *
+policy     jobs / access_required_delete d
+policy     jobs / access_required_insert a
+policy     jobs / access_required_update w
 policy     jobs / employees can view assigned jobs r
 policy     jobs / staff can manage jobs *
+policy     leads / access_required_delete d
+policy     leads / access_required_insert a
+policy     leads / access_required_update w
 policy     leads / staff read leads r
 policy     mail_events / staff read own company mail events r
+policy     message_threads / access_required_delete d
+policy     message_threads / access_required_insert a
+policy     message_threads / access_required_update w
 policy     message_threads / participants read threads r
+policy     messages / access_required_delete d
+policy     messages / access_required_insert a
+policy     messages / access_required_update w
 policy     messages / participants read messages r
+policy     operational_photos / access_required_delete d
+policy     operational_photos / access_required_insert a
+policy     operational_photos / access_required_update w
 policy     operational_photos / employees read scoped complaint photos r
 policy     operational_photos / staff read company operational photos r
+policy     payroll_period_releases / access_required_delete d
+policy     payroll_period_releases / access_required_insert a
+policy     payroll_period_releases / access_required_update w
 policy     payroll_period_releases / staff read payroll releases r
+policy     payroll_periods / access_required_delete d
+policy     payroll_periods / access_required_insert a
+policy     payroll_periods / access_required_update w
 policy     payroll_periods / staff read payroll periods r
 policy     profiles / staff can update managed profiles w
 policy     profiles / staff can view company profiles r
 policy     profiles / users can update their own profile w
 policy     profiles / users can view their own profile r
+policy     quality_inspections / access_required_delete d
+policy     quality_inspections / access_required_insert a
+policy     quality_inspections / access_required_update w
 policy     quality_inspections / staff manage quality inspections *
+policy     quote_lines / access_required_delete d
+policy     quote_lines / access_required_insert a
+policy     quote_lines / access_required_update w
 policy     quote_lines / staff read quote lines r
+policy     quotes / access_required_delete d
+policy     quotes / access_required_insert a
+policy     quotes / access_required_update w
 policy     quotes / staff read quotes r
 policy     schedule_rules / staff can manage schedule rules *
+policy     service_catalog_items / access_required_delete d
+policy     service_catalog_items / access_required_insert a
+policy     service_catalog_items / access_required_update w
 policy     service_catalog_items / billing staff read catalog r
 policy     service_record_events / staff read service record events r
+policy     service_records / access_required_delete d
+policy     service_records / access_required_insert a
+policy     service_records / access_required_update w
 policy     service_records / assignee reads own service record r
 policy     service_records / portal customer reads own service records r
 policy     service_records / staff read company service records r
+policy     service_schedule_assignments / access_required_delete d
+policy     service_schedule_assignments / access_required_insert a
+policy     service_schedule_assignments / access_required_update w
 policy     service_schedule_assignments / staff can manage schedule assignments *
+policy     service_schedules / access_required_delete d
+policy     service_schedules / access_required_insert a
+policy     service_schedules / access_required_update w
 policy     service_schedules / staff can manage schedules *
+policy     site_surveys / access_required_delete d
+policy     site_surveys / access_required_insert a
+policy     site_surveys / access_required_update w
 policy     site_surveys / staff read surveys r
+policy     survey_areas / access_required_delete d
+policy     survey_areas / access_required_insert a
+policy     survey_areas / access_required_update w
 policy     survey_areas / staff read survey areas r
 policy     time_entry_audit_logs / staff can view time entry audit logs r
 rls        audit_events enabled
@@ -2092,6 +2251,9 @@ rls        messages enabled
 rls        operational_photos enabled
 rls        payroll_period_releases enabled
 rls        payroll_periods enabled
+rls        platform_admin_actions enabled
+rls        platform_admins enabled
+rls        platform_settings enabled
 rls        profiles enabled
 rls        quality_inspections enabled
 rls        quote_lines enabled
@@ -2149,6 +2311,9 @@ table      messages
 table      operational_photos
 table      payroll_period_releases
 table      payroll_periods
+table      platform_admin_actions
+table      platform_admins
+table      platform_settings
 table      profiles
 table      quality_inspections
 table      quote_lines
@@ -2280,6 +2445,7 @@ trigger    jobs / jobs_validate_company
 trigger    leads / leads_set_updated_at
 trigger    message_threads / message_threads_integrity
 trigger    payroll_period_releases / payroll_releases_audit
+trigger    platform_admin_actions / platform_admin_actions_no_update
 trigger    profiles / profiles_set_updated_at
 trigger    quality_inspections / quality_inspections_validate_company
 trigger    quote_lines / quote_lines_compute_amounts

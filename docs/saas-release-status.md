@@ -23,13 +23,14 @@ Red means a capability needed for the stated launch is absent or not activated.
 | Branding and data imports | ORANGE | Logo validation/private storage, document branding and CSV import exist with tests. Actual logo upload and production file-import round trip remain unverified. |
 | Subscription page and 30-day trial | GREEN | PR10 merged; production creates trial rows. Public prices 69/119/199 EUR and caps 5/25/75 were verified. Owner authentication protects the subscription page. |
 | Live paid self-service launch | RED | REINPLAN_BILLING_ENABLED=false. Checkout/Portal intentionally return 503. Stripe account/keys/three monthly EUR Price IDs, webhook and test-mode payment verification are required before activation. |
-| Expiry enforcement | RED | Product-wide enforcement is not implemented; pilot access stays available after trial. Must cover direct DB/API/Server Actions, preserve billing/account/export access, and handle offline work deliberately. |
+| Expiry enforcement | ORANGE | Implemented 2026-10-29 (`20261029000000`), switched OFF by default. One DB rule (`company_has_access`) drives the app redirect in `getCurrentCompany()` (pages, Server Actions, routes) and restrictive write policies on tenant tables; billing, MFA and exports stay reachable. Security-definer RPCs are covered by the app layer only. Switch on in `/platform` after pilots have free access and Stripe is live. |
 | Auth links and server error logging | GREEN | PR8 merged and deployed; safe structured hook logs and hosted-origin checks pass tests. Actual reset/invitation email still needs delivery verification. |
 | CAPTCHA and MFA operation | ORANGE | CAPTCHA lifecycle and MFA code/tests exist. Turnstile keys/provider activation and real MFA enrolment/recovery remain unverified. Leaked-password protection was disabled in the last advisor result. |
 | Email reliability | ORANGE | Resend/SMTP adapters, guard, signed delivery-event webhook and owner test action exist. Verify SMTP/domain SPF/DKIM/DMARC, real receipt, bounce consequences and suppression. |
 | Monitoring and recovery | ORANGE | Health/logs/cron and local restore drill exist. Configure actual alerts and demonstrate hosted recovery including Auth and Storage. |
 | Operator/legal information | RED | Impressum/Datenschutz still have operator placeholders. Actual legal operator, service address, contact and provider/retention agreements are required; do not invent details. |
 | Privacy lifecycle | ORANGE | RLS/private storage exist. Customer export, erasure and retention operations still need implementation/review. |
+| Platform operator console | ORANGE | `/platform` lists all companies, MRR, trials; extends trials, grants free access, suspends, toggles enforcement; immutable action log. SQL and unit tests pass. Operator is added by SQL (`docs/platform-console.md`). Not yet exercised against production. |
 | Current DB cleanup | GREEN | Supabase recovered. Five fixes applied live; scoped rollback portal/pause and actor tests passed. Zero mutable search-path advisor findings. No fixture users remain. |
 
 ## Current source fixes
