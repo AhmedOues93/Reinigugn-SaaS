@@ -8,13 +8,15 @@ import { cookieLocale } from '@/lib/i18n-server';
 export type EmployeeJob = Awaited<ReturnType<typeof listMyJobs>>[number];
 
 /**
- * Employee surfaces resolve the membership from the session only. A non-employee
- * is sent back to the staff dashboard rather than being served employee data.
+ * Employee surfaces resolve the membership from the session only. Anyone else
+ * goes to the field app's own sign-in, which says which account is signed in
+ * and offers to switch -- rather than silently landing an office user, who
+ * opened the installed field app, in the office.
  */
 export async function requireEmployee() {
   const context = await getCurrentCompany();
   if (!context.membership) redirect('/onboarding');
-  if (context.membership.role !== 'EMPLOYEE') redirect('/dashboard');
+  if (context.membership.role !== 'EMPLOYEE') redirect('/mitarbeiter/login');
   return { ...context, membership: context.membership };
 }
 

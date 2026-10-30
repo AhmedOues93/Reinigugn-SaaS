@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { type FormState, initialFormState } from '@/lib/actions';
 import { Button, Field, Input, Select } from '@/components/ui';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
+import { InvitationShare } from '@/components/invitation-share';
 
 type EmployeeRecord = { id?: string; role?: 'OFFICE' | 'EMPLOYEE'; invited_first_name?: string | null; invited_last_name?: string | null; invited_phone?: string | null; invited_email?: string | null; profiles?: { first_name?: string | null; last_name?: string | null; phone?: string | null } | { first_name?: string | null; last_name?: string | null; phone?: string | null }[] | null; employee_details?: { employee_number?: string | null; weekly_hours?: number | null; employment_start_date?: string | null; employment_end_date?: string | null; employment_type?: string | null; preferred_language?: string | null; wage_group?: string | null; hourly_wage_cents?: number | null; notes?: string | null }[] | null; };
 type EmployeeAction = (state: FormState, formData: FormData) => Promise<FormState>;
@@ -15,7 +16,6 @@ function profileFor(record?: EmployeeRecord) { return Array.isArray(record?.prof
 export function EmployeeForm({ employee, action, submitLabel, currentRole, invitation }: { employee?: EmployeeRecord; action: EmployeeAction; submitLabel: string; currentRole: 'OWNER' | 'OFFICE'; invitation: boolean }) {
   const [state, formAction] = useActionState(action, initialFormState);
   const router = useRouter(); const profile = profileFor(employee); const details = employee?.employee_details?.[0];
-  const [showInvitationLink, setShowInvitationLink] = useState(false);
   useEffect(() => { if (state.status === 'success' && state.id && !state.invitationUrl) router.push(`/dashboard/mitarbeiter/${state.id}?success=${encodeURIComponent(invitation ? 'Einladung wurde erstellt.' : 'Mitarbeiter wurde gespeichert.')}`); }, [router, state, invitation]);
   return <form action={formAction} className="space-y-7"><FormMessage status={state.status} message={state.message} />
     <section className="grid gap-5 sm:grid-cols-2">
@@ -137,7 +137,7 @@ export function EmployeeForm({ employee, action, submitLabel, currentRole, invit
         />
       </Field>
     </section>
-    {state.invitationUrl && <div className="rounded-md border border-border bg-muted/35 p-4 text-sm"><div className="flex flex-wrap items-center gap-2"><Button type="button" variant="outline" onClick={() => setShowInvitationLink((value) => !value)}>{showInvitationLink ? 'Link ausblenden' : 'Einladungslink anzeigen'}</Button>{showInvitationLink && <a className="font-medium text-primary underline" href={state.invitationUrl} target="_blank" rel="noreferrer">Link öffnen</a>}{state.id && <Link className="font-medium text-primary underline" href={`/dashboard/mitarbeiter/${state.id}`}>Zur Mitarbeiteransicht</Link>}</div>{showInvitationLink && <p className="mt-3 break-all text-muted-foreground">{state.invitationUrl}</p>}</div>}
+    {state.invitationUrl && <div className="space-y-3"><InvitationShare url={state.invitationUrl} delivered={state.invitationDelivered === true} name={state.invitationName} />{state.id && <Link className="inline-flex min-h-touch items-center text-sm font-medium text-primary underline-offset-4 hover:underline" href={`/dashboard/mitarbeiter/${state.id}`}>Zur Mitarbeiteransicht</Link>}</div>}
     <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.back()}>Abbrechen</Button><SubmitButton>{submitLabel}</SubmitButton></div>
   </form>;
 }

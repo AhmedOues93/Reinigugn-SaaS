@@ -113,10 +113,30 @@ export async function signUp(formData: FormData) {
   redirect('/login?message=Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.');
 }
 
+/**
+ * Die drei Anmeldeseiten. Eine Fehlermeldung muss auf der Seite landen, von
+ * der die Person kam: ueber /login ging sie bisher verloren, weil /login nur
+ * weiterleitet, und eine Reinigungskraft mit vertipptem Passwort stand ohne
+ * Hinweis auf der Bueroanmeldung.
+ */
+const loginPaths = {
+  office: '/admin/login',
+  employee: '/mitarbeiter/login',
+  portal: '/kunde/login',
+} as const;
+
+function loginPathFrom(formData: FormData | undefined): string {
+  const value = formData?.get('surface');
+  return typeof value === 'string' && Object.hasOwn(loginPaths, value)
+    ? loginPaths[value as keyof typeof loginPaths]
+    : loginPaths.office;
+}
+
 export async function login(formData: FormData) {
-  if (captchaRequired(formData)) withMessage('/login', 'error', captchaMessage);
+  const loginPath = loginPathFrom(formData);
+  if (captchaRequired(formData)) withMessage(loginPath, 'error', captchaMessage);
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) withMessage('/login', 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
+  if (!parsed.success) withMessage(loginPath, 'error', parsed.error.issues[0]?.message ?? 'Ungültige Eingabe.');
 
   /*
    * "Angemeldet bleiben" decides how long the browser keeps the session, and
@@ -133,19 +153,40 @@ export async function login(formData: FormData) {
   const supabase = await createClient();
   const address = await currentAddress();
   const lockedFor = await throttleGate(supabase, LOGIN_THROTTLE, address);
-  if (lockedFor !== null) withMessage('/login', 'error', throttleMessage(lockedFor));
+  if (lockedFor !== null) withMessage(loginPath, 'error', throttleMessage(lockedFor));
 
   const { error } = await supabase.auth.signInWithPassword({ ...parsed.data, options: captchaOptions(formData) });
-  if (error) withMessage('/login', 'error', 'E-Mail-Adresse oder Passwort ist nicht korrekt.');
+  if (error) withMessage(loginPath, 'error', 'E-Mail-Adresse oder Passwort ist nicht korrekt.');
   await clearThrottle(supabase, LOGIN_THROTTLE, address);
   redirect('/dashboard');
 }
 
-export async function logout() {
+async function signOutTo(path: string): Promise<never> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   (await cookies()).delete(SESSION_ONLY_COOKIE);
-  redirect('/login');
+  redirect(path);
+}
+
+/**
+ * Abmelden; ein Formular kann mit `surface` die Anmeldeseite waehlen.
+ * `invitation` fuehrt zurueck zur offenen Einladung: wer mit dem falschen
+ * Konto angemeldet ist, soll sie nach dem Abmelden direkt annehmen koennen.
+ */
+export async function logout(formData?: FormData) {
+  const form = formData instanceof FormData ? formData : undefined;
+  if (form?.get('surface') === 'invitation') await signOutTo('/einladung');
+  await signOutTo(loginPathFrom(form));
+}
+
+/** Aus der Mitarbeiter-App zurueck auf deren eigene Anmeldung. */
+export async function logoutEmployee() {
+  await signOutTo(loginPaths.employee);
+}
+
+/** Aus dem Kundenportal zurueck auf dessen eigene Anmeldung. */
+export async function logoutCustomer() {
+  await signOutTo(loginPaths.portal);
 }
 
 export async function requestPasswordReset(formData: FormData) {

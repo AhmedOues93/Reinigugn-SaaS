@@ -2,7 +2,15 @@ export type FormState = {
   status: 'idle' | 'success' | 'error';
   message?: string;
   id?: string;
+  /**
+   * Einladungslink fuer die Person, die gerade eingeladen hat, damit sie ihn
+   * auch direkt (WhatsApp) weitergeben kann. Nur in dieser einen Antwort.
+   */
   invitationUrl?: string;
+  /** Ob die Einladungs-E-Mail rausging. */
+  invitationDelivered?: boolean;
+  /** Vorname fuer den Text beim Teilen. */
+  invitationName?: string;
   conflictWarning?: string;
   /**
    * Where the client should navigate after a successful action. Only ever set
