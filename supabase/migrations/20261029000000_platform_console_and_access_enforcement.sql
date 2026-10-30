@@ -68,7 +68,7 @@ returns trigger language plpgsql set search_path = public as $$
 begin
   raise exception 'Das Plattform-Protokoll ist unveraenderlich.';
 end $$;
-create trigger platform_admin_actions_no_update
+create or replace trigger platform_admin_actions_no_update
   before update or delete on public.platform_admin_actions
   for each row execute function public.platform_admin_actions_immutable();
 revoke all on function public.platform_admin_actions_immutable() from public, anon, authenticated;
