@@ -9,7 +9,7 @@ import { EmployeeLanguagePicker } from '@/components/employee/language-picker';
 import { EmployeeLogoutButton } from '@/components/employee/logout-button';
 import { EmployeeContactForm } from '@/components/employee/contact-form';
 import { AccountPasswordForm } from '@/components/account-password-form';
-import { logout } from '@/app/(auth)/actions';
+import { logoutEmployee } from '@/app/(auth)/actions';
 import { employeeLocale, getMyEmployeeProfile } from '@/lib/data/employee';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -94,7 +94,7 @@ export default async function EmployeeProfilePage() {
         </Card>
 
         <div className="pt-1">
-          <EmployeeLogoutButton locale={locale} action={logout} />
+          <EmployeeLogoutButton locale={locale} action={logoutEmployee} />
         </div>
       </div>
     </>

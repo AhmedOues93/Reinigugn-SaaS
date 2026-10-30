@@ -5,6 +5,7 @@ import { Plus, X } from 'lucide-react';
 import { FormMessage, SubmitButton } from '@/components/form-controls';
 import { Button, Card, Input } from '@/components/ui';
 import { initialFormState, type FormState } from '@/lib/actions';
+import { InvitationShare } from '@/components/invitation-share';
 
 type Contact = { id: string; status: string; email: string | null; firstName: string | null; lastName: string | null };
 type Invitation = { id: string; email: string; expires_at: string };
@@ -66,7 +67,7 @@ export function PortalAccessPanel({
             <Button type="button" variant="ghost" className="size-9 p-0" onClick={() => setInviting(false)} aria-label="Schließen"><X className="size-4" /></Button>
           </div>
           <FormMessage status={state.status} message={state.message} />
-          {state.invitationUrl && <p className="break-all rounded-md bg-muted p-3 text-xs text-muted-foreground">{state.invitationUrl}</p>}
+          {state.invitationUrl && <InvitationShare url={state.invitationUrl} delivered={state.invitationDelivered === true} name={state.invitationName} />}
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="text-sm font-medium">Vorname<Input className="mt-1.5" name="first_name" maxLength={80} required /></label>
             <label className="text-sm font-medium">Nachname<Input className="mt-1.5" name="last_name" maxLength={80} required /></label>

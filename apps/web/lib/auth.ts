@@ -148,6 +148,30 @@ export async function signedInLandingPath(): Promise<string | null> {
 }
 
 /**
+ * Wer gerade angemeldet ist, ohne umzuleiten -- fuer die Anmeldeseiten, die
+ * einer schon angemeldeten Person sagen muessen, mit welchem Konto sie
+ * unterwegs ist. Ein Browser haelt immer nur eine Sitzung.
+ */
+export async function currentSessionSummary(): Promise<{ email: string; role: string | null } | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle();
+  let role: string | null = null;
+  if (profile) {
+    const { data: membership } = await supabase
+      .from('company_members')
+      .select('role')
+      .eq('profile_id', profile.id)
+      .eq('status', 'ACTIVE')
+      .limit(1)
+      .maybeSingle();
+    role = membership?.role ?? null;
+  }
+  return { email: user.email ?? '', role };
+}
+
+/**
  * Den Zwei-Faktor-Riegel vorlegen, bevor eine Buero-Seite Daten laedt.
  *
  * Steht hier und nicht nur im Layout: ein Layout entscheidet, was zu sehen

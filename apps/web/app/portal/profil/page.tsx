@@ -2,7 +2,7 @@ import { Button, Card } from '@/components/ui';
 import { PortalPageHeader } from '@/components/portal/portal-shell';
 import { LanguageSelector } from '@/components/language-selector';
 import { AccountPasswordForm } from '@/components/account-password-form';
-import { logout } from '@/app/(auth)/actions';
+import { logoutCustomer } from '@/app/(auth)/actions';
 import { getPortalOverview, portalLocale, requirePortalCustomer } from '@/lib/data/portal';
 import { t } from '@/lib/i18n';
 
@@ -47,7 +47,7 @@ export default async function PortalProfilePage() {
         </div>
       </Card>
 
-      <form action={logout} className="mt-6">
+      <form action={logoutCustomer} className="mt-6">
         <Button type="submit" variant="outline" className="w-full sm:w-auto sm:px-6">
           {t(locale, 'common.logout')}
         </Button>

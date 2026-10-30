@@ -7,14 +7,13 @@ import { cookieLocale } from '@/lib/i18n-server';
 
 /**
  * Portal access. Only an active CUSTOMER membership may render portal screens;
- * everyone else is sent to the surface that belongs to their role.
+ * everyone else is sent to the portal sign-in, which offers to switch account.
  */
 export async function requirePortalCustomer() {
   const context = await getCurrentCompany();
   if (!context.membership) redirect('/onboarding');
-  if (context.membership.role !== 'CUSTOMER') {
-    redirect(context.membership.role === 'EMPLOYEE' ? '/mitarbeiter' : '/dashboard');
-  }
+  // Wie in der Mitarbeiter-App: die eigene Anmeldung sagt, wer angemeldet ist.
+  if (context.membership.role !== 'CUSTOMER') redirect('/kunde/login');
   return { ...context, membership: context.membership };
 }
 

@@ -8,7 +8,8 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { InvitationAcceptButton, InvitationSignUp } from '@/components/invitation-acceptance';
 import { AuthFooterLink, AuthShell } from '@/components/auth-shell';
-import { Card } from '@/components/ui';
+import { Button, Card } from '@/components/ui';
+import { logout } from '@/app/(auth)/actions';
 import { t, type TranslationKey } from '@/lib/i18n';
 import { currentLocale } from '@/lib/i18n-server';
 
@@ -89,9 +90,16 @@ export default async function InvitationPage({
       {user && emailMatches ? (
         <InvitationAcceptButton locale={locale} />
       ) : user ? (
-        <p role="alert" className="rounded-md bg-danger-soft p-3 text-sm leading-6 text-danger">
-          {t(locale, 'auth.inviteWrongUser', { email: preview.email })}
-        </p>
+        <div className="space-y-4">
+          <p role="alert" className="rounded-md bg-danger-soft p-3 text-sm leading-6 text-danger">
+            {t(locale, 'auth.inviteWrongUser', { email: preview.email })}
+          </p>
+          {/* Die Einladung liegt im Cookie unter /einladung und uebersteht das Abmelden. */}
+          <form action={logout}>
+            <input type="hidden" name="surface" value="invitation" />
+            <Button type="submit" size="block">{t(locale, 'auth.otherAccountSwitch')}</Button>
+          </form>
+        </div>
       ) : (
         <InvitationSignUp locale={locale} />
       )}
