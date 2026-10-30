@@ -1,9 +1,9 @@
-import { Plus, Search, UserRoundCheck } from 'lucide-react';
+import { Plus, Search, Upload, UserRoundCheck } from 'lucide-react';
 import { listEmployees, type MemberFilter, type RoleFilter } from '@/lib/data/employees';
 import { requireStaffCompany } from '@/lib/auth';
 import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
 import { DataTable, FilterBar } from '@/components/data-table';
-import { MemberStatusBadge, RoleBadge } from '@/components/member-badges';
+import { AccountStateBadge, MemberStatusBadge, RoleBadge } from '@/components/member-badges';
 
 function roleFilter(value?: string): RoleFilter {
   return value === 'OFFICE' || value === 'EMPLOYEE' ? value : 'all';
@@ -39,10 +39,16 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
         title="Mitarbeiter"
         description="Büro- und Reinigungsteam, Einladungen und Arbeitsdaten."
         actions={
-          <ButtonLink href="/dashboard/mitarbeiter/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            Mitarbeiter einladen
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/mitarbeiter/import" variant="outline">
+              <Upload className="size-4" aria-hidden="true" />
+              CSV importieren
+            </ButtonLink>
+            <ButtonLink href="/dashboard/mitarbeiter/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Mitarbeiter einladen
+            </ButtonLink>
+          </div>
         }
       />
 
@@ -72,6 +78,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
         rows={employees}
         rowKey={(member) => member.id}
         rowHref={(member) => `/dashboard/mitarbeiter/${member.id}`}
+        rowActions={(member) => <ButtonLink href={`/dashboard/mitarbeiter/${member.id}`} variant="outline">Ansehen</ButtonLink>}
         columns={[
           {
             key: 'name',
@@ -103,7 +110,19 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
               );
             },
           },
-          { key: 'status', header: 'Status', mobile: 'status', cell: (member) => <MemberStatusBadge status={member.status as 'INVITED' | 'ACTIVE' | 'DISABLED'} /> },
+          {
+            key: 'status',
+            header: 'Zugang',
+            mobile: 'status',
+            // The account state, not the employment state. An expired
+            // invitation needs an action and now says so.
+            cell: (member) => (
+              <AccountStateBadge
+                status={member.status as 'INVITED' | 'ACTIVE' | 'DISABLED'}
+                invitationState={member.accountState?.invitation_state ?? null}
+              />
+            ),
+          },
         ]}
         empty={
           <EmptyState

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { logout } from '@/app/(auth)/actions';
+import { logoutCustomer } from '@/app/(auth)/actions';
 import { LanguageSelector } from '@/components/language-selector';
 import { t, type Locale } from '@/lib/i18n';
 
@@ -50,7 +50,7 @@ export function PortalAccountMenu({ locale, email, customerName }: { locale: Loc
           >
             {t(locale, 'portal.profile.title')}
           </Link>
-          <form action={logout}>
+          <form action={logoutCustomer}>
             <button type="submit" className="flex min-h-touch w-full items-center rounded-md px-2.5 text-start text-sm hover:bg-muted">
               {t(locale, 'common.logout')}
             </button>

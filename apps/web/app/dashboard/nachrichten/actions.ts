@@ -3,6 +3,22 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getCurrentCompany } from '@/lib/auth';
 import { type FormState } from '@/lib/actions';
+export async function openComplaintNotification(id: string, complaintId: string) {
+  const { supabase, membership } = await getCurrentCompany();
+  if (!membership || !['OWNER', 'OFFICE'].includes(membership.role)) throw new Error('Nicht berechtigt.');
+  const { error } = await supabase
+    .from('in_app_notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('recipient_member_id', membership.id)
+    .eq('complaint_id', complaintId);
+  if (error) throw new Error('Benachrichtigung konnte nicht geöffnet werden.');
+  revalidatePath('/dashboard/nachrichten');
+  revalidatePath('/dashboard/reklamationen');
+  revalidatePath('/dashboard', 'layout');
+  redirect(`/dashboard/reklamationen/${complaintId}`);
+}
+
 export async function markNotificationRead(id: string) { const { supabase, membership } = await getCurrentCompany(); if (!membership) throw new Error('Nicht berechtigt.'); const { error } = await supabase.from('in_app_notifications').update({ read_at: new Date().toISOString() }).eq('id', id).eq('recipient_member_id', membership.id); if (error) throw new Error('Benachrichtigung konnte nicht aktualisiert werden.'); revalidatePath('/dashboard/nachrichten'); revalidatePath('/dashboard', 'layout'); }
 
 /**

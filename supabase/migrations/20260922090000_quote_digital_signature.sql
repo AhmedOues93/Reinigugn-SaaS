@@ -1,0 +1,1 @@
+-- Legacy typed-signature experiment intentionally retired. ReinPlan records acceptance name, note and timestamp without a fake signature field.\nselect 1;\n

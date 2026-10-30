@@ -1,7 +1,8 @@
 import { Button, Card } from '@/components/ui';
 import { PortalPageHeader } from '@/components/portal/portal-shell';
 import { LanguageSelector } from '@/components/language-selector';
-import { logout } from '@/app/(auth)/actions';
+import { AccountPasswordForm } from '@/components/account-password-form';
+import { logoutCustomer } from '@/app/(auth)/actions';
 import { getPortalOverview, portalLocale, requirePortalCustomer } from '@/lib/data/portal';
 import { t } from '@/lib/i18n';
 
@@ -38,7 +39,15 @@ export default async function PortalProfilePage() {
         </div>
       </Card>
 
-      <form action={logout} className="mt-6">
+      <Card className="mt-4 p-5">
+        <h2 className="font-semibold">Konto und Sicherheit</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Ändere dein Passwort oder fordere einen verifizierten Reset-Link per E-Mail an.</p>
+        <div className="mt-4">
+          <AccountPasswordForm />
+        </div>
+      </Card>
+
+      <form action={logoutCustomer} className="mt-6">
         <Button type="submit" variant="outline" className="w-full sm:w-auto sm:px-6">
           {t(locale, 'common.logout')}
         </Button>

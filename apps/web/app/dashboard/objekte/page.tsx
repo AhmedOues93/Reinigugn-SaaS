@@ -1,4 +1,4 @@
-import { Building2, Plus, Search } from 'lucide-react';
+import { Building2, Plus, Search, TrendingUp, Upload } from 'lucide-react';
 import { listCleaningObjects } from '@/lib/data/cleaning-objects';
 import { listCustomerOptions, type StatusFilter } from '@/lib/data/customers';
 import { Button, ButtonLink, EmptyState, Input, PageHeader, Select } from '@/components/ui';
@@ -26,10 +26,20 @@ export default async function ObjectsPage({ searchParams }: { searchParams: Prom
         title="Objekte"
         description="Die Orte, an denen gereinigt wird – mit Zugang, Ansprechperson und Leistungsumfang."
         actions={
-          <ButtonLink href="/dashboard/objekte/neu">
-            <Plus className="size-4" aria-hidden="true" />
-            Objekt anlegen
-          </ButtonLink>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink href="/dashboard/objekte/rentabilitaet" variant="outline">
+              <TrendingUp className="size-4" aria-hidden="true" />
+              Rentabilität
+            </ButtonLink>
+            <ButtonLink href="/dashboard/objekte/import" variant="outline">
+              <Upload className="size-4" aria-hidden="true" />
+              CSV importieren
+            </ButtonLink>
+            <ButtonLink href="/dashboard/objekte/neu">
+              <Plus className="size-4" aria-hidden="true" />
+              Objekt anlegen
+            </ButtonLink>
+          </div>
         }
       />
 
@@ -61,6 +71,7 @@ export default async function ObjectsPage({ searchParams }: { searchParams: Prom
         rows={objects}
         rowKey={(object) => object.id}
         rowHref={(object) => `/dashboard/objekte/${object.id}`}
+        rowActions={(object) => <ButtonLink href={`/dashboard/objekte/${object.id}`} variant="outline">Öffnen</ButtonLink>}
         columns={[
           { key: 'name', header: 'Objekt', mobile: 'title', cell: (object) => object.name },
           { key: 'customer', header: 'Kunde', mobile: 'subtitle', cell: (object) => object.customers?.[0]?.name ?? '—' },

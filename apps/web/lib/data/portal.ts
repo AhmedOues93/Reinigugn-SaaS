@@ -7,14 +7,13 @@ import { cookieLocale } from '@/lib/i18n-server';
 
 /**
  * Portal access. Only an active CUSTOMER membership may render portal screens;
- * everyone else is sent to the surface that belongs to their role.
+ * everyone else is sent to the portal sign-in, which offers to switch account.
  */
 export async function requirePortalCustomer() {
   const context = await getCurrentCompany();
   if (!context.membership) redirect('/onboarding');
-  if (context.membership.role !== 'CUSTOMER') {
-    redirect(context.membership.role === 'EMPLOYEE' ? '/mitarbeiter' : '/dashboard');
-  }
+  // Wie in der Mitarbeiter-App: die eigene Anmeldung sagt, wer angemeldet ist.
+  if (context.membership.role !== 'CUSTOMER') redirect('/kunde/login');
   return { ...context, membership: context.membership };
 }
 
@@ -102,6 +101,10 @@ export async function getPortalServiceRecord(jobId: string) {
     }),
   );
 
+  // The Kundenabnahme, if the contract for this visit asks for one.
+  const { data: acceptanceRows } = await supabase.rpc('get_my_portal_acceptance', { p_job_id: jobId });
+  const acceptance = ((acceptanceRows ?? []) as PortalAcceptance[])[0] ?? null;
+
   return {
     jobId: row.job_id,
     scheduledDate: row.scheduled_date,
@@ -111,7 +114,53 @@ export async function getPortalServiceRecord(jobId: string) {
     durationMinutes: row.duration_minutes as number,
     items: (row.items ?? []) as { title: string; completed: boolean }[],
     photos: signed.filter((photo) => photo.url),
+    acceptance,
   };
+}
+
+export type ServiceRecordStatus = 'ERFASST' | 'ABNAHME_AUSSTEHEND' | 'ABGENOMMEN' | 'PROBLEM_GEMELDET';
+export type AcceptancePolicy = 'KEINE_ABNAHME_ERFORDERLICH' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_ABNAHME';
+
+export type PortalAcceptance = {
+  job_id: string;
+  service_date: string;
+  title: string;
+  service_description: string | null;
+  object_name: string;
+  net_minutes: number;
+  status: ServiceRecordStatus;
+  acceptance_policy: AcceptancePolicy;
+  acceptance_method: 'KEINE' | 'VOR_ORT_UNTERSCHRIFT' | 'PORTAL_BESTAETIGUNG' | 'BUERO_FREIGABE' | null;
+  accepted_at: string | null;
+  accepted_by_name: string | null;
+  checklist: { title: string; completed: boolean }[] | null;
+  signature_storage_path: string | null;
+};
+
+export type PortalAcceptanceRow = {
+  job_id: string;
+  service_date: string;
+  title: string;
+  object_name: string;
+  status: ServiceRecordStatus;
+  acceptance_policy: AcceptancePolicy;
+  acceptance_method: PortalAcceptance['acceptance_method'];
+  accepted_at: string | null;
+  accepted_by_name: string | null;
+  /** The ones the customer is actually being asked to do something about. */
+  needs_my_action: boolean;
+};
+
+/**
+ * Everything the customer has been asked to accept, and everything they already
+ * have. Both, because a list that only shows outstanding work gives no way to
+ * look up what was confirmed last month.
+ */
+export async function listPortalAcceptances(): Promise<PortalAcceptanceRow[]> {
+  const { supabase } = await requirePortalCustomer();
+  const { data, error } = await supabase.rpc('list_my_portal_acceptances');
+  if (error) throw new Error('Abnahmen konnten nicht geladen werden.');
+  return (data ?? []) as PortalAcceptanceRow[];
 }
 
 export async function listPortalComplaints(): Promise<PortalComplaint[]> {

@@ -1,0 +1,264 @@
+# Production readiness
+
+> Historical assessment. For source-verified status as of 2026-10-04, see
+> [launch-review.md](launch-review.md). In particular, legal routes, auth
+> throttling and `/api/health` now exist; server error instrumentation is also
+> included. Hosted setup, alerting and real workflow verification remain separate.
+
+What stands between this and real paying customers. Written as an honest
+assessment, not a checklist to tick: several items below are judgements a
+Steuerberater, a lawyer or a DPO has to make, and this document does not make
+them.
+
+**Nothing here claims legal, tax, GDPR or security compliance.** Where a legal
+obligation is mentioned, it is described as something to verify with someone
+qualified.
+
+## Already in place
+
+Worth stating, because it changes what the remaining work is.
+
+- **Tenant isolation** enforced by row-level security on every table, verified
+  by an SQL suite that runs in CI — including the sharpest case, two customers
+  inside one tenant.
+- **No privileged credential in the application.** Everything runs on the
+  publishable key under RLS. The one exception is the optional Resend webhook
+  route, which is server-only.
+- **Billing integrity**: integer cents throughout, immutable issued invoices,
+  gapless per-company numbering, snapshots at issue time, corrections rather
+  than edits, duplicate billing prevented, idempotent delivery recording.
+- **Private storage**: four buckets, none public, short-lived signed URLs, MIME
+  and size limits, path-shape guards.
+- **Schema as code**: 40 migrations, no dashboard-built objects, proven to
+  apply to an empty database on every push.
+- **Honest e-mail**: a delivery is recorded only after the provider accepts it.
+
+## Blockers before real customers
+
+### 1. Backups and recovery — **blocking**
+
+Supabase's free and Pro tiers differ sharply here. Point-in-time recovery is a
+paid add-on; without it you have daily snapshots and a recovery point measured
+in hours. For a system holding invoices — records a business is required to
+keep — that is not adequate.
+
+Needed: PITR enabled, a documented restore procedure, and a restore actually
+performed once into a scratch project. A backup nobody has restored is a
+hypothesis.
+
+### 2. Error tracking — **blocking**
+
+There is none. Today a server action that throws shows the user a German error
+message and leaves no trace anyone will see. With real customers you will not
+learn about a broken invoice flow until someone telephones.
+
+Needed: Sentry or equivalent, wired into `error.tsx`, `global-error.tsx` and
+the route handlers, with alerting. Scrub PII: this application handles names,
+addresses and sick notes.
+
+### 3. E-mail domain reputation — **blocking**
+
+Resend works out of the box on a shared sending domain. Invoices sent that way
+land in spam often enough to matter, and a customer who never saw an invoice
+does not pay it.
+
+Needed: a verified sending domain with SPF, DKIM and a DMARC record; a
+dedicated subdomain (`rechnung.ihre-domain.de`) so transactional mail is not
+affected by anything else sent from the main domain; and warm-up if volume
+starts high.
+
+### 4. Bounce handling — **partially built**
+
+The webhook foundation exists: signature verification, idempotent recording,
+and a `mail_events` table. What is missing is the consequence — a hard bounce
+should mark the invoice as undelivered and tell the office, not sit in a log.
+
+Needed: surface bounces on the invoice, and suppress repeat sending to an
+address that hard-bounced.
+
+### 5. Rate limiting — **blocking for anything public**
+
+Nothing is rate limited. Sign-in, password reset and the invitation flow can be
+hammered. Supabase applies some limits to its auth endpoints; the application's
+own server actions have none.
+
+Needed: at minimum, limits on authentication attempts and on invitation
+sending. The hosting platform or an upstream proxy is the usual place.
+
+### 6. Legal pages — **blocking in Germany**
+
+A commercial German website needs an **Impressum** (§ 5 DDG) and a
+**Datenschutzerklärung**. Neither exists. This is not optional and is cheap to
+fix, but the content must be yours, not generated.
+
+Also needed before customers: terms of service, an AV-Vertrag (data processing
+agreement) to offer *your* customers — because you process personal data on
+their behalf — and a decision about cookie consent (the app sets only
+functional auth cookies, which normally do not need consent, but that judgement
+should be confirmed).
+
+### 7. GDPR mechanics — **needs work**
+
+The architecture is helpful here: data is tenant-scoped and access-controlled.
+What is missing is the operational side.
+
+- **Right to erasure**: no mechanism. Complicated by invoices, which must be
+  retained for ten years under German law — so erasure means anonymising
+  around retained financial records, not deleting them.
+- **Data export**: no mechanism.
+- **Retention**: nothing expires. Sick notes are health data and should not be
+  kept indefinitely.
+- **Records of processing** (Art. 30): not written.
+- **Sub-processors**: Supabase and Resend process personal data on your behalf;
+  both need a DPA in place, and your customers need to be told.
+
+None of this is a code problem primarily. All of it needs a decision.
+
+### 8. Secrets management — **adequate, with a gap**
+
+Secrets live in the hosting platform and GitHub Actions, never in the
+repository, and `.env.local` is ignored. That is fine.
+
+The gap is rotation: no procedure, and no record of what is set where. Write
+one before more people have access.
+
+### 9. Invoice data validation — **needs review**
+
+The schema captures every § 14 UStG field and the PDF prints them, verified by
+test. What is *not* enforced is that a company has filled them in: an invoice
+can be issued by a tenant with no tax number, and the document will simply lack
+it.
+
+Needed: refuse to issue an invoice until the company's own mandatory details
+are present. Cheap, and prevents an invalid document reaching a customer.
+
+### 10. German E-Rechnung — **both EN 16931 syntaxes and the ZUGFeRD hybrid PDF validated**
+
+ReinPlan generates the structured XML beside the human-readable PDF in **both**
+syntaxes the EN 16931 allows, checks required invoice master data before exposing
+either, and builds the ZUGFeRD hybrid invoice: the same PDF, with the CII XML
+embedded in it as `factur-x.xml`.
+
+| Format | Syntax | Status |
+|---|---|---|
+| XRechnung | UBL | Accepted by the KoSIT validator, scenario *EN16931 XRechnung (UBL Invoice)* |
+| ZUGFeRD / Factur-X XML | CII | Accepted by the KoSIT validator, scenario *EN16931 XRechnung (CII)* |
+| ZUGFeRD hybrid PDF | PDF/A-3B + embedded `factur-x.xml` | PDF/A-3B confirmed by veraPDF 1.26.1; the XML *extracted from the finished file* accepted by the KoSIT validator |
+
+Everything above is validated in CI on every push, by the two tools the formats
+are actually judged by — not by our own assertions:
+
+- **veraPDF 1.26.1** (`tools/verapdf.sh`) checks the rendered invoice PDF and
+  the hybrid invoice against PDF/A-3B. Before the implementation it reported
+  four violation classes: `6.1.3` (no `/ID` in the trailer), `6.6.2.1` (no XMP
+  metadata stream in the catalog), `6.2.4.3` (DeviceRGB without an output
+  intent) and `6.2.11.4.1` (fonts not embedded). All four are now addressed and
+  the result is `compliant=true, assertions=0`. The gate was checked in the
+  other direction too: with the catalog's `/Metadata` key damaged the script
+  exits 1 and names clause `6.6.2.1`.
+- **The KoSIT validator 1.5.0** with configuration 2024-06-20 runs XSD, the
+  EN 16931 Schematron and the XRechnung CIUS Schematron over five documents:
+  the code sample and the seeded demo invoice in UBL and in CII, and the XML
+  that `tools/extract-factur-x.mjs` pulls back **out of the finished hybrid
+  PDF**. That last one matters: it tests what is actually delivered, including
+  the embedding step, not only what the generator produced.
+
+The hybrid file carries what the specification requires: an output intent with
+an embedded sRGB ICC profile, both fonts embedded as subsets with a `/ToUnicode`
+table (so the text stays selectable), XMP with `pdfaid:part 3` /
+`conformance B`, the Factur-X extension schema and the four `fx:` fields, the
+XML attached with `/AFRelationship /Data` and listed in the catalog's `/AF`
+array. `fx:ConformanceLevel` is `XRECHNUNG`, not `EN 16931`, because the XML
+carries the XRechnung 3.0 CIUS identifier — the narrower German profile.
+
+Two third-party files ship in `apps/web/lib/billing/assets/`, unmodified and
+with their licence texts beside them: Liberation Sans (SIL Open Font License
+1.1) and the sRGB profile from Debian's `icc-profiles-free` (zlib/libpng
+licence). Both licences permit commercial redistribution and embedding; the
+files are not altered, so no renaming obligation arises.
+
+**What is still not claimed.** No invoice has been accepted by a real
+recipient's accounting software, and no tax adviser has reviewed the documents.
+Validator conformance is a necessary condition, not a legal opinion. Invoice
+e-mails attach the hybrid PDF *and* the UBL XML as two files, because which
+syntax a recipient can process is their decision, not the sender's.
+
+Receiving e-invoices has been mandatory for German B2B since 1 January 2025.
+For **sending**, paper and PDF remain permissible through 2026; from 2027
+businesses above €800,000 prior-year turnover must send structured formats, and
+from 2028 the obligation covers all B2B. Invoices under €250 and §19
+Kleinunternehmer are exempt from issuing.
+
+**Confirm the thresholds and dates with a Steuerberater before relying on
+them.**
+
+### 11. Observability — **missing**
+
+No metrics, no uptime monitoring, no log aggregation. You would not know
+staging or production was down until you looked.
+
+Needed at minimum: an uptime check on `/login`, and somewhere logs are kept
+longer than the platform's default.
+
+### 12. The scheduler's single point of failure — **watch**
+
+Nightly job generation now runs in `pg_cron`, which is the right place. But
+nothing watches it: if the job stops, plans quietly stop producing visits
+again — the same failure, just harder to notice.
+
+Needed: alert if `generate_due_jobs` has not succeeded in 48 hours.
+
+### 13. Payment reconciliation is manual — **deliberate, for now**
+
+An invoice becomes paid because somebody read a bank statement and recorded
+what they saw: date, method, reference, amount. Nothing detects a transfer, and
+the interface does not suggest otherwise.
+
+That is the right choice for a beta — an automatic match that is wrong is worse
+than no automatic match — but it is worth knowing what it costs and what it
+does not cost. Payments are their own table, so the step after this one does
+not touch the invoice at all:
+
+- a bank-statement import inserts rows with `source = 'BANK_IMPORT'` and the
+  bank's own reference;
+- a Stripe webhook inserts `source = 'STRIPE'` with the payment intent as
+  `external_reference`, which is uniquely indexed so a redelivered webhook
+  cannot book twice;
+- an invoice reaches PAID by the same rule in every case — when the payments
+  reach the gross total.
+
+Partial payments already work. What is missing before any of that is switched
+on is the matching itself, and a decision about what happens when a transfer
+matches nothing.
+
+## Not blockers, but worth knowing
+
+- **Load**: untested. Fine for a handful of tenants; unknown beyond.
+- **Accessibility**: good foundations, never audited against WCAG.
+- **Browser support**: only Chromium is tested. Safari on iOS matters for the
+  employee PWA.
+- **Offline**: the local store and the replay semantics of the queue are now
+  covered by tests against a real IndexedDB and against the database. Three
+  defects were measured and fixed along the way: a second shift on the same job
+  was silently swallowed; a time sequence continued past a failed operation and
+  inflated a break; and `clearOfflineData()` on sign-out deleted nothing, so on
+  a shared phone the previous cleaner's cached shift plan — addresses, access
+  instructions, contact persons — stayed on the device. Overlapping working
+  times of one person are rejected on the backdated path and in the office
+  correction. What is still unverified is the device itself: no run in a real
+  browser with a real connection drop, and no run on Safari/iOS. That needs a
+  running Supabase stack, which this environment cannot provide (no Docker
+  daemon).
+- **i18n**: five languages ship; only German has been reviewed by anyone.
+
+## Suggested order
+
+1. Legal pages, Impressum and Datenschutzerklärung — cheapest, and legally
+   required the moment the site is public.
+2. Error tracking and uptime monitoring — you cannot fix what you cannot see.
+3. Backups with a tested restore.
+4. E-mail domain, SPF/DKIM/DMARC, and bounce consequences.
+5. Rate limiting.
+6. Invoice completeness validation.
+7. GDPR mechanics: erasure, export, retention.
+8. E-Rechnung, against the 2027 deadline.
